@@ -1,0 +1,95 @@
+name: Mobile Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and publish for Android (for example v1.2.3)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate mobile release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate mobile tag
+        id: meta
+        env:
+          TAG: ${{ github.ref_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Mobile release tags must use vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          MOBILE_VERSION=$(node -p "require('./apps/mobile/package.json').version")
+          APP_VERSION=$(node -p "require('./apps/mobile/app.json').expo.version")
+          if [[ "$MOBILE_VERSION" != "$VERSION" || "$APP_VERSION" != "$VERSION" ]]; then
+            echo "::error::Tag v$VERSION does not match the mobile package versions: package=$MOBILE_VERSION app=$APP_VERSION"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build Android release
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Android release bundle
+        working-directory: apps/mobile
+        run: bun run build:android:release
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-android-${{ needs.validate.outputs.version }}
+          path: apps/mobile/android/app/build/outputs/**/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish Android release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: mobile-artifacts
+          merge-multiple: false
+
+      - name: Publish Android assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            mobile-artifacts/**

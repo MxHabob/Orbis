@@ -16,6 +16,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --home-dir /nonexistent \
         --no-create-home --shell /usr/sbin/nologin orbis \
+    && install -d -o 10001 -g 10001 -m 0750 /etc/orbis \
     && install -d -o 10001 -g 10001 -m 0750 /var/lib/orbis/license
 
 COPY --from=builder /workspace/apps/api-rust/target/release/orbis-server /usr/local/bin/orbis-server
@@ -27,7 +28,7 @@ ENV BIND_HOST=0.0.0.0 \
 
 USER 10001:10001
 EXPOSE 3000
-VOLUME ["/var/lib/orbis/license"]
+VOLUME ["/etc/orbis", "/var/lib/orbis/license"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/health

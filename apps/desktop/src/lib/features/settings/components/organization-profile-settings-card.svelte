@@ -86,7 +86,7 @@ let {
       <Label for="country-code" class="text-xs font-medium">
         {m.settings_general_country_code()}
       </Label>
-      <Input id="country-code" bind:value={countryCode} maxlength="2" disabled={isSaving} class="h-9 uppercase" />
+      <Input id="country-code" bind:value={countryCode} maxlength={2} disabled={isSaving} class="h-9 uppercase" />
     </div>
 
     <div class="flex flex-col gap-1.5">

@@ -108,6 +108,8 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_get_entitlement"
                 | "system_get_app_info"
                 | "system_get_changelog"
+                | "system_get_release_notes_state"
+                | "system_acknowledge_release_notes"
                 | "api_distribution_verify_manifest"
                 | "system_check_for_updates"
                 | "system_install_update"
@@ -471,6 +473,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         system_cmds::system_get_entitlement,
         system_cmds::system_get_app_info,
         system_cmds::system_get_changelog,
+        system_cmds::system_get_release_notes_state,
+        system_cmds::system_acknowledge_release_notes,
         system_cmds::system_check_for_updates,
         system_cmds::system_install_update,
         // ── License & Activation ────────────────────────────────

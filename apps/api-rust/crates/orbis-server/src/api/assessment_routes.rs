@@ -671,17 +671,14 @@ pub async fn delete_grade(
 #[utoipa::path(get, path = "/api/v1/grades",
     responses((status = 200, body = Vec<GradeDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_grades(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<GradeQuery>,
 ) -> Result<Json<ApiResponse<Vec<GradeDto>>>, ApiError> {
-    let grades = if let Some(sid) = q.student_id {
-        state.grade_repo.find_by_student(sid).await?
-    } else if let Some(csid) = q.section_subject_id {
-        state.grade_repo.find_by_section_subject(csid).await?
-    } else {
-        vec![]
-    };
+    let grades = state
+        .assessment_service
+        .list_grades_for_request(&ctx, q.student_id, q.section_subject_id)
+        .await?;
     let dtos = grades.into_iter().map(grade_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -736,10 +733,14 @@ pub async fn calculate_gpa(
 #[utoipa::path(post, path = "/api/v1/grades/actions/calculate-rankings", request_body = CalculateRankingsRequest,
     responses((status = 200, body = Vec<RankingItemDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn calculate_rankings(
-    _ctx: AuthContext,
-    State(_state): State<AppState>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
     Json(p): Json<CalculateRankingsRequest>,
 ) -> Result<Json<ApiResponse<Vec<RankingItemDto>>>, ApiError> {
+    state
+        .assessment_service
+        .authorize_grade_analytics(&ctx)
+        .await?;
     use orbis_app::services::calculation_engine::AcademicCalculationEngine;
     let tie_policy = p.tie_policy.unwrap_or_default();
 

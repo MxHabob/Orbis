@@ -3,6 +3,7 @@
   "version": "1.1.0",
   "identifier": "com.mulverse.orbis.staging",
   "bundle": {
+    "externalBin": ["binaries/solver-service"],
     "icon": [
       "icons/staging/32x32.png",
       "icons/staging/128x128.png",

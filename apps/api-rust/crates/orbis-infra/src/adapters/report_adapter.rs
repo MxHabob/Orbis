@@ -383,6 +383,21 @@ mod xlsx_tests {
     use std::io::Read;
     use zip::ZipArchive;
 
+    #[test]
+    fn docforge_context_exposes_organization_branding_as_template_variables() {
+        let context = docforge_org_context(&OrgReportContext {
+            name_ar: "مدرسة أوربس".into(),
+            phone: Some("+967 123456".into()),
+            website: Some("https://orbis.example".into()),
+            ..OrgReportContext::default()
+        })
+        .expect("organization context should serialize");
+
+        assert_eq!(context["name_ar"], "مدرسة أوربس");
+        assert_eq!(context["phone"], "+967 123456");
+        assert_eq!(context["website"], "https://orbis.example");
+    }
+
     fn empty_dataset() -> ReportDataset {
         ReportDataset {
             report_code: "students.overview".into(),
@@ -591,6 +606,33 @@ impl DocumentRenderer for HtmlRenderer {
     }
 }
 
+fn docforge_org_context(org_context: &OrgReportContext) -> Result<serde_json::Value, DomainError> {
+    let mut value = serde_json::to_value(org_context).map_err(|error| {
+        DomainError::Internal(format!(
+            "Organization report context serialization failed: {error}"
+        ))
+    })?;
+    if let serde_json::Value::Object(org) = &mut value {
+        for (snake_case, camel_case) in [
+            ("name_ar", "nameAr"),
+            ("logo_url", "logoUrl"),
+            ("address_ar", "addressAr"),
+            ("primary_color", "primaryColor"),
+            ("currency_code", "currencyCode"),
+            ("country_name", "countryName"),
+            ("ministry_name", "ministryName"),
+            ("region_name", "regionName"),
+            ("tax_id", "taxId"),
+            ("license_number", "licenseNumber"),
+        ] {
+            if let Some(value) = org.get(camel_case).cloned() {
+                org.insert(snake_case.to_string(), value);
+            }
+        }
+    }
+    Ok(value)
+}
+
 /// PDF renderer — uses docforge-engine for visual AST templates,
 /// with fallback to HTML renderer for legacy tabular Tera templates.
 pub struct PdfRenderer;
@@ -619,10 +661,7 @@ impl DocumentRenderer for PdfRenderer {
             >(&t.document_json)
             {
                 let mut ctx_obj = serde_json::Map::new();
-                ctx_obj.insert(
-                    "org".into(),
-                    serde_json::to_value(&dataset.org).unwrap_or_default(),
-                );
+                ctx_obj.insert("org".into(), docforge_org_context(&dataset.org)?);
                 ctx_obj.insert(
                     "columns".into(),
                     serde_json::to_value(&dataset.columns).unwrap_or_default(),
@@ -703,6 +742,17 @@ pub struct DbOrgContextResolver {
     pub db: DatabaseConnection,
 }
 
+fn organization_metadata_text(metadata: &Option<serde_json::Value>, field: &str) -> Option<String> {
+    metadata
+        .as_ref()
+        .and_then(serde_json::Value::as_object)
+        .and_then(|values| values.get(field))
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
 #[async_trait]
 impl OrgContextResolver for DbOrgContextResolver {
     async fn resolve(&self, org_id: Uuid) -> Result<OrgReportContext, DomainError> {
@@ -723,12 +773,18 @@ impl OrgContextResolver for DbOrgContextResolver {
             code: org.code.clone(),
             logo_url: org.logo.clone(),
             logo_data: None,
-            address: None,
-            address_ar: None,
-            phone: None,
+            address: organization_metadata_text(&org.metadata, "address"),
+            address_ar: organization_metadata_text(&org.metadata, "address_ar"),
+            phone: organization_metadata_text(&org.metadata, "phone"),
             email: None,
-            website: None,
+            website: organization_metadata_text(&org.metadata, "website"),
             primary_color: org.primary_color.clone(),
+            country_name: organization_metadata_text(&org.metadata, "country_name"),
+            ministry_name: organization_metadata_text(&org.metadata, "ministry_name"),
+            region_name: organization_metadata_text(&org.metadata, "region_name"),
+            city: organization_metadata_text(&org.metadata, "city"),
+            tax_id: organization_metadata_text(&org.metadata, "tax_id"),
+            license_number: organization_metadata_text(&org.metadata, "license_number"),
         })
     }
 }

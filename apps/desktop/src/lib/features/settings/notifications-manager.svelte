@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
+import { Button } from "@orbis/ui/button";
 import { Switch } from "@orbis/ui/switch";
 import {
   Select,
@@ -13,12 +14,15 @@ import { api, extractErrorMessage } from "$lib/api";
 import type { IntegrationDto, OrganizationSettingsDto } from "@orbis/sdk";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { AppNotification } from "@orbis/icons";
+import { isDesktopApp } from "$lib/api/runtime";
 
 let { orgId }: { orgId: string } = $props();
 
 let isSaving = $state(false);
 let isLoading = $state(true);
 let isLoadingIntegrations = $state(true);
+let isSystemNotificationsEnabled = $state(false);
+let isUpdatingSystemNotifications = $state(false);
 let rawSettings = $state<OrganizationSettingsDto | null>(null);
 let integrations = $state<IntegrationDto[]>([]);
 let defaultIntegrationIds = $state<Record<string, string>>({});
@@ -111,6 +115,11 @@ let prefs = $state({
 });
 
 onMount(async () => {
+  if (isDesktopApp) {
+    isSystemNotificationsEnabled =
+      localStorage.getItem("orbis_system_notifications_enabled") === "true";
+  }
+
   try {
     isLoading = true;
     rawSettings = await api.getSettings();
@@ -163,6 +172,40 @@ onMount(async () => {
     defaultIntegrationIds,
   });
 });
+
+async function toggleSystemNotifications() {
+  if (!isDesktopApp || isUpdatingSystemNotifications) return;
+
+  isUpdatingSystemNotifications = true;
+  try {
+    if (isSystemNotificationsEnabled) {
+      localStorage.setItem("orbis_system_notifications_enabled", "false");
+      isSystemNotificationsEnabled = false;
+      toast.success(m.settings_notifications_system_disabled());
+      return;
+    }
+
+    const { isPermissionGranted, requestPermission } = await import(
+      "@tauri-apps/plugin-notification"
+    );
+    let permissionGranted = await isPermissionGranted();
+    if (!permissionGranted) {
+      permissionGranted = (await requestPermission()) === "granted";
+    }
+    if (!permissionGranted) {
+      toast.error(m.settings_notifications_system_permission_denied());
+      return;
+    }
+
+    localStorage.setItem("orbis_system_notifications_enabled", "true");
+    isSystemNotificationsEnabled = true;
+    toast.success(m.settings_notifications_system_enabled());
+  } catch (error: unknown) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isUpdatingSystemNotifications = false;
+  }
+}
 
 const currentSnapshot = $derived(
   JSON.stringify({
@@ -267,6 +310,28 @@ async function handleSave(e?: Event) {
         </div>
       {/if}
     </section>
+    {#if isDesktopApp}
+      <section class="flex items-center justify-between gap-4 rounded-lg border border-border/60 p-4 text-start">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-sm font-semibold text-foreground">
+            {m.settings_notifications_system_desktop()}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            {m.settings_notifications_system_desktop_description()}
+          </p>
+        </div>
+        <Button
+          variant={isSystemNotificationsEnabled ? "outline" : "lime"}
+          size="sm"
+          disabled={isUpdatingSystemNotifications}
+          onclick={toggleSystemNotifications}
+        >
+          {isSystemNotificationsEnabled
+            ? m.settings_notifications_system_disable()
+            : m.settings_notifications_system_enable()}
+        </Button>
+      </section>
+    {/if}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
       <!-- In-App Notifications -->
       <div class="flex flex-col gap-6 text-start">

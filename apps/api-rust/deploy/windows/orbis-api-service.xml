@@ -5,7 +5,7 @@
   <executable>%BASE%\orbis-server.exe</executable>
   <workingdirectory>%BASE%</workingdirectory>
   <serviceaccount>
-    <user>NT AUTHORITY\LocalService</user>
+    <username>NT AUTHORITY\LocalService</username>
   </serviceaccount>
   <env name="ORBIS_SERVER_CONFIG_FILE" value="%ProgramData%\Orbis\server.json" />
   <env name="ORBIS_LICENSE_DATA_DIR" value="%ProgramData%\Orbis\license" />

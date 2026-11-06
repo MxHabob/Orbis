@@ -762,6 +762,21 @@ pub async fn list_template_bindings(
     Path(definition_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Vec<TemplateBindingDto>>>, ApiError> {
     let ctx = auth.0;
+    state
+        .permission_checker
+        .check(&ctx, Permission::TemplateRead)
+        .await?;
+    let definition = state
+        .report_definition_repo
+        .find_by_id(definition_id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .filter(|definition| definition.org_id == ctx.tenant_id)
+        .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+    if !definition.is_active {
+        return Err(ApiError::bad_request("Report definition is inactive"));
+    }
+
     let items = state
         .report_template_repo
         .find_bindings_by_definition(definition_id)
@@ -799,22 +814,63 @@ pub async fn create_template_binding(
     Json(req): Json<CreateTemplateBindingRequest>,
 ) -> Result<Json<ApiResponse<TemplateBindingDto>>, ApiError> {
     let ctx = auth.0;
+    state
+        .permission_checker
+        .check(&ctx, Permission::TemplateWrite)
+        .await?;
+    let definition = state
+        .report_definition_repo
+        .find_by_id(definition_id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .filter(|definition| definition.org_id == ctx.tenant_id)
+        .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+    if !definition.is_active {
+        return Err(ApiError::bad_request("Report definition is inactive"));
+    }
+
     let format = OutputFormat::from_str(&req.format);
+    if !definition.supported_formats.contains(&format) {
+        return Err(ApiError::bad_request(
+            "The report does not support the selected output format",
+        ));
+    }
+    let template = state
+        .report_template_repo
+        .find_by_id(req.template_id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .filter(|template| {
+            template.org_id == ctx.tenant_id
+                && template.status == TemplateStatus::Published
+                && template.deleted_at.is_none()
+                && template.document_type.eq_ignore_ascii_case("report")
+        })
+        .ok_or_else(|| ApiError::not_found("Published report template not found"))?;
+    let existing = state
+        .report_template_repo
+        .find_binding(definition_id, &req.locale, &format)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?;
+    let (binding_id, created_at) = existing.map_or_else(
+        || (Uuid::new_v4(), Utc::now()),
+        |binding| (binding.id, binding.created_at),
+    );
     let binding = ReportTemplateBinding {
-        id: Uuid::new_v4(),
+        id: binding_id,
         report_definition_id: definition_id,
-        template_id: req.template_id,
+        template_id: template.id,
         locale: req.locale,
         format,
         is_default: req.is_default.unwrap_or(false),
-        created_at: Utc::now(),
+        created_at,
     };
 
     state
         .report_template_repo
         .save_binding(&binding)
         .await
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
+        .map_err(|error| ApiError::internal(error.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(
         TemplateBindingDto {

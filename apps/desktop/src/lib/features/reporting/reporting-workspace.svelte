@@ -40,6 +40,7 @@ import {
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { fade } from "svelte/transition";
 import ReportParameterSheet from "./components/report-parameter-sheet.svelte";
+import ReportTemplateBindingDialog from "./components/report-template-binding-dialog.svelte";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 import {
@@ -82,6 +83,8 @@ let dateTo = $state<string>("");
 let isGenerating = $state(false);
 let jobStatus = $state<string>("");
 let currentJobId = $state<string>("");
+let templateBindingDefinition = $state<ReportDefinitionDto | null>(null);
+let isTemplateBindingOpen = $state(false);
 
 // Preview State
 let isPreviewOpen = $state(false);
@@ -239,6 +242,11 @@ function openGenerateSheet(def: ReportDefinitionDto) {
     selectedPeriodId = academicContext.effectivePeriodId || periods[0].id;
   }
   isSheetOpen = true;
+}
+
+function openTemplateBinding(definition: ReportDefinitionDto) {
+  templateBindingDefinition = definition;
+  isTemplateBindingOpen = true;
 }
 
 async function handleExecuteReport() {
@@ -462,7 +470,7 @@ function handleDownloadCurrent() {
                 </div>
 
                 <!-- Footer: Supported Formats & Action -->
-                <div class="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                <div class="pt-3 border-t border-border/40 flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-1">
                     {#each def.supported_formats || ["PDF"] as fmt}
                       <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-muted/50 text-muted-foreground border border-border/40">
@@ -471,15 +479,26 @@ function handleDownloadCurrent() {
                     {/each}
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={() => openGenerateSheet(def)}
-                    class="h-8 px-3 text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all cursor-pointer"
-                  >
-                    <Play class="w-3 h-3" />
-                    {m.operations_ui_generate_report()}
-                  </Button>
+                  <div class="flex items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onclick={() => openTemplateBinding(def)}
+                      class="h-8 px-2 text-xs font-medium gap-1.5"
+                    >
+                      <DocumentPage class="w-3.5 h-3.5" />
+                      {m.operations_ui_report_template_manage()}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onclick={() => openGenerateSheet(def)}
+                      class="h-8 px-3 text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all cursor-pointer"
+                    >
+                      <Play class="w-3 h-3" />
+                      {m.operations_ui_generate_report()}
+                    </Button>
+                  </div>
                 </div>
               </div>
             {/each}
@@ -507,6 +526,13 @@ function handleDownloadCurrent() {
     onExecute={handleExecuteReport}
   />
 {/if}
+
+<ReportTemplateBindingDialog
+  open={isTemplateBindingOpen}
+  definition={templateBindingDefinition}
+  {orgId}
+  onOpenChange={(open) => (isTemplateBindingOpen = open)}
+/>
 
 <!-- PDF / Document Preview Dialog -->
 <Dialog bind:open={isPreviewOpen}>

@@ -570,10 +570,8 @@ pub fn layout_table_elements(
 
     // 4. Styles
     let style = table.props.style.as_ref();
-    let header_bg_col = style
-        .and_then(|s| s.header_bg_color.as_deref())
-        .and_then(Color::from_hex)
-        .or_else(|| Some(Color::new(241, 245, 249))); // subtle slate #f1f5f9
+    let header_bg_col =
+        resolve_header_background_color(style.and_then(|s| s.header_bg_color.as_deref()));
     let header_text_col = style
         .and_then(|s| s.header_text_color.as_deref())
         .and_then(Color::from_hex)
@@ -1257,12 +1255,29 @@ fn get_page_dimensions(setup: &PageSetup) -> (f32, f32) {
     (mm_to_pt(w_mm), mm_to_pt(h_mm))
 }
 
+fn resolve_header_background_color(color: Option<&str>) -> Option<Color> {
+    match color {
+        Some(color) if color.eq_ignore_ascii_case("transparent") => None,
+        Some(color) => Color::from_hex(color),
+        None => Some(Color::new(241, 245, 249)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::model::document::*;
     use crate::model::nodes::*;
     use serde_json::json;
+
+    #[test]
+    fn table_header_background_can_be_explicitly_transparent() {
+        assert!(resolve_header_background_color(Some("transparent")).is_none());
+        let default = resolve_header_background_color(None).expect("default color");
+        assert_eq!((default.r, default.g, default.b), (241, 245, 249));
+        let white = resolve_header_background_color(Some("#ffffff")).expect("parsed hex color");
+        assert_eq!((white.r, white.g, white.b), (255, 255, 255));
+    }
 
     #[test]
     fn test_text_line_height_converts_editor_ratio_to_points() {

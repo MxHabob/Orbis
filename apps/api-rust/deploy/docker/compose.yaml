@@ -12,7 +12,7 @@ services:
     ports:
       - "${ORBIS_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     volumes:
-      - ./server.json:/etc/orbis/server.json:ro
+      - orbis_server_config:/etc/orbis
       - orbis_license_data:/var/lib/orbis/license
     read_only: true
     tmpfs:
@@ -35,4 +35,5 @@ services:
       retries: 3
 
 volumes:
+  orbis_server_config:
   orbis_license_data:
