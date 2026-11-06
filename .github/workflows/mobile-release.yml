@@ -67,7 +67,6 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     env:
-      ORBIS_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/orbis-release.keystore
       ORBIS_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ORBIS_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ORBIS_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -88,6 +87,7 @@ jobs:
       - name: Prepare Android release signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ORBIS_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/orbis-release.keystore
         run: |
           set -euo pipefail
           if [[ -z "$ANDROID_KEYSTORE_BASE64" ]]; then
@@ -100,6 +100,7 @@ jobs:
             exit 1
           fi
           chmod 600 "$ORBIS_ANDROID_KEYSTORE_PATH"
+          echo "ORBIS_ANDROID_KEYSTORE_PATH=$ORBIS_ANDROID_KEYSTORE_PATH" >> "$GITHUB_ENV"
 
       - name: Generate Android project
         working-directory: apps/mobile
