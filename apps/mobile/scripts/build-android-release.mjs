@@ -3,6 +3,12 @@ import { resolve } from "node:path";
 
 const projectRoot = process.cwd();
 const env = { ...process.env, ORBIS_DEV_ALLOW_LOCAL_HTTP: "false" };
+const gradleOffline = env.ORBIS_GRADLE_OFFLINE !== "false";
+const gradleArgs = [
+  "assembleRelease",
+  ...(gradleOffline ? ["--offline"] : []),
+  "-PreactNativeArchitectures=arm64-v8a",
+];
 
 function run(command, args, cwd) {
   const result = spawnSync(command, args, { cwd, env, stdio: "inherit" });
@@ -20,14 +26,10 @@ if (process.platform === "win32") {
       "/d",
       "/s",
       "/c",
-      "gradlew.bat assembleRelease --offline -PreactNativeArchitectures=arm64-v8a",
+      `gradlew.bat ${gradleArgs.join(" ")}`,
     ],
     androidRoot,
   );
 } else {
-  run(
-    "./gradlew",
-    ["assembleRelease", "--offline", "-PreactNativeArchitectures=arm64-v8a"],
-    androidRoot,
-  );
+  run("./gradlew", gradleArgs, androidRoot);
 }
