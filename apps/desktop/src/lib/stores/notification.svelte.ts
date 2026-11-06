@@ -10,6 +10,7 @@ import { toast } from "@orbis/ui";
 import { api, extractErrorMessage } from "$lib/api";
 import { isDesktopApp } from "$lib/api/runtime";
 import type { NotificationDto } from "$lib/api/types";
+import * as m from "$lib/paraglide/messages";
 
 type NotificationListFilter = {
   category?: string;
@@ -27,6 +28,7 @@ class NotificationStore {
   hasUnread = $derived(this.unreadCount > 0);
 
   private unlistenFn: (() => void) | null = null;
+  private unlistenNotificationAction: { unregister: () => void } | null = null;
   private sseSource: EventSource | null = null;
   private loadRequestId = 0;
 
@@ -164,6 +166,7 @@ class NotificationStore {
           this.unreadCount++;
           void this.loadNotifications();
           toast.info(event.payload.title);
+          void this.notifySystem();
         },
       );
       this.unlistenFn = unlisten;
@@ -174,6 +177,24 @@ class NotificationStore {
 
   private async setupLiveUpdates(): Promise<void> {
     if (typeof window === "undefined") return;
+    if (isDesktopApp) {
+      try {
+        const { onAction } = await import(
+          "@tauri-apps/plugin-notification"
+        );
+        this.unlistenNotificationAction = await onAction((event) => {
+          if (event.actionId === "tap") {
+            void this.openFromSystemNotification();
+          }
+        });
+      } catch (e: unknown) {
+        console.warn(
+          "Failed to register system notification action listener:",
+          extractErrorMessage(e),
+        );
+      }
+    }
+
     try {
       let baseUrl = import.meta.env?.VITE_API_URL ?? "http://localhost:3000";
       if (isDesktopApp) {
@@ -224,6 +245,7 @@ class NotificationStore {
             ];
           }
           toast.info(notif.title);
+          void this.notifySystem();
         } catch (err: unknown) {
           console.debug("Error parsing SSE notification payload:", err);
         }
@@ -234,10 +256,55 @@ class NotificationStore {
     }
   }
 
+  private async openFromSystemNotification(): Promise<void> {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const appWindow = getCurrentWindow();
+      await appWindow.show();
+      await appWindow.setFocus();
+    } catch (e: unknown) {
+      console.warn(
+        "Failed to open Orbis from system notification:",
+        extractErrorMessage(e),
+      );
+    }
+  }
+
+  private async notifySystem(): Promise<void> {
+    if (
+      !isDesktopApp ||
+      document.visibilityState !== "hidden" ||
+      localStorage.getItem("orbis_system_notifications_enabled") !== "true"
+    ) {
+      return;
+    }
+
+    try {
+      const { isPermissionGranted, sendNotification } = await import(
+        "@tauri-apps/plugin-notification"
+      );
+      if (!(await isPermissionGranted())) return;
+
+      await sendNotification({
+        title: "Orbis",
+        body: m.notification_system_body(),
+      });
+    } catch (e: unknown) {
+      console.warn(
+        "Failed to show system notification:",
+        extractErrorMessage(e),
+      );
+    }
+  }
+
   destroy(): void {
     if (this.unlistenFn) {
       this.unlistenFn();
       this.unlistenFn = null;
+    }
+    if (this.unlistenNotificationAction) {
+      this.unlistenNotificationAction.unregister();
+      this.unlistenNotificationAction = null;
     }
     if (this.sseSource) {
       this.sseSource.close();
