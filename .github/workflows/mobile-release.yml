@@ -21,20 +21,36 @@ jobs:
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
       version: ${{ steps.meta.outputs.version }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate mobile tag
         id: meta
         env:
-          TAG: ${{ github.ref_name || inputs.tag }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Mobile release tags must use vMAJOR.MINOR.PATCH."
             exit 1
           fi
+
+          git fetch origin main --tags --force
+          if ! git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::The requested tag '$TAG' does not exist in the repository."
+            exit 1
+          fi
+          COMMIT_SHA="$(git rev-list -n 1 "refs/tags/$TAG")"
+          if ! git merge-base --is-ancestor "$COMMIT_SHA" origin/main; then
+            echo "::error::Tag '$TAG' does not point to a commit reachable from main."
+            exit 1
+          fi
+          git checkout --detach "$COMMIT_SHA"
+
           VERSION="${TAG#v}"
           MOBILE_VERSION=$(node -p "require('./apps/mobile/package.json').version")
           APP_VERSION=$(node -p "require('./apps/mobile/app.json').expo.version")
@@ -44,16 +60,22 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build Android release
     needs: validate
     runs-on: ubuntu-latest
+    env:
+      ORBIS_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/orbis-release.keystore
+      ORBIS_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ORBIS_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ORBIS_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.validate.outputs.tag }}
+          ref: ${{ needs.validate.outputs.commit_sha }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -63,6 +85,22 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Prepare Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" ]]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is required for a release build."
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ORBIS_ANDROID_KEYSTORE_PATH"
+          if [[ ! -s "$ORBIS_ANDROID_KEYSTORE_PATH" ]]; then
+            echo "::error::The decoded Android release keystore is empty."
+            exit 1
+          fi
+          chmod 600 "$ORBIS_ANDROID_KEYSTORE_PATH"
+
       - name: Generate Android project
         working-directory: apps/mobile
         run: bun run expo prebuild --platform android
@@ -71,11 +109,23 @@ jobs:
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 
+      - name: Verify signed Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          if [[ ! -s "$apk" ]]; then
+            echo "::error::The signed Android release APK was not generated."
+            exit 1
+          fi
+          apksigner="$ANDROID_HOME/build-tools/$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)/apksigner"
+          "$apksigner" verify --verbose "$apk"
+
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: mobile-android-${{ needs.validate.outputs.version }}
-          path: apps/mobile/android/app/build/outputs/**/*.apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
 

@@ -6,7 +6,7 @@ If a release build has already created a draft but publication fails during vali
 
 Staging builds intentionally do not use the production updater channel. Their update check is disabled so they cannot install production updates.
 
-Android APK and AAB packages are built and attached to the same GitHub Release. They are signed with a dedicated Android release keystore; do not use the debug keystore for public distribution.
+The mobile release workflow builds and attaches a signed arm64 Android APK to the same GitHub Release. It decodes `ANDROID_KEYSTORE_BASE64` into a temporary runner file and maps the Android signing secrets to the `ORBIS_ANDROID_*` variables consumed by the Expo config plugin. This workflow does not currently publish an AAB. Do not use the debug keystore for public distribution.
 
 ## Configure GitHub Actions
 
