@@ -1,7 +1,7 @@
 {
   "name": "@orbis/mobile",
   "main": "expo-router/entry",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "dependencies": {
     "@docforge/core": "workspace:*",
     "@expo/ui": "~58.0.26",
