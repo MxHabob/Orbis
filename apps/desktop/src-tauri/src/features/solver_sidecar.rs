@@ -1,6 +1,6 @@
 //! Solver Sidecar Manager
 //!
-//! Manages the lifecycle of the embedded Timefold `solver-service` native binary.
+//! Manages the lifecycle of the on-demand Timefold `solver-service` native binary.
 //!
 //! Architectural Principles:
 //! 1. **Zero-Resource Idle**: The sidecar is spawned on-demand when a timetable or exam
@@ -11,15 +11,19 @@
 //! 3. **Clean Shutdown**: Guarantees termination when the main Orbis Desktop application exits.
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Child;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
 const DEFAULT_PORT: u16 = 8081;
+const MAX_SOLVER_BINARY_BYTES: u64 = 250 * 1024 * 1024;
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_millis(500);
 const MAX_STARTUP_WAIT: Duration = Duration::from_secs(8);
 const DEFAULT_IDLE_TIMEOUT_SECS: i64 = 300; // 5 minutes
@@ -41,14 +45,14 @@ pub struct SolverSidecarManager {
     active_jobs: Arc<AtomicUsize>,
     idle_timeout_secs: i64,
     http_client: reqwest::Client,
+    app_data_dir: PathBuf,
 }
 
 impl SolverSidecarManager {
-    pub fn new() -> Self {
+    pub fn new(app_data_dir: &std::path::Path) -> Result<Self, String> {
         let http_client = reqwest::Client::builder()
-            .timeout(HEALTH_CHECK_TIMEOUT)
             .build()
-            .unwrap_or_default();
+            .map_err(|error| format!("Could not create solver network client: {error}"))?;
 
         let manager = Self {
             child: Arc::new(Mutex::new(None)),
@@ -57,10 +61,11 @@ impl SolverSidecarManager {
             active_jobs: Arc::new(AtomicUsize::new(0)),
             idle_timeout_secs: DEFAULT_IDLE_TIMEOUT_SECS,
             http_client,
+            app_data_dir: app_data_dir.join("solver-service"),
         };
 
         manager.start_idle_watchdog();
-        manager
+        Ok(manager)
     }
 
     pub fn endpoint_url(&self) -> &str {
@@ -96,7 +101,13 @@ impl SolverSidecarManager {
     /// Check whether the sidecar HTTP endpoint responds with 200 OK to `/health`
     pub async fn check_health(&self) -> bool {
         let health_url = format!("{}/health", self.endpoint_url);
-        match self.http_client.get(&health_url).send().await {
+        match self
+            .http_client
+            .get(&health_url)
+            .timeout(HEALTH_CHECK_TIMEOUT)
+            .send()
+            .await
+        {
             Ok(resp) => resp.status().is_success(),
             Err(_) => false,
         }
@@ -125,9 +136,10 @@ impl SolverSidecarManager {
         }
 
         // 3. Locate the sidecar executable
-        let exe_path = Self::find_sidecar_binary().ok_or_else(|| {
-            "Solver sidecar executable not found in bundle or workspace".to_string()
-        })?;
+        let exe_path = match Self::find_sidecar_binary() {
+            Some(path) => path,
+            None => self.download_solver_binary().await?,
+        };
 
         info!(path = ?exe_path, "Spawning solver sidecar native binary");
 
@@ -231,7 +243,135 @@ impl SolverSidecarManager {
         });
     }
 
-    /// Searches standard Tauri bundle and development locations for the binary
+    async fn download_solver_binary(&self) -> Result<PathBuf, String> {
+        let target = solver_release_target().ok_or_else(|| {
+            "The timetable solver is not available for this platform.".to_string()
+        })?;
+        let expected_sha256 = option_env!("ORBIS_SOLVER_SHA256")
+            .filter(|value| {
+                value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })
+            .ok_or_else(|| {
+                "The timetable solver is not bundled for this build. Build it locally or install an official release."
+                    .to_string()
+            })?;
+        let binary_name = if cfg!(windows) {
+            format!("solver-service-{target}.exe")
+        } else {
+            format!("solver-service-{target}")
+        };
+        let version_dir = self.app_data_dir.join(env!("CARGO_PKG_VERSION"));
+        let binary_path = version_dir.join(&binary_name);
+        tokio::fs::create_dir_all(&version_dir)
+            .await
+            .map_err(|error| format!("Could not prepare timetable solver storage: {error}"))?;
+
+        match sha256_file(&binary_path).await {
+            Ok(actual) if actual.eq_ignore_ascii_case(expected_sha256) => {
+                return Ok(binary_path);
+            }
+            Ok(_) => {
+                tokio::fs::remove_file(&binary_path)
+                    .await
+                    .map_err(|error| {
+                        format!("Could not replace the cached timetable solver: {error}")
+                    })?;
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(format!(
+                    "Could not verify the cached timetable solver: {error}"
+                ));
+            }
+        }
+
+        let url = format!(
+            "https://github.com/MxHabob/Orbis/releases/download/v{}/{binary_name}",
+            env!("CARGO_PKG_VERSION")
+        );
+        let mut response = self
+            .http_client
+            .get(url)
+            .timeout(Duration::from_secs(300))
+            .send()
+            .await
+            .map_err(|error| format!("Could not download the timetable solver: {error}"))?;
+        if !response.status().is_success() {
+            return Err(format!(
+                "Could not download the timetable solver (HTTP {}).",
+                response.status()
+            ));
+        }
+        if response
+            .content_length()
+            .is_some_and(|length| length > MAX_SOLVER_BINARY_BYTES)
+        {
+            return Err("The timetable solver download exceeds the permitted size.".to_string());
+        }
+
+        let temporary_path = version_dir.join(format!(".{binary_name}.{}", uuid::Uuid::new_v4()));
+        let result = async {
+            let mut file = tokio::fs::File::create(&temporary_path)
+                .await
+                .map_err(|error| format!("Could not save the timetable solver: {error}"))?;
+            let mut hasher = Sha256::new();
+            let mut downloaded_bytes = 0_u64;
+            while let Some(chunk) = response
+                .chunk()
+                .await
+                .map_err(|error| format!("Could not read the timetable solver download: {error}"))?
+            {
+                downloaded_bytes = downloaded_bytes.saturating_add(chunk.len() as u64);
+                if downloaded_bytes > MAX_SOLVER_BINARY_BYTES {
+                    return Err(
+                        "The timetable solver download exceeds the permitted size.".to_string()
+                    );
+                }
+                hasher.update(&chunk);
+                file.write_all(&chunk)
+                    .await
+                    .map_err(|error| format!("Could not save the timetable solver: {error}"))?;
+            }
+            file.flush().await.map_err(|error| {
+                format!("Could not finish saving the timetable solver: {error}")
+            })?;
+            drop(file);
+
+            let actual_sha256 = format!("{:x}", hasher.finalize());
+            if !actual_sha256.eq_ignore_ascii_case(expected_sha256) {
+                return Err(
+                    "The timetable solver failed its integrity check. Please try again."
+                        .to_string(),
+                );
+            }
+
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut permissions = std::fs::metadata(&temporary_path)
+                    .map_err(|error| format!("Could not inspect the timetable solver: {error}"))?
+                    .permissions();
+                permissions.set_mode(0o755);
+                std::fs::set_permissions(&temporary_path, permissions)
+                    .map_err(|error| format!("Could not prepare the timetable solver: {error}"))?;
+            }
+
+            tokio::fs::rename(&temporary_path, &binary_path)
+                .await
+                .map_err(|error| format!("Could not install the timetable solver: {error}"))?;
+            Ok(())
+        }
+        .await;
+
+        if let Err(error) = tokio::fs::remove_file(&temporary_path).await {
+            if error.kind() != io::ErrorKind::NotFound {
+                warn!(%error, "Could not clean up the temporary timetable solver download");
+            }
+        }
+        result?;
+        Ok(binary_path)
+    }
+
     fn find_sidecar_binary() -> Option<PathBuf> {
         let mut candidates = Vec::new();
 
@@ -295,6 +435,29 @@ impl SolverSidecarManager {
     }
 }
 
+fn solver_release_target() -> Option<&'static str> {
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    return Some("x86_64-pc-windows-msvc");
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    return Some("aarch64-apple-darwin");
+    #[allow(unreachable_code)]
+    None
+}
+
+async fn sha256_file(path: &std::path::Path) -> io::Result<String> {
+    let mut file = tokio::fs::File::open(path).await?;
+    let mut hasher = Sha256::new();
+    let mut buffer = vec![0; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer).await?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
 impl Drop for SolverSidecarManager {
     fn drop(&mut self) {
         // Attempt to kill child process synchronously on drop
@@ -303,5 +466,36 @@ impl Drop for SolverSidecarManager {
                 let _ = child.start_kill();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn embeds_the_solver_checksum_from_the_build_environment() {
+        if let Ok(expected) = std::env::var("ORBIS_SOLVER_SHA256") {
+            assert_eq!(option_env!("ORBIS_SOLVER_SHA256"), Some(expected.as_str()));
+        }
+    }
+
+    #[tokio::test]
+    async fn hashes_downloaded_solver_files() {
+        let path =
+            std::env::temp_dir().join(format!("orbis-solver-hash-test-{}", uuid::Uuid::new_v4()));
+        tokio::fs::write(&path, b"abc")
+            .await
+            .expect("write test solver file");
+
+        let hash = sha256_file(&path).await.expect("hash test solver file");
+
+        tokio::fs::remove_file(path)
+            .await
+            .expect("remove test solver file");
+        assert_eq!(
+            hash,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
     }
 }

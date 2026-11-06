@@ -1,17 +1,26 @@
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::net::{TcpListener, UdpSocket};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
+use tokio::io::AsyncWriteExt;
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 use url::Url;
 use uuid::Uuid;
 
+const MEDIAMTX_VERSION: &str = "1.21.3";
+const MAX_MEDIAMTX_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(10);
 const READY_POLL_INTERVAL: Duration = Duration::from_millis(100);
+
+struct MediaMtxReleaseAsset {
+    name: &'static str,
+    sha256: &'static str,
+}
 
 pub struct CameraStreamSource {
     pub id: Uuid,
@@ -138,10 +147,7 @@ impl CameraStreamManager {
     }
 
     async fn spawn_runtime(&self) -> Result<CameraRuntime, String> {
-        let binary_path = find_sidecar_binary().ok_or_else(|| {
-            "The bundled MediaMTX executable is missing. Rebuild Orbis with the camera relay included."
-                .to_string()
-        })?;
+        let binary_path = self.ensure_sidecar_binary().await?;
         let api_port = reserve_tcp_port()?;
         let whep_port = loop {
             let port = reserve_tcp_port()?;
@@ -209,7 +215,7 @@ impl CameraStreamManager {
         let mut child = command.spawn().map_err(|error| {
             let _ = std::fs::remove_file(&config_path);
             format!(
-                "Could not start the bundled MediaMTX executable ({}): {error}",
+                "Could not start the installed MediaMTX executable ({}): {error}",
                 binary_path.display()
             )
         })?;
@@ -244,6 +250,155 @@ impl CameraStreamManager {
         let _ = child.kill().await;
         let _ = std::fs::remove_file(config_path);
         Err("The camera relay did not become ready in time".to_string())
+    }
+
+    async fn ensure_sidecar_binary(&self) -> Result<PathBuf, String> {
+        let target = target_triple()
+            .ok_or_else(|| "The camera relay is not supported on this platform.".to_string())?;
+        let asset = mediamtx_release_asset(target)
+            .ok_or_else(|| "The camera relay is not available for this platform.".to_string())?;
+        let binary_name = if cfg!(windows) {
+            "mediamtx.exe"
+        } else {
+            "mediamtx"
+        };
+        let install_root = self.app_data_dir.join("mediamtx");
+        let version_dir = install_root.join(format!("v{MEDIAMTX_VERSION}"));
+        let binary_path = version_dir.join(binary_name);
+        if binary_path.is_file() {
+            return Ok(binary_path);
+        }
+
+        tokio::fs::create_dir_all(&version_dir)
+            .await
+            .map_err(|error| format!("Could not create the camera relay directory: {error}"))?;
+        let staging_dir = install_root.join(format!(".install-{}", Uuid::new_v4()));
+        tokio::fs::create_dir(&staging_dir)
+            .await
+            .map_err(|error| format!("Could not prepare the camera relay download: {error}"))?;
+
+        let result = async {
+            let archive_path = staging_dir.join(asset.name);
+            let url = format!(
+                "https://github.com/bluenviron/mediamtx/releases/download/v{MEDIAMTX_VERSION}/{}",
+                asset.name
+            );
+            let mut response = self
+                .http_client
+                .get(url)
+                .timeout(Duration::from_secs(120))
+                .send()
+                .await
+                .map_err(|error| format!("Could not download the camera relay: {error}"))?;
+            if !response.status().is_success() {
+                return Err(format!(
+                    "Could not download the camera relay (HTTP {}).",
+                    response.status()
+                ));
+            }
+            if response
+                .content_length()
+                .is_some_and(|length| length > MAX_MEDIAMTX_ARCHIVE_BYTES)
+            {
+                return Err("The camera relay download exceeds the permitted size.".to_string());
+            }
+
+            let mut archive = tokio::fs::File::create(&archive_path)
+                .await
+                .map_err(|error| format!("Could not save the camera relay download: {error}"))?;
+            let mut hasher = Sha256::new();
+            let mut downloaded_bytes = 0_u64;
+            while let Some(chunk) = response
+                .chunk()
+                .await
+                .map_err(|error| format!("Could not read the camera relay download: {error}"))?
+            {
+                downloaded_bytes = downloaded_bytes.saturating_add(chunk.len() as u64);
+                if downloaded_bytes > MAX_MEDIAMTX_ARCHIVE_BYTES {
+                    return Err("The camera relay download exceeds the permitted size.".to_string());
+                }
+                hasher.update(&chunk);
+                archive.write_all(&chunk).await.map_err(|error| {
+                    format!("Could not save the camera relay download: {error}")
+                })?;
+            }
+            archive
+                .flush()
+                .await
+                .map_err(|error| format!("Could not finish saving the camera relay: {error}"))?;
+            drop(archive);
+
+            let actual_checksum = format!("{:x}", hasher.finalize());
+            if actual_checksum != asset.sha256 {
+                return Err(
+                    "The camera relay download failed its integrity check. Please try again."
+                        .to_string(),
+                );
+            }
+
+            let extraction_dir = staging_dir.join("extracted");
+            tokio::fs::create_dir(&extraction_dir)
+                .await
+                .map_err(|error| format!("Could not prepare the camera relay: {error}"))?;
+            let tar_args = if target.contains("windows") {
+                "-xf"
+            } else {
+                "-xzf"
+            };
+            let extraction = Command::new("tar")
+                .arg(tar_args)
+                .arg(&archive_path)
+                .arg("-C")
+                .arg(&extraction_dir)
+                .output()
+                .await
+                .map_err(|error| format!("Could not extract the camera relay: {error}"))?;
+            if !extraction.status.success() {
+                return Err(format!(
+                    "Could not extract the camera relay archive: {}",
+                    String::from_utf8_lossy(&extraction.stderr).trim()
+                ));
+            }
+
+            let executable = find_extracted_binary(
+                &extraction_dir,
+                if cfg!(windows) {
+                    "mediamtx.exe"
+                } else {
+                    "mediamtx"
+                },
+            )?
+            .ok_or_else(|| "The camera relay archive is missing its executable.".to_string())?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut permissions = std::fs::metadata(&executable)
+                    .map_err(|error| format!("Could not inspect the camera relay: {error}"))?
+                    .permissions();
+                permissions.set_mode(0o755);
+                std::fs::set_permissions(&executable, permissions)
+                    .map_err(|error| format!("Could not prepare the camera relay: {error}"))?;
+            }
+            if tokio::fs::try_exists(&binary_path)
+                .await
+                .map_err(|error| format!("Could not inspect the installed camera relay: {error}"))?
+            {
+                tokio::fs::remove_file(&binary_path)
+                    .await
+                    .map_err(|error| format!("Could not replace the camera relay: {error}"))?;
+            }
+            tokio::fs::rename(&executable, &binary_path)
+                .await
+                .map_err(|error| format!("Could not install the camera relay: {error}"))?;
+            Ok(())
+        }
+        .await;
+
+        if let Err(error) = tokio::fs::remove_dir_all(&staging_dir).await {
+            warn!(%error, "Could not clean up the temporary camera relay download");
+        }
+        result?;
+        Ok(binary_path)
     }
 
     async fn is_ready(&self, api_url: &str, username: &str, password: &str) -> bool {
@@ -356,52 +511,55 @@ fn reserve_udp_port() -> Result<u16, String> {
         .map_err(|error| format!("Could not reserve a local WebRTC port: {error}"))
 }
 
-fn find_sidecar_binary() -> Option<PathBuf> {
-    let target_triple = target_triple()?;
-    let target_filename = if cfg!(windows) {
-        format!("mediamtx-{target_triple}.exe")
-    } else {
-        format!("mediamtx-{target_triple}")
-    };
-    let bundled_filename = if cfg!(windows) {
-        "mediamtx.exe"
-    } else {
-        "mediamtx"
-    };
-
-    let mut candidates = Vec::new();
-    if let Ok(current_exe) = std::env::current_exe()
-        && let Some(exe_dir) = current_exe.parent()
+fn find_extracted_binary(directory: &Path, filename: &str) -> Result<Option<PathBuf>, String> {
+    for entry in std::fs::read_dir(directory)
+        .map_err(|error| format!("Could not inspect the camera relay archive: {error}"))?
     {
-        candidates.push(exe_dir.join(bundled_filename));
-        candidates.push(exe_dir.join("binaries").join(bundled_filename));
-        candidates.push(exe_dir.join("resources").join(bundled_filename));
-        candidates.push(exe_dir.join(&target_filename));
-        candidates.push(exe_dir.join("binaries").join(&target_filename));
-        candidates.push(exe_dir.join("resources").join(&target_filename));
+        let entry = entry
+            .map_err(|error| format!("Could not inspect the camera relay archive: {error}"))?;
+        let path = entry.path();
+        if entry
+            .file_type()
+            .map_err(|error| format!("Could not inspect the camera relay archive: {error}"))?
+            .is_file()
+            && entry.file_name() == filename
+        {
+            return Ok(Some(path));
+        }
+        if path.is_dir()
+            && let Some(found) = find_extracted_binary(&path, filename)?
+        {
+            return Ok(Some(found));
+        }
     }
-    candidates.push(
-        PathBuf::from("src-tauri")
-            .join("binaries")
-            .join(bundled_filename),
-    );
-    candidates.push(
-        PathBuf::from("apps/desktop/src-tauri")
-            .join("binaries")
-            .join(bundled_filename),
-    );
-    candidates.push(
-        PathBuf::from("src-tauri")
-            .join("binaries")
-            .join(&target_filename),
-    );
-    candidates.push(
-        PathBuf::from("apps/desktop/src-tauri")
-            .join("binaries")
-            .join(&target_filename),
-    );
+    Ok(None)
+}
 
-    candidates.into_iter().find(|candidate| candidate.is_file())
+fn mediamtx_release_asset(target: &str) -> Option<MediaMtxReleaseAsset> {
+    let (name, sha256) = match target {
+        "x86_64-pc-windows-msvc" => (
+            "mediamtx_v1.21.3_windows_amd64.zip",
+            "b2f5246b07cb72961df03b8d5e8cad43dc657bcf3f49a87bb031bdf22721af74",
+        ),
+        "x86_64-apple-darwin" => (
+            "mediamtx_v1.21.3_darwin_amd64.tar.gz",
+            "8a8416ee2ff5d17d9366498b6d88b76ab6d3afcda50b6d7321ccddb349bdbaf2",
+        ),
+        "aarch64-apple-darwin" => (
+            "mediamtx_v1.21.3_darwin_arm64.tar.gz",
+            "bc1a0762fd18ffb413bcd81dcb9a072ac159fbd1f27e79ac6f14598aaac5ed3f",
+        ),
+        "x86_64-unknown-linux-gnu" => (
+            "mediamtx_v1.21.3_linux_amd64.tar.gz",
+            "0a2ea7eba96023631efa1bea7804823a9145b043b6646a8a05798d4ac24ed635",
+        ),
+        "aarch64-unknown-linux-gnu" => (
+            "mediamtx_v1.21.3_linux_arm64.tar.gz",
+            "27f038237cb5f77a724f6afc58eca2798f2bc4edf9989895631a80eeb41a4fe2",
+        ),
+        _ => return None,
+    };
+    Some(MediaMtxReleaseAsset { name, sha256 })
 }
 
 fn target_triple() -> Option<&'static str> {

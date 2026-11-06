@@ -39,6 +39,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
         .on_page_load(|webview, payload| {
@@ -182,6 +183,15 @@ pub fn run() {
                 })
                 .build()
                 .unwrap();
+            let window_for_close = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    if let Err(error) = window_for_close.hide() {
+                        tracing::warn!("Failed to hide window after close request: {error}");
+                    }
+                }
+            });
             // Fallback timer to ensure main window shows on first launch
             let window_clone = window.clone();
             tauri::async_runtime::spawn(async move {

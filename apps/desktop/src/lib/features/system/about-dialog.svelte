@@ -10,7 +10,7 @@ import {
 } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { GlobeAlt, Sparkles } from "@orbis/icons";
-import mulverseOrbisImg from "$lib/assets/mulverse-orbis.png";
+import mulverseOrbisImg from "$lib/assets/mulverse-orbis.webp";
 
 let { open = $bindable(false) }: { open?: boolean } = $props();
 

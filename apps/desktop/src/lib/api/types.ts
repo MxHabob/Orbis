@@ -1016,11 +1016,24 @@ export interface OrganizationReadiness {
   pending_setup_items: SetupItem[];
 }
 
+export interface ReleaseNoteItem {
+  title: string;
+  description: string;
+}
+
+export interface ReleaseNoteSection {
+  type: "feature" | "improvement" | "fix" | "security" | "breaking" | "technical";
+  title: string;
+  items: ReleaseNoteItem[];
+}
+
 export interface ReleaseChangelogItem {
   version: string;
   title: string;
+  subtitle?: string;
   published_at?: string;
   body?: string;
+  sections?: ReleaseNoteSection[];
   is_current: boolean;
   is_latest: boolean;
   html_url: string;
@@ -1053,6 +1066,12 @@ export interface UpdateCheckResult {
   channel: string;
   status: "up_to_date" | "update_available" | "checking_failed" | "unavailable";
   error_message?: string;
+}
+
+export interface ReleaseNotesState {
+  schemaVersion: number;
+  lastSeenVersion?: string | null;
+  initialized: boolean;
 }
 
 export interface EnvironmentDetectionResult {

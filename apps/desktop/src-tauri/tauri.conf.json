@@ -4,8 +4,8 @@
   "identifier": "com.mulverse.orbis",
   "version": "1.1.0",
   "build": {
-    "beforeDevCommand": "bun run prepare:mediamtx && bun run dev",
-    "beforeBuildCommand": "bun run prepare:mediamtx && bun run build",
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
     "devUrl": "http://localhost:1520",
     "frontendDist": "../build"
   },
@@ -25,8 +25,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "externalBin": ["binaries/solver-service", "binaries/mediamtx"],
-    "createUpdaterArtifacts": false,
+    "resources": ["release-notes.json"],
+    "createUpdaterArtifacts": true,
     "macOS": {
       "dmg": {
         "background": "./images/installer.png"

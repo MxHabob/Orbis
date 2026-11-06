@@ -608,7 +608,9 @@ impl AppState {
             system_repo_impl.clone(),
         ));
 
-        let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
+        let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new(
+            app_data_dir,
+        )?);
         let camera_stream_manager = Arc::new(
             crate::features::camera_stream::CameraStreamManager::new(app_data_dir),
         );

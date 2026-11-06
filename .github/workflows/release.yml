@@ -1,541 +1,108 @@
-name: Build and Publish Production Release
+name: Desktop Release
 
 on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (for example v1.2.3)
+        required: true
+        type: string
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   validate:
-    name: Validate release source
+    name: Validate desktop release
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
       version: ${{ steps.meta.outputs.version }}
-      android_version_code: ${{ steps.meta.outputs.android_version_code }}
-      release_notes: ${{ steps.release_notes.outputs.body }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
     steps:
-      - name: Checkout full history
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Validate tag, source branch, and versions
+      - name: Validate tag and version consistency
         id: meta
         env:
-          TAG: ${{ github.ref_name }}
-          SHA: ${{ github.sha }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Release tags must use vMAJOR.MINOR.PATCH."
+            echo "::error::Desktop release tags must use vMAJOR.MINOR.PATCH."
             exit 1
           fi
-          git fetch origin main --no-tags
-          if ! git merge-base --is-ancestor "$SHA" origin/main; then
-            echo "::error::The release tag must point to a commit already reachable from main."
+
+          git fetch origin main --tags --force
+          if ! git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::The requested tag '$TAG' does not exist in the repository." 
             exit 1
           fi
-          VERSION="${TAG#v}" node <<'NODE'
-          const fs = require("node:fs");
-          const version = process.env.VERSION;
-          const desktopVersion = require("./apps/desktop/package.json").version;
-          const mobileVersion = require("./apps/mobile/package.json").version;
-          const mobileConfig = require("./apps/mobile/app.json").expo;
-          const mobileVersionCode = mobileConfig.android?.versionCode;
-          const tauriVersion = require("./apps/desktop/src-tauri/tauri.conf.json").version;
-          const stagingVersion = require("./apps/desktop/src-tauri/tauri.staging.conf.json").version;
-          const cargoVersion = fs.readFileSync("./apps/desktop/src-tauri/Cargo.toml", "utf8").match(/^version = "([^"]+)"/m)?.[1];
-          const lockfile = fs.readFileSync("./bun.lock", "utf8");
-          const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
-          const mobileLockfileVersion = lockfile.match(/"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/)?.[1];
-          const solverPom = fs.readFileSync("./apps/solver-service/pom.xml", "utf8");
-          const solverVersion = solverPom.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1];
-          const apiServerManifest = fs.readFileSync("./apps/api-rust/crates/orbis-server/Cargo.toml", "utf8");
-          const apiAppManifest = fs.readFileSync("./apps/api-rust/crates/orbis-app/Cargo.toml", "utf8");
-          const apiCargoLock = fs.readFileSync("./apps/api-rust/Cargo.lock", "utf8");
-          const packageVersion = (manifest) => manifest.match(/^version = "([^"]+)"/m)?.[1];
-          const lockPackageVersion = (name) => apiCargoLock.match(new RegExp(`\\[\\[package\\]\\]\\nname = "${name}"\\nversion = "([^"]+)"`))?.[1];
-          const apiServerVersion = packageVersion(apiServerManifest);
-          const apiAppVersion = packageVersion(apiAppManifest);
-          const apiServerLockVersion = lockPackageVersion("orbis-server");
-          const apiAppLockVersion = lockPackageVersion("orbis-app");
-          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion, solverVersion, apiServerVersion, apiAppVersion, apiServerLockVersion, apiAppLockVersion };
-          if (Object.values(versions).some((candidate) => !candidate || candidate !== version)) {
-            throw new Error(`Tag v${version} must match release versions: ${JSON.stringify(versions)}`);
-          }
-          if (!Number.isSafeInteger(mobileVersionCode) || mobileVersionCode < 1) {
-            throw new Error(`Android versionCode must be a positive integer; received ${mobileVersionCode}.`);
-          }
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `android_version_code=${mobileVersionCode}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `tag=${process.env.TAG}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
-          NODE
 
-      - name: Load and validate release notes
-        id: release_notes
-        run: node scripts/github-release-body.mjs "${{ steps.meta.outputs.tag }}"
+          COMMIT_SHA="$(git rev-list -n 1 "$TAG")"
+          if ! git merge-base --is-ancestor "$COMMIT_SHA" origin/main; then
+            echo "::error::Tag '$TAG' does not point to a commit reachable from main."
+            exit 1
+          fi
 
-  build-api-native:
-    name: Build API (${{ matrix.asset }})
+          VERSION="${TAG#v}"
+          DESKTOP_VERSION=$(node -p "require('./apps/desktop/package.json').version")
+          TAURI_VERSION=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          CARGO_VERSION=$(node -e "const fs=require('node:fs');const manifest=fs.readFileSync('apps/desktop/src-tauri/Cargo.toml','utf8');const match=manifest.match(/^version\\s*=\\s*\"([^\"]+)\"/m);process.stdout.write(match?.[1] ?? '')")
+          if [[ "$DESKTOP_VERSION" != "$VERSION" || "$TAURI_VERSION" != "$VERSION" || "$CARGO_VERSION" != "$VERSION" ]]; then
+            echo "::error::Tag v$VERSION does not match desktop package, Tauri, and Cargo versions: desktop=$DESKTOP_VERSION tauri=$TAURI_VERSION cargo=$CARGO_VERSION"
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build desktop bundles (${{ matrix.name }})
     needs: validate
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-            asset: linux-x86_64
-            deployment: linux
-          - runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            asset: linux-aarch64
-            deployment: linux
-          - runner: windows-latest
+          - name: windows-x86_64
+            runner: windows-latest
             target: x86_64-pc-windows-msvc
-            asset: windows-x86_64
-            deployment: windows
-          - runner: macos-latest
+            artifact_dir: nsis
+            asset_pattern: '*.exe'
+            solver_extension: .exe
+          - name: macos-aarch64
+            runner: macos-latest
             target: aarch64-apple-darwin
-            asset: macos-aarch64
-            deployment: macos
-    runs-on: ${{ matrix.runner }}
+            artifact_dir: macos
+            asset_pattern: '*.app.tar.gz'
+            solver_extension: ""
     steps:
-      - name: Checkout release tag
+      - name: Checkout validated tag commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.validate.outputs.tag }}
+          ref: ${{ needs.validate.outputs.commit_sha }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
-      - name: Install Linux native dependencies
-        if: startsWith(matrix.runner, 'ubuntu-')
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes pkg-config libdbus-1-dev
-
-      - name: Cache Rust build outputs
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: apps/api-rust -> target
-
-      - name: Build API server
-        working-directory: apps/api-rust
-        run: cargo build --locked --release --target ${{ matrix.target }} -p orbis-server --bin orbis-server
-
-      - name: Package and verify API server (Unix)
-        if: runner.os != 'Windows'
-        env:
-          VERSION: ${{ needs.validate.outputs.version }}
-          TARGET: ${{ matrix.target }}
-          ASSET: ${{ matrix.asset }}
-          DEPLOYMENT: ${{ matrix.deployment }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          stage="$RUNNER_TEMP/orbis-api-${ASSET}"
-          output="release-output"
-          mkdir -p "$stage" "$output"
-          cp "apps/api-rust/target/${TARGET}/release/orbis-server" "$stage/orbis-server"
-          chmod 755 "$stage/orbis-server"
-          printf '%s\n' "$VERSION" > "$stage/VERSION"
-          cp -R "apps/api-rust/deploy/${DEPLOYMENT}/." "$stage/"
-          cp apps/api-rust/deploy/README.md "$stage/README.md"
-          if [[ "$DEPLOYMENT" == "linux" || "$DEPLOYMENT" == "macos" ]]; then
-            chmod 755 "$stage/install.sh" "$stage/uninstall.sh"
-          fi
-          archive="$output/Orbis-API-${VERSION}-${ASSET}.tar.gz"
-          tar -czf "$archive" -C "$stage" .
-          archive_listing="$RUNNER_TEMP/orbis-api-${ASSET}-archive-list.txt"
-          tar -tzf "$archive" > "$archive_listing"
-          grep -Fxq './orbis-server' "$archive_listing"
-          grep -Fxq './VERSION' "$archive_listing"
-          grep -Fxq './README.md' "$archive_listing"
-          test "$(tar -xOf "$archive" ./VERSION)" = "$VERSION"
-          if [[ "$DEPLOYMENT" == "linux" ]]; then
-            for file in install.sh uninstall.sh orbis-api.service; do
-              grep -Fxq "./$file" "$archive_listing"
-            done
-            bash -n "$stage/install.sh"
-            bash -n "$stage/uninstall.sh"
-            verify="$RUNNER_TEMP/orbis-api-smoke"
-            mkdir -p "$verify"
-            tar -xzf "$archive" -C "$verify"
-            sudo bash "$verify/install.sh"
-            sudo test -x /opt/orbis/bin/orbis-server
-            sudo systemctl cat orbis-api.service
-            sudo test ! -e /etc/orbis/server.json
-            error_file="$RUNNER_TEMP/orbis-api-config-error.txt"
-            if sudo -u orbis /opt/orbis/bin/orbis-server 2>"$error_file"; then
-              echo "::error::The API unexpectedly started without a database configuration."
-              exit 1
-            fi
-            sudo grep -Fxq '  "database_url": ""' /etc/orbis/server.json
-            grep -Fq 'Created Orbis server configuration at /etc/orbis/server.json' "$error_file"
-            sudo bash "$verify/uninstall.sh"
-            sudo test ! -e /etc/systemd/system/orbis-api.service
-            sudo test ! -e /opt/orbis/bin/orbis-server
-            sudo test -e /etc/orbis/server.json
-          elif [[ "$DEPLOYMENT" == "macos" ]]; then
-            for file in install.sh uninstall.sh com.orbis.api.plist; do
-              grep -Fxq "./$file" "$archive_listing"
-            done
-            bash -n "$stage/install.sh"
-            bash -n "$stage/uninstall.sh"
-            plutil -lint "$stage/com.orbis.api.plist"
-          fi
-          test -s "$archive"
-
-      - name: Package and verify API server (Windows)
-        if: runner.os == 'Windows'
-        env:
-          VERSION: ${{ needs.validate.outputs.version }}
-          TARGET: ${{ matrix.target }}
-          ASSET: ${{ matrix.asset }}
-          DEPLOYMENT: ${{ matrix.deployment }}
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $stage = Join-Path $env:RUNNER_TEMP "orbis-api-$env:ASSET"
-          $output = "release-output"
-          New-Item -ItemType Directory -Force $stage, $output | Out-Null
-          Copy-Item "apps/api-rust/target/$env:TARGET/release/orbis-server.exe" (Join-Path $stage "orbis-server.exe")
-          Set-Content -Path (Join-Path $stage "VERSION") -Value $env:VERSION -NoNewline
-          Copy-Item "apps/api-rust/deploy/$env:DEPLOYMENT/*" $stage
-          Copy-Item "apps/api-rust/deploy/README.md" $stage
-          $wrapper = Join-Path $stage "orbis-api-service.exe"
-          & curl.exe --fail --location --silent --show-error --max-time 120 `
-            "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW.NET4.exe" `
-            --output $wrapper
-          if ($LASTEXITCODE -ne 0) {
-            throw "Could not download the pinned Windows service wrapper."
-          }
-          $wrapperHash = (Get-FileHash -Algorithm SHA256 $wrapper).Hash
-          if ($wrapperHash -ne "923111C7142B3DC783A3C722B19B8A21BCB78222D7A136AC33F0CA8A29F4CB66") {
-            throw "The Windows service wrapper checksum does not match the pinned release."
-          }
-          $license = Join-Path $stage "WINSW-LICENSE.txt"
-          & curl.exe --fail --location --silent --show-error --max-time 120 `
-            "https://raw.githubusercontent.com/winsw/winsw/v2.12.0/LICENSE.txt" `
-            --output $license
-          if ($LASTEXITCODE -ne 0) {
-            throw "Could not download the pinned Windows service wrapper license."
-          }
-          $licenseHash = (Get-FileHash -Algorithm SHA256 $license).Hash
-          if ($licenseHash -ne "1CDF703C10A70E5973BF3ACF2A5EEABE7746237155B92DB2034AEAE26FDF7802") {
-            throw "The Windows service wrapper license checksum does not match the pinned release."
-          }
-          $archive = Join-Path $output "Orbis-API-$env:VERSION-$env:ASSET.zip"
-          Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $archive
-          $verify = Join-Path $env:RUNNER_TEMP "orbis-api-verify"
-          Expand-Archive -Path $archive -DestinationPath $verify
-          foreach ($file in @(
-            "orbis-server.exe",
-            "orbis-api-service.exe",
-            "orbis-api-service.xml",
-            "install.ps1",
-            "uninstall.ps1",
-            "WINSW-LICENSE.txt",
-            "README.md"
-          )) {
-            if (-not (Test-Path -LiteralPath (Join-Path $verify $file) -PathType Leaf)) {
-              throw "Required package file is missing from the release archive: $file"
-            }
-          }
-          if ((Get-Content (Join-Path $verify "VERSION") -Raw) -ne $env:VERSION) {
-            throw "Release version metadata does not match the release tag."
-          }
-          foreach ($file in @("install.ps1", "uninstall.ps1")) {
-            $tokens = $null
-            $parseErrors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile(
-              (Join-Path $verify $file),
-              [ref]$tokens,
-              [ref]$parseErrors
-            ) | Out-Null
-            if ($parseErrors.Count -gt 0) {
-              throw "PowerShell syntax validation failed for $file."
-            }
-          }
-          $customerConfigPath = Join-Path $env:ProgramData "Orbis\server.json"
-          New-Item -ItemType Directory -Force -Path (Split-Path $customerConfigPath) | Out-Null
-          $customerConfig = '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}'
-          [System.IO.File]::WriteAllText($customerConfigPath, $customerConfig)
-          & (Join-Path $verify "install.ps1")
-          $service = Get-Service -Name "OrbisApi" -ErrorAction SilentlyContinue
-          if ($null -eq $service) {
-            throw "The Orbis API service was not registered."
-          }
-          if ($service.Status -ne "Stopped") {
-            throw "The Orbis API service was started without explicit customer action."
-          }
-          if ((Get-Content $customerConfigPath -Raw) -ne $customerConfig) {
-            throw "The installer did not preserve the customer database configuration."
-          }
-          & (Join-Path $verify "uninstall.ps1")
-          if (Get-Service -Name "OrbisApi" -ErrorAction SilentlyContinue) {
-            throw "The Orbis API service was not removed."
-          }
-          if ((Get-Content $customerConfigPath -Raw) -ne $customerConfig) {
-            throw "Uninstall removed the customer configuration."
-          }
-          Remove-Item -LiteralPath $customerConfigPath -Force
-          & (Join-Path $verify "install.ps1")
-          if (Test-Path -LiteralPath $customerConfigPath) {
-            throw "The installer created the server configuration before the API started."
-          }
-          $apiExecutable = Join-Path $env:ProgramFiles "Orbis\API\orbis-server.exe"
-          $startupLog = Join-Path $env:RUNNER_TEMP "orbis-api-config-init.log"
-          $startupErrorLog = Join-Path $env:RUNNER_TEMP "orbis-api-config-init-error.log"
-          $startup = Start-Process -FilePath $apiExecutable `
-            -WorkingDirectory (Split-Path -Parent $apiExecutable) `
-            -Wait -PassThru -NoNewWindow `
-            -RedirectStandardOutput $startupLog `
-            -RedirectStandardError $startupErrorLog
-          $startupExitCode = $startup.ExitCode
-          Get-Content -LiteralPath $startupLog, $startupErrorLog
-          if ($startupExitCode -eq 0) {
-            throw "The API unexpectedly started with an empty database configuration."
-          }
-          $startupOutput = (Get-Content -LiteralPath $startupLog -Raw) +
-            (Get-Content -LiteralPath $startupErrorLog -Raw)
-          if (-not $startupOutput.Contains("Created Orbis server configuration at")) {
-            throw "The API did not report that it created the missing server configuration."
-          }
-          if (-not (Test-Path -LiteralPath $customerConfigPath)) {
-            throw "The API did not create its missing server configuration."
-          }
-          $createdConfig = Get-Content -LiteralPath $customerConfigPath -Raw | ConvertFrom-Json
-          if ($createdConfig.database_url -ne "") {
-            throw "The API did not create an empty database_url setting."
-          }
-          & (Join-Path $verify "uninstall.ps1")
-          if (Get-Service -Name "OrbisApi" -ErrorAction SilentlyContinue) {
-            throw "The Orbis API service was not removed after the config-generation test."
-          }
-
-      - name: Validate and smoke test macOS API package
-        if: matrix.target == 'aarch64-apple-darwin'
-        env:
-          VERSION: ${{ needs.validate.outputs.version }}
-          ASSET: ${{ matrix.asset }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          stage="$RUNNER_TEMP/orbis-api-${ASSET}"
-          archive="$GITHUB_WORKSPACE/release-output/Orbis-API-${VERSION}-${ASSET}.tar.gz"
-          archive_listing="$RUNNER_TEMP/orbis-api-${ASSET}-archive-list.txt"
-          tar -tzf "$archive" > "$archive_listing"
-          grep -Fxq './orbis-server' "$archive_listing"
-          grep -Fxq './com.orbis.api.plist' "$archive_listing"
-          grep -Fxq './install.sh' "$archive_listing"
-          test "$(tar -xOf "$archive" ./VERSION)" = "$VERSION"
-          plutil -lint "$stage/com.orbis.api.plist"
-          bash -n "$stage/install.sh"
-          bash -n "$stage/uninstall.sh"
-          config_path="/Library/Application Support/Orbis/server.json"
-          sudo install -d -o root -g nobody -m 0750 "$(dirname "$config_path")"
-          printf '%s' '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' |
-            sudo tee "$config_path" >/dev/null
-          sudo bash "$stage/install.sh"
-          sudo grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
-          sudo launchctl bootstrap system /Library/LaunchDaemons/com.orbis.api.plist
-          sudo launchctl print system/com.orbis.api >/dev/null
-          sudo bash "$stage/uninstall.sh"
-          sudo test ! -e /Library/LaunchDaemons/com.orbis.api.plist
-          sudo test ! -e /Library/Orbis/bin/orbis-server
-          if sudo launchctl list | awk '$NF == "com.orbis.api" { found = 1 } END { exit !found }'; then
-            echo "::error::The Orbis API launchd service remained registered after bootout."
-            exit 1
-          fi
-          sudo test -f "$config_path"
-          sudo grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
-
-      - name: Upload staged API package
-        uses: actions/upload-artifact@v4
-        with:
-          name: orbis-api-${{ matrix.asset }}
-          path: release-output/*
-          if-no-files-found: error
-          retention-days: 7
-
-  build-api-docker-amd64:
-    name: Build API Docker image (amd64)
-    needs: validate
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.validate.outputs.tag }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and publish native amd64 image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api-rust/deploy/docker/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}-amd64
-          sbom: true
-          provenance: mode=max
-          cache-from: type=gha,scope=orbis-api-amd64
-          cache-to: type=gha,mode=max,scope=orbis-api-amd64
-          labels: |
-            org.opencontainers.image.title=Orbis API
-            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
-  build-api-docker-arm64:
-    name: Build API Docker image (arm64)
-    needs: validate
-    runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.validate.outputs.tag }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and publish native arm64 image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api-rust/deploy/docker/Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}-arm64
-          sbom: true
-          provenance: mode=max
-          cache-from: type=gha,scope=orbis-api-arm64
-          cache-to: type=gha,mode=max,scope=orbis-api-arm64
-          labels: |
-            org.opencontainers.image.title=Orbis API
-            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
-  build-api-docker:
-    name: Publish and verify multi-architecture API Docker image
-    needs:
-      - validate
-      - build-api-docker-amd64
-      - build-api-docker-arm64
-    outputs:
-      image_digest: ${{ steps.verify.outputs.image_digest }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create versioned multi-architecture manifest
-        env:
-          IMAGE_NAME: ghcr.io/mxhabob/orbis-api
-          VERSION: ${{ needs.validate.outputs.version }}
-        run: |
-          docker buildx imagetools create \
-            --tag "$IMAGE_NAME:$VERSION" \
-            "$IMAGE_NAME:$VERSION-amd64" \
-            "$IMAGE_NAME:$VERSION-arm64"
-
-      - name: Verify published image architectures
-        id: verify
-        env:
-          IMAGE_NAME: ghcr.io/mxhabob/orbis-api
-          VERSION: ${{ needs.validate.outputs.version }}
-        run: |
-          IMAGE_REF="$IMAGE_NAME:$VERSION"
-          docker buildx imagetools inspect "$IMAGE_REF" --raw > "$RUNNER_TEMP/orbis-api-index.json"
-          docker buildx imagetools inspect "$IMAGE_REF" > "$RUNNER_TEMP/orbis-api-inspect.txt"
-          node <<'NODE'
-          const fs = require("node:fs");
-          const index = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/orbis-api-index.json", "utf8"));
-          const platforms = new Set(
-            (index.manifests ?? [])
-              .map((manifest) => `${manifest.platform?.os}/${manifest.platform?.architecture}`)
-          );
-          for (const required of ["linux/amd64", "linux/arm64"]) {
-            if (!platforms.has(required)) {
-              throw new Error(`Published API image is missing ${required}.`);
-            }
-          }
-          const digest = fs.readFileSync(process.env.RUNNER_TEMP + "/orbis-api-inspect.txt", "utf8")
-            .split(/\r?\n/)
-            .find((line) => line.startsWith("Digest: "))
-            ?.slice("Digest: ".length)
-            .trim();
-          if (!digest || !/^sha256:[a-f0-9]{64}$/.test(digest)) {
-            throw new Error("Could not determine the published multi-architecture image digest.");
-          }
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `image_digest=${digest}\n`);
-          NODE
-
-  build-desktop:
-    name: Build Desktop (${{ matrix.target }})
-    needs: validate
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        include:
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
-            bundles: nsis
-            exe_extension: .exe
-            exe_target: solver-service-x86_64-pc-windows-msvc.exe
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-            bundles: app,dmg
-            exe_extension: ""
-            exe_target: solver-service-aarch64-apple-darwin
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.validate.outputs.tag }}
 
       - name: Setup GraalVM Mandrel
         uses: graalvm/setup-graalvm@v1
@@ -552,6 +119,15 @@ jobs:
           restore-keys: |
             maven-${{ runner.os }}-
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config libdbus-1-dev
+
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+
       - name: Build native Solver sidecar
         working-directory: apps/solver-service
         shell: bash
@@ -564,322 +140,185 @@ jobs:
             -Dquarkus.native.container-build=false \
             "-Dorbis.version=${{ needs.validate.outputs.version }}"
 
-      - name: Stage Solver sidecar
+      - name: Stage Solver release asset and checksum
         shell: bash
         run: |
-          mkdir -p apps/desktop/src-tauri/binaries
-          cp "apps/solver-service/target/orbis-solver-${{ needs.validate.outputs.version }}-runner${{ matrix.exe_extension }}" "apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}"
+          set -euo pipefail
+          mkdir -p ci-artifacts
+          source="apps/solver-service/target/orbis-solver-${{ needs.validate.outputs.version }}-runner${{ matrix.solver_extension }}"
+          target="ci-artifacts/solver-service-${{ matrix.target }}${{ matrix.solver_extension }}"
+          cp "$source" "$target"
+          solver_hash="$(node -e "const fs=require('node:fs');const crypto=require('node:crypto');process.stdout.write(crypto.createHash('sha256').update(fs.readFileSync(process.argv[1])).digest('hex'))" "$target")"
+          printf '%s\n' "$solver_hash" > "${target}.sha256"
+          echo "ORBIS_SOLVER_SHA256=$solver_hash" >> "$GITHUB_ENV"
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Cache Rust build outputs
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: apps/desktop/src-tauri -> target
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
-
-      - name: Cache Bun packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Validate release signing and license configuration
-        shell: bash
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-          MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
-          MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
-        run: |
-          if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" || -z "$MULVERSE_LICENSE_PUBLIC_KEY_B64" || -z "$MULVERSE_LICENSE_KEY_ID" ]]; then
-            echo "::error::Configure updater signing and application license verification variables before releasing."
-            exit 1
-          fi
-
-      - name: Configure signed updater
-        shell: bash
+      - name: Build Tauri desktop bundle
         working-directory: apps/desktop
         env:
-          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const base = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
-          const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY;
-          const endpoint = 'https://github.com/MxHabob/Orbis/releases/latest/download/latest.json';
-          const config = {
-            ...base,
-            bundle: {
-              ...(base.bundle ?? {}),
-              createUpdaterArtifacts: true,
-            },
-            plugins: {
-              ...(base.plugins ?? {}),
-              updater: {
-                ...(base.plugins?.updater ?? {}),
-                pubkey,
-                endpoints: [endpoint],
-                dangerousInsecureTransportProtocol: false,
-              },
-            },
-          };
-          fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config, null, 2));
-          NODE
-
-      - name: Build signed Tauri app and upload to draft release
-        uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-          MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
-          MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
-        with:
-          tagName: ${{ needs.validate.outputs.tag }}
-          releaseName: "Orbis Release ${{ needs.validate.outputs.tag }}"
-          releaseBody: ${{ needs.validate.outputs.release_notes }}
-          releaseDraft: true
-          prerelease: false
-          uploadUpdaterJson: true
-          uploadUpdaterSignatures: true
-          projectPath: apps/desktop
-          args: --config src-tauri/tauri.updater.conf.json --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+        run: bun run tauri:build:prod -- --target ${{ matrix.target }}
 
-  build-android:
-    name: Build and sign Android release
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.validate.outputs.tag }}
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Validate Android signing secrets
+      - name: Stage explicit updater artifacts
         shell: bash
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_PASSWORD" ]]; then
-            echo "::error::Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEY_ALIAS, ANDROID_KEYSTORE_PASSWORD, and ANDROID_KEY_PASSWORD repository secrets before releasing."
+          set -euo pipefail
+          mkdir -p ci-artifacts
+          bundle_dir="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/${{ matrix.artifact_dir }}"
+          if [[ ! -d "$bundle_dir" ]]; then
+            echo "::error::No bundle directory found for target ${{ matrix.target }} at $bundle_dir"
             exit 1
           fi
-          keystore_path="$RUNNER_TEMP/orbis-android-release.keystore"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
-          chmod 600 "$keystore_path"
-          echo "ORBIS_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
-          echo "ORBIS_ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "ORBIS_ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "ORBIS_ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
 
-      - name: Generate Android project
-        working-directory: apps/mobile
+          if [[ "${{ matrix.name }}" == "windows-x86_64" ]]; then
+            find "$bundle_dir" -maxdepth 1 -type f -name '*.exe' -exec cp {} ci-artifacts/ \;
+            find "$bundle_dir" -maxdepth 1 -type f -name '*.exe.sig' -exec cp {} ci-artifacts/ \;
+          else
+            find "$bundle_dir" -maxdepth 1 -type f -name '*.app.tar.gz' -exec cp {} ci-artifacts/ \;
+            find "$bundle_dir" -maxdepth 1 -type f -name '*.app.tar.gz.sig' -exec cp {} ci-artifacts/ \;
+          fi
+
+          latest_json=$(find "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle" -name latest.json | head -n 1)
+          if [[ -z "$latest_json" ]]; then
+            echo "::error::Tauri did not generate latest.json for target ${{ matrix.target }}"
+            exit 1
+          fi
+          cp "$latest_json" ci-artifacts/latest.json
+
+          ls -l ci-artifacts
+          if [[ ! -s ci-artifacts/latest.json ]]; then
+            echo "::error::latest.json is empty"
+            exit 1
+          fi
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.name }}-${{ needs.validate.outputs.version }}
+          path: ci-artifacts/**
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish desktop GitHub release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: false
+
+      - name: Validate updater metadata and artifact set
+        shell: bash
         env:
-          ORBIS_DEV_ALLOW_LOCAL_HTTP: "false"
-        run: bun run expo prebuild --platform android --no-install
-
-      - name: Verify generated Android release configuration
-        working-directory: apps/mobile
-        env:
-          EXPECTED_VERSION: ${{ needs.validate.outputs.version }}
-          EXPECTED_VERSION_CODE: ${{ needs.validate.outputs.android_version_code }}
-        run: |
-          node <<'NODE'
-          const fs = require("node:fs");
-          const gradle = fs.readFileSync("android/app/build.gradle", "utf8");
-          const gradleProperties = fs.readFileSync("android/gradle.properties", "utf8");
-          const versionName = gradle.match(/^\s*versionName\s+"([^"]+)"/m)?.[1];
-          const versionCode = Number(gradle.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1]);
-          if (versionName !== process.env.EXPECTED_VERSION || versionCode !== Number(process.env.EXPECTED_VERSION_CODE)) {
-            throw new Error(`Generated Android version ${versionName} (${versionCode}) does not match the release tag and app config.`);
-          }
-          for (const property of [
-            "android.enableMinifyInReleaseBuilds",
-            "android.enableShrinkResourcesInReleaseBuilds",
-          ]) {
-            const value = gradleProperties.match(new RegExp(`^\\s*${property.replaceAll(".", "\\.")}\\s*=\\s*(\\S+)\\s*$`, "m"))?.[1];
-            if (value !== "false") {
-              throw new Error(`Expected ${property}=false in generated Android release configuration; received ${value ?? "missing"}.`);
-            }
-          }
-          NODE
-
-      - name: Build release APK and AAB
-        working-directory: apps/mobile/android
-        run: ./gradlew --no-daemon --max-workers=4 -Dorg.gradle.jvmargs="-Xmx6g -XX:MaxMetaspaceSize=1g" --console=plain :app:assembleRelease :app:bundleRelease -PreactNativeArchitectures=arm64-v8a
-
-      - name: Verify signatures and stage release assets
-        env:
+          TAG: ${{ needs.validate.outputs.tag }}
           VERSION: ${{ needs.validate.outputs.version }}
         run: |
           set -euo pipefail
-          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
-          aab="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
-          test -s "$apk"
-          test -s "$aab"
-          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          if [[ -z "$apksigner" ]]; then
-            echo "::error::Android build-tools apksigner was not found."
-            exit 1
-          fi
-          "$apksigner" verify --verbose "$apk"
-          jarsigner -verify "$aab"
-          keytool -printcert -jarfile "$aab" > /dev/null
-          mkdir -p release-output
-          cp "$apk" "release-output/Orbis-${VERSION}-android-arm64.apk"
-          cp "$aab" "release-output/Orbis-${VERSION}-android-arm64.aab"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = process.cwd();
+          const version = process.env.VERSION;
+          const releaseRoot = path.join(root, 'release-artifacts');
+          const files = [];
+          const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else files.push(full);
+            }
+          };
+          walk(releaseRoot);
 
-      - name: Upload Android packages as workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: orbis-android-release
-          path: release-output/*
-          if-no-files-found: error
+          const latestCandidates = files.filter((file) => path.basename(file) === 'latest.json');
+          if (latestCandidates.length !== 2) {
+            throw new Error(`Expected two latest.json files in the downloaded artifacts; found ${latestCandidates.length}.`);
+          }
 
-  prepare-github-release:
-    name: Validate and publish GitHub Release
-    needs:
-      - validate
-      - build-api-native
-      - build-api-docker
-      - build-desktop
-      - build-android
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.validate.outputs.tag }}
+          const manifests = latestCandidates.map((file) => JSON.parse(fs.readFileSync(file, 'utf8')));
+          const manifest = { ...manifests[0], platforms: {} };
+          for (const candidate of manifests) {
+            const metadataVersion = candidate.version ? String(candidate.version).replace(/^v/, '') : '';
+            if (metadataVersion !== version) {
+              throw new Error(`latest.json version ${candidate.version} does not match tag version ${version}.`);
+            }
+            for (const [platform, entry] of Object.entries(candidate.platforms || {})) {
+              if (manifest.platforms[platform]) {
+                throw new Error(`Duplicate updater entry for platform '${platform}'.`);
+              }
+              manifest.platforms[platform] = entry;
+            }
+          }
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.0
+          const targets = manifest.platforms;
+          const expectedTargets = ['windows-x86_64', 'darwin-aarch64'];
+          if (Object.keys(targets).sort().join(',') !== expectedTargets.slice().sort().join(',')) {
+            throw new Error(`latest.json targets do not match supported updater targets: ${Object.keys(targets).join(', ')}`);
+          }
+          const solverTargets = [
+            ['x86_64-pc-windows-msvc', 'solver-service-x86_64-pc-windows-msvc.exe'],
+            ['aarch64-apple-darwin', 'solver-service-aarch64-apple-darwin'],
+          ];
+          for (const [target, fileName] of solverTargets) {
+            const binaryPath = files.find((file) => path.basename(file) === fileName);
+            const checksumPath = files.find((file) => path.basename(file) === `${fileName}.sha256`);
+            if (!binaryPath || !checksumPath) {
+              throw new Error(`Missing timetable solver asset for ${target}.`);
+            }
+            const expectedHash = fs.readFileSync(checksumPath, 'utf8').trim();
+            const actualHash = require('node:crypto').createHash('sha256').update(fs.readFileSync(binaryPath)).digest('hex');
+            if (!/^[a-f0-9]{64}$/i.test(expectedHash) || actualHash !== expectedHash) {
+              throw new Error(`Timetable solver checksum mismatch for ${target}.`);
+            }
+          }
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+          const allNames = new Set(files.map((file) => path.basename(file)));
+          for (const target of expectedTargets) {
+            const entry = targets[target];
+            if (!entry || !entry.url || !entry.signature) {
+              throw new Error(`Missing updater entry for supported target '${target}'.`);
+            }
+            const fileName = decodeURIComponent(new URL(entry.url).pathname.split('/').pop());
+            if (!fileName) {
+              throw new Error(`latest.json target ${target} points to an invalid asset URL.`);
+            }
+            const sigFile = `${fileName}.sig`;
+            if (!allNames.has(fileName) || !allNames.has(sigFile)) {
+              throw new Error(`Asset or signature missing for ${target}: ${fileName}.`);
+            }
+            const artifactFile = files.find((file) => path.basename(file) === fileName);
+            const sigPath = files.find((file) => path.basename(file) === sigFile);
+            const actualSignature = fs.readFileSync(sigPath, 'utf8').trim();
+            if (actualSignature !== String(entry.signature).trim()) {
+              throw new Error(`Signature mismatch for ${target}.`);
+            }
+            if (path.basename(artifactFile) !== fileName) {
+              throw new Error(`Artifact lookup failed for ${target}.`);
+            }
+          }
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+          fs.writeFileSync(path.join(releaseRoot, 'merged-latest.json'), JSON.stringify(manifest, null, 2));
+          console.log('Validated desktop updater manifest before publish.');
+          NODE
 
-      - name: Install Rust desktop test dependencies
+      - name: Select final public desktop assets
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes build-essential curl file libayatana-appindicator3-dev libssl-dev libwebkit2gtk-4.1-dev librsvg2-dev libxdo-dev patchelf
+          set -euo pipefail
+          mkdir -p public-release-assets
+          find release-artifacts -type f \( -name 'Orbis_*.exe' -o -name 'Orbis_*.exe.sig' -o -name 'Orbis*.app.tar.gz' -o -name 'Orbis*.app.tar.gz.sig' -o \( -name 'solver-service-*' ! -name '*.sha256' \) \) -exec cp {} public-release-assets/ \;
+          cp release-artifacts/merged-latest.json public-release-assets/latest.json
+          find public-release-assets -maxdepth 1 -type f | sort
+          test "$(find public-release-assets -type f | wc -l)" -eq 7
 
-      - name: Download native API packages
-        uses: actions/download-artifact@v4
+      - name: Publish release with supported desktop artifacts only
+        uses: softprops/action-gh-release@v2
         with:
-          pattern: orbis-api-*
-          path: release-output
-          merge-multiple: true
-
-      - name: Download Android packages
-        uses: actions/download-artifact@v4
-        with:
-          name: orbis-android-release
-          path: release-output
-
-      - name: Create Docker bundle and sign API release manifest
-        env:
-          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
-          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-          DOCKER_IMAGE_DIGEST: ${{ needs.build-api-docker.outputs.image_digest }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: node scripts/prepare-api-release.mjs
-
-      - name: Validate staged Docker Compose bundle
-        env:
-          DOCKER_IMAGE_DIGEST: ${{ needs.build-api-docker.outputs.image_digest }}
-        run: |
-          bundle="release-output/Orbis-API-${{ needs.validate.outputs.version }}-docker-bundle.zip"
-          destination="$RUNNER_TEMP/orbis-api-docker-bundle"
-          mkdir -p "$destination"
-          unzip -q "$bundle" -d "$destination"
-          cp "$destination/.env.example" "$destination/.env"
-          grep -Fxq "ORBIS_API_IMAGE=ghcr.io/mxhabob/orbis-api@${DOCKER_IMAGE_DIGEST}" "$destination/.env"
-          docker compose --env-file "$destination/.env" \
-            -f "$destination/compose.yaml" config --quiet
-
-      - name: Verify signed API manifest and stage release assets
-        env:
-          ORBIS_API_RELEASE_MANIFEST: ${{ github.workspace }}/release-output/orbis-api-manifest.json
-          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-          TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
-        run: cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml api_distribution_cmds --lib
-
-      - name: Upload API packages and manifest to draft release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ needs.validate.outputs.tag }}" release-output/* --repo "$GITHUB_REPOSITORY" --clobber
-
-      - name: Upload versioned release assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/upload-release-assets.mjs "${{ needs.validate.outputs.tag }}"
-
-      - name: Validate and publish GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
-          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-        run: node scripts/publish-github-release.mjs
-
-      - name: Summarize published release
-        run: |
-          echo "::notice::API, desktop, and Android release assets validated. The GitHub Release is published."
-          {
-            echo "## Release published"
-            echo "Signed API server packages, Docker image metadata, desktop installers, signed Android APK/AAB packages, Tauri signatures, and updater metadata passed validation."
-            echo "API packages and signed manifests, desktop installers, and updater metadata are served directly from GitHub Releases."
-          } >> "$GITHUB_STEP_SUMMARY"
+          tag_name: ${{ needs.validate.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            public-release-assets/*

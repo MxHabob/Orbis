@@ -1,0 +1,104 @@
+name: API Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and publish for the Rust API (for example v1.2.3)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate API release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate API tag
+        id: meta
+        env:
+          TAG: ${{ github.ref_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::API release tags must use vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          SERVER_VERSION=$(node -p "require('./apps/api-rust/package.json').version")
+          if [[ "$SERVER_VERSION" != "$VERSION" ]]; then
+            echo "::error::Tag v$VERSION does not match the API package version: $SERVER_VERSION"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build API binary
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config libdbus-1-dev
+
+      - name: Build API server
+        working-directory: apps/api-rust
+        run: cargo build --locked --release -p orbis-server --bin orbis-server
+
+      - name: Package release archive
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          mkdir -p release-output
+          cp apps/api-rust/target/release/orbis-server release-output/orbis-server
+          chmod +x release-output/orbis-server
+          printf '%s\n' "$VERSION" > release-output/VERSION
+          tar -czf "Orbis-API-${VERSION}-linux-x86_64.tar.gz" -C release-output .
+
+      - name: Upload API artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-${{ needs.validate.outputs.version }}
+          path: Orbis-API-${{ needs.validate.outputs.version }}-linux-x86_64.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish API release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download API artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: api-artifacts
+          merge-multiple: false
+
+      - name: Publish API bundle
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            api-artifacts/**
