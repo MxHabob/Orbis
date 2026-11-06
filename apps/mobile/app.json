@@ -2,13 +2,13 @@
   "expo": {
     "name": "Orbis",
     "slug": "Orbis",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "orbis",
     "userInterfaceStyle": "automatic",
     "android": {
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": ["android.permission.ACCESS_LOCAL_NETWORK"],
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
