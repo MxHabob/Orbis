@@ -13,7 +13,6 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
-import { debounce } from "$lib/shared/utils/debounce";
 import {
   api,
   extractErrorMessage,
@@ -35,7 +34,6 @@ import { toast } from "@orbis/ui";
 import {
   Plus,
   Refresh,
-  Search,
   Download,
   XMark,
   Printer,
@@ -139,13 +137,9 @@ const selectedPaymentMethodObj = $derived(
 
 // Filters
 let searchQuery = $state("");
-let searchInput = $state("");
 let methodFilter = $state("all");
 let filterDate = $state(getLocalDateInputValue());
 let gridSort = $state<SortSpec[]>([]);
-const updatePaymentSearch = debounce((value: string) => {
-  searchQuery = value;
-}, 250);
 const paymentPageSort = $derived.by(() => {
   const sort = gridSort[0];
   const fieldByColumn: Record<string, string> = {
@@ -159,7 +153,8 @@ const paymentPageSort = $derived.by(() => {
   return sortBy ? { sort_by: sortBy, sort_dir: sort!.dir } : {};
 });
 function handlePaymentGridQuery(query: DataQuery) {
-  gridSort = query.sorts;
+  gridSort = query.sorts ?? [];
+  searchQuery = query.search ?? "";
 }
 
 const paymentPageFilter = $derived({
@@ -687,17 +682,6 @@ async function exportCsv() {
       </div>
 
       <div class="flex items-center gap-2">
-        <div class="relative w-48 sm:w-64">
-          <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            type="text"
-            placeholder={m.finance_ui_receipt_search_placeholder()}
-            bind:value={searchInput}
-            oninput={() => updatePaymentSearch(searchInput)}
-            class="h-8 ps-8 text-xs bg-card border-border/60"
-          />
-        </div>
-
         <Select
           type="single"
           value={methodFilter}
@@ -931,6 +915,7 @@ async function exportCsv() {
         serverQuery
         rtl={isAr()}
         search={searchQuery}
+        searchPlaceholder={m.finance_ui_receipt_search_placeholder()}
         onquerychange={handlePaymentGridQuery}
         onselection={handlePaymentSelection}
         readonly

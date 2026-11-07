@@ -290,6 +290,7 @@ function handleGridAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       clientQuery
+      toolbar={false}
       search={searchQuery}
       filter={activeFilter}
       emptyTitle={m.common_rooms_empty()}

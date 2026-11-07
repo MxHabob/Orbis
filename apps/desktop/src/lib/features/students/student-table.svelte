@@ -23,7 +23,9 @@ let {
   classes = [],
   enableSelection = true,
   selectedIds = $bindable(new Set()),
+  search = $bindable(""),
   onSelectionChange,
+  onsearchchange,
   hasMore = false,
   onloadmore,
   orgId,
@@ -33,7 +35,9 @@ let {
   classes?: ClassDto[];
   enableSelection?: boolean;
   selectedIds?: Set<string>;
+  search?: string;
   onSelectionChange?: (ids: Set<string>) => void;
+  onsearchchange?: (search: string) => void;
   hasMore?: boolean;
   onloadmore?: () => void | Promise<unknown>;
   orgId: string;
@@ -329,6 +333,11 @@ function handleGridAction(event: GridActionEvent) {
       rowSize={44}
       rtl={getLocale() === "ar"}
       clientQuery
+      serverQuery
+      showFilterButton={false}
+      bind:search
+      searchPlaceholder={m.students_search_placeholder()}
+      onquerychange={(query) => onsearchchange?.(query.search ?? "")}
       filter={activeFilter}
       onaction={handleGridAction}
       {hasMore}

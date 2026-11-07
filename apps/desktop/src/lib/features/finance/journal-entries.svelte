@@ -624,6 +624,7 @@ function exportCsv() {
         source={filteredSource}
         loading={isLoading}
         clientQuery
+        showSearch={false}
         search={searchQuery}
         onselection={handleJournalSelection}
         rtl={isAr()}

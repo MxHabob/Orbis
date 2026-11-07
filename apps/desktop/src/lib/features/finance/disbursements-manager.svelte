@@ -763,6 +763,7 @@ function exportCsv() {
         source={filteredSource}
         loading={isLoading}
         clientQuery
+        showSearch={false}
         search={searchQuery}
         onselection={handleDisbursementSelection}
         rtl={isAr()}

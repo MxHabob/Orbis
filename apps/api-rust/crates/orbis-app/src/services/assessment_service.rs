@@ -44,6 +44,7 @@ pub struct BatchGradeItem {
     pub max_score: Option<Decimal>,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -223,6 +224,7 @@ impl AssessmentService {
             is_final,
             is_excused: false,
             is_exempt: false,
+            is_absent: false,
             change_reason: None,
             recorded_by: ctx.user_id(),
             updated_by: None,
@@ -289,6 +291,7 @@ impl AssessmentService {
                 is_final: false,
                 is_excused: item.is_excused,
                 is_exempt: item.is_exempt,
+                is_absent: item.is_absent,
                 change_reason: None,
                 recorded_by: ctx.user_id(),
                 updated_by: None,
@@ -1564,6 +1567,14 @@ impl AssessmentService {
             total_score,
             max_possible_score,
             overall_percentage,
+            overall_letter_grade: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade)
+            },
+            overall_letter_grade_ar: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade_ar)
+            },
             gpa: None,
             rank_in_class: None,
             rank_in_grade: None,
@@ -1752,6 +1763,14 @@ impl AssessmentService {
             total_score,
             max_possible_score,
             overall_percentage,
+            overall_letter_grade: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade)
+            },
+            overall_letter_grade_ar: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade_ar)
+            },
             cumulative_gpa: None,
             rank_in_class: None,
             rank_in_grade: None,
@@ -2078,6 +2097,14 @@ impl AssessmentService {
             total_score,
             max_possible_score,
             overall_percentage,
+            overall_letter_grade: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade)
+            },
+            overall_letter_grade_ar: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade_ar)
+            },
             rank_in_class: None,
             rank_in_grade: None,
             total_students_in_class: 0,

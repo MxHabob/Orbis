@@ -18,7 +18,7 @@ import {
   duplicateRows,
 } from "./clipboard";
 import { interpretKey, clampIndex } from "./keyboard";
-import { visibleWindow } from "./virtual";
+import { visibleVariableWindow, visibleWindow } from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
 import { queryClient } from "./query";
 import { autoscrollDelta, colFromOffset, rowFromOffset } from "./pointer";
@@ -67,6 +67,11 @@ describe("filter", () => {
     expect(
       applyFilter(rows(), { logic: "AND", conditions: [], search: "ali" }),
     ).toHaveLength(1);
+  });
+  test("search includes boolean values", () => {
+    expect(
+      applyFilter(rows(), { logic: "AND", conditions: [], search: "true" }),
+    ).toHaveLength(2);
   });
 });
 
@@ -200,6 +205,11 @@ describe("virtualization", () => {
     expect(w.count).toBeLessThan(50);
     expect(w.start).toBeGreaterThan(39_000);
   });
+  test("variable-width columns keep the horizontal offset aligned", () => {
+    const sizes = [80, 120, 160, 200, 240];
+    const window = visibleVariableWindow(220, 180, sizes, 1);
+    expect(window).toEqual({ start: 1, end: 5, offset: 80, count: 4 });
+  });
 });
 
 describe("grouping", () => {
@@ -229,9 +239,52 @@ describe("query + coerce", () => {
     expect(coerceValue("12", { type: "integer" }).value).toBe(12);
     expect(coerceValue("nope", { type: "integer" }).ok).toBe(false);
     expect(coerceValue("نعم", { type: "boolean" }).value).toBe(true);
+    expect(
+      coerceValue("not a date", { type: "datetime" }).ok,
+    ).toBe(false);
+    const datetime = coerceValue("2024-12-31T12:30", { type: "datetime" });
+    expect(datetime.ok).toBe(true);
+    expect(Number.isNaN(Date.parse(String(datetime.value)))).toBe(false);
     expect(coerceValue("31/12/2024", { type: "date" }).value).toBe(
       "2024-12-31",
     );
+  });
+  test("coerce validates against the current row", () => {
+    const column: OrbisColumnDef = {
+      id: "score",
+      type: "decimal",
+      validate: (value, row) =>
+        Number(value) <= Number(row.maxScore) || "Score exceeds the limit",
+    };
+    expect(coerceValue("8.5", column, { maxScore: 10 })).toEqual({
+      ok: true,
+      value: 8.5,
+    });
+    expect(coerceValue("12", column, { maxScore: 10 })).toEqual({
+      ok: false,
+      value: "12",
+      message: "Score exceeds the limit",
+    });
+  });
+  test("date comparisons and accessors are supported in column filters", () => {
+    const data = [
+      { id: "a", start: "2024-01-01" },
+      { id: "b", start: "2024-03-01" },
+      { id: "c", start: "2024-06-01" },
+    ];
+    const dateColumn: OrbisColumnDef[] = [
+      { id: "start", type: "date", accessor: (row) => row.start },
+    ];
+    expect(
+      applyFilter(
+        data,
+        {
+          logic: "AND",
+          conditions: [{ field: "start", operator: "gt", value: "2024-02-01" }],
+        },
+        dateColumn,
+      ).map((row) => row.id),
+    ).toEqual(["b", "c"]);
   });
 });
 
@@ -285,8 +338,17 @@ describe("performance", () => {
     expect(selectedCount(sel, filtered.length)).toBe(filtered.length);
     const filterMs = t1 - t0;
     const sortMs = t2 - t1;
+    const searchStart = performance.now();
+    const searchResults = applyFilter(
+      data,
+      { logic: "AND", conditions: [], search: "S99999" },
+      cols,
+    );
+    const searchMs = performance.now() - searchStart;
     expect(filterMs).toBeLessThan(250);
     expect(sortMs).toBeLessThan(250);
+    expect(searchMs).toBeLessThan(250);
+    expect(searchResults).toHaveLength(1);
     expect(filtered.length).toBeGreaterThan(0);
   });
 });

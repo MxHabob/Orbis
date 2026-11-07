@@ -18,6 +18,8 @@ pub struct Model {
     pub is_final: Option<bool>,
     pub is_excused: bool,
     pub is_exempt: Option<bool>,
+    #[sea_orm(default_value = "false")]
+    pub is_absent: bool,
     pub change_reason: Option<String>,
     pub recorded_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,

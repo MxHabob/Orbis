@@ -224,6 +224,7 @@ const columns = $derived<OrbisColumnDef[]>([
       source={gridSource}
       loading={isLoading}
       clientQuery
+      showFilterButton={false}
       filter={activeFilter}
       emptyTitle={m.ui_copy_no_audit_logs_found_6a299836()}
       emptyDescription={m.ui_copy_no_operations_have_been_recorded_yet_a16f9eb7()}

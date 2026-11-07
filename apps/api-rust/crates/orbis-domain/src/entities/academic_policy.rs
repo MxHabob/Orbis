@@ -223,6 +223,12 @@ pub struct StudentTermReportCard {
     pub total_score: Decimal,
     pub max_possible_score: Decimal,
     pub overall_percentage: Decimal,
+    /// Letter grade for the overall percentage (from configurable grade bands).
+    #[serde(default)]
+    pub overall_letter_grade: Option<String>,
+    /// Arabic appreciation label for the overall percentage.
+    #[serde(default)]
+    pub overall_letter_grade_ar: Option<String>,
     pub gpa: Option<Decimal>,
     pub rank_in_class: Option<u32>,
     pub rank_in_grade: Option<u32>,
@@ -246,6 +252,10 @@ pub struct StudentAnnualReportCard {
     pub total_score: Decimal,
     pub max_possible_score: Decimal,
     pub overall_percentage: Decimal,
+    #[serde(default)]
+    pub overall_letter_grade: Option<String>,
+    #[serde(default)]
+    pub overall_letter_grade_ar: Option<String>,
     pub cumulative_gpa: Option<Decimal>,
     pub rank_in_class: Option<u32>,
     pub rank_in_grade: Option<u32>,
@@ -274,6 +284,10 @@ pub struct StudentCertificateReportCard {
     /// Sum of all subject max scores
     pub max_possible_score: Decimal,
     pub overall_percentage: Decimal,
+    #[serde(default)]
+    pub overall_letter_grade: Option<String>,
+    #[serde(default)]
+    pub overall_letter_grade_ar: Option<String>,
     pub rank_in_class: Option<u32>,
     pub rank_in_grade: Option<u32>,
     pub total_students_in_class: usize,
@@ -742,6 +756,72 @@ pub struct GradeEvaluationDetail {
     pub is_honors: bool,
 }
 
+/// A configurable grade band for letter-grade evaluation within an AcademicPolicy.
+/// Richer than `GradeBand` (in `academic_calculation`) — adds Arabic label and grade points.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct PolicyGradeBand {
+    /// Letter code, e.g. "A", "B+", "D".
+    pub code: String,
+    /// English label, e.g. "Excellent".
+    pub label: String,
+    /// Arabic label, e.g. "ممتاز".
+    #[serde(default)]
+    pub label_ar: String,
+    /// Minimum percentage for this band (inclusive).
+    pub minimum_score: Decimal,
+    /// GPA-scale points awarded for this band.
+    #[serde(default)]
+    pub grade_points: Decimal,
+}
+
+/// Default grade bands matching the traditional Yemeni / Arab school system.
+fn default_grade_bands() -> Vec<PolicyGradeBand> {
+    vec![
+        PolicyGradeBand {
+            code: "A".into(),
+            label: "Excellent".into(),
+            label_ar: "ممتاز".into(),
+            minimum_score: Decimal::from(90),
+            grade_points: Decimal::from(4),
+        },
+        PolicyGradeBand {
+            code: "B".into(),
+            label: "Very Good".into(),
+            label_ar: "جيد جداً".into(),
+            minimum_score: Decimal::from(80),
+            grade_points: Decimal::from(3),
+        },
+        PolicyGradeBand {
+            code: "C".into(),
+            label: "Good".into(),
+            label_ar: "جيد".into(),
+            minimum_score: Decimal::from(70),
+            grade_points: Decimal::from(2),
+        },
+        PolicyGradeBand {
+            code: "D+".into(),
+            label: "Above Average".into(),
+            label_ar: "مقبول مرتفع".into(),
+            minimum_score: Decimal::from(65),
+            grade_points: Decimal::from_str_exact("1.5").unwrap_or(Decimal::ONE),
+        },
+        PolicyGradeBand {
+            code: "D".into(),
+            label: "Pass".into(),
+            label_ar: "مقبول".into(),
+            minimum_score: Decimal::from(50),
+            grade_points: Decimal::ONE,
+        },
+        PolicyGradeBand {
+            code: "F".into(),
+            label: "Fail".into(),
+            label_ar: "راسب".into(),
+            minimum_score: Decimal::ZERO,
+            grade_points: Decimal::ZERO,
+        },
+    ]
+}
+
 /// Organization-wide or class-level Academic Policy.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AcademicPolicy {
@@ -782,6 +862,11 @@ pub struct AcademicPolicy {
     /// Number of prior-year annual results to average for cumulative (default 3: grades 9, 10, 11).
     #[serde(default = "default_three_usize")]
     pub certificate_cumulative_year_count: usize,
+    /// Configurable grade bands for letter-grade and GPA evaluation.
+    /// Sorted descending by `minimum_score` at evaluation time.
+    /// When empty or absent, uses `default_grade_bands()`.
+    #[serde(default = "default_grade_bands")]
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 fn default_true() -> bool {
@@ -833,6 +918,7 @@ impl Default for AcademicPolicy {
             certificate_exam_max_score: Decimal::from(80),
             certificate_cumulative_max_score: Decimal::from(20),
             certificate_cumulative_year_count: 3,
+            grade_bands: default_grade_bands(),
         }
     }
 }
@@ -859,6 +945,7 @@ impl AcademicPolicy {
             certificate_exam_max_score: Decimal::from(80),
             certificate_cumulative_max_score: Decimal::from(20),
             certificate_cumulative_year_count: 3,
+            grade_bands: default_grade_bands(),
         }
     }
 
@@ -883,35 +970,41 @@ impl AcademicPolicy {
             certificate_exam_max_score: Decimal::from(80),
             certificate_cumulative_max_score: Decimal::from(20),
             certificate_cumulative_year_count: 3,
+            grade_bands: default_grade_bands(),
         }
     }
 
     /// Evaluates a percentage mark and returns full evaluation details (letter, Arabic appreciation, grade points, pass/honors).
+    /// Uses the configurable `grade_bands` instead of hardcoded thresholds.
     pub fn evaluate_percentage(&self, percentage: Decimal) -> GradeEvaluationDetail {
         let is_honors = percentage >= self.honors_threshold_percentage;
         let is_passed = percentage >= self.passing_threshold_percentage;
 
-        let (letter, letter_ar, points) = if percentage >= Decimal::from(90) {
-            ("A", "ممتاز", Decimal::from(4))
-        } else if percentage >= Decimal::from(80) {
-            ("B", "جيد جداً", Decimal::from(3))
-        } else if percentage >= Decimal::from(70) {
-            ("C", "جيد", Decimal::from(2))
-        } else if percentage >= Decimal::from(65) {
-            (
-                "D+",
-                "مقبول مرتفع",
-                Decimal::from_str_exact("1.5").unwrap_or(Decimal::ONE),
-            )
-        } else if percentage >= Decimal::from(50) {
-            ("D", "مقبول", Decimal::ONE)
+        // Find the matching grade band: the one with the highest minimum_score
+        // that the percentage meets or exceeds.
+        let bands = if self.grade_bands.is_empty() {
+            default_grade_bands()
         } else {
-            ("F", "راسب", Decimal::ZERO)
+            self.grade_bands.clone()
+        };
+
+        let matched = bands
+            .iter()
+            .filter(|band| percentage >= band.minimum_score)
+            .max_by_key(|band| band.minimum_score);
+
+        let (letter, letter_ar, points) = match matched {
+            Some(band) => (
+                band.code.clone(),
+                band.label_ar.clone(),
+                band.grade_points,
+            ),
+            None => ("F".to_string(), "راسب".to_string(), Decimal::ZERO),
         };
 
         GradeEvaluationDetail {
-            letter_grade: letter.to_string(),
-            letter_grade_ar: letter_ar.to_string(),
+            letter_grade: letter,
+            letter_grade_ar: letter_ar,
             grade_points: points,
             is_passed,
             is_honors,

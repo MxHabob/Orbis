@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::academic_calculation::{CalculationPlan, OutcomePolicy};
-use super::academic_policy::{AcademicPolicy, RankingScope, RoundingMode, TiePolicy};
+use super::academic_policy::{AcademicPolicy, PolicyGradeBand, RankingScope, RoundingMode, TiePolicy};
 use super::admission::AdmissionConfiguration;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
@@ -60,6 +60,9 @@ pub struct AcademicSettings {
     pub grade_edit_approval: bool,
     pub auto_graduate_final_level: bool,
     pub exclude_withdrawn: bool,
+    /// Configurable grade bands for letter-grade evaluation (source of truth for AcademicPolicy).
+    #[serde(default)]
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 impl Default for AcademicSettings {
@@ -89,6 +92,7 @@ impl Default for AcademicSettings {
             grade_edit_approval: true,
             auto_graduate_final_level: false,
             exclude_withdrawn: true,
+            grade_bands: Vec::new(),
         }
     }
 }
@@ -114,6 +118,7 @@ impl AcademicSettings {
             certificate_exam_max_score: Decimal::from(80),
             certificate_cumulative_max_score: Decimal::from(20),
             certificate_cumulative_year_count: 3,
+            grade_bands: self.grade_bands.clone(),
         }
     }
 }

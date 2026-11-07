@@ -16,6 +16,7 @@ class AcademicContextStore {
   currentYear = $state<AcademicCalendarDto | null>(null);
   allYears = $state<AcademicCalendarDto[]>([]);
   periods = $state<AcademicPeriodDto[]>([]);
+  gradeScaleItems = $state<any[]>([]);
   yearStatus = $state<string>("active");
   private _isReadOnly = $state(false);
   isSwitching = $state(false);

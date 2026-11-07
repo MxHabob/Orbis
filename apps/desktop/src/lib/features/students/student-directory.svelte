@@ -6,7 +6,6 @@
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
 import {
   ArrowForward,
   ArrowUpTray,
@@ -14,7 +13,6 @@ import {
   DocumentChartBar,
   Plus,
   Printer,
-  Search,
   XMark,
 } from "@orbis/icons";
 import { fly } from "svelte/transition";
@@ -25,16 +23,22 @@ import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
 import { toast } from "@orbis/ui";
+import { confirmStore } from "$lib/stores";
+import { extractErrorMessage } from "$lib/api";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, l } from "$lib/core/i18n";
-import { createStudentDirectoryQuery } from "$lib/features/students";
+import {
+  createDeleteStudentsMutation,
+  createStudentDirectoryQuery,
+} from "$lib/features/students";
 
 let { orgId }: { orgId: string } = $props();
 const directory = createStudentDirectoryQuery(() => orgId);
+const deleteStudentsMutation = createDeleteStudentsMutation();
 const students = $derived(
   directory.studentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
 );
@@ -42,11 +46,51 @@ const classes = $derived(directory.classesQuery.data ?? []);
 
 let showOverrideDialog = $state(false);
 
-// Local search input with debounce
-let localSearch = $state("");
-
 let printDialogOpen = $state(false);
+let isDeletingStudents = $state(false);
 let selectedStudentIds = $state<Set<string>>(new Set());
+
+async function deleteSelectedStudents() {
+  const studentIds = [...selectedStudentIds];
+  if (studentIds.length === 0 || isDeletingStudents) return;
+
+  isDeletingStudents = true;
+  try {
+    const confirmed = await confirmStore.prompt({
+      title: m.common_action_delete(),
+      description: m.common_confirm_delete_record(),
+      confirmText: m.common_action_delete(),
+      cancelText: m.common_action_cancel(),
+      variant: "destructive",
+    });
+    if (!confirmed) return;
+
+    const results = await deleteStudentsMutation.mutateAsync(studentIds);
+    const failedIds = new Set<string>();
+    let firstError: unknown;
+    for (let index = 0; index < results.length; index++) {
+      const result = results[index]!;
+      if (result.status === "fulfilled" && result.value) continue;
+      failedIds.add(studentIds[index]!);
+      if (result.status === "rejected" && firstError === undefined) {
+        firstError = result.reason;
+      }
+    }
+
+    selectedStudentIds = failedIds;
+    if (failedIds.size > 0) {
+      toast.error(
+        firstError === undefined
+          ? "Some selected students could not be deleted."
+          : extractErrorMessage(firstError),
+      );
+    }
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isDeletingStudents = false;
+  }
+}
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -115,18 +159,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
     <!-- Middle Panel: Directory datagrid -->
     {#snippet middle()}
       <div class="h-full flex flex-col p-6 overflow-hidden gap-4">
-        <div class="flex items-center justify-between shrink-0">
-          <div class="relative w-full max-w-sm shrink-0">
-            <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={m.students_search_placeholder()}
-              class="input-sunken ps-9 text-xs py-2"
-              bind:value={localSearch}
-              oninput={() => directory.updateSearch(localSearch)}
-            />
-          </div>
-
+        <div class="flex items-center justify-end shrink-0">
           <div class="flex items-center gap-2">
             <SplitActionMenu
               label={m.common_new()}
@@ -202,6 +235,8 @@ let selectedStudentIds = $state<Set<string>>(new Set());
               {classes}
               enableSelection={true}
               bind:selectedIds={selectedStudentIds}
+              search={directory.search}
+              onsearchchange={directory.updateSearch}
               hasMore={directory.hasMore}
               onloadmore={directory.loadMoreStudents}
               {orgId}
@@ -215,10 +250,10 @@ let selectedStudentIds = $state<Set<string>>(new Set());
   <!-- Floating Bottom Action Bar for Selected Students -->
   {#if selectedStudentIds.size > 0}
     <div
-      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg pointer-events-auto select-none"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl pointer-events-auto select-none"
       transition:fly={{ y: 35, duration: 250, easing: quintOut }}
     >
-      <div class="bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 ring-1 ring-black/5 dark:ring-white/10">
+      <div class="bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 ring-1 ring-black/5 dark:ring-white/10">
         <!-- Selection Counter & Info -->
         <div class="flex min-w-0 items-center gap-2.5 text-start">
           <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -240,7 +275,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
           {#if selectedStudentIds.size === 1}
             {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
             {#if singleStudent}
@@ -256,6 +291,17 @@ let selectedStudentIds = $state<Set<string>>(new Set());
               </Button>
             {/if}
           {/if}
+
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            class="h-8 px-2.5 text-xs font-medium cursor-pointer gap-1.5"
+            disabled={isDeletingStudents}
+            onclick={deleteSelectedStudents}
+          >
+            {m.common_action_delete()} ({selectedStudentIds.size})
+          </Button>
 
           <Button
             type="button"

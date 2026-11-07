@@ -294,6 +294,7 @@ async function handleGridAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       clientQuery
+      showFilterButton={false}
       filter={activeFilter}
       emptyTitle={m.common_ft_empty()}
       emptyDescription={m.common_ft_empty_desc()}

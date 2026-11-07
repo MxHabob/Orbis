@@ -327,6 +327,7 @@ const filterOptions = [
         <OrbisGrid
           columns={trialColumns}
           source={trialSource}
+          showSearch={false}
           search={searchQuery}
           clientQuery
           {rtl}

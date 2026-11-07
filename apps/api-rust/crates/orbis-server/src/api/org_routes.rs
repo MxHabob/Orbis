@@ -14,7 +14,7 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::academic_calculation::{CalculationPlan, OutcomePolicy};
-use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
+use orbis_domain::entities::academic_policy::{PolicyGradeBand, RankingScope, RoundingMode, TiePolicy};
 use orbis_domain::entities::settings::OrganizationSettings;
 use rust_decimal::Decimal;
 
@@ -388,6 +388,8 @@ pub struct AcademicSettingsDto {
     pub grade_edit_approval: bool,
     pub auto_graduate_final_level: bool,
     pub exclude_withdrawn: bool,
+    #[serde(default)]
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 impl Default for AcademicSettingsDto {
@@ -417,6 +419,7 @@ impl Default for AcademicSettingsDto {
             grade_edit_approval: true,
             auto_graduate_final_level: false,
             exclude_withdrawn: true,
+            grade_bands: Vec::new(),
         }
     }
 }
@@ -562,6 +565,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 grade_edit_approval: s.academic.grade_edit_approval,
                 auto_graduate_final_level: s.academic.auto_graduate_final_level,
                 exclude_withdrawn: s.academic.exclude_withdrawn,
+                grade_bands: s.academic.grade_bands,
             },
             enrollment: EnrollmentSettingsDto {
                 registration_enabled: s.enrollment.registration_enabled,
@@ -684,6 +688,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 grade_edit_approval: s.academic.grade_edit_approval,
                 auto_graduate_final_level: s.academic.auto_graduate_final_level,
                 exclude_withdrawn: s.academic.exclude_withdrawn,
+                grade_bands: s.academic.grade_bands,
             },
             enrollment: orbis_domain::entities::settings::EnrollmentSettings {
                 registration_enabled: s.enrollment.registration_enabled,

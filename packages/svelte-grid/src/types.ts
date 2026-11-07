@@ -207,8 +207,10 @@ export interface GridRowsChangeEvent {
     | "paste"
     | "cut"
     | "delete"
+    | "delete-rows"
     | "fill-down"
     | "fill-right"
+    | "insert"
     | "duplicate";
 }
 

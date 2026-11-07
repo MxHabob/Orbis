@@ -235,13 +235,17 @@ export function createPrerequisitesQuery(
 
 /** Report definitions for academics domain */
 export function createReportDefinitionsQuery(
-  domain: () => string = () => "academics",
+  domain: () => string = () => "academic",
 ) {
-  return createQuery<ReportDefinitionDto[]>(() => ({
-    queryKey: queryKeys.report.definitions(domain()),
-    queryFn: () => api.listReportDefinitions(domain()),
-    staleTime: 10 * 60 * 1000,
-  }));
+  return createQuery<ReportDefinitionDto[]>(() => {
+    const rawDomain = domain();
+    const normalizedDomain = rawDomain === "academics" ? "academic" : rawDomain;
+    return {
+      queryKey: queryKeys.report.definitions(normalizedDomain),
+      queryFn: () => api.listReportDefinitions(normalizedDomain),
+      staleTime: 10 * 60 * 1000,
+    };
+  });
 }
 
 /** Calculate student rankings using authoritative backend engine */

@@ -28,7 +28,6 @@ import {
   type UploadDocumentRequest,
 } from "$lib/api";
 import { studentsStore } from "./store.svelte";
-import { debounce } from "$lib/shared/utils/debounce";
 import { exportToCsv } from "$lib/shared/utils/export";
 import { formatDate } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
@@ -98,9 +97,9 @@ export function createStudentDirectoryQuery(orgId: () => string) {
     staleTime: 2 * 60 * 1000,
   }));
 
-  const updateSearch = debounce((query: string) => {
+  function updateSearch(query: string) {
     studentsStore.searchQuery = query;
-  }, 150);
+  }
 
   function setStatusFilter(status: string) {
     studentsStore.statusFilter = status;
@@ -227,6 +226,12 @@ export function createStudentDirectoryQuery(orgId: () => string) {
     },
     get statusFilter() {
       return studentsStore.statusFilter;
+    },
+    get search() {
+      return studentsStore.searchQuery;
+    },
+    set search(query: string) {
+      studentsStore.searchQuery = query;
     },
     get selectedClassId() {
       return studentsStore.selectedClassId;
@@ -445,6 +450,20 @@ export function createDeleteStudentMutation() {
         queryKey: queryKeys.student.detail(studentId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+/** Delete selected students and invalidate the directory once after completion. */
+export function createDeleteStudentsMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (studentIds: string[]) =>
+      Promise.allSettled(studentIds.map((studentId) => api.deleteStudent(studentId))),
+    onSuccess: (results) => {
+      if (results.some((result) => result.status === "fulfilled" && result.value)) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      }
     },
   }));
 }

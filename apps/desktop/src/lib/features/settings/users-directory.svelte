@@ -375,6 +375,7 @@ async function handleAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       clientQuery
+      toolbar={false}
       search={searchQuery}
       filter={effectiveFilter}
       emptyTitle={m.settings_users_empty()}

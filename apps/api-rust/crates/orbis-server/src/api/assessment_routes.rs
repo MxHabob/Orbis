@@ -18,7 +18,7 @@ use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
 use orbis_domain::entities::academic_calculation::{CalculationOutputOutcome, CalculationPreview};
 use orbis_domain::entities::academic_policy::{
-    AcademicPolicy, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
+    AcademicPolicy, PolicyGradeBand, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
     StudentCertificateReportCard, StudentTermReportCard, TiePolicy,
 };
 use orbis_domain::entities::assessment_scheme::{
@@ -85,6 +85,7 @@ pub struct GradeDto {
     pub is_final: bool,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub is_absent: bool,
     pub change_reason: Option<String>,
     pub recorded_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,
@@ -104,6 +105,8 @@ pub struct RecordGradeRequest {
     pub max_score: Option<Decimal>,
     pub is_excused: Option<bool>,
     pub is_exempt: Option<bool>,
+    #[serde(default)]
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -118,6 +121,8 @@ pub struct RecordGradeItemRequest {
     pub max_score: Option<Decimal>,
     pub is_excused: Option<bool>,
     pub is_exempt: Option<bool>,
+    #[serde(default)]
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -212,6 +217,7 @@ pub struct AcademicPolicyDto {
     pub tie_policy: String,
     pub ranking_enabled: bool,
     pub max_displayed_rank: Option<u32>,
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -332,6 +338,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         is_final: g.is_final,
         is_excused: g.is_excused,
         is_exempt: g.is_exempt,
+        is_absent: g.is_absent,
         change_reason: g.change_reason,
         recorded_by: g.recorded_by,
         updated_by: g.updated_by,
@@ -389,6 +396,7 @@ fn academic_policy_to_dto(policy: AcademicPolicy) -> AcademicPolicyDto {
         tie_policy: format!("{:?}", policy.tie_policy),
         ranking_enabled: policy.ranking_enabled,
         max_displayed_rank: policy.max_displayed_rank,
+        grade_bands: policy.grade_bands,
     }
 }
 
@@ -636,6 +644,7 @@ pub async fn batch_record_grades(
             max_score: i.max_score,
             is_excused: i.is_excused.unwrap_or(false),
             is_exempt: i.is_exempt.unwrap_or(false),
+            is_absent: i.is_absent,
             notes: i.notes,
         })
         .collect();

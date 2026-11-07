@@ -779,9 +779,6 @@ function exportAccountsCsv() {
               <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
                 {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
               </Button>
-              <Button variant="ghost" size="icon-sm" onclick={exportAccountsCsv} class="text-muted-foreground">
-                <Download size={14} />
-              </Button>
             </div>
           </div>
 
@@ -791,6 +788,7 @@ function exportAccountsCsv() {
               source={treasurySource}
               loading={isLoading}
               clientQuery
+              toolbar={false}
               search={searchQuery}
               filter={activeFilter}
               {rtl}

@@ -222,6 +222,7 @@ const rtl = $derived(getLocale() === "ar");
           source={gridSource}
           loading={isLoading}
           clientQuery
+          showFilterButton={false}
           filter={activeFilter}
           {rtl}
           readonly
