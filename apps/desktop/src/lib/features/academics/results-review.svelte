@@ -416,7 +416,7 @@ $effect(() => {
         </div>
 
         <!-- Results grid -->
-        <Card class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-border/60 bg-card p-3 shadow-xs sm:p-4">
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div class="flex-1 min-h-[300px]">
             <OrbisGrid
               source={gridSource}
@@ -424,9 +424,8 @@ $effect(() => {
               readonly
             />
           </div>
-        </Card>
+        </div>
       {/if}
     {/if}
   </div>
 </div>
-

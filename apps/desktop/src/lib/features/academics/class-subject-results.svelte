@@ -2,16 +2,8 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@orbis/ui/card";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
+import { Refresh } from "@orbis/icons";
 import { api, extractErrorMessage, type GradeDto } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
@@ -134,69 +126,45 @@ const columns = $derived<OrbisColumnDef[]>([
 ]);
 </script>
 
-<div class="flex h-full w-full flex-col gap-2.5 font-sans">
-  <Card class="flex min-h-0 flex-1 flex-col overflow-hidden">
-    <CardHeader class="flex flex-row items-center justify-between border-b border-border px-4 py-3">
-      <div class="flex items-center gap-2.5">
-        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <DocumentCheck class="h-4 w-4" />
-        </div>
-        <div class="flex flex-col text-start">
-          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-            {m.academics_assessment_records_title()}
-          </CardTitle>
-          <CardDescription class="text-[10px]">
-            {m.academics_assessment_records_count({ count: rows.length })}
-          </CardDescription>
-        </div>
-      </div>
-
-      <CardAction>
+<div class="h-full min-h-0 w-full font-sans">
+  {#if gradesQuery.error}
+    <div class="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+      <p class="text-xs font-semibold text-destructive">{m.common_load_error()}</p>
+      <p class="text-[10px] text-muted-foreground">
+        {extractErrorMessage(gradesQuery.error)}
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        class="mt-2 h-8 gap-1.5 text-xs"
+        onclick={() => gradesQuery.refetch()}
+      >
+        <Refresh size={12} />
+        {m.common_retry()}
+      </Button>
+    </div>
+  {:else}
+    <OrbisGrid
+      {columns}
+      source={rows}
+      loading={gradesQuery.isLoading}
+      rtl={getLocale() === "ar"}
+      emptyTitle={m.academics_assessment_records_empty_title()}
+      emptyDescription={m.academics_assessment_records_empty_description()}
+      readonly
+    >
+      {#snippet toolbarActions()}
         <Button
           variant="outline"
           size="sm"
-          class="h-8 cursor-pointer gap-1.5 px-2.5 text-xs font-semibold shadow-2xs"
+          class="h-8 gap-1.5 px-2.5 text-xs"
           onclick={() => gradesQuery.refetch()}
           disabled={gradesQuery.isFetching}
         >
           {#if gradesQuery.isFetching}<LoadingIndicator size={12} />{:else}<Refresh size={12} />{/if}
           <span>{m.common_retry()}</span>
         </Button>
-      </CardAction>
-    </CardHeader>
-
-    <CardContent class="relative min-h-0 flex-1 p-0">
-      {#if gradesQuery.isLoading}
-        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/50 backdrop-blur-2xs">
-          <LoadingIndicator size={24} />
-          <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
-        </div>
-      {:else if gradesQuery.error}
-        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-destructive">
-          <InfoCircle class="mb-2 h-8 w-8 stroke-current opacity-80" />
-          <p class="text-xs font-semibold">{m.common_load_error()}</p>
-          <p class="mt-1 text-[10px] text-muted-foreground">
-            {extractErrorMessage(gradesQuery.error)}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            class="mt-4"
-            onclick={() => gradesQuery.refetch()}
-          >
-            {m.common_retry()}
-          </Button>
-        </div>
-      {:else}
-        <OrbisGrid
-          {columns}
-          source={rows}
-          rtl={getLocale() === "ar"}
-          emptyTitle={m.academics_assessment_records_empty_title()}
-          emptyDescription={m.academics_assessment_records_empty_description()}
-          readonly
-        />
-      {/if}
-    </CardContent>
-  </Card>
+      {/snippet}
+    </OrbisGrid>
+  {/if}
 </div>

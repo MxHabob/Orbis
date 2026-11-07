@@ -1,18 +1,10 @@
 <!--
   @component StudentAttendance
-  Student attendance statistics and history log with OrbisGrid inside standardized Cards.
+  Student attendance statistics and history log.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api, type AttendanceDto } from "$lib/api";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from "@orbis/ui/card";
 import {
   Calendar,
   ClockRotateRight,
@@ -20,7 +12,6 @@ import {
   UserMinus,
 } from "@orbis/icons";
 import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
-import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -190,45 +181,30 @@ const rtl = $derived(getLocale() === "ar");
     />
   </div>
 
-  <!-- Attendance Log Card -->
-  <Card class="overflow-hidden">
-    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
-      <div class="flex items-center gap-2">
-        <Calendar size={14} class="text-primary" />
-        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-          {m.academics_attendance_log_title()}
-        </CardTitle>
-      </div>
-
-      <CardAction>
-        <FilterTrigger
-          bind:filter={activeFilter}
-          fields={attendanceFilterFields}
-        />
-      </CardAction>
-    </CardHeader>
-
-    <CardContent class="p-0">
-      {#if !isLoading && attendanceRecords.length === 0}
-        <StudentSectionState
-          icon={Calendar}
-          title={m.ui_copy_no_attendance_records_7b6831c5()}
-          description={m.ui_copy_no_attendance_recorded_for_this_student_ye_f2c2d408()}
-        />
-      {:else}
-      <div class="h-80 w-full">
-        <OrbisGrid
-          {columns}
-          source={gridSource}
-          loading={isLoading}
-          clientQuery
-          showFilterButton={false}
-          filter={activeFilter}
-          {rtl}
-          readonly
-        />
-      </div>
-      {/if}
-    </CardContent>
-  </Card>
+  <section class="flex flex-col gap-2">
+    <h3 class="text-xs font-semibold text-foreground">
+      {m.academics_attendance_log_title()}
+    </h3>
+    <div class="h-80 w-full">
+      <OrbisGrid
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        clientQuery
+        showFilterButton={false}
+        filter={activeFilter}
+        emptyTitle={m.ui_copy_no_attendance_records_7b6831c5()}
+        emptyDescription={m.ui_copy_no_attendance_recorded_for_this_student_ye_f2c2d408()}
+        {rtl}
+        readonly
+      >
+        {#snippet toolbarFilters()}
+          <FilterTrigger
+            bind:filter={activeFilter}
+            fields={attendanceFilterFields}
+          />
+        {/snippet}
+      </OrbisGrid>
+    </div>
+  </section>
 </div>
