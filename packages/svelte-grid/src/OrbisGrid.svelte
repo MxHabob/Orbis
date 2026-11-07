@@ -748,12 +748,61 @@ function setActive(row: number, col: number, extend = false) {
     };
   }
   onselection?.(selection);
-  const top = r * rowSize;
-  if (bodyEl) {
-    if (top < scrollTop) bodyEl.scrollTop = top;
-    if (top + rowSize > scrollTop + viewportH - HEADER_H)
-      bodyEl.scrollTop = top - (viewportH - HEADER_H) + rowSize;
+  scrollActiveCellIntoView(r, c);
+}
+
+function scrollActiveCellIntoView(row: number, col: number) {
+  if (!bodyEl) return;
+
+  const top = row * rowSize;
+  const visibleTop = bodyEl.scrollTop;
+  const visibleBottom = visibleTop + bodyEl.clientHeight - HEADER_H;
+  if (top < visibleTop) {
+    bodyEl.scrollTop = top;
+  } else if (top + rowSize > visibleBottom) {
+    bodyEl.scrollTop = top + rowSize - bodyEl.clientHeight + HEADER_H;
   }
+  scrollTop = bodyEl.scrollTop;
+
+  if (rtl) {
+    requestAnimationFrame(() => {
+      if (
+        !bodyEl ||
+        selection.active?.row !== row ||
+        selection.active?.col !== col
+      ) {
+        return;
+      }
+
+      const activeCell = bodyEl.querySelector<HTMLElement>(
+        `[data-grid-r="${row}"][data-grid-c="${col}"]`,
+      );
+      if (!activeCell) return;
+
+      const bodyRect = bodyEl.getBoundingClientRect();
+      const visibleLeft = bodyRect.left + bodyEl.clientLeft;
+      const visibleRight = visibleLeft + bodyEl.clientWidth;
+      const cellRect = activeCell.getBoundingClientRect();
+      if (cellRect.left < visibleLeft) {
+        bodyEl.scrollLeft += cellRect.left - visibleLeft;
+      } else if (cellRect.right > visibleRight) {
+        bodyEl.scrollLeft += cellRect.right - visibleRight;
+      }
+      scrollLeft = bodyEl.scrollLeft;
+    });
+    return;
+  }
+
+  const left = offsetOf(col);
+  const right = left + (columnSizes[col] ?? 0);
+  const visibleLeft = bodyEl.scrollLeft;
+  const visibleRight = visibleLeft + bodyEl.clientWidth;
+  if (left < visibleLeft) {
+    bodyEl.scrollLeft = left;
+  } else if (right > visibleRight) {
+    bodyEl.scrollLeft = right - bodyEl.clientWidth;
+  }
+  scrollLeft = bodyEl.scrollLeft;
 }
 
 function commitOverlay(
@@ -1165,6 +1214,12 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
+  if (
+    e.target instanceof Element &&
+    e.target.closest(".resize-handle")
+  ) {
+    return;
+  }
   if (isCheckboxTarget(e.target)) return;
   sortColumn(col, e.shiftKey);
 }
@@ -1613,6 +1668,7 @@ export function scrollToColumnProp(prop: string) {
   class="orbis-grid"
   class:is-rtl={rtl}
   class:is-selecting={dragging}
+  class:has-active-cell={selection.active !== null}
   style:height
   style:--row-h="{rowSize}px"
   style:--header-h="{HEADER_H}px"
@@ -1843,6 +1899,8 @@ export function scrollToColumnProp(prop: string) {
                 class="resize-handle"
                 aria-label="Resize column"
                 onpointerdown={(e) => onResizeStart(col, e)}
+                onclick={(e) => e.stopPropagation()}
+                onkeydown={(e) => e.stopPropagation()}
                 ondblclick={(e) => onResizeDblClick(col, e)}
               ></button>
             </div>
@@ -2127,7 +2185,7 @@ export function scrollToColumnProp(prop: string) {
     line-height: 1.25;
     outline: none;
   }
-  .orbis-grid:focus-visible {
+  .orbis-grid:focus-visible:not(.has-active-cell) {
     outline: 1px solid var(--ring);
     outline-offset: -2px;
   }
