@@ -59,11 +59,14 @@ if (
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
   );
-  const configPath = path.join(
-    desktopRoot,
-    "src-tauri",
-    "target",
-    "tauri-updater-release.conf.json",
+  const configPath = path.resolve(
+    process.env.TAURI_UPDATER_CONFIG_PATH ??
+      path.join(
+        desktopRoot,
+        "src-tauri",
+        "target",
+        "tauri-updater-release.conf.json",
+      ),
   );
   mkdirSync(path.dirname(configPath), { recursive: true });
   writeFileSync(

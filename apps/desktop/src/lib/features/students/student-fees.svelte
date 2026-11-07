@@ -1,22 +1,12 @@
 <!--
   @component StudentFees
-  Assigned fees, balance due, and payment records for a student using OrbisGrid inside standardized Cards.
+  Assigned fees, balance due, and payment records for a student.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
-import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from "@orbis/ui/card";
 import { CheckCircle, Document, InfoCircle } from "@orbis/icons";
 import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
-import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
@@ -254,60 +244,35 @@ const rtl = $derived(getLocale() === "ar");
     />
   </div>
 
-  {#if isLoading}
-    <Skeleton class="h-40 w-full rounded-xl" />
-    <Skeleton class="h-40 w-full rounded-xl" />
-  {:else}
-    <!-- Assigned Fees Card -->
-    <Card class="overflow-hidden">
-      <CardHeader class="py-2.5 px-4">
-        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-          {m.finance_fees_assigned_title()}
-        </CardTitle>
-      </CardHeader>
-      <CardContent class="p-0">
-        {#if fees.length === 0}
-          <StudentSectionState
-            icon={Document}
-            title={m.finance_fees_no_fees()}
-          />
-        {:else}
-        <div class="h-56 w-full">
-          <OrbisGrid
-            columns={feesCols}
-            source={feesSource}
-            {rtl}
-            readonly
-          />
-        </div>
-        {/if}
-      </CardContent>
-    </Card>
+  <section class="flex flex-col gap-2">
+    <h3 class="text-xs font-semibold text-foreground">
+      {m.finance_fees_assigned_title()}
+    </h3>
+    <div class="h-56 w-full">
+      <OrbisGrid
+        columns={feesCols}
+        source={feesSource}
+        loading={isLoading}
+        emptyTitle={m.finance_fees_no_fees()}
+        {rtl}
+        readonly
+      />
+    </div>
+  </section>
 
-    <!-- Payments List Card -->
-    <Card class="overflow-hidden">
-      <CardHeader class="py-2.5 px-4">
-        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-          {m.finance_fees_payments_title()}
-        </CardTitle>
-      </CardHeader>
-      <CardContent class="p-0">
-        {#if payments.length === 0}
-          <StudentSectionState
-            icon={CheckCircle}
-            title={m.finance_fees_no_payments()}
-          />
-        {:else}
-        <div class="h-56 w-full">
-          <OrbisGrid
-            columns={paymentsCols}
-            source={paymentsSource}
-            {rtl}
-            readonly
-          />
-        </div>
-        {/if}
-      </CardContent>
-    </Card>
-  {/if}
+  <section class="flex flex-col gap-2">
+    <h3 class="text-xs font-semibold text-foreground">
+      {m.finance_fees_payments_title()}
+    </h3>
+    <div class="h-56 w-full">
+      <OrbisGrid
+        columns={paymentsCols}
+        source={paymentsSource}
+        loading={isLoading}
+        emptyTitle={m.finance_fees_no_payments()}
+        {rtl}
+        readonly
+      />
+    </div>
+  </section>
 </div>

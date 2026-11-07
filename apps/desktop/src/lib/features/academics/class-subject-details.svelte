@@ -6,22 +6,14 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import { api, extractErrorMessage } from "$lib/api";
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
 import { OrbisGrid, type CellEditEvent } from "@orbis/svelte-grid";
-import { DocumentCheck, Refresh } from "@orbis/icons";
+import { Refresh } from "@orbis/icons";
 import {
   buildGradeColumns,
   recalculateRowTotals,
@@ -208,97 +200,62 @@ async function handleSaveAll() {
 }
 </script>
 
-<div class="flex flex-col h-full w-full gap-2.5 font-sans">
-  <Card class="flex-1 flex flex-col min-h-0 overflow-hidden">
-    <!-- Top Action Toolbar in CardHeader -->
-    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-          <DocumentCheck class="w-4 h-4" />
-        </div>
-        <div class="flex flex-col text-start">
-          <div class="flex items-center gap-2">
-            <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-              {m.shared_ui_coursework_gradebook_title()}
-            </CardTitle>
-            {#if isDirty}
-              <Badge variant="outline" class="bg-amber-500/10 text-[9px] text-amber-600 border-amber-500/30 font-bold animate-pulse">
-                {m.common_unsaved_changes()}
-              </Badge>
-            {:else if gridSource.length > 0}
-              <Badge variant="outline" class="bg-emerald-500/10 text-[9px] text-emerald-600 border-emerald-500/20 font-medium">
-                {m.common_all_saved()}
-              </Badge>
-            {/if}
-          </div>
-          <CardDescription class="text-[10px]">
-            {gridSource.length} {m.common_students_count_label()}
-          </CardDescription>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <CardAction>
-        <div class="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            class="h-8 px-2.5 text-xs font-semibold gap-1.5 cursor-pointer shadow-2xs" 
-            onclick={handleRefresh} 
-            disabled={isMatrixLoading}
-            title={m.common_retry()}
-          >
-            {#if isMatrixLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
-            <span>{m.common_retry()}</span>
-          </Button>
-
-          <Button 
-            variant={isDirty ? "default" : "secondary"} 
-            size="sm" 
-            class="h-8 px-3.5 gap-1.5 text-xs font-bold cursor-pointer shadow-2xs transition-all" 
-            disabled={!isDirty || isSaving || !canEnterGrades} 
-            onclick={handleSaveAll}
-          >
-            <span>{m.common_save_changes()}</span>
-          </Button>
-        </div>
-      </CardAction>
-    </CardHeader>
-    
-    <!-- Main Grid Canvas -->
-    <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-      {#if error}
-        <div class="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-destructive">
-          <p class="text-xs font-semibold">{m.common_load_error()}</p>
-          <p class="text-[10px] text-muted-foreground">
-            {extractErrorMessage(error)}
-          </p>
-          <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={handleRefresh}>
-            {m.common_retry()}
-          </Button>
-        </div>
-      {:else if !gridColumns.length && !isMatrixLoading}
-        <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
-          <p class="text-xs font-bold text-foreground">
-            {m.common_assessment_no_scheme()}
-          </p>
-          <p class="text-[11px] text-muted-foreground max-w-sm">
-            {m.common_assessment_configure_hint()}
-          </p>
-        </div>
-      {:else}
-        <div class="flex-1 min-h-0 w-full h-full">
-          <OrbisGrid
-            columns={gridColumns}
-            bind:source={gridSource}
-            loading={isMatrixLoading}
-            height="100%"
-            readonly={!canEnterGrades}
-            oncelledit={handleCellEdit}
-            emptyTitle={m.common_students_empty_title()}
-          />
-        </div>
-      {/if}
-    </CardContent>
-  </Card>
+<div class="h-full min-h-0 w-full font-sans">
+  {#if error}
+    <div class="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-destructive">
+      <p class="text-xs font-semibold">{m.common_load_error()}</p>
+      <p class="text-[10px] text-muted-foreground">
+        {extractErrorMessage(error)}
+      </p>
+      <Button variant="outline" size="sm" class="mt-2 h-8 text-xs" onclick={handleRefresh}>
+        {m.common_retry()}
+      </Button>
+    </div>
+  {:else if !gridColumns.length && !isMatrixLoading}
+    <div class="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+      <p class="text-xs font-semibold text-foreground">
+        {m.common_assessment_no_scheme()}
+      </p>
+      <p class="max-w-sm text-[11px] text-muted-foreground">
+        {m.common_assessment_configure_hint()}
+      </p>
+    </div>
+  {:else}
+    <OrbisGrid
+      columns={gridColumns}
+      bind:source={gridSource}
+      loading={isMatrixLoading}
+      height="100%"
+      rtl={getLocale() === "ar"}
+      showAddRow={false}
+      readonly={!canEnterGrades}
+      oncelledit={handleCellEdit}
+      emptyTitle={m.common_students_empty_title()}
+    >
+      {#snippet toolbarActions()}
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 gap-1.5 px-2.5 text-xs"
+          onclick={handleRefresh}
+          disabled={isMatrixLoading}
+          title={m.common_retry()}
+        >
+          {#if isMatrixLoading}<LoadingIndicator size={12} />{:else}<Refresh size={12} />{/if}
+          <span>{m.common_retry()}</span>
+        </Button>
+      {/snippet}
+    </OrbisGrid>
+  {/if}
 </div>
+
+<SettingsBottomBar
+  visible={canEnterGrades && isDirty}
+  isDirty={isDirty}
+  isSaving={isSaving}
+  showReset={false}
+  message={m.common_unsaved_changes()}
+  saveLabel={m.common_save_changes()}
+  savingLabel={m.common_state_saving()}
+  onsave={handleSaveAll}
+/>

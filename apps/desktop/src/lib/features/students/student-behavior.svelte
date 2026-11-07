@@ -1,26 +1,16 @@
 <!--
   @component StudentBehavior
-  Behavior incidents log and AI assist evaluation summary using OrbisGrid with standardized Cards.
+  Behavior incidents log and AI-assisted evaluation summary.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api, type BehaviorRecordDto } from "$lib/api";
-import { confirmStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from "@orbis/ui/card";
-import { Plus, Sparkles, UserBadgeCheck } from "@orbis/icons";
+import { Plus, Sparkles } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
 import BehaviorRecordDialog from "$lib/features/students/components/behavior-record-dialog.svelte";
-import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 
 import { formatDate } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
@@ -179,77 +169,55 @@ const rtl = $derived(getLocale() === "ar");
 </script>
 
 <div class="flex flex-col gap-6 text-xs text-start font-sans">
-  <!-- AI Assist Card -->
-  <Card class="overflow-hidden">
-    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
-      <div class="flex items-center gap-2">
-        <Sparkles size={16} class="text-primary" />
-        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-          {m.academics_behavior_ai_title()}
-        </CardTitle>
-      </div>
+  <section class="flex flex-col gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h3 class="text-xs font-semibold text-foreground">
+        {m.academics_behavior_ai_title()}
+      </h3>
+      <Button variant="default" class="h-7 px-2.5 text-[10px] font-semibold" onclick={handleAISummarize} disabled={isGeneratingAI}>
+        <Sparkles size={11} class="me-1.5" />
+        {isGeneratingAI ? m.common_promo_running() : m.academics_behavior_ai_generate()}
+      </Button>
+    </div>
+    {#if aiSummary}
+      <p class="text-[11px] leading-relaxed text-foreground">{aiSummary}</p>
+    {:else}
+      <p class="text-[11px] text-muted-foreground">{m.academics_behavior_ai_hint()}</p>
+    {/if}
+  </section>
 
-      <CardAction>
-        <Button variant="default" class="text-[10px] h-7 px-2.5 font-semibold" onclick={handleAISummarize} disabled={isGeneratingAI}>
-          <Sparkles size={11} class="me-1.5" />
-          {isGeneratingAI ? m.common_promo_running() : m.academics_behavior_ai_generate()}
-        </Button>
-      </CardAction>
-    </CardHeader>
-
-    <CardContent class="p-4">
-      {#if aiSummary}
-        <div class="p-3 bg-muted/40 border border-border/60 rounded-lg text-foreground leading-relaxed font-sans">{aiSummary}</div>
-      {:else}
-        <p class="text-[11px] text-muted-foreground">{m.academics_behavior_ai_hint()}</p>
-      {/if}
-    </CardContent>
-  </Card>
-
-  <!-- Records Grid Card -->
-  <Card class="overflow-hidden">
-    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
-      <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-        {m.academics_behavior_records_title()}
-      </CardTitle>
-
-      <CardAction>
-        <div class="flex items-center gap-2">
+  <section class="flex flex-col gap-2">
+    <h3 class="text-xs font-semibold text-foreground">
+      {m.academics_behavior_records_title()}
+    </h3>
+    <div class="h-72 w-full">
+      <OrbisGrid
+        {columns}
+        source={gridSource}
+        loading={isLoading}
+        clientQuery
+        showFilterButton={false}
+        filter={activeFilter}
+        emptyTitle={m.academics_behavior_empty_title()}
+        emptyDescription={m.academics_behavior_empty_desc()}
+        {rtl}
+        readonly
+      >
+        {#snippet toolbarFilters()}
           <FilterTrigger
             bind:filter={activeFilter}
             fields={behaviorFilterFields}
           />
+        {/snippet}
+        {#snippet toolbarActions()}
           <Button variant="outline" size="sm" class="text-xs h-8 px-2.5 font-semibold gap-1" onclick={() => (showAddModal = true)}>
             <Plus size={13} />
             {m.academics_behavior_add_record()}
           </Button>
-        </div>
-      </CardAction>
-    </CardHeader>
-
-    <CardContent class="p-0">
-      {#if !isLoading && records.length === 0}
-        <StudentSectionState
-          icon={UserBadgeCheck}
-          title={m.academics_behavior_empty_title()}
-          description={m.academics_behavior_empty_desc()}
-        />
-      {:else}
-      <div class="h-72 w-full">
-        <OrbisGrid
-          {columns}
-          source={gridSource}
-          loading={isLoading}
-          clientQuery
-          showFilterButton={false}
-          filter={activeFilter}
-          {rtl}
-          readonly
-        />
-      </div>
-      {/if}
-    </CardContent>
-  </Card>
+        {/snippet}
+      </OrbisGrid>
+    </div>
+  </section>
 </div>
 
 <BehaviorRecordDialog

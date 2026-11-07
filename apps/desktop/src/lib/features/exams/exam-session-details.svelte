@@ -1253,18 +1253,16 @@ async function handleToggleHall(room: any) {
 							</Button>
 						</div>
 					{:else}
-						<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
-								<OrbisGrid
-									columns={subjectColumns}
-									source={subjectGridSource}
-									clientQuery
-									readonly
-									rtl={getLocale() === "ar"}
-									emptyTitle={m.academics_exams_no_subjects()}
-								/>
-							</div>
-						</Card>
+						<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
+							<OrbisGrid
+								columns={subjectColumns}
+								source={subjectGridSource}
+								clientQuery
+								readonly
+								rtl={getLocale() === "ar"}
+								emptyTitle={m.academics_exams_no_subjects()}
+							/>
+						</div>
 						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 							{m.common_exams_subjects_add()}
 						</Button>
@@ -1388,21 +1386,19 @@ async function handleToggleHall(room: any) {
 						<div class="flex items-center justify-between gap-3 px-1 select-none">
 							<span class="text-xs text-muted-foreground">{m.academics_exams_issued()}{seatingNumbers.length}{m.academics_exams_seating_numbers_suffix()}</span>
 						</div>
-						<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
-								<OrbisGrid
-									columns={seatingColumns}
-									source={seatingGridSource}
-									clientQuery
-									readonly
-									rowIdKey="id"
-									rtl={getLocale() === "ar"}
-									onselection={handleSeatingSelection}
-									onaction={handleSeatingGridAction}
-									emptyTitle={m.academics_exams_no_seating_numbers()}
-								/>
-							</div>
-						</Card>
+						<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
+							<OrbisGrid
+								columns={seatingColumns}
+								source={seatingGridSource}
+								clientQuery
+								readonly
+								rowIdKey="id"
+								rtl={getLocale() === "ar"}
+								onselection={handleSeatingSelection}
+								onaction={handleSeatingGridAction}
+								emptyTitle={m.academics_exams_no_seating_numbers()}
+							/>
+						</div>
 					{/if}
 				</div>
 
@@ -1413,19 +1409,17 @@ async function handleToggleHall(room: any) {
 						<p class="text-xs text-muted-foreground">{m.operations_ui_secret_numbers_empty()}</p>
 					</div>
 				{:else}
-					<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
 					<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
-							<OrbisGrid
-								columns={secretColumns}
-								source={secretGridSource}
-								clientQuery
-								readonly
-								rowIdKey="id"
-								rtl={getLocale() === "ar"}
-								emptyTitle={m.operations_ui_secret_numbers()}
-							/>
-						</div>
-					</Card>
+						<OrbisGrid
+							columns={secretColumns}
+							source={secretGridSource}
+							clientQuery
+							readonly
+							rowIdKey="id"
+							rtl={getLocale() === "ar"}
+							emptyTitle={m.operations_ui_secret_numbers()}
+						/>
+					</div>
 				{/if}
 
 			<!-- ═══ Halls Tab ═══ -->
@@ -1514,24 +1508,22 @@ async function handleToggleHall(room: any) {
 							</Button>
 						</div>
 					{:else}
-						<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
-								<OrbisGrid
-									columns={proctorColumns}
-									source={proctorGridSource}
-									clientQuery
-									readonly
-									rowIdKey="id"
-									rtl={getLocale() === "ar"}
-									onaction={(event) => {
-										if (event.actionId === "delete") {
-											handleDeleteProctor(String(event.row.id));
-										}
-									}}
-									emptyTitle={m.academics_exams_no_proctors_assigned()}
-								/>
-							</div>
-						</Card>
+						<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
+							<OrbisGrid
+								columns={proctorColumns}
+								source={proctorGridSource}
+								clientQuery
+								readonly
+								rowIdKey="id"
+								rtl={getLocale() === "ar"}
+								onaction={(event) => {
+									if (event.actionId === "delete") {
+										handleDeleteProctor(String(event.row.id));
+									}
+								}}
+								emptyTitle={m.academics_exams_no_proctors_assigned()}
+							/>
+						</div>
 					{/if}
 				</div>
 			{/if}

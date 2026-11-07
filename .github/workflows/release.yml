@@ -98,6 +98,12 @@ jobs:
         with:
           ref: ${{ needs.validate.outputs.commit_sha }}
 
+      - name: Checkout release tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: release-tools
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -160,7 +166,8 @@ jobs:
         working-directory: apps/desktop
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-        run: node scripts/prepare-tauri-updater-config.mjs
+          TAURI_UPDATER_CONFIG_PATH: ${{ github.workspace }}/apps/desktop/src-tauri/target/tauri-updater-release.conf.json
+        run: node ../../release-tools/apps/desktop/scripts/prepare-tauri-updater-config.mjs
 
       - name: Build Tauri desktop bundle
         working-directory: apps/desktop

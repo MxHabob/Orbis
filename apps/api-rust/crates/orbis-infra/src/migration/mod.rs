@@ -8,6 +8,7 @@ mod m20261029_000001_lesson_attendance;
 mod m20261030_000001_currency_symbol_position;
 mod m20261031_000001_exam_hall_flag;
 mod m20261104_000001_grade_absence_flag;
+mod m20261105_000001_unique_student_root;
 
 pub struct Migrator;
 
@@ -23,6 +24,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261030_000001_currency_symbol_position::Migration),
             Box::new(m20261031_000001_exam_hall_flag::Migration),
             Box::new(m20261104_000001_grade_absence_flag::Migration),
+            Box::new(m20261105_000001_unique_student_root::Migration),
         ]
     }
 }

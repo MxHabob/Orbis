@@ -1110,12 +1110,11 @@ function handleFormSave() {
       </div>
 
       <!-- Requirements OrbisGrid Container -->
-      <div class="rounded-xl border border-border/60 bg-card overflow-hidden">
+      <div class="overflow-hidden">
         <OrbisGrid
           columns={docGridColumns}
           source={docGridSource}
           height="min(55vh, 480px)"
-          rowSize={44}
           rtl={true}
           onaction={handleDocGridAction}
           emptyTitle={m.ui_copy_no_document_requirements_configured_07292a9d()}
@@ -1125,12 +1124,11 @@ function handleFormSave() {
 
     <!-- TAB 3: Form Fields Matrix with OrbisGrid -->
     <TabsContent value="fields" class="space-y-4 pt-4">
-      <div class="rounded-xl border border-border/60 bg-card overflow-hidden">
+      <div class="overflow-hidden">
         <OrbisGrid
           columns={fieldGridColumns}
           source={fieldGridSource}
           height="min(60vh, 520px)"
-          rowSize={44}
           rtl={true}
           onaction={handleFieldGridAction}
           emptyTitle={m.ui_copy_no_form_fields_79d7bef7()}

@@ -731,6 +731,7 @@ function handleReset() {
         clientQuery
         range={true}
         clipboard={true}
+        showAddRow={true}
         createEmptyRow={() => createBlankRow(rawRows.length + 1).data}
         oncelledit={handleCellEdit}
         onrowschange={handleGridRowsChange}

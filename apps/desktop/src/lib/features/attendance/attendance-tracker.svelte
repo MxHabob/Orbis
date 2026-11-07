@@ -769,7 +769,6 @@ const absentCount = $derived(
               source={gridSource}
               loading={isLoadingRoster}
               height="100%"
-              rowSize={44}
               rtl={getLocale() === "ar"}
               oncelledit={handleGridEdit}
               emptyTitle={m.operations_ui_attendance_no_students()}

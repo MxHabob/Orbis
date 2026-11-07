@@ -23,14 +23,6 @@ import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@orbis/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -38,7 +30,6 @@ import {
 } from "@orbis/ui/select";
 import { createQuery } from "@tanstack/svelte-query";
 import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
-import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 
 let {
   orgId,
@@ -405,100 +396,74 @@ const columns: OrbisColumnDef[] = [
   <!-- TAB 1: RAW ASSESSMENT RECORDS                               -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   {#if activeTab === "records"}
-    <Card class="overflow-hidden">
-      <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <div class="flex items-center gap-2">
-          <BookOpen size={16} class="text-primary" />
-          <div class="flex flex-col">
-            <CardTitle class="text-xs font-bold uppercase tracking-wider">
-              {m.student_grades_assessment_records_title()}
-            </CardTitle>
-            <CardDescription class="text-[10px]">
-              {filteredGrades.length} {m.student_grades_records_label()}
-            </CardDescription>
-          </div>
-        </div>
+    {#if gradesQuery.error}
+      <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-lg border border-destructive/20 p-6 text-center text-destructive">
+        <InfoCircle class="h-7 w-7 stroke-current opacity-80" />
+        <p class="text-xs font-semibold">{m.common_load_error()}</p>
+        <p class="text-[10px] text-muted-foreground">
+          {extractErrorMessage(gradesQuery.error)}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          class="mt-2 h-8 gap-1.5 text-xs"
+          onclick={() => gradesQuery.refetch()}
+        >
+          <Refresh size={13} />
+          {m.common_retry()}
+        </Button>
+      </div>
+    {:else}
+      <div class={rows.length === 0 ? "h-64 w-full" : "h-115 w-full"}>
+        <OrbisGrid
+          {columns}
+          source={rows}
+          loading={gradesQuery.isLoading}
+          clientQuery
+          rtl={isRtl}
+          emptyTitle={m.academics_grades_empty_title()}
+          emptyDescription={m.academics_grades_empty_subtitle()}
+          readonly
+        >
+          {#snippet toolbarActions()}
+            <div class="flex items-center gap-2 print:hidden">
+              <Select
+                type="single"
+                value={selectedPeriodId}
+                onValueChange={(value) => {
+                  if (value) selectedPeriodId = value;
+                }}
+              >
+                <SelectTrigger class="h-8 min-w-40 text-xs">
+                  {selectedPeriodId === "all"
+                    ? m.student_grades_all_periods()
+                    : periodNames.get(selectedPeriodId) ?? m.student_grades_select_period()}
+                </SelectTrigger>
+                <SelectContent class="text-xs">
+                  <SelectItem value="all">{m.student_grades_all_periods()}</SelectItem>
+                  {#each academicContext.allPeriods as period (period.id)}
+                    <SelectItem value={period.id}>
+                      {period.name_ar || period.name}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
 
-        <CardAction>
-          <div class="flex items-center gap-2 print:hidden">
-            <Select
-              type="single"
-              value={selectedPeriodId}
-              onValueChange={(value) => {
-                if (value) selectedPeriodId = value;
-              }}
-            >
-              <SelectTrigger class="h-8 min-w-40 text-xs">
-                {selectedPeriodId === "all"
-                  ? m.student_grades_all_periods()
-                  : periodNames.get(selectedPeriodId) ?? m.student_grades_select_period()}
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                <SelectItem value="all">{m.student_grades_all_periods()}</SelectItem>
-                {#each academicContext.allPeriods as period (period.id)}
-                  <SelectItem value={period.id}>
-                    {period.name_ar || period.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-8 gap-1.5 text-xs"
-              onclick={() => gradesQuery.refetch()}
-              disabled={gradesQuery.isFetching}
-            >
-              {#if gradesQuery.isFetching}<LoadingIndicator size={13} />{:else}<Refresh size={13} />{/if}
-              {m.common_retry()}
-            </Button>
-          </div>
-        </CardAction>
-      </CardHeader>
-
-      <CardContent class="p-0">
-        {#if gradesQuery.isLoading}
-          <div class="flex min-h-64 flex-col items-center justify-center gap-2">
-            <LoadingIndicator size={24} />
-            <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
-          </div>
-        {:else if gradesQuery.error}
-          <div class="flex min-h-64 flex-col items-center justify-center p-6 text-center text-destructive">
-            <InfoCircle class="mb-2 h-8 w-8 stroke-current opacity-80" />
-            <p class="text-xs font-semibold">{m.common_load_error()}</p>
-            <p class="mt-1 text-[10px] text-muted-foreground">
-              {extractErrorMessage(gradesQuery.error)}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              class="mt-4"
-              onclick={() => gradesQuery.refetch()}
-            >
-              {m.common_retry()}
-            </Button>
-          </div>
-        {:else if rows.length === 0}
-          <StudentSectionState
-            icon={BookOpen}
-            title={m.academics_grades_empty_title()}
-            description={m.academics_grades_empty_subtitle()}
-          />
-        {:else}
-          <div class="h-115 w-full">
-            <OrbisGrid
-              {columns}
-              source={rows}
-              loading={gradesQuery.isFetching}
-              clientQuery
-              rtl={isRtl}
-              readonly
-            />
-          </div>
-        {/if}
-      </CardContent>
-    </Card>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 text-xs"
+                onclick={() => gradesQuery.refetch()}
+                disabled={gradesQuery.isFetching}
+              >
+                {#if gradesQuery.isFetching}<LoadingIndicator size={13} />{:else}<Refresh size={13} />{/if}
+                {m.common_retry()}
+              </Button>
+            </div>
+          {/snippet}
+        </OrbisGrid>
+      </div>
+    {/if}
 
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- TAB 2: TERM REPORT CARD                                     -->
@@ -506,8 +471,7 @@ const columns: OrbisColumnDef[] = [
   {:else if activeTab === "term"}
     <div class="flex flex-col gap-4">
       <!-- Period Selector Header -->
-      <Card>
-        <CardContent class="flex flex-wrap items-center justify-between gap-3 p-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
           <div class="flex items-center gap-3">
             <div class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
               <DocumentChartBar size={18} />
@@ -553,8 +517,7 @@ const columns: OrbisColumnDef[] = [
               {m.common_retry()}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {#if termReportQuery.isLoading}
         <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-8">
@@ -609,14 +572,12 @@ const columns: OrbisColumnDef[] = [
 
         <!-- Subject Results Table -->
         {#if termReport.subjects.length === 0}
-          <StudentSectionState
-            icon={BookOpen}
-            title={m.academics_grades_empty_title()}
-            description={m.academics_grades_empty_subtitle()}
-          />
+          <div class="flex min-h-36 flex-col items-center justify-center gap-1 py-8 text-center">
+            <p class="text-xs font-medium text-foreground">{m.academics_grades_empty_title()}</p>
+            <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
+          </div>
         {:else}
-        <Card class="overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto border-y border-border">
             <table class="w-full text-xs text-start">
               <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
                 <tr>
@@ -665,7 +626,6 @@ const columns: OrbisColumnDef[] = [
               </tbody>
             </table>
           </div>
-        </Card>
         {/if}
       {/if}
     </div>
@@ -676,8 +636,7 @@ const columns: OrbisColumnDef[] = [
   {:else if activeTab === "annual"}
     <div class="flex flex-col gap-4">
       <!-- Calendar Selector Header -->
-      <Card>
-        <CardContent class="flex flex-wrap items-center justify-between gap-3 p-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
           <div class="flex items-center gap-3">
             <div class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
               <ChartBar size={18} />
@@ -723,8 +682,7 @@ const columns: OrbisColumnDef[] = [
               {m.common_retry()}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {#if annualReportQuery.isLoading}
         <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-8">
@@ -779,14 +737,12 @@ const columns: OrbisColumnDef[] = [
 
         <!-- Subject Results Table -->
         {#if annualReport.subjects.length === 0}
-          <StudentSectionState
-            icon={BookOpen}
-            title={m.academics_grades_empty_title()}
-            description={m.academics_grades_empty_subtitle()}
-          />
+          <div class="flex min-h-36 flex-col items-center justify-center gap-1 py-8 text-center">
+            <p class="text-xs font-medium text-foreground">{m.academics_grades_empty_title()}</p>
+            <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
+          </div>
         {:else}
-        <Card class="overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto border-y border-border">
             <table class="w-full text-xs text-start">
               <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
                 <tr>
@@ -835,7 +791,6 @@ const columns: OrbisColumnDef[] = [
               </tbody>
             </table>
           </div>
-        </Card>
         {/if}
       {/if}
     </div>
@@ -846,8 +801,7 @@ const columns: OrbisColumnDef[] = [
   {:else if activeTab === "certificate"}
     <div class="flex flex-col gap-4">
       <!-- Certificate Configuration & Filters Header -->
-      <Card>
-        <CardContent class="flex flex-wrap items-center justify-between gap-3 p-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
           <div class="flex items-center gap-3">
             <div class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
               <AcademicCap size={18} />
@@ -921,8 +875,7 @@ const columns: OrbisColumnDef[] = [
               {m.common_retry()}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       <!-- Yemen Sana'a MoE Policy Formula Explanation Banner -->
       {#if selectedCertType === "secondary_thanawiya"}
@@ -992,14 +945,12 @@ const columns: OrbisColumnDef[] = [
 
         <!-- Certificate Subjects Table -->
         {#if certReport.subjects.length === 0}
-          <StudentSectionState
-            icon={BookOpen}
-            title={m.academics_grades_empty_title()}
-            description={m.academics_grades_empty_subtitle()}
-          />
+          <div class="flex min-h-36 flex-col items-center justify-center gap-1 py-8 text-center">
+            <p class="text-xs font-medium text-foreground">{m.academics_grades_empty_title()}</p>
+            <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
+          </div>
         {:else}
-        <Card class="overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto border-y border-border">
             <table class="w-full text-xs text-start">
               <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
                 <tr>
@@ -1060,7 +1011,6 @@ const columns: OrbisColumnDef[] = [
               </tbody>
             </table>
           </div>
-        </Card>
         {/if}
       {/if}
     </div>

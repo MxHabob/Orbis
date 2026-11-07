@@ -28,6 +28,7 @@ import {
   OrbisGrid,
   type GridActionEvent,
   type OrbisColumnDef,
+  selectionColumn,
 } from "@orbis/svelte-grid";
 import { api } from "$lib/api";
 import {
@@ -47,7 +48,6 @@ import FolderCard from "$lib/features/documents/folder-card.svelte";
 import FolderBreadcrumbs from "$lib/features/documents/folder-breadcrumbs.svelte";
 import FolderCreateModal from "$lib/features/documents/folder-create-modal.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
-import ArchiveSelectionCell from "$lib/features/documents/archive-selection-cell.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -180,23 +180,14 @@ const gridSource = $derived(
   filteredDocuments.map((doc) => ({
     ...doc,
     id: doc.id,
-    selected: selectedIds.has(doc.id),
-    toggleSelection: toggleSelect,
+    __selected: selectedIds.has(doc.id),
     sizeLabel: formatSize(doc.file_size_bytes),
     created_at_display: formatDate(doc.created_at, "datetime"),
   })),
 );
 
 const documentColumns = $derived<OrbisColumnDef[]>([
-  {
-    id: "selected",
-    header: "",
-    width: 42,
-    flex: 0,
-    readonly: true,
-    sort: false,
-    cell: ArchiveSelectionCell,
-  },
+  selectionColumn(),
   {
     id: "name",
     header: m.settings_ui_archive_file_name(),
@@ -263,6 +254,32 @@ function formatSize(bytes?: number | null): string {
 }
 
 function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "toggle-select" || event.actionId === "select") {
+    const id = String(event.row?.id || "");
+    if (!id) return;
+    const next = new Set(selectedIds);
+    if (
+      event.selected === false ||
+      (event.selected === undefined && next.has(id))
+    ) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    selectedIds = next;
+    return;
+  }
+
+  if (event.actionId === "select-all") {
+    const next = new Set(selectedIds);
+    for (const id of event.selectedIds ?? []) {
+      if (event.selected) next.add(id);
+      else next.delete(id);
+    }
+    selectedIds = next;
+    return;
+  }
+
   const doc = rawDocuments.find((item) => item.id === String(event.row.id));
   if (!doc) return;
 
@@ -438,7 +455,6 @@ async function handleDeleteFolder(f: FolderDto) {
   }
 }
 
-// Multi-select Handlers
 function toggleSelect(id: string, isSelected: boolean) {
   if (isSelected) {
     selectedIds.add(id);
@@ -446,14 +462,6 @@ function toggleSelect(id: string, isSelected: boolean) {
     selectedIds.delete(id);
   }
   selectedIds = new Set(selectedIds);
-}
-
-function selectAllDocuments() {
-  if (selectedIds.size === filteredDocuments.length) {
-    selectedIds = new Set();
-  } else {
-    selectedIds = new Set(filteredDocuments.map((d) => d.id));
-  }
 }
 
 async function handleBulkDelete() {
@@ -756,15 +764,6 @@ function onContainerDrop(e: DragEvent) {
               <span>{m.settings_ui_archive_documents_count({ count: filteredDocuments.length })}</span>
             </h4>
 
-            {#if viewMode === "table"}
-              <button
-                type="button"
-                onclick={selectAllDocuments}
-                class="text-xs text-primary hover:underline font-medium"
-              >
-                {selectedIds.size === filteredDocuments.length ? m.settings_ui_archive_deselect_all() : m.settings_ui_archive_select_all()}
-              </button>
-            {/if}
           </div>
 
           {#if viewMode === "grid"}
@@ -782,10 +781,11 @@ function onContainerDrop(e: DragEvent) {
             </div>
           {:else}
             <!-- Table View -->
-            <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden rounded-xl border border-border/60 bg-card">
+            <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden">
               <OrbisGrid
                 columns={documentColumns}
                 source={gridSource}
+                toolbar={false}
                 emptyTitle={m.settings_ui_archive_folder_empty()}
                 emptyDescription={m.settings_ui_archive_empty_description()}
                 rtl={getLocale() === "ar"}

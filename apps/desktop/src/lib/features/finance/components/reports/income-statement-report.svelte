@@ -302,7 +302,7 @@ const rtl = $derived(getLocale() === "ar");
         onRetry={refetchAll}
       />
     {:else}
-      <div class="h-full min-h-0 border border-border rounded-xl overflow-hidden shadow-xs bg-card">
+      <div class="h-full min-h-0 overflow-hidden">
         <OrbisGrid
           columns={statementColumns}
           source={incomeStatementSource}

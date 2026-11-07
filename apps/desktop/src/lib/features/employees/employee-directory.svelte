@@ -5,8 +5,6 @@
   search, CSV export, slide-over EmployeeSheet, and unified account lifecycle actions.
 -->
 <script lang="ts">
-import { Skeleton } from "@orbis/ui/skeleton";
-import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -663,91 +661,56 @@ function handleGridAction(event: GridActionEvent) {
           </Card>
         </div>
 
-        <!-- Controls Bar: Search & Action Buttons -->
-        <div class="flex items-center justify-end shrink-0 gap-3">
-          <div class="flex items-center gap-2">
-            <Button
-              variant="outline"
-              class="text-xs h-9 px-3 cursor-pointer"
-              onclick={handleExport}
-            >
-              <DocumentChartBar size={14} class="me-1.5" />
-              {m.common_export()}
-            </Button>
-
-            <Button
-              variant="default"
-              class="text-xs h-9 px-3 cursor-pointer"
-              onclick={() => openEmployeeSheet(null, "create")}
-            >
-              <Plus size={14} class="me-1.5" />
-              {m.employees_new_title()}
-            </Button>
-          </div>
-        </div>
-
         <!-- Table View with OrbisGrid -->
-        <div class="flex-1 min-h-0 flex flex-col bg-card border border-border rounded-lg overflow-hidden shadow-xs">
-          {#if isLoading}
-            <div class="flex h-full min-h-0 flex-col" aria-busy="true">
-              <span class="sr-only">{m.ui_copy_loading_employees_3e3b45d1()}</span>
-              <div class="flex h-11 shrink-0 items-center gap-4 border-b border-border bg-muted/30 px-4">
-                {#each Array.from({ length: 5 }) as _, index (index)}
-                  <Skeleton class="h-4 flex-1" />
-                {/each}
-              </div>
-              <div class="flex-1 divide-y divide-border/60 overflow-hidden">
-                {#each Array.from({ length: 9 }) as _, rowIndex (rowIndex)}
-                  <div class="flex h-11 items-center gap-4 px-4">
-                    {#each Array.from({ length: 5 }) as _, columnIndex (columnIndex)}
-                      <Skeleton class="h-4 flex-1" />
-                    {/each}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {:else if error}
+        <div class="flex-1 min-h-0 flex flex-col">
+          {#if error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
               <p class="text-xs text-destructive font-semibold">{extractErrorMessage(error)}</p>
               <Button variant="outline" size="sm" class="text-xs" onclick={() => employeesQuery.refetch()}>
                 {m.common_retry()}
               </Button>
             </div>
-          {:else if employees.length === 0}
-            <div class="h-full w-full flex flex-col items-center justify-center p-8 text-center gap-3">
-              <div class="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <Users size={24} />
-              </div>
-              <div class="flex flex-col gap-1">
-                <h3 class="text-sm font-semibold text-foreground">{m.ui_copy_no_employees_found_967f15bd()}</h3>
-                <p class="text-xs text-muted-foreground max-w-xs">{m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2()}</p>
-              </div>
-              {#if hasActiveFilters}
-                <Button variant="outline" size="sm" class="text-xs mt-2" onclick={clearFilters}>
-                  {m.common_filter_clear()}
-                </Button>
-              {/if}
-            </div>
           {:else}
-            <!-- OrbisGrid -->
-            <div class="flex-1 min-h-0 flex flex-col">
-              <OrbisGrid
-                {columns}
-                source={gridSource}
-                height="100%"
-                rowSize={44}
-                rtl={getLocale() === "ar"}
-                clientQuery
-                serverQuery
-                search={searchQuery}
-                searchPlaceholder={m.employees_search_placeholder()}
-                onquerychange={(query: DataQuery) => updateSearch(query.search ?? "")}
-                readonly
-                onaction={handleGridAction}
-                hasMore={employeesQuery.hasNextPage ?? false}
-                onloadmore={loadMoreEmployees}
-              />
-            </div>
+            <OrbisGrid
+              {columns}
+              source={gridSource}
+              loading={isLoading}
+              height="100%"
+              rtl={getLocale() === "ar"}
+              clientQuery
+              serverQuery
+              search={searchQuery}
+              searchPlaceholder={m.employees_search_placeholder()}
+              onquerychange={(query: DataQuery) => updateSearch(query.search ?? "")}
+              readonly
+              onaction={handleGridAction}
+              hasMore={employeesQuery.hasNextPage ?? false}
+              onloadmore={loadMoreEmployees}
+              emptyTitle={m.ui_copy_no_employees_found_967f15bd()}
+              emptyDescription={m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2()}
+            >
+              {#snippet toolbarActions()}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 px-3 text-xs"
+                  onclick={handleExport}
+                >
+                  <DocumentChartBar size={14} class="me-1.5" />
+                  {m.common_export()}
+                </Button>
+
+                <Button
+                  variant="lime"
+                  size="sm"
+                  class="h-8 px-3 text-xs font-semibold"
+                  onclick={() => openEmployeeSheet(null, "create")}
+                >
+                  <Plus size={14} class="me-1.5" />
+                  {m.employees_new_title()}
+                </Button>
+              {/snippet}
+            </OrbisGrid>
           {/if}
         </div>
       </div>

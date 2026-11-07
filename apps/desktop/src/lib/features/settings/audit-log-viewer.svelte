@@ -218,7 +218,7 @@ const columns = $derived<OrbisColumnDef[]>([
   </div>
 
   <!-- OrbisGrid Container -->
-  <div class="flex-1 min-h-0 rounded-xl border border-border/80 bg-background overflow-hidden">
+  <div class="flex-1 min-h-0 overflow-hidden">
     <OrbisGrid
       {columns}
       source={gridSource}
