@@ -168,9 +168,6 @@ export class FormController<Values, Payload = Values> {
           ),
         )
       : nextErrors;
-    if (!result.success) {
-      this.formError = result.error.issues[0]?.message;
-    }
     return Object.keys(this.errors).length === 0;
   }
 

@@ -6,21 +6,25 @@ import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { AdjustmentsHorizontal, ArrowPath, Eye, EyeSlash } from "@orbis/icons";
+import { Eye, EyeSlash } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
-import { loginInputSchema } from "@orbis/schemas";
+import { createLoginInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import MfaChallengeModal from "./mfa-challenge-modal.svelte";
 
 // No props needed
+const schema = createLoginInputSchema({
+  identifierRequired: m.auth_login_account_required(),
+  passwordRequired: m.auth_login_password_required(),
+});
 
 let showPassword = $state(false);
 let showMfaChallenge = $state(false);
 let mfaToken = $state("");
 const form = new FormController({
   initialValues: { identifier: "", password: "" },
-  schema: loginInputSchema,
+  schema,
 });
 
 function fieldError(field: string): string | undefined {
