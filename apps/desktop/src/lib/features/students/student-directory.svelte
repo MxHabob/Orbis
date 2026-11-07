@@ -7,19 +7,15 @@ import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
 import {
-  ArrowForward,
   ArrowUpTray,
-  BookOpen,
   DocumentChartBar,
   Plus,
-  Printer,
   XMark,
 } from "@orbis/icons";
-import { fly } from "svelte/transition";
-import { quintOut } from "svelte/easing";
 import { academicContext } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
 import { toast } from "@orbis/ui";
@@ -49,6 +45,13 @@ let showOverrideDialog = $state(false);
 let printDialogOpen = $state(false);
 let isDeletingStudents = $state(false);
 let selectedStudentIds = $state<Set<string>>(new Set());
+const selectedStudent = $derived(
+  selectedStudentIds.size === 1
+    ? students.find((student) =>
+        selectedStudentIds.has(student.student?.id || student.person?.id),
+      )
+    : undefined,
+);
 
 async function deleteSelectedStudents() {
   const studentIds = [...selectedStudentIds];
@@ -159,66 +162,6 @@ async function deleteSelectedStudents() {
     <!-- Middle Panel: Directory datagrid -->
     {#snippet middle()}
       <div class="h-full flex flex-col p-6 overflow-hidden gap-4">
-        <div class="flex items-center justify-end shrink-0">
-          <div class="flex items-center gap-2">
-            <SplitActionMenu
-              label={m.common_new()}
-              menuLabel={m.operations_ui_actions()}
-              icon={Plus}
-              actions={[
-                {
-                  id: "bulk-input",
-                  label: m.common_bulk_hub_title(),
-                  icon: ArrowUpTray,
-                  onSelect: () => goto(localizeHref(`/${orgId}/settings/bulk-input`)),
-                },
-                {
-                  id: "export",
-                  label: m.common_export(),
-                  icon: DocumentChartBar,
-                  onSelect: () => directory.exportStudents(selectedStudentIds),
-                },
-              ]}
-              onprimary={() => goto(localizeHref(`/${orgId}/students/new`))}
-            >
-              {#snippet primary()}
-                {#if academicContext.effectivePeriodId}
-                  <PeriodGateAction
-                    gateType="enrollment"
-                    periodId={academicContext.effectivePeriodId}
-                    classId={directory.selectedClassId ?? undefined}
-                    label={m.common_new()}
-                    size="sm"
-                    onAction={() => goto(localizeHref(`/${orgId}/students/new`))}
-                    onDraft={() => goto(localizeHref(`/${orgId}/students/new?draft=true`))}
-                    onOverride={() => { showOverrideDialog = true; }}
-                  >
-                    {#snippet allowed()}
-                      <Button
-                        size="sm"
-                        class="rounded-e-none gap-1.5"
-                        onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
-                      >
-                        <Plus class="size-4" />
-                        <span>{m.common_new()}</span>
-                      </Button>
-                    {/snippet}
-                  </PeriodGateAction>
-                {:else}
-                  <Button
-                    size="sm"
-                    class="rounded-e-none gap-1.5"
-                    onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
-                  >
-                    <Plus class="size-4" />
-                    <span>{m.common_new()}</span>
-                  </Button>
-                {/if}
-              {/snippet}
-            </SplitActionMenu>
-          </div>
-        </div>
-
         <!-- Student Grid -->
         <div class="flex-1 min-h-0 flex flex-col">
           {#if directory.studentsQuery.isLoading || directory.classesQuery.isLoading}
@@ -240,93 +183,124 @@ async function deleteSelectedStudents() {
               hasMore={directory.hasMore}
               onloadmore={directory.loadMoreStudents}
               {orgId}
-            />
+            >
+              {#snippet extraToolbarActions()}
+                <SplitActionMenu
+                  label={m.common_new()}
+                  menuLabel={m.operations_ui_actions()}
+                  icon={Plus}
+                  actions={[
+                    {
+                      id: "bulk-input",
+                      label: m.common_bulk_hub_title(),
+                      icon: ArrowUpTray,
+                      onSelect: () => goto(localizeHref(`/${orgId}/settings/bulk-input`)),
+                    },
+                    {
+                      id: "export",
+                      label: m.common_export(),
+                      icon: DocumentChartBar,
+                      onSelect: () => directory.exportStudents(selectedStudentIds),
+                    },
+                  ]}
+                  onprimary={() => goto(localizeHref(`/${orgId}/students/new`))}
+                >
+                  {#snippet primary()}
+                    {#if academicContext.effectivePeriodId}
+                      <PeriodGateAction
+                        gateType="enrollment"
+                        periodId={academicContext.effectivePeriodId}
+                        classId={directory.selectedClassId ?? undefined}
+                        label={m.common_new()}
+                        size="sm"
+                        onAction={() => goto(localizeHref(`/${orgId}/students/new`))}
+                        onDraft={() => goto(localizeHref(`/${orgId}/students/new?draft=true`))}
+                        onOverride={() => { showOverrideDialog = true; }}
+                      >
+                        {#snippet allowed()}
+                          <Button
+                            size="sm"
+                            class="rounded-e-none gap-1.5"
+                            onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
+                          >
+                            <Plus class="size-4" />
+                            <span>{m.common_new()}</span>
+                          </Button>
+                        {/snippet}
+                      </PeriodGateAction>
+                    {:else}
+                      <Button
+                        size="sm"
+                        class="rounded-e-none gap-1.5"
+                        onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
+                      >
+                        <Plus class="size-4" />
+                        <span>{m.common_new()}</span>
+                      </Button>
+                    {/if}
+                  {/snippet}
+                </SplitActionMenu>
+              {/snippet}
+            </StudentTable>
           {/if}
         </div>
       </div>
     {/snippet}
   </MainViewport>
 
-  <!-- Floating Bottom Action Bar for Selected Students -->
-  {#if selectedStudentIds.size > 0}
-    <div
-      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl pointer-events-auto select-none"
-      transition:fly={{ y: 35, duration: 250, easing: quintOut }}
-    >
-      <div class="bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 ring-1 ring-black/5 dark:ring-white/10">
-        <!-- Selection Counter & Info -->
-        <div class="flex min-w-0 items-center gap-2.5 text-start">
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-            <BookOpen size={15} strokeWidth={2.5} />
-          </span>
-          <div class="flex flex-col min-w-0">
-            <span class="truncate text-xs font-bold text-foreground">
-              {m.operations_ui_students_selected({ count: formatNumber(selectedStudentIds.size) })}
-            </span>
-            {#if selectedStudentIds.size === 1}
-              {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
-              {#if singleStudent}
-                <span class="truncate text-[11px] text-muted-foreground">
-                  {(singleStudent.person?.first_name && singleStudent.person?.last_name ? `${singleStudent.person.first_name} ${singleStudent.person.last_name}` : '') || ''}
-                </span>
-              {/if}
-            {/if}
-          </div>
-        </div>
+  <SettingsBottomBar
+    visible={selectedStudentIds.size > 0}
+    isDirty={selectedStudentIds.size > 0}
+    isSaving={isDeletingStudents}
+    showReset={false}
+    statusVariant="primary"
+    message={m.operations_ui_students_selected({ count: formatNumber(selectedStudentIds.size) })}
+  >
+    {#snippet actions()}
+      {#if selectedStudent?.student?.id}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          class="h-8 px-2.5 text-xs font-medium"
+          onclick={() => goto(localizeHref(`/${orgId}/students/${selectedStudent.student?.id}`))}
+        >
+          {m.operations_ui_student_profile()}
+        </Button>
+      {/if}
 
-        <!-- Action Buttons -->
-        <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
-          {#if selectedStudentIds.size === 1}
-            {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
-            {#if singleStudent}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                class="h-8 px-2.5 text-xs font-medium cursor-pointer gap-1.5"
-                onclick={() => goto(localizeHref(`/${orgId}/students/${singleStudent.student?.id}`))}
-              >
-                <ArrowForward size={13} />
-                <span>{m.operations_ui_student_profile()}</span>
-              </Button>
-            {/if}
-          {/if}
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        class="h-8 px-2.5 text-xs font-medium"
+        disabled={isDeletingStudents}
+        onclick={deleteSelectedStudents}
+      >
+        {m.common_action_delete()}
+      </Button>
 
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            class="h-8 px-2.5 text-xs font-medium cursor-pointer gap-1.5"
-            disabled={isDeletingStudents}
-            onclick={deleteSelectedStudents}
-          >
-            {m.common_action_delete()} ({selectedStudentIds.size})
-          </Button>
+      <Button
+        type="button"
+        variant="lime"
+        size="sm"
+        class="h-8 px-3 text-xs font-semibold"
+        onclick={() => printDialogOpen = true}
+      >
+        {m.common_print_templates()}
+      </Button>
 
-          <Button
-            type="button"
-            variant="lime"
-            size="sm"
-            class="h-8 px-3 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
-            onclick={() => printDialogOpen = true}
-          >
-            <Printer size={14} />
-            <span>{m.common_print_templates()} ({selectedStudentIds.size})</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-            onclick={() => selectedStudentIds = new Set()}
-          >
-            {m.common_action_cancel()}
-          </Button>
-        </div>
-      </div>
-    </div>
-  {/if}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+        onclick={() => selectedStudentIds = new Set()}
+      >
+        {m.common_action_cancel()}
+      </Button>
+    {/snippet}
+  </SettingsBottomBar>
 
   <PrintDialog
     bind:open={printDialogOpen}

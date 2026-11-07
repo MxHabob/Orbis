@@ -89,6 +89,7 @@ interface Props {
   showSearch?: boolean;
   showFilterButton?: boolean;
   showAddRow?: boolean;
+  toolbarFilters?: Snippet;
   filterTranslations?: FilterTranslations;
   uniformColumns?: boolean;
   search?: string;
@@ -120,7 +121,7 @@ let {
   rtl = false,
   readonly = false,
   rowIdKey = "id",
-  rowSize = 36,
+  rowSize = 40,
   range = true,
   clipboard = true,
   autoSize = false,
@@ -129,7 +130,8 @@ let {
   serverQuery = false,
   showSearch = true,
   showFilterButton = true,
-  showAddRow = true,
+  showAddRow = false,
+  toolbarFilters,
   filterTranslations,
   uniformColumns = true,
   search = $bindable(""),
@@ -151,7 +153,7 @@ let {
   onloadmore,
 }: Props = $props();
 
-const HEADER_H = 36;
+const HEADER_H = 40;
 let root: HTMLDivElement | null = $state(null);
 let bodyEl: HTMLDivElement | null = $state(null);
 let scrollTop = $state(0);
@@ -657,6 +659,7 @@ function moveActiveAfterEdit(
   if (nextRow >= displayRows.length) {
     if (
       !readonly &&
+      showAddRow &&
       displayRows.length === safeSource.length &&
       (rowDelta > 0 || colDelta > 0)
     ) {
@@ -1699,70 +1702,81 @@ export function scrollToColumnProp(prop: string) {
       role="toolbar"
       aria-label={rtl ? "أدوات الجدول" : "Grid tools"}
     >
-      {#if showSearch}
-        <label class="orbis-search">
-          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <circle cx="8.75" cy="8.75" r="5.75" stroke="currentColor" stroke-width="1.5" />
-            <path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            placeholder={searchPlaceholder ?? (rtl ? "بحث في السجلات…" : "Search records…")}
-            aria-label={rtl ? "بحث في جميع الأعمدة" : "Search all columns"}
-            oninput={handleSearchInput}
-            onkeydown={(event) => {
-              if (event.key === "Enter") event.preventDefault();
-              event.stopPropagation();
-            }}
-          />
-          {#if search}
+      {#if showSearch || showFilterButton || toolbarFilters}
+        <div class="orbis-toolbar-controls">
+          {#if showSearch}
+            <label class="orbis-search">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <circle cx="8.75" cy="8.75" r="5.75" stroke="currentColor" stroke-width="1.5" />
+                <path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                placeholder={searchPlaceholder ?? (rtl ? "بحث في السجلات…" : "Search records…")}
+                aria-label={rtl ? "بحث في جميع الأعمدة" : "Search all columns"}
+                oninput={handleSearchInput}
+                onkeydown={(event) => {
+                  if (event.key === "Enter") event.preventDefault();
+                  event.stopPropagation();
+                }}
+              />
+              {#if search}
+                <button
+                  type="button"
+                  class="orbis-toolbar-clear"
+                  aria-label={rtl ? "مسح البحث" : "Clear search"}
+                  onclick={clearSearch}
+                >×</button>
+              {/if}
+            </label>
+          {/if}
+          {#if showFilterButton}
+            <FilterDialogFrame
+              bind:open={filterPanelOpen}
+              title={activeFilterTranslations.advancedFilter}
+              triggerLabel={activeFilterTranslations.filter}
+              count={filterCount}
+              clearLabel={activeFilterTranslations.clearAll}
+              applyLabel={activeFilterTranslations.applyFilter}
+              disabled={filterableCols.length === 0 && filterCount === 0}
+              onOpen={openFilterBuilder}
+              onClear={clearGridFilter}
+              onApply={applyGridFilter}
+            >
+              <FilterBuilder
+                bind:filter={filterDraft}
+                fields={filterFields}
+                translations={activeFilterTranslations}
+              />
+            </FilterDialogFrame>
+          {/if}
+          {#if toolbarFilters}
+            {@render toolbarFilters()}
+          {/if}
+        </div>
+      {/if}
+      {#if toolbarActions || (!readonly && showAddRow)}
+        <div
+          class="orbis-toolbar-actions"
+          class:has-query-controls={showSearch || showFilterButton || toolbarFilters}
+        >
+          {#if toolbarActions}
+            {@render toolbarActions()}
+          {/if}
+          {#if !readonly && showAddRow}
             <button
               type="button"
-              class="orbis-toolbar-clear"
-              aria-label={rtl ? "مسح البحث" : "Clear search"}
-              onclick={clearSearch}
-            >×</button>
+              class="orbis-toolbar-button orbis-add-row"
+              disabled={loading}
+              onclick={addRowFromToolbar}
+            >
+              <span aria-hidden="true">+</span>
+              {rtl ? "إضافة صف" : "Add row"}
+            </button>
           {/if}
-        </label>
+        </div>
       {/if}
-      {#if toolbarActions}
-        {@render toolbarActions()}
-      {/if}
-      {#if showFilterButton}
-        <FilterDialogFrame
-          bind:open={filterPanelOpen}
-          title={activeFilterTranslations.advancedFilter}
-          triggerLabel={activeFilterTranslations.filter}
-          count={filterCount}
-          clearLabel={activeFilterTranslations.clearAll}
-          applyLabel={activeFilterTranslations.applyFilter}
-          disabled={filterableCols.length === 0 && filterCount === 0}
-          onOpen={openFilterBuilder}
-          onClear={clearGridFilter}
-          onApply={applyGridFilter}
-        >
-          <FilterBuilder
-            bind:filter={filterDraft}
-            fields={filterFields}
-            translations={activeFilterTranslations}
-          />
-        </FilterDialogFrame>
-      {/if}
-      {#if !readonly && showAddRow}
-        <button
-          type="button"
-          class="orbis-toolbar-button orbis-add-row"
-          disabled={loading}
-          onclick={addRowFromToolbar}
-        >
-          <span aria-hidden="true">+</span>
-          {rtl ? "إضافة صف" : "Add row"}
-        </button>
-      {/if}
-      <span class="orbis-row-count" aria-live="polite">
-        {displayRows.length} {rtl ? "صف" : "rows"}
-      </span>
     </div>
   {/if}
 
@@ -2177,8 +2191,8 @@ export function scrollToColumnProp(prop: string) {
     min-height: 0;
     background: var(--card);
     color: var(--card-foreground);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border: 0;
+    border-radius: 0;
     overflow: hidden;
     font-family: var(--font-sans, "Rubik", system-ui, sans-serif);
     font-size: 0.75rem;
@@ -2204,6 +2218,25 @@ export function scrollToColumnProp(prop: string) {
     min-width: 0;
     border-bottom: 1px solid var(--border);
     background: var(--card);
+  }
+  .orbis-toolbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 1 1 16rem;
+    min-width: 0;
+  }
+  .orbis-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 0 0 auto;
+  }
+  .orbis-toolbar-actions.has-query-controls {
+    margin-inline-start: 0.25rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid
+      color-mix(in oklab, var(--border) 80%, transparent);
   }
   .orbis-search {
     display: flex;
@@ -2297,13 +2330,6 @@ export function scrollToColumnProp(prop: string) {
     color: var(--primary);
     font-size: 1rem;
     font-weight: 600;
-  }
-  .orbis-row-count {
-    margin-inline-start: auto;
-    padding-inline: 0.375rem;
-    color: var(--muted-foreground);
-    font-size: 0.6875rem;
-    white-space: nowrap;
   }
   .orbis-paste-banner {
     display: flex;
@@ -2399,6 +2425,8 @@ export function scrollToColumnProp(prop: string) {
     overflow: auto;
     position: relative;
     background: var(--card);
+    border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+    border-radius: var(--radius-sm);
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     scrollbar-width: thin;

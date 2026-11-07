@@ -591,7 +591,7 @@ const staffGridSource = $derived(
 
     <!-- Tab 2: Classes Grid -->
     <TabsContent value="classes" class="space-y-4">
-      <div class="h-[480px] w-full rounded-xl border border-border/50 overflow-hidden bg-card/50">
+      <div class="h-[480px] w-full overflow-hidden">
         <OrbisGrid
           source={classGridSource}
           columns={classColumns}
@@ -614,7 +614,7 @@ const staffGridSource = $derived(
         </Button>
       </div>
 
-      <div class="h-[480px] w-full rounded-xl border border-border/50 overflow-hidden bg-card/50">
+      <div class="h-[480px] w-full overflow-hidden">
         <OrbisGrid
           source={roomGridSource}
           columns={roomColumns}
@@ -686,7 +686,7 @@ const staffGridSource = $derived(
 
     <!-- Tab 5: Staff Grid -->
     <TabsContent value="staff" class="space-y-4">
-      <div class="h-[480px] w-full rounded-xl border border-border/50 overflow-hidden bg-card/50">
+      <div class="h-[480px] w-full overflow-hidden">
         <OrbisGrid
           source={staffGridSource}
           columns={staffColumns}

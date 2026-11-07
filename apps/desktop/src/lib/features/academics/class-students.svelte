@@ -137,7 +137,6 @@ function refetch() {
       source={gridSource}
       loading={isLoading}
       height="100%"
-      rowSize={44}
       rtl={getLocale() === "ar"}
       readonly
       onaction={handleGridAction}

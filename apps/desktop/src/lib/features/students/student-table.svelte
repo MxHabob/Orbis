@@ -3,6 +3,7 @@
 Renders the list of students using OrbisGrid with exact backend contract alignment.
 -->
 <script lang="ts">
+import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import type { StudentDetailDto, EnrollmentDto, ClassDto } from "$lib/api";
 import { formatDate, l } from "$lib/core/i18n";
@@ -33,6 +34,7 @@ let {
   onsearchchange,
   hasMore = false,
   onloadmore,
+  extraToolbarActions,
   orgId,
 }: {
   students: StudentDetailDto[];
@@ -45,6 +47,7 @@ let {
   onsearchchange?: (search: string) => void;
   hasMore?: boolean;
   onloadmore?: () => void | Promise<unknown>;
+  extraToolbarActions?: Snippet;
   orgId: string;
 } = $props();
 
@@ -409,7 +412,6 @@ function handleGridAction(event: GridActionEvent) {
       {columns}
       source={gridSource}
       height="100%"
-      rowSize={44}
       rtl={getLocale() === "ar"}
       clientQuery
       serverQuery
@@ -425,12 +427,17 @@ function handleGridAction(event: GridActionEvent) {
       emptyDescription={m.common_table_no_students_hint()}
       readonly
     >
-      {#snippet toolbarActions()}
+      {#snippet toolbarFilters()}
         <FilterTrigger
           bind:filter={activeFilter}
           fields={studentFilterFields}
           translations={studentFilterTranslations}
         />
+      {/snippet}
+      {#snippet toolbarActions()}
+        {#if extraToolbarActions}
+          {@render extraToolbarActions()}
+        {/if}
       {/snippet}
     </OrbisGrid>
   </div>

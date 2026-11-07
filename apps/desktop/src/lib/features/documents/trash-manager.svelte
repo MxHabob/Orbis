@@ -524,7 +524,7 @@ async function handleBatchPurge() {
         </div>
       {:else}
         <!-- Table View -->
-        <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden rounded-xl border border-border/60 bg-card">
+        <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden">
           <OrbisGrid
             columns={trashColumns}
             source={trashGridSource}

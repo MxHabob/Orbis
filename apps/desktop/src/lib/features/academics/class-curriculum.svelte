@@ -190,7 +190,6 @@ function handleGridAction(event: GridActionEvent) {
             source={gridSource}
             loading={isLoading}
             height="100%"
-            rowSize={44}
             readonly
             onaction={handleGridAction}
             emptyTitle={m.common_empty_classes_desc()}
