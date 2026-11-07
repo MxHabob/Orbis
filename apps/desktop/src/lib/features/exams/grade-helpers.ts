@@ -222,7 +222,7 @@ export function transformMatrixToSource(
       grade_letter:
         scaleItems && scaleItems.length > 0
           ? scoreToGradeLetter(student.percentage, scaleItems)
-          : (student.grade_letter || "—"),
+          : student.grade_letter || "—",
     };
 
     for (const g of student.grades || []) {
@@ -264,6 +264,10 @@ export function recalculateRowTotals(
     total,
     max_total: maxTotal,
     percentage,
-    grade_letter: scoreToGradeLetter(percentage, scaleItems, row.grade_letter as string),
+    grade_letter: scoreToGradeLetter(
+      percentage,
+      scaleItems,
+      row.grade_letter as string,
+    ),
   };
 }

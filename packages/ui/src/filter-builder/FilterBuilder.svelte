@@ -12,6 +12,7 @@ import {
   type FilterBuilderProps,
   defaultFilterTranslations,
 } from "./types";
+import FilterBuilder from "./FilterBuilder.svelte";
 import FilterRow from "./FilterRow.svelte";
 import { slide } from "svelte/transition";
 
@@ -112,7 +113,7 @@ function removeGroup(index: number) {
             {#if filter.groups}
                 {#each filter.groups as group, i (i)}
                     <div transition:slide={{duration: 200}}>
-                        <svelte:self
+                        <FilterBuilder
                             bind:filter={filter.groups[i]}
                             fields={fields}
                             isRoot={false}

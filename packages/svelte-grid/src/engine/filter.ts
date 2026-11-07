@@ -139,7 +139,7 @@ function matchesSearch(
 }
 
 function isSearchMatch(value: unknown, query: string): boolean {
-  if (value == null || typeof value === "object" && !(value instanceof Date))
+  if (value == null || (typeof value === "object" && !(value instanceof Date)))
     return false;
   return String(value).toLowerCase().includes(query);
 }
@@ -161,7 +161,8 @@ function matchesFilterWithColumns(
   columns?: ReadonlyMap<string, OrbisColumnDef>,
 ): boolean {
   if (!filter) return true;
-  if (filter.search && !matchesSearch(row, filter.search, columns)) return false;
+  if (filter.search && !matchesSearch(row, filter.search, columns))
+    return false;
 
   const groups = filter.groups ?? [];
   const conditions = filter.conditions ?? [];

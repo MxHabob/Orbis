@@ -32,9 +32,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 
 let { orgId }: { orgId: string } = $props();
 
-let selectedPeriodId = $state(
-  academicContext.effectivePeriodId || "",
-);
+let selectedPeriodId = $state(academicContext.effectivePeriodId || "");
 let selectedClassId = $state("");
 let isLoadingResults = $state(false);
 let resultError = $state<string | null>(null);
@@ -76,7 +74,9 @@ $effect(() => {
 // ── Summary stats ───────────────────────────────────────────
 const totalStudents = $derived(termResults.length);
 const passedStudents = $derived(
-  termResults.filter((r) => r.status === "passed" || r.status === "passed_with_honors").length,
+  termResults.filter(
+    (r) => r.status === "passed" || r.status === "passed_with_honors",
+  ).length,
 );
 const failedStudents = $derived(
   termResults.filter((r) => r.status === "failed").length,
@@ -184,7 +184,13 @@ const gridSource = $derived(
 
 // ── Section overview (when no class selected) ───────────────
 let sectionOverview = $state<
-  { id: string; name: string; studentCount: number; avgPct: number | null; status: string }[]
+  {
+    id: string;
+    name: string;
+    studentCount: number;
+    avgPct: number | null;
+    status: string;
+  }[]
 >([]);
 let isLoadingOverview = $state(false);
 
@@ -204,7 +210,8 @@ async function loadSectionOverview() {
       const avg =
         cards.length > 0
           ? Math.round(
-              cards.reduce((s, c) => s + c.overall_percentage, 0) / cards.length,
+              cards.reduce((s, c) => s + c.overall_percentage, 0) /
+                cards.length,
             )
           : null;
       results.push({

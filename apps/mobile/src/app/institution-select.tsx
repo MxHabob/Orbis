@@ -254,7 +254,6 @@ export default function InstitutionSelectScreen() {
                     onConnect={connectInstitution}
                   />
                 ) : null}
-
               </View>
             }
             ListEmptyComponent={

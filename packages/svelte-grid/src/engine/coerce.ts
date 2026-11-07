@@ -1,8 +1,4 @@
-import type {
-  ColumnValidateResult,
-  GridRow,
-  OrbisColumnDef,
-} from "../types";
+import type { ColumnValidateResult, GridRow, OrbisColumnDef } from "../types";
 
 const TRUE_SET = new Set(["true", "1", "yes", "y", "نعم", "صح"]);
 const FALSE_SET = new Set(["false", "0", "no", "n", "لا"]);
@@ -76,8 +72,7 @@ export function coerceValue(
           String(o.value).toLowerCase() === text.toLowerCase() ||
           o.label.toLowerCase() === text.toLowerCase(),
       );
-      if (!hit)
-        return { ok: false, value, message: "Value is not allowed" };
+      if (!hit) return { ok: false, value, message: "Value is not allowed" };
       return { ok: true, value: hit.value };
     }
     default:

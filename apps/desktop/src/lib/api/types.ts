@@ -1022,7 +1022,13 @@ export interface ReleaseNoteItem {
 }
 
 export interface ReleaseNoteSection {
-  type: "feature" | "improvement" | "fix" | "security" | "breaking" | "technical";
+  type:
+    | "feature"
+    | "improvement"
+    | "fix"
+    | "security"
+    | "breaking"
+    | "technical";
   title: string;
   items: ReleaseNoteItem[];
 }

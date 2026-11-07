@@ -337,7 +337,8 @@ function handleCellEdit(e: CellEditEvent) {
 }
 
 function handleGridRowsChange(event: GridRowsChangeEvent) {
-  if (!refData || event.action === "edit" || event.changedRows.length === 0) return;
+  if (!refData || event.action === "edit" || event.changedRows.length === 0)
+    return;
 
   const changedIds = new Set(
     event.changedRows.map((row) => String(row.id ?? "")),

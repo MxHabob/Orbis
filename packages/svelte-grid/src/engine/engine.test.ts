@@ -239,9 +239,7 @@ describe("query + coerce", () => {
     expect(coerceValue("12", { type: "integer" }).value).toBe(12);
     expect(coerceValue("nope", { type: "integer" }).ok).toBe(false);
     expect(coerceValue("نعم", { type: "boolean" }).value).toBe(true);
-    expect(
-      coerceValue("not a date", { type: "datetime" }).ok,
-    ).toBe(false);
+    expect(coerceValue("not a date", { type: "datetime" }).ok).toBe(false);
     const datetime = coerceValue("2024-12-31T12:30", { type: "datetime" });
     expect(datetime.ok).toBe(true);
     expect(Number.isNaN(Date.parse(String(datetime.value)))).toBe(false);

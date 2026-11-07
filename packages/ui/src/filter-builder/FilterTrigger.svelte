@@ -53,7 +53,5 @@ function handleClear() {
   onClear={handleClear}
   onApply={handleApply}
 >
-  {#snippet children()}
-    <FilterBuilder bind:filter {fields} translations={translations} />
-  {/snippet}
+  <FilterBuilder bind:filter {fields} translations={translations} />
 </FilterDialogFrame>

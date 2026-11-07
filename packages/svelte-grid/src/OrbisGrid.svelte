@@ -223,10 +223,7 @@ const autoSizeWidths = $derived.by<Record<string, number>>(() => {
   for (const col of visibleCols) {
     let max = columnHeader(col).length * 8 + 24;
     for (let index = 0; index < Math.min(displayRows.length, 80); index++) {
-      max = Math.max(
-        max,
-        formatCell(displayRows[index]!, col).length * 7 + 24,
-      );
+      max = Math.max(max, formatCell(displayRows[index]!, col).length * 7 + 24);
     }
     widths[columnId(col)] = Math.min(420, Math.max(64, max));
     if (!isUtilityColumn(col)) {
@@ -345,8 +342,7 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
     const id = columnId(col);
     const userW = columnWidths[id];
     const isUtility = isUtilityColumn(col);
-    const isDedicatedFixed =
-      isUtility || col.flex === 0 || col.flexgrow === 0;
+    const isDedicatedFixed = isUtility || col.flex === 0 || col.flexgrow === 0;
 
     const baseW =
       userW ??
@@ -384,11 +380,11 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
     const hasManualResize = userW !== undefined;
     const flex = hasManualResize
       ? 0
-      : (uniformColumns && !isUtility
+      : uniformColumns && !isUtility
         ? 1
         : (col.flex ??
           col.flexgrow ??
-          (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1)));
+          (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1));
 
     const finalBaseW = Math.max(minW, baseW);
     totalBase += finalBaseW;
@@ -451,9 +447,7 @@ function widthOf(col: OrbisColumnDef): number {
 }
 
 const columnSizes = $derived(visibleCols.map((col) => widthOf(col)));
-const totalWidth = $derived(
-  columnSizes.reduce((sum, width) => sum + width, 0),
-);
+const totalWidth = $derived(columnSizes.reduce((sum, width) => sum + width, 0));
 
 const totalHeight = $derived(displayRows.length * rowSize);
 
@@ -556,7 +550,9 @@ function canAddFilterCondition(): boolean {
 
 function removeFilterCondition(index: number) {
   if (!filter) return;
-  const conditions = filter.conditions.filter((_, itemIndex) => itemIndex !== index);
+  const conditions = filter.conditions.filter(
+    (_, itemIndex) => itemIndex !== index,
+  );
   setFilter({
     ...filter,
     conditions,
@@ -565,9 +561,7 @@ function removeFilterCondition(index: number) {
 }
 
 function filterConditionLabel(condition: FilterCondition): string {
-  const col = filterableCols.find(
-    (item) => columnId(item) === condition.field,
-  );
+  const col = filterableCols.find((item) => columnId(item) === condition.field);
   const operator = operatorLabel(condition.operator);
   const value = Array.isArray(condition.value)
     ? condition.value.join(" – ")
@@ -925,7 +919,10 @@ function deleteSelectedRows() {
 }
 
 function isCheckboxTarget(target: EventTarget | null): boolean {
-  return target instanceof Element && Boolean(target.closest('[data-slot="checkbox"]'));
+  return (
+    target instanceof Element &&
+    Boolean(target.closest('[data-slot="checkbox"]'))
+  );
 }
 
 function startEdit(row: number, col: number, seed?: string) {
@@ -1740,7 +1737,6 @@ export function scrollToColumnProp(prop: string) {
           disabled={filterableCols.length === 0 && filterCount === 0}
           onClear={() => setFilter(null)}
         >
-          {#snippet children()}
             <div class="orbis-filter-panel">
               <div class="orbis-filter-builder">
                 <select
@@ -1843,7 +1839,6 @@ export function scrollToColumnProp(prop: string) {
                 </div>
               {/if}
             </div>
-          {/snippet}
         </FilterDialogFrame>
       {/if}
       {#if !readonly}

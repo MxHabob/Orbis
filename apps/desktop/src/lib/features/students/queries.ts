@@ -459,9 +459,13 @@ export function createDeleteStudentsMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
     mutationFn: (studentIds: string[]) =>
-      Promise.allSettled(studentIds.map((studentId) => api.deleteStudent(studentId))),
+      Promise.allSettled(
+        studentIds.map((studentId) => api.deleteStudent(studentId)),
+      ),
     onSuccess: (results) => {
-      if (results.some((result) => result.status === "fulfilled" && result.value)) {
+      if (
+        results.some((result) => result.status === "fulfilled" && result.value)
+      ) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
       }
     },
