@@ -12,6 +12,7 @@ import {
   type FilterBuilderProps,
   defaultFilterTranslations,
 } from "./types";
+import FilterBuilder from "./FilterBuilder.svelte";
 import FilterRow from "./FilterRow.svelte";
 import { slide } from "svelte/transition";
 
@@ -58,11 +59,8 @@ function removeGroup(index: number) {
 }
 </script>
 
-<div
-    class="relative flex flex-col gap-4 p-4 sm:p-5 rounded-xl border shadow-sm transition-all duration-300 {isRoot ? 'border-primary/40 bg-background' : 'border-border bg-muted/30 ml-4 mt-2'}"
->
-    <!-- Group Header (Logic selector + Add buttons) -->
-    <div class="flex flex-wrap items-center justify-between gap-3 relative z-10">
+<div class="flex min-w-0 flex-col gap-3 {isRoot ? 'w-full' : 'ms-3 border-s border-border ps-3'}">
+    <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
             <Select type="single" value={filter.logic} onValueChange={(v) => { if (v) filter.logic = v as "AND" | "OR" }}>
                 <SelectTrigger class="w-[90px] font-semibold tracking-wide text-xs h-9">
@@ -99,39 +97,35 @@ function removeGroup(index: number) {
         </div>
     </div>
 
-    <!-- Conditions List -->
     {#if (filter.conditions && filter.conditions.length > 0) || (filter.groups && filter.groups.length > 0)}
-        <div class="flex flex-col gap-3 relative z-10">
+        <div class="flex min-w-0 flex-col gap-2">
             {#if filter.conditions}
                 {#each filter.conditions as condition, i (i)}
                     <div transition:slide={{duration: 200}}>
-                        <FilterRow 
-                            bind:condition={filter.conditions[i]} 
-                            fields={fields} 
-                            translations={translations}
-                            onRemove={() => removeCondition(i)} 
+                        <FilterRow
+                            bind:condition={filter.conditions[i]}
+                            fields={fields}
+                            onRemove={() => removeCondition(i)}
                         />
                     </div>
                 {/each}
             {/if}
-            
-            <!-- Nested Groups List (Recursive rendering) -->
             {#if filter.groups}
                 {#each filter.groups as group, i (i)}
                     <div transition:slide={{duration: 200}}>
-                        <svelte:self
-                            bind:filter={filter.groups[i]} 
-                            fields={fields} 
-                            isRoot={false} 
+                        <FilterBuilder
+                            bind:filter={filter.groups[i]}
+                            fields={fields}
+                            isRoot={false}
                             translations={translations}
-                            onRemove={() => removeGroup(i)} 
+                            onRemove={() => removeGroup(i)}
                         />
                     </div>
                 {/each}
             {/if}
         </div>
     {:else}
-        <div class="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg bg-muted/20 text-muted-foreground">
+        <div class="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border px-4 py-6 text-muted-foreground">
             <p class="text-sm mb-2">{translations.noRules}</p>
             <div class="flex gap-2">
                 <Button variant="secondary" size="sm" onclick={addCondition} class="text-xs">{translations.addRule}</Button>

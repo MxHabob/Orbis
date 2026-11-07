@@ -13,7 +13,6 @@ import { Card, LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
-import { debounce } from "$lib/shared/utils/debounce";
 import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import type {
@@ -36,7 +35,6 @@ import { toast } from "@orbis/ui";
 import {
   Plus,
   Refresh,
-  Search,
   Download,
   XMark,
   Calendar,
@@ -92,14 +90,10 @@ let refundNotes = $state("");
 
 // Filters
 let searchQuery = $state("");
-let searchInput = $state("");
 let statusFilter = $state<
   "all" | "pending" | "partially_paid" | "paid" | "overdue"
 >("all");
 let gridSort = $state<SortSpec[]>([]);
-const updateFeeSearch = debounce((value: string) => {
-  searchQuery = value;
-}, 250);
 const feePageSort = $derived.by(() => {
   const sort = gridSort[0];
   const fieldByColumn: Record<string, string> = {
@@ -113,7 +107,8 @@ const feePageSort = $derived.by(() => {
   return sortBy ? { sort_by: sortBy, sort_dir: sort!.dir } : {};
 });
 function handleFeeGridQuery(query: DataQuery) {
-  gridSort = query.sorts;
+  gridSort = query.sorts ?? [];
+  searchQuery = query.search ?? "";
 }
 
 const feePageFilter = $derived({
@@ -671,17 +666,6 @@ async function exportCsv() {
       </div>
 
       <div class="flex items-center gap-2">
-        <div class="relative w-48 sm:w-64">
-          <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            type="text"
-            placeholder={m.finance_ui_fee_search_placeholder()}
-            bind:value={searchInput}
-            oninput={() => updateFeeSearch(searchInput)}
-            class="h-8 ps-8 text-xs bg-card border-border/60"
-          />
-        </div>
-
         <Select
           type="single"
           value={statusFilter}
@@ -964,6 +948,7 @@ async function exportCsv() {
         loading={gridLoading}
         serverQuery
         search={searchQuery}
+        searchPlaceholder={m.finance_ui_fee_search_placeholder()}
         onquerychange={handleFeeGridQuery}
         rtl={isAr()}
         readonly

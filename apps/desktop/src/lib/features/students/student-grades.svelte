@@ -204,14 +204,7 @@ function getStatusBadge(status?: string | null) {
   };
 }
 
-function getAppreciation(percentage?: number | null) {
-  if (percentage == null) return "—";
-  if (percentage >= 90) return m.student_grades_appreciation_excellent();
-  if (percentage >= 80) return m.student_grades_appreciation_very_good();
-  if (percentage >= 65) return m.student_grades_appreciation_good();
-  if (percentage >= 50) return m.student_grades_appreciation_pass();
-  return m.student_grades_appreciation_fail();
-}
+// getAppreciation removed — now using backend-computed overall_letter_grade_ar / letter_grade
 
 // ── Print Triggers ───────────────────────────────────────────
 function triggerPrintCertificate() {
@@ -594,7 +587,7 @@ const columns: OrbisColumnDef[] = [
           />
           <StudentMetricCard
             title={m.student_grades_appreciation_label()}
-            value={getAppreciation(Number(termReport.overall_percentage))}
+            value={(termReport as any).overall_letter_grade_ar ?? (termReport as any).overall_letter_grade ?? "—"}
             icon={InfoCircle}
           />
           <StudentMetricCard
@@ -656,7 +649,7 @@ const columns: OrbisColumnDef[] = [
                       {formatPercent(Number(subj.percentage))}
                     </td>
                     <td class="px-3 py-2.5 text-center font-medium">
-                      {subj.letter_grade ?? getAppreciation(Number(subj.percentage))}
+                      {subj.letter_grade ?? "—"}
                     </td>
                     <td class="px-3 py-2.5 text-center">
                       <span class={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
@@ -764,7 +757,7 @@ const columns: OrbisColumnDef[] = [
           />
           <StudentMetricCard
             title={m.student_grades_appreciation_label()}
-            value={getAppreciation(Number(annualReport.overall_percentage))}
+            value={(annualReport as any).overall_letter_grade_ar ?? (annualReport as any).overall_letter_grade ?? "—"}
             icon={InfoCircle}
           />
           <StudentMetricCard
@@ -826,7 +819,7 @@ const columns: OrbisColumnDef[] = [
                       {formatPercent(Number(subj.percentage))}
                     </td>
                     <td class="px-3 py-2.5 text-center font-medium">
-                      {subj.letter_grade ?? getAppreciation(Number(subj.percentage))}
+                      {subj.letter_grade ?? "—"}
                     </td>
                     <td class="px-3 py-2.5 text-center">
                       <span class={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
@@ -977,7 +970,7 @@ const columns: OrbisColumnDef[] = [
           />
           <StudentMetricCard
             title={m.student_grades_appreciation_label()}
-            value={getAppreciation(Number(certReport.overall_percentage))}
+            value={(certReport as any).overall_letter_grade_ar ?? (certReport as any).overall_letter_grade ?? "—"}
             icon={InfoCircle}
           />
           <StudentMetricCard
@@ -1051,7 +1044,7 @@ const columns: OrbisColumnDef[] = [
                       {formatPercent(Number(subj.percentage))}
                     </td>
                     <td class="px-3 py-2.5 text-center font-medium">
-                      {subj.letter_grade ?? getAppreciation(Number(subj.percentage))}
+                      {subj.letter_grade ?? "—"}
                     </td>
                     <td class="px-3 py-2.5 text-center">
                       <span class={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${

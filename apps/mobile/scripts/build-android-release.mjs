@@ -22,12 +22,7 @@ const androidRoot = resolve(projectRoot, "android");
 if (process.platform === "win32") {
   run(
     process.env.ComSpec ?? "cmd.exe",
-    [
-      "/d",
-      "/s",
-      "/c",
-      `gradlew.bat ${gradleArgs.join(" ")}`,
-    ],
+    ["/d", "/s", "/c", `gradlew.bat ${gradleArgs.join(" ")}`],
     androidRoot,
   );
 } else {

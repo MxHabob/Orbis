@@ -157,7 +157,10 @@ function RootLayoutContent() {
     <ThemeProvider value={navigationTheme}>
       <ToastProvider>
         <ThemedStatusBar />
-        <View className="flex-1" style={{ direction: isArabic ? "rtl" : "ltr" }}>
+        <View
+          className="flex-1"
+          style={{ direction: isArabic ? "rtl" : "ltr" }}
+        >
           <OfflineStatusBanner />
           <Stack
             screenOptions={{

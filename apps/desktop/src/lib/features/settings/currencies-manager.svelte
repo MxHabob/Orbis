@@ -269,6 +269,7 @@ async function handleGridAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       clientQuery
+      toolbar={false}
       search={searchQuery}
       filter={activeFilter}
       emptyTitle={m.settings_currencies_no_currencies_title()}

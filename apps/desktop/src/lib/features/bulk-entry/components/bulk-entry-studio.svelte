@@ -82,7 +82,6 @@ const activeColumnMetadata = $derived(
 let fileName = $state<string | null>(null);
 let rawRows = $state<BulkRowState[]>([]);
 let filterMode = $state<"all" | "errors" | "warnings" | "valid">("all");
-let searchQuery = $state("");
 
 let errorCount = $state(0);
 let warningCount = $state(0);
@@ -120,17 +119,6 @@ const gridSource = $derived.by(() => {
   } else if (filterMode === "valid") {
     filtered = filtered.filter(
       (r) => r.status === "valid" || r.status === "committed",
-    );
-  }
-
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase().trim();
-    filtered = filtered.filter((r) =>
-      Object.values(r.data).some((val) =>
-        String(val || "")
-          .toLowerCase()
-          .includes(q),
-      ),
     );
   }
 
@@ -352,7 +340,22 @@ function handleGridRowsChange(event: GridRowsChangeEvent) {
   if (!refData || event.action === "edit" || event.changedRows.length === 0)
     return;
 
-  const updatedRows = rawRows.slice();
+  const changedIds = new Set(
+    event.changedRows.map((row) => String(row.id ?? "")),
+  );
+  const updatedRows =
+    event.action === "delete-rows"
+      ? rawRows.filter((row) => !changedIds.has(String(row.data.id ?? "")))
+      : rawRows.slice();
+  if (event.action === "delete-rows") {
+    const summary = validateAllRows(updatedRows, currentProfile, refData);
+    rawRows = updatedRows;
+    errorCount = summary.errorCount;
+    warningCount = summary.warningCount;
+    validCount = summary.validCount;
+    return;
+  }
+
   const rowIndexes: Record<string, number> = {};
   updatedRows.forEach((row, index) => {
     rowIndexes[String(row.data.id ?? "")] = index;
@@ -687,16 +690,6 @@ function handleReset() {
       </div>
 
       <div class="flex items-center gap-1.5">
-        <div class="relative">
-          <input
-            type="text"
-            dir="auto"
-            placeholder={m.common_search_placeholder()}
-            bind:value={searchQuery}
-            class="h-7 w-36 px-2.5 text-xs rounded bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-
         {#if errorCount > 0}
           <Button
             variant="ghost"
@@ -724,7 +717,7 @@ function handleReset() {
     </div>
 
     <!-- Central OrbisGrid Workspace -->
-    <div class="flex-1 w-full overflow-hidden bg-background relative">
+    <div class="flex-1 min-h-0 min-w-0 w-full overflow-hidden bg-background relative">
       <OrbisGrid
         columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields).map((column) => ({
           ...column,
@@ -735,6 +728,7 @@ function handleReset() {
         source={gridSource}
         rtl={true}
         height="100%"
+        clientQuery
         range={true}
         clipboard={true}
         createEmptyRow={() => createBlankRow(rawRows.length + 1).data}

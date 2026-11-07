@@ -179,9 +179,7 @@ class NotificationStore {
     if (typeof window === "undefined") return;
     if (isDesktopApp) {
       try {
-        const { onAction } = await import(
-          "@tauri-apps/plugin-notification"
-        );
+        const { onAction } = await import("@tauri-apps/plugin-notification");
         this.unlistenNotificationAction = await onAction((event) => {
           if (event.actionId === "tap") {
             void this.openFromSystemNotification();

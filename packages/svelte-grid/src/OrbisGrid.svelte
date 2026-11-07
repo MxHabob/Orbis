@@ -1,5 +1,8 @@
 <script lang="ts">
 import { setContext } from "svelte";
+import { Badge } from "@orbis/ui/badge";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { FilterDialogFrame } from "@orbis/ui/filter-builder";
 import type {
   ActionItem,
   BulkResult,
@@ -7,9 +10,12 @@ import type {
   CellRange,
   DataQuery,
   GridActionEvent,
+  GridFilter,
   GridRow,
   GridRowsChangeEvent,
   OrbisColumnDef,
+  FilterCondition,
+  FilterOperator,
   SelectionSnapshot,
   SortSpec,
 } from "./types";
@@ -25,6 +31,7 @@ import {
   applyPaste,
   clampIndex,
   clearRange,
+  coerceValue,
   contextMenuItems,
   defaultAlign,
   duplicateRows,
@@ -45,6 +52,7 @@ import {
   toggleId,
   toggleSort,
   toTsv,
+  visibleVariableWindow,
   visibleWindow,
   autoscrollDelta,
   colFromOffset,
@@ -70,9 +78,15 @@ interface Props {
   autoFit?: boolean;
   clientQuery?: boolean;
   serverQuery?: boolean;
+  showSearch?: boolean;
+  showFilterButton?: boolean;
+  uniformColumns?: boolean;
   search?: string;
-  filter?: import("./types").GridFilter | null;
+  searchPlaceholder?: string;
+  filter?: GridFilter | null;
+  toolbar?: boolean;
   onquerychange?: (query: DataQuery) => void;
+  onfilterchange?: (filter: GridFilter | null) => void;
   oncelledit?: (event: CellEditEvent) => void;
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
   onaction?: (event: GridActionEvent) => void;
@@ -102,9 +116,15 @@ let {
   autoFit = true,
   clientQuery = false,
   serverQuery = false,
-  search = "",
-  filter = null,
+  showSearch = true,
+  showFilterButton = true,
+  uniformColumns = true,
+  search = $bindable(""),
+  searchPlaceholder,
+  filter = $bindable(null),
+  toolbar = true,
   onquerychange,
+  onfilterchange,
   oncelledit,
   onbeforeedit,
   onaction,
@@ -126,7 +146,18 @@ let viewportH = $state(400);
 let viewportW = $state(800);
 let sorts = $state<SortSpec[]>([]);
 let selection = $state<SelectionSnapshot>(emptySelection());
-let editing = $state<{ row: number; col: number; draft: string } | null>(null);
+let editing = $state<{
+  row: number;
+  col: number;
+  draft: string;
+  error?: string;
+} | null>(null);
+let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
+let filterPanelOpen = $state(false);
+let filterColumn = $state("");
+let filterOperator = $state<FilterOperator>("contains");
+let filterValue = $state("");
+let filterEndValue = $state("");
 let menu = $state<{
   x: number;
   y: number;
@@ -140,33 +171,95 @@ let resizing = $state<{ id: string; startX: number; startW: number } | null>(
   null,
 );
 let origin = $state<{ row: number; col: number } | null>(null);
-let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
 let dragging = $state(false);
 let skipBlur = $state(false);
 let isLoadingMore = $state(false);
 let loadMoreError = $state<unknown>(null);
+let serverQueryTimer: ReturnType<typeof setTimeout> | null = null;
+let lastServerQueryKey = "";
 
 setContext("orbis-grid-onaction", (event: GridActionEvent) => {
   onaction?.(event);
 });
 
+const usesServerQuery = $derived(serverQuery || Boolean(onquerychange));
 const shouldRunClientQuery = $derived(
-  !serverQuery &&
-    (clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0),
+  clientQuery ||
+    (!usesServerQuery &&
+      (Boolean(search) || Boolean(filter) || sorts.length > 0)),
 );
 
 const safeSource = $derived(Array.isArray(source) ? source : []);
 
 const visibleCols = $derived(columns.filter((c) => !c.hidden));
+const filterableCols = $derived(
+  visibleCols.filter(
+    (col) =>
+      col.filterable !== false &&
+      !columnId(col).startsWith("__") &&
+      col.type !== "action",
+  ),
+);
+const filterDraftColumn = $derived(
+  filterableCols.find((col) => columnId(col) === filterColumn) ??
+    filterableCols[0],
+);
+const filterCount = $derived(countFilterConditions(filter));
 const displayRows = $derived(
   shouldRunClientQuery
-    ? queryClient(safeSource, visibleCols, { filter, search, sorts })
+    ? queryClient(safeSource, visibleCols, {
+        filter,
+        search: usesServerQuery ? undefined : search,
+        sorts: usesServerQuery && !clientQuery ? [] : sorts,
+      })
     : safeSource,
 );
 
-let lastServerQueryKey = "";
-$effect(() => {
-  if (!serverQuery || !onquerychange) return;
+const autoSizeWidths = $derived.by<Record<string, number>>(() => {
+  if (!autoSize || displayRows.length === 0) return {};
+  const widths: Record<string, number> = {};
+  let sharedDataWidth = DEFAULT_DATA_COLUMN_WIDTH;
+
+  for (const col of visibleCols) {
+    let max = columnHeader(col).length * 8 + 24;
+    for (let index = 0; index < Math.min(displayRows.length, 80); index++) {
+      max = Math.max(max, formatCell(displayRows[index]!, col).length * 7 + 24);
+    }
+    widths[columnId(col)] = Math.min(420, Math.max(64, max));
+    if (!isUtilityColumn(col)) {
+      sharedDataWidth = Math.max(sharedDataWidth, widths[columnId(col)]!);
+    }
+  }
+
+  if (uniformColumns) {
+    for (const col of visibleCols) {
+      if (!isUtilityColumn(col)) {
+        widths[columnId(col)] = sharedDataWidth;
+      }
+    }
+  }
+  return widths;
+});
+
+function countFilterConditions(value: GridFilter | null | undefined): number {
+  if (!value) return 0;
+  return (
+    (value.conditions?.length ?? 0) +
+    (value.groups ?? []).reduce(
+      (count, group) => count + countFilterConditions(group),
+      0,
+    )
+  );
+}
+
+function resetQueryView() {
+  scrollTop = 0;
+  if (bodyEl) bodyEl.scrollTop = 0;
+}
+
+function notifyQueryChange() {
+  resetQueryView();
+  if (!usesServerQuery || !onquerychange) return;
   const query: DataQuery = {
     page: 1,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -175,10 +268,58 @@ $effect(() => {
     sorts,
   };
   const queryKey = JSON.stringify(query);
+  if (serverQueryTimer) clearTimeout(serverQueryTimer);
   if (queryKey === lastServerQueryKey) return;
-  lastServerQueryKey = queryKey;
-  onquerychange(query);
-});
+  serverQueryTimer = setTimeout(() => {
+    lastServerQueryKey = queryKey;
+    serverQueryTimer = null;
+    onquerychange?.(query);
+  }, 120);
+}
+
+function handleSearchInput(event: Event) {
+  search = (event.currentTarget as HTMLInputElement).value;
+  notifyQueryChange();
+}
+
+function clearSearch() {
+  search = "";
+  notifyQueryChange();
+}
+
+const filterOperators: Array<{ value: FilterOperator; label: string }> = [
+  { value: "contains", label: "Contains" },
+  { value: "not_contains", label: "Does not contain" },
+  { value: "eq", label: "Is" },
+  { value: "neq", label: "Is not" },
+  { value: "starts_with", label: "Starts with" },
+  { value: "ends_with", label: "Ends with" },
+  { value: "gt", label: "Greater than" },
+  { value: "gte", label: "Greater than or equal" },
+  { value: "lt", label: "Less than" },
+  { value: "lte", label: "Less than or equal" },
+  { value: "between", label: "Between" },
+  { value: "in", label: "Is one of" },
+  { value: "not_in", label: "Is not one of" },
+  { value: "is_null", label: "Is empty" },
+  { value: "is_not_null", label: "Is not empty" },
+  { value: "bool_true", label: "Is true" },
+  { value: "bool_false", label: "Is false" },
+];
+
+const DEFAULT_DATA_COLUMN_WIDTH = 144;
+
+function isUtilityColumn(col: OrbisColumnDef): boolean {
+  const id = columnId(col);
+  return (
+    id === "__idx" ||
+    id === "__rowIndex" ||
+    id === "__selected" ||
+    col.type === "action" ||
+    id === "actions" ||
+    col.prop === "actions"
+  );
+}
 
 const rowWindow = $derived(
   visibleWindow(
@@ -200,50 +341,50 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
   const colDetails = visibleCols.map((col) => {
     const id = columnId(col);
     const userW = columnWidths[id];
-    const isDedicatedFixed =
-      id === "__idx" ||
-      id === "__selected" ||
-      col.prop === "__idx" ||
-      col.prop === "__selected" ||
-      col.type === "action" ||
-      id === "actions" ||
-      col.prop === "actions" ||
-      col.flex === 0 ||
-      col.flexgrow === 0;
+    const isUtility = isUtilityColumn(col);
+    const isDedicatedFixed = isUtility || col.flex === 0 || col.flexgrow === 0;
 
     const baseW =
       userW ??
-      col.width ??
-      col.size ??
-      (isDedicatedFixed
-        ? id === "__idx"
-          ? 48
-          : id === "__selected"
-            ? 40
-            : 90
-        : col.type === "avatar"
-          ? 220
-          : col.type === "badge" || col.type === "status"
-            ? 110
-            : 140);
+      autoSizeWidths[id] ??
+      (uniformColumns && !isUtility
+        ? DEFAULT_DATA_COLUMN_WIDTH
+        : (col.width ??
+          col.size ??
+          (isDedicatedFixed
+            ? id === "__idx" || id === "__rowIndex"
+              ? 48
+              : id === "__selected"
+                ? 40
+                : 90
+            : col.type === "avatar"
+              ? 220
+              : col.type === "badge" || col.type === "status"
+                ? 110
+                : 140)));
 
     const minW =
-      col.minWidth ??
-      (id === "__idx"
-        ? 48
-        : id === "__selected"
-          ? 40
-          : col.type === "action" || id === "actions"
-            ? 80
-            : 60);
+      uniformColumns && !isUtility
+        ? 60
+        : (col.minWidth ??
+          (id === "__idx" || id === "__rowIndex"
+            ? 48
+            : id === "__selected"
+              ? 40
+              : col.type === "action" || id === "actions"
+                ? 80
+                : 60));
 
-    const maxW = col.maxWidth ?? Infinity;
+    const maxW =
+      uniformColumns && !isUtility ? Infinity : (col.maxWidth ?? Infinity);
     const hasManualResize = userW !== undefined;
     const flex = hasManualResize
       ? 0
-      : (col.flex ??
-        col.flexgrow ??
-        (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1));
+      : uniformColumns && !isUtility
+        ? 1
+        : (col.flex ??
+          col.flexgrow ??
+          (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1));
 
     const finalBaseW = Math.max(minW, baseW);
     totalBase += finalBaseW;
@@ -305,27 +446,20 @@ function widthOf(col: OrbisColumnDef): number {
   return computedWidthMap[id] ?? columnWidths[id] ?? columnWidth(col);
 }
 
-const totalWidth = $derived(
-  visibleCols.reduce((sum, col) => sum + widthOf(col), 0),
-);
+const columnSizes = $derived(visibleCols.map((col) => widthOf(col)));
+const totalWidth = $derived(columnSizes.reduce((sum, width) => sum + width, 0));
 
 const totalHeight = $derived(displayRows.length * rowSize);
 
 const colWindow = $derived.by(() => {
-  if (visibleCols.length < 24)
+  if (visibleCols.length < 24 || rtl)
     return {
       start: 0,
       end: visibleCols.length,
       offset: 0,
       count: visibleCols.length,
     };
-  return visibleWindow(
-    rtl ? 0 : scrollLeft,
-    viewportW,
-    120,
-    visibleCols.length,
-    4,
-  );
+  return visibleVariableWindow(scrollLeft, viewportW, columnSizes, 4);
 });
 
 const windowedCols = $derived(
@@ -335,6 +469,263 @@ const windowedCols = $derived(
 function rowKey(row: GridRow, index: number): string {
   const id = row[rowIdKey];
   return id == null ? `__i${index}` : String(id);
+}
+
+function setFilter(next: GridFilter | null) {
+  filter = next;
+  onfilterchange?.(next);
+  notifyQueryChange();
+}
+
+function filterScalar(value: string, col: OrbisColumnDef): unknown {
+  if (col.options?.length) {
+    const option = col.options.find(
+      (item) =>
+        String(item.value).toLowerCase() === value.toLowerCase() ||
+        item.label.toLowerCase() === value.toLowerCase(),
+    );
+    if (option) return option.value;
+  }
+  if (
+    col.type === "number" ||
+    col.type === "integer" ||
+    col.type === "decimal" ||
+    col.type === "currency" ||
+    col.type === "percentage"
+  ) {
+    const number = Number(value.replace(/[%$,\s]/g, ""));
+    return Number.isFinite(number) ? number : value;
+  }
+  return value;
+}
+
+function filterOperatorRequiresValue(operator: FilterOperator): boolean {
+  return !["is_null", "is_not_null", "bool_true", "bool_false"].includes(
+    operator,
+  );
+}
+
+function addFilterCondition() {
+  const col = filterDraftColumn;
+  if (!canAddFilterCondition() || !col) return;
+  const field = columnId(col);
+  let value: unknown;
+  if (filterOperatorRequiresValue(filterOperator)) {
+    if (filterOperator === "between") {
+      value = [
+        filterScalar(filterValue, col),
+        filterScalar(filterEndValue, col),
+      ];
+    } else if (filterOperator === "in" || filterOperator === "not_in") {
+      value = filterValue
+        .split(",")
+        .map((item) => filterScalar(item.trim(), col))
+        .filter((item) => item !== "");
+    } else {
+      value = filterScalar(filterValue, col);
+    }
+  }
+  setFilter({
+    logic: filter?.logic ?? "AND",
+    conditions: [
+      ...(filter?.conditions ?? []),
+      { field, operator: filterOperator, value },
+    ],
+    groups: filter?.groups,
+    search: filter?.search,
+    sort_by: filter?.sort_by,
+    sort_dir: filter?.sort_dir,
+  });
+  filterValue = "";
+  filterEndValue = "";
+}
+
+function canAddFilterCondition(): boolean {
+  if (!filterDraftColumn) return false;
+  if (!filterOperatorRequiresValue(filterOperator)) return true;
+  if (filterOperator === "between")
+    return filterValue.trim() !== "" && filterEndValue.trim() !== "";
+  return filterValue.trim() !== "";
+}
+
+function removeFilterCondition(index: number) {
+  if (!filter) return;
+  const conditions = filter.conditions.filter(
+    (_, itemIndex) => itemIndex !== index,
+  );
+  setFilter({
+    ...filter,
+    conditions,
+    groups: filter.groups,
+  });
+}
+
+function filterConditionLabel(condition: FilterCondition): string {
+  const col = filterableCols.find((item) => columnId(item) === condition.field);
+  const operator = operatorLabel(condition.operator);
+  const value = Array.isArray(condition.value)
+    ? condition.value.join(" – ")
+    : condition.value == null
+      ? ""
+      : String(condition.value);
+  return [col ? columnHeader(col) : condition.field, operator, value]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function operatorLabel(value: string): string {
+  const labels: Record<string, string> = rtl
+    ? {
+        contains: "يحتوي على",
+        not_contains: "لا يحتوي على",
+        eq: "يساوي",
+        neq: "لا يساوي",
+        starts_with: "يبدأ بـ",
+        ends_with: "ينتهي بـ",
+        gt: "أكبر من",
+        gte: "أكبر من أو يساوي",
+        lt: "أقل من",
+        lte: "أقل من أو يساوي",
+        between: "بين",
+        in: "أحد القيم",
+        not_in: "ليس من القيم",
+        is_null: "فارغ",
+        is_not_null: "غير فارغ",
+        bool_true: "نعم",
+        bool_false: "لا",
+      }
+    : {};
+  return (
+    labels[value] ??
+    filterOperators.find((item) => item.value === value)?.label ??
+    value
+  );
+}
+
+function filterInputType(col: OrbisColumnDef | undefined): string {
+  if (col?.type === "date") return "date";
+  if (col?.type === "datetime") return "datetime-local";
+  return "text";
+}
+
+function createEmptyGridRow(): GridRow {
+  const newRow = { ...(createEmptyRow?.() ?? {}) };
+  if (!createEmptyRow) {
+    for (const col of columns) {
+      const id = columnId(col);
+      if (
+        id &&
+        !id.startsWith("__") &&
+        !col.readonly &&
+        col.type !== "action" &&
+        col.type !== "computed" &&
+        col.type !== "formula"
+      ) {
+        newRow[id] = null;
+      }
+    }
+  }
+  if (
+    rowIdKey &&
+    !rowIdKey.startsWith("__") &&
+    newRow[rowIdKey] == null &&
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    newRow[rowIdKey] = crypto.randomUUID();
+  }
+  return newRow;
+}
+
+function appendEmptyRow(): GridRow {
+  const newRow = createEmptyGridRow();
+  updateRows([...safeSource, newRow], "insert", [newRow]);
+  return newRow;
+}
+
+function isEditableColumn(col: OrbisColumnDef): boolean {
+  const id = columnId(col);
+  return (
+    !col.readonly &&
+    !id.startsWith("__") &&
+    col.type !== "action" &&
+    col.type !== "computed" &&
+    col.type !== "formula"
+  );
+}
+
+function editableColumnIndices(): number[] {
+  return visibleCols.flatMap((col, index) =>
+    isEditableColumn(col) ? [index] : [],
+  );
+}
+
+function firstEditableColumnIndex(): number {
+  return editableColumnIndices()[0] ?? 0;
+}
+
+function lastEditableColumnIndex(): number {
+  const indices = editableColumnIndices();
+  return indices[indices.length - 1] ?? 0;
+}
+
+function addRowFromToolbar() {
+  search = "";
+  if (filter) setFilter(null);
+  filterPanelOpen = false;
+  const newRow = appendEmptyRow();
+  requestAnimationFrame(() => {
+    const index = displayRows.indexOf(newRow);
+    if (index >= 0) setActive(index, firstEditableColumnIndex());
+  });
+}
+
+function moveActiveAfterEdit(
+  row: number,
+  col: number,
+  rowDelta: number,
+  colDelta: number,
+) {
+  let nextRow = row + rowDelta;
+  let nextCol = col;
+  const editableCols = editableColumnIndices();
+  if (colDelta > 0) {
+    const nextEditable = editableCols.find((index) => index > col);
+    if (nextEditable !== undefined) nextCol = nextEditable;
+    else {
+      nextRow++;
+      nextCol = firstEditableColumnIndex();
+    }
+  } else if (colDelta < 0) {
+    let previousEditable: number | undefined;
+    for (let index = editableCols.length - 1; index >= 0; index--) {
+      if (editableCols[index]! < col) {
+        previousEditable = editableCols[index]!;
+        break;
+      }
+    }
+    if (previousEditable !== undefined) nextCol = previousEditable;
+    else {
+      nextRow--;
+      nextCol = lastEditableColumnIndex();
+    }
+  }
+  if (nextRow >= displayRows.length) {
+    if (
+      !readonly &&
+      displayRows.length === safeSource.length &&
+      (rowDelta > 0 || colDelta > 0)
+    ) {
+      const newRow = appendEmptyRow();
+      requestAnimationFrame(() => {
+        const index = displayRows.indexOf(newRow);
+        if (index >= 0) setActive(index, nextCol);
+      });
+      return;
+    }
+    nextRow = displayRows.length - 1;
+  }
+  setActive(nextRow, nextCol);
 }
 
 function isGridRowSelected(row: GridRow, index: number): boolean {
@@ -393,17 +784,6 @@ function requestMoreIfNeeded(force = false) {
     });
 }
 
-$effect(() => {
-  if (!Array.isArray(source)) {
-    source = [];
-  }
-
-  safeSource.length;
-  hasMore;
-  loading;
-  requestAnimationFrame(() => requestMoreIfNeeded());
-});
-
 function setActive(row: number, col: number, extend = false) {
   const r = clampIndex(row, Math.max(0, displayRows.length - 1));
   const c = clampIndex(col, Math.max(0, visibleCols.length - 1));
@@ -436,24 +816,36 @@ function commitOverlay(
   rowIndex: number,
   col: OrbisColumnDef,
   newValue: unknown,
-) {
+): boolean {
   const row = displayRows[rowIndex];
-  if (!row) return;
+  if (!row) return false;
   const id = columnId(col);
   const oldValue = getCellValue(row, col);
+  const validation = coerceValue(newValue, col, row);
+  if (!validation.ok) {
+    if (editing?.row === rowIndex && editing.col === visibleCols.indexOf(col)) {
+      editing = { ...editing, error: validation.message ?? "Invalid value" };
+    }
+    return false;
+  }
+  const sourceIndex = source.indexOf(row);
+  if (sourceIndex < 0) return false;
+  const updatedRow = { ...row, [id]: validation.value };
   const evt: CellEditEvent = {
-    row,
+    row: updatedRow,
     rowIndex,
     columnId: id,
     prop: id,
     oldValue,
-    newValue,
+    newValue: validation.value,
     action: "update",
   };
-  if (onbeforeedit && onbeforeedit(evt) === false) return;
-  row[id] = newValue;
-  updateRows(source.slice(), "edit", [row]);
+  if (onbeforeedit && onbeforeedit(evt) === false) return true;
+  const rows = source.slice();
+  rows[sourceIndex] = updatedRow;
+  updateRows(rows, "edit", [updatedRow]);
   oncelledit?.(evt);
+  return true;
 }
 
 function updateRows(
@@ -463,6 +855,74 @@ function updateRows(
 ) {
   source = rows;
   onrowschange?.({ rows, changedRows, action });
+}
+
+function updateDisplayedRows(
+  updatedDisplayRows: GridRow[],
+  action: GridRowsChangeEvent["action"],
+  changedStart: number,
+  changedEnd: number,
+) {
+  const rows = safeSource.slice();
+  const sourceIndexes = new Map(
+    safeSource.map((row, index) => [row, index] as const),
+  );
+  const existingCount = Math.min(displayRows.length, updatedDisplayRows.length);
+  for (let index = 0; index < existingCount; index++) {
+    const sourceIndex = sourceIndexes.get(displayRows[index]!);
+    if (
+      sourceIndex !== undefined &&
+      updatedDisplayRows[index] !== displayRows[index]
+    ) {
+      rows[sourceIndex] = updatedDisplayRows[index]!;
+    }
+  }
+  if (updatedDisplayRows.length > displayRows.length) {
+    rows.push(...updatedDisplayRows.slice(displayRows.length));
+  }
+  updateRows(
+    rows,
+    action,
+    updatedDisplayRows.slice(
+      changedStart,
+      Math.min(changedEnd, updatedDisplayRows.length),
+    ),
+  );
+}
+
+function deleteSelectedRows() {
+  if (readonly || displayRows.length === 0) return;
+  const selectedRows = displayRows.filter((row, index) =>
+    isGridRowSelected(row, index),
+  );
+  let removedRows: Set<GridRow>;
+  if (selectedRows.length > 0) {
+    removedRows = new Set(selectedRows);
+  } else {
+    const activeRow = menu?.row ?? selection.active?.row ?? 0;
+    const selected = normalizeRange(currentRange());
+    const hasMultiRowRange =
+      selection.range && selected.startRow !== selected.endRow;
+    removedRows = new Set(
+      hasMultiRowRange
+        ? displayRows.slice(selected.startRow, selected.endRow + 1)
+        : displayRows.slice(activeRow, activeRow + 1),
+    );
+  }
+  if (removedRows.size === 0) return;
+
+  const rows = safeSource.filter((row) => !removedRows.has(row));
+  if (rows.length === safeSource.length) return;
+  updateRows(rows, "delete-rows", [...removedRows]);
+  selection = emptySelection();
+  onselection?.(selection);
+}
+
+function isCheckboxTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest('[data-slot="checkbox"]'))
+  );
 }
 
 function startEdit(row: number, col: number, seed?: string) {
@@ -485,17 +945,23 @@ function startEdit(row: number, col: number, seed?: string) {
     return;
   }
   const value = displayRows[row] ? getCellValue(displayRows[row]!, column) : "";
-  editing = { row, col, draft: seed ?? (value == null ? "" : String(value)) };
+  editing = {
+    row,
+    col,
+    draft: seed ?? (value == null ? "" : String(value)),
+  };
+  requestAnimationFrame(() => editorEl?.focus());
 }
 
 function commitEdit(moveRow = 0, moveCol = 0) {
   if (!editing) return;
   const column = visibleCols[editing.col];
-  if (column) commitOverlay(editing.row, column, editing.draft);
+  if (column && !commitOverlay(editing.row, column, editing.draft)) return;
   const r = editing.row;
   const c = editing.col;
   editing = null;
-  if (moveRow || moveCol) setActive(r + moveRow, c + moveCol);
+  root?.focus();
+  if (moveRow || moveCol) moveActiveAfterEdit(r, c, moveRow, moveCol);
 }
 
 function cancelEdit() {
@@ -525,11 +991,12 @@ function cutSelection() {
   copySelection();
   if (readonly) return;
   const selected = normalizeRange(currentRange());
-  const rows = clearRange(safeSource, visibleCols, selected);
-  updateRows(
+  const rows = clearRange(displayRows, visibleCols, selected);
+  updateDisplayedRows(
     rows,
     "cut",
-    rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+    selected.startRow,
+    Math.min(selected.endRow + 1, rows.length),
   );
 }
 
@@ -538,20 +1005,18 @@ function pasteText(text: string) {
   const matrix = parseClipboard(text);
   const start = normalizeRange(currentRange());
   const { rows, result } = applyPaste({
-    rows: source,
+    rows: displayRows,
     columns: visibleCols,
     startRow: start.startRow,
     startCol: start.startCol,
     matrix,
-    createEmptyRow,
+    createEmptyRow: createEmptyGridRow,
   });
-  updateRows(
+  updateDisplayedRows(
     rows,
     "paste",
-    rows.slice(
-      start.startRow,
-      Math.min(start.startRow + matrix.length, rows.length),
-    ),
+    start.startRow,
+    Math.min(start.startRow + matrix.length, rows.length),
   );
   pasteBanner = result;
   onpasteResult?.(result);
@@ -597,7 +1062,7 @@ function maybeAutoScroll(e: PointerEvent) {
 function handlePointer(row: number, col: number, e: PointerEvent) {
   if (e.button !== 0) return;
   if ((e.target as HTMLElement | null)?.closest(".resize-handle")) return;
-  if ((e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")) return;
+  if (isCheckboxTarget(e.target)) return;
   if ((e.target as HTMLElement | null)?.closest(".orbis-action-btn")) return;
   e.preventDefault();
   root?.focus();
@@ -637,6 +1102,16 @@ function handleDblClick(row: number, col: number, e: MouseEvent) {
   }
 }
 
+function handleRootKeydown(event: KeyboardEvent) {
+  if (
+    event.target instanceof Element &&
+    event.target.closest(".orbis-toolbar, .orbis-filter-panel")
+  ) {
+    return;
+  }
+  handleKeydown(event);
+}
+
 function handleKeydown(e: KeyboardEvent) {
   const cmd = interpretKey(e, !!editing, rtl);
   if (cmd.preventDefault) e.preventDefault();
@@ -674,14 +1149,12 @@ function handleKeydown(e: KeyboardEvent) {
     case "delete":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = clearRange(safeSource, visibleCols, selected);
-        updateRows(
+        const rows = clearRange(displayRows, visibleCols, selected);
+        updateDisplayedRows(
           rows,
           "delete",
-          rows.slice(
-            selected.startRow,
-            Math.min(selected.endRow + 1, rows.length),
-          ),
+          selected.startRow,
+          Math.min(selected.endRow + 1, rows.length),
         );
       }
       break;
@@ -721,28 +1194,24 @@ function handleKeydown(e: KeyboardEvent) {
     case "fillDown":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = fillDown(safeSource, visibleCols, selected);
-        updateRows(
+        const rows = fillDown(displayRows, visibleCols, selected);
+        updateDisplayedRows(
           rows,
           "fill-down",
-          rows.slice(
-            selected.startRow,
-            Math.min(selected.endRow + 1, rows.length),
-          ),
+          selected.startRow,
+          Math.min(selected.endRow + 1, rows.length),
         );
       }
       break;
     case "fillRight":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = fillRight(safeSource, visibleCols, selected);
-        updateRows(
+        const rows = fillRight(displayRows, visibleCols, selected);
+        updateDisplayedRows(
           rows,
           "fill-right",
-          rows.slice(
-            selected.startRow,
-            Math.min(selected.endRow + 1, rows.length),
-          ),
+          selected.startRow,
+          Math.min(selected.endRow + 1, rows.length),
         );
       }
       break;
@@ -752,13 +1221,14 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
-  if ((e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")) return;
+  if (isCheckboxTarget(e.target)) return;
   sortColumn(col, e.shiftKey);
 }
 
 function sortColumn(col: OrbisColumnDef, shiftKey = false) {
   if (!isColumnSortable(col)) return;
   sorts = toggleSort(sorts, columnId(col), shiftKey);
+  notifyQueryChange();
 }
 
 function onContext(row: number, col: number, e: MouseEvent) {
@@ -773,7 +1243,7 @@ function onContext(row: number, col: number, e: MouseEvent) {
     context: "cell",
     hasSelection: !!hasSelection,
     canEdit: !readonly,
-    filtered: (shouldRunClientQuery || serverQuery) && Boolean(filter),
+    filtered: (shouldRunClientQuery || usesServerQuery) && Boolean(filter),
   }).filter(
     (item) =>
       isColumnSortable(visibleCols[col] ?? {}) ||
@@ -823,23 +1293,30 @@ function runMenu(id: string) {
     case "delete":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = clearRange(safeSource, visibleCols, selected);
-        updateRows(
+        const rows = clearRange(displayRows, visibleCols, selected);
+        updateDisplayedRows(
           rows,
           "delete",
-          rows.slice(
-            selected.startRow,
-            Math.min(selected.endRow + 1, rows.length),
-          ),
+          selected.startRow,
+          Math.min(selected.endRow + 1, rows.length),
         );
       }
       break;
+    case "delete-row":
+      deleteSelectedRows();
+      break;
     case "duplicate":
       if (!readonly) {
-        const rows = duplicateRows(safeSource, [active.row], () =>
-          crypto.randomUUID(),
-        );
-        updateRows(rows, "duplicate", rows.slice(safeSource.length));
+        const row = displayRows[active.row];
+        const sourceIndex = row ? safeSource.indexOf(row) : -1;
+        if (sourceIndex >= 0) {
+          const rows = duplicateRows(safeSource, [sourceIndex], () =>
+            crypto.randomUUID(),
+          );
+          const originalRows = new Set(safeSource);
+          const addedRows = rows.filter((item) => !originalRows.has(item));
+          updateRows(rows, "duplicate", addedRows);
+        }
       }
       break;
     case "select-row": {
@@ -855,10 +1332,16 @@ function runMenu(id: string) {
       selection = selectScope([], "filtered", [], []);
       break;
     case "sort-asc":
-      if (col) sorts = [{ id: columnId(col), dir: "asc" }];
+      if (col) {
+        sorts = [{ id: columnId(col), dir: "asc" }];
+        notifyQueryChange();
+      }
       break;
     case "sort-desc":
-      if (col) sorts = [{ id: columnId(col), dir: "desc" }];
+      if (col) {
+        sorts = [{ id: columnId(col), dir: "desc" }];
+        notifyQueryChange();
+      }
       break;
     case "hide-column":
       if (col) col.hidden = true;
@@ -1136,31 +1619,6 @@ function isActionColumn(col: OrbisColumnDef): boolean {
   );
 }
 
-let sizedFor = $state("");
-$effect(() => {
-  void source;
-  void columns;
-  const key = visibleCols.map((c) => columnId(c)).join("|");
-  if (autoSize && key && key !== sizedFor && displayRows.length) {
-    const next: Record<string, number> = {};
-    for (const col of visibleCols) {
-      let max = columnHeader(col).length * 8 + 24;
-      const sample = Math.min(displayRows.length, 80);
-      for (let i = 0; i < sample; i++) {
-        max = Math.max(max, formatCell(displayRows[i]!, col).length * 7 + 24);
-      }
-      next[columnId(col)] = Math.min(420, Math.max(64, max));
-    }
-    columnWidths = next;
-    sizedFor = key;
-  }
-  queueMicrotask(measure);
-});
-
-$effect(() => {
-  if (editing && editorEl) editorEl.focus();
-});
-
 export function getGridElement() {
   return root;
 }
@@ -1219,12 +1677,14 @@ export function scrollToColumnProp(prop: string) {
   tabindex="0"
   aria-rowcount={displayRows.length}
   aria-colcount={visibleCols.length}
-  onkeydown={handleKeydown}
+  onkeydown={handleRootKeydown}
   onfocus={() => measure()}
   {@attach (el) => {
     const node = el as HTMLDivElement;
     root = node;
     measure();
+    notifyQueryChange();
+    requestAnimationFrame(() => requestMoreIfNeeded());
     const ro = new ResizeObserver(measure);
     ro.observe(node);
     return () => {
@@ -1233,6 +1693,171 @@ export function scrollToColumnProp(prop: string) {
     };
   }}
 >
+  {#if toolbar}
+    <div
+      class="orbis-toolbar"
+      role="toolbar"
+      aria-label={rtl ? "أدوات الجدول" : "Grid tools"}
+    >
+      {#if showSearch}
+        <label class="orbis-search">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="8.75" cy="8.75" r="5.75" stroke="currentColor" stroke-width="1.5" />
+            <path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            placeholder={searchPlaceholder ?? (rtl ? "بحث في السجلات…" : "Search records…")}
+            aria-label={rtl ? "بحث في جميع الأعمدة" : "Search all columns"}
+            oninput={handleSearchInput}
+            onkeydown={(event) => {
+              if (event.key === "Enter") event.preventDefault();
+              event.stopPropagation();
+            }}
+          />
+          {#if search}
+            <button
+              type="button"
+              class="orbis-toolbar-clear"
+              aria-label={rtl ? "مسح البحث" : "Clear search"}
+              onclick={clearSearch}
+            >×</button>
+          {/if}
+        </label>
+      {/if}
+      {#if showFilterButton}
+        <FilterDialogFrame
+          bind:open={filterPanelOpen}
+          title={rtl ? "تصفية البيانات" : "Filter records"}
+          triggerLabel={rtl ? "تصفية" : "Filter"}
+          count={filterCount}
+          clearLabel={rtl ? "مسح عوامل التصفية" : "Clear filters"}
+          applyLabel={rtl ? "تم" : "Done"}
+          disabled={filterableCols.length === 0 && filterCount === 0}
+          onClear={() => setFilter(null)}
+        >
+            <div class="orbis-filter-panel">
+              <div class="orbis-filter-builder">
+                <select
+                  class="orbis-filter-control"
+                  bind:value={filterColumn}
+                  aria-label={rtl ? "عمود التصفية" : "Filter column"}
+                  onkeydown={(event) => event.stopPropagation()}
+                >
+                  {#each filterableCols as col (columnId(col))}
+                    <option value={columnId(col)}>{columnHeader(col)}</option>
+                  {/each}
+                </select>
+                <select
+                  class="orbis-filter-control"
+                  bind:value={filterOperator}
+                  aria-label={rtl ? "نوع التصفية" : "Filter operator"}
+                  onkeydown={(event) => event.stopPropagation()}
+                >
+                  {#each filterOperators as operator (operator.value)}
+                    <option value={operator.value}>{operatorLabel(operator.value)}</option>
+                  {/each}
+                </select>
+                {#if filterOperatorRequiresValue(filterOperator) && filterDraftColumn?.options?.length}
+                  <select
+                    class="orbis-filter-control filter-value"
+                    bind:value={filterValue}
+                    aria-label={rtl ? "قيمة التصفية" : "Filter value"}
+                    onkeydown={(event) => event.stopPropagation()}
+                  >
+                    <option value="">{rtl ? "اختر قيمة" : "Choose a value"}</option>
+                    {#each filterDraftColumn.options as option (String(option.value))}
+                      <option value={String(option.value)}>{option.label}</option>
+                    {/each}
+                  </select>
+                {:else if filterOperatorRequiresValue(filterOperator)}
+                  <input
+                    class="orbis-filter-control filter-value"
+                    type={filterInputType(filterDraftColumn)}
+                    bind:value={filterValue}
+                    placeholder={filterOperator === "in" || filterOperator === "not_in"
+                      ? (rtl ? "قيم مفصولة بفواصل" : "Comma-separated values")
+                      : rtl ? "القيمة" : "Value"}
+                    aria-label={rtl ? "قيمة التصفية" : "Filter value"}
+                    onkeydown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addFilterCondition();
+                      }
+                      event.stopPropagation();
+                    }}
+                  />
+                  {#if filterOperator === "between"}
+                    <input
+                      class="orbis-filter-control filter-value"
+                      type={filterInputType(filterDraftColumn)}
+                      bind:value={filterEndValue}
+                      placeholder={rtl ? "إلى" : "To"}
+                      aria-label={rtl ? "نهاية النطاق" : "Range end"}
+                      onkeydown={(event) => event.stopPropagation()}
+                    />
+                  {/if}
+                {/if}
+                <button
+                  type="button"
+                  class="orbis-toolbar-button filter-add"
+                  disabled={!canAddFilterCondition()}
+                  onclick={addFilterCondition}
+                >{rtl ? "إضافة" : "Add filter"}</button>
+              </div>
+              {#if (filter?.conditions.length ?? 0) > 1}
+                <label class="orbis-filter-logic">
+                  {rtl ? "مطابقة" : "Match"}
+                  <select
+                    class="orbis-filter-control"
+                    value={filter?.logic ?? "AND"}
+                    onchange={(event) =>
+                      setFilter({
+                        ...(filter ?? { conditions: [] }),
+                        logic: event.currentTarget.value === "OR" ? "OR" : "AND",
+                      })}
+                    onkeydown={(event) => event.stopPropagation()}
+                  >
+                    <option value="AND">{rtl ? "كل الشروط" : "All conditions"}</option>
+                    <option value="OR">{rtl ? "أي شرط" : "Any condition"}</option>
+                  </select>
+                </label>
+              {/if}
+              {#if filter?.conditions.length}
+                <div class="orbis-filter-chips">
+                  {#each filter.conditions as condition, index (`${condition.field}:${index}`)}
+                    <span class="orbis-filter-chip">
+                      {filterConditionLabel(condition)}
+                      <button
+                        type="button"
+                        aria-label={rtl ? "إزالة شرط التصفية" : "Remove filter"}
+                        onclick={() => removeFilterCondition(index)}
+                      >×</button>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+        </FilterDialogFrame>
+      {/if}
+      {#if !readonly}
+        <button
+          type="button"
+          class="orbis-toolbar-button orbis-add-row"
+          disabled={loading}
+          onclick={addRowFromToolbar}
+        >
+          <span aria-hidden="true">+</span>
+          {rtl ? "إضافة صف" : "Add row"}
+        </button>
+      {/if}
+      <span class="orbis-row-count" aria-live="polite">
+        {displayRows.length} {rtl ? "صف" : "rows"}
+      </span>
+    </div>
+  {/if}
+
   {#if pasteBanner}
     <div class="orbis-paste-banner" role="status">
       <span class="ok">{pasteBanner.acceptedCount} accepted</span>
@@ -1246,15 +1871,15 @@ export function scrollToColumnProp(prop: string) {
   {#if loading}
     <div class="orbis-skeleton-wrap">
       <div class="orbis-grid-head" role="row">
-        {#each visibleCols as col}
+        {#each visibleCols as col (columnId(col))}
           <div class="orbis-hcell" style:width="{widthOf(col)}px">
             <div class="orbis-skeleton-bar" style:width="{Math.min(widthOf(col) * 0.7, 90)}px"></div>
           </div>
         {/each}
       </div>
-      {#each Array(8) as _, i}
+      {#each Array(8) as _, i (i)}
         <div class="orbis-skeleton-row" style:opacity="{1 - i * 0.1}">
-          {#each visibleCols as col, j}
+          {#each visibleCols as col, j (columnId(col) || j)}
             <div
               class="orbis-skeleton-bar"
               style:width="{Math.min(widthOf(col) * (j === 0 ? 0.4 : 0.75), 110)}px"
@@ -1306,7 +1931,7 @@ export function scrollToColumnProp(prop: string) {
             {@const Header = col.headerCell}
             {@const isSelectCol = id === "__selected"}
             <div
-              class="orbis-hcell"
+              class="orbis-hcell align-{defaultAlign(col)}"
               class:pinned={isColumnPinnedLeft(col)}
               role="columnheader"
               tabindex="0"
@@ -1317,7 +1942,7 @@ export function scrollToColumnProp(prop: string) {
               onkeydown={(e) => {
                 if (
                   (e.key === "Enter" || e.key === " ") &&
-                  !(e.target as HTMLElement | null)?.closest(".orbis-checkbox-btn")
+                  !isCheckboxTarget(e.target)
                 ) {
                   e.preventDefault();
                   sortColumn(col, e.shiftKey);
@@ -1328,12 +1953,12 @@ export function scrollToColumnProp(prop: string) {
                 <Header row={{}} column={{ ...col, id }} />
               {:else if isSelectCol}
                 {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
-                <button
-                  type="button"
-                  class="orbis-checkbox-btn"
-                  class:checked={isAllSelected}
+                {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
+                <Checkbox
+                  checked={isAllSelected}
+                  indeterminate={isSomeSelected}
                   aria-label="Select all"
-                  onclick={(e) => {
+                  onclick={(e: MouseEvent) => {
                     e.stopPropagation();
                     const selected = !isAllSelected;
                     const selectedIds = displayRows.map((row, idx) =>
@@ -1357,13 +1982,7 @@ export function scrollToColumnProp(prop: string) {
                       selectedIds,
                     });
                   }}
-                >
-                  {#if isAllSelected}
-                    <svg class="orbis-check-icon" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 0 1 1.414 0z"/>
-                    </svg>
-                  {/if}
-                </button>
+                />
               {:else}
                 <span class="hlabel">{columnHeader(col)}</span>
               {/if}
@@ -1378,7 +1997,7 @@ export function scrollToColumnProp(prop: string) {
           {/each}
         </div>
         <div class="orbis-window" style:transform="translateY({rowWindow.offset}px)">
-          {#each { length: rowWindow.count } as _, i}
+          {#each { length: rowWindow.count } as _, i (rowWindow.start + i)}
             {@const r = rowWindow.start + i}
             {@const row = displayRows[r]}
             {#if row}
@@ -1398,6 +2017,7 @@ export function scrollToColumnProp(prop: string) {
                   {@const isEdit = editing?.row === r && editing?.col === c}
                   <div
                     class={cellClass(row, col, r, c)}
+                    class:is-editing={isEdit}
                     role="gridcell"
                     tabindex="-1"
                     data-grid-r={r}
@@ -1414,8 +2034,11 @@ export function scrollToColumnProp(prop: string) {
                       {#if col.options?.length}
                         <select
                           class="orbis-editor"
+                          class:invalid={!!editing.error}
                           bind:this={editorEl}
                           bind:value={editing.draft}
+                          aria-invalid={!!editing.error}
+                          title={editing.error}
                           onblur={() => {
                             if (skipBlur) {
                               skipBlur = false;
@@ -1431,16 +2054,19 @@ export function scrollToColumnProp(prop: string) {
                             e.stopPropagation();
                           }}
                         >
-                          {#each col.options as opt}
+                          {#each col.options as opt (String(opt.value))}
                             <option value={String(opt.value)}>{opt.label}</option>
                           {/each}
                         </select>
                       {:else}
                         <input
                           class="orbis-editor"
+                          class:invalid={!!editing.error}
                           type={editorInputType(col)}
                           bind:this={editorEl}
                           bind:value={editing.draft}
+                          aria-invalid={!!editing.error}
+                          title={editing.error}
                           onblur={() => {
                             if (skipBlur) {
                               skipBlur = false;
@@ -1469,11 +2095,11 @@ export function scrollToColumnProp(prop: string) {
                       <span class="orbis-index-text">{getCellValue(row, col) ?? (r + 1)}</span>
                     {:else if isCheckboxColumn(col)}
                       {@const isChecked = id === "__selected" ? isGridRowSelected(row, r) : getCellValue(row, col) === true || getCellValue(row, col) === 1 || getCellValue(row, col) === "true"}
-                      <button
-                        type="button"
-                        class="orbis-checkbox-btn"
-                        class:checked={isChecked}
-                        onclick={(e) => {
+                      <Checkbox
+                        checked={isChecked}
+                        class="orbis-grid-checkbox"
+                        aria-label={id === "__selected" ? "Select row" : columnHeader(col)}
+                        onclick={(e: MouseEvent) => {
                           e.stopPropagation();
                           if (id === "__selected") {
                             const selected = !isChecked;
@@ -1493,13 +2119,7 @@ export function scrollToColumnProp(prop: string) {
                             commitOverlay(r, col, !isChecked);
                           }
                         }}
-                      >
-                        {#if isChecked}
-                          <svg class="orbis-check-icon" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 0 1 1.414 0z"/>
-                          </svg>
-                        {/if}
-                      </button>
+                      />
                     {:else if isAvatarColumn(col)}
                       {@const val = String(getCellValue(row, col) ?? "")}
                       {@const src = getAvatarSrc(row)}
@@ -1527,20 +2147,20 @@ export function scrollToColumnProp(prop: string) {
                     {:else if isBadgeColumn(col, row)}
                       {@const val = getCellValue(row, col)}
                       {@const formatted = formatCell(row, col, rtl ? "ar" : "en")}
-                      <span class="orbis-badge orbis-badge-{getBadgeVariant(val)}">
+                      <Badge variant={getBadgeVariant(val)} class="orbis-grid-badge">
                         {formatted || "—"}
-                      </span>
+                      </Badge>
                     {:else if Array.isArray(getCellValue(row, col))}
                       {@const arr = getCellValue(row, col) as unknown[]}
                       <div class="orbis-tags-group">
-                        {#each arr as item}
-                          <span class="orbis-badge orbis-badge-outline">{typeof item === 'object' && item ? (item as any).name || (item as any).label || JSON.stringify(item) : String(item)}</span>
+                        {#each arr as item, index (index)}
+                          <Badge variant="outline" class="orbis-grid-badge">{typeof item === 'object' && item ? (item as any).name || (item as any).label || JSON.stringify(item) : String(item)}</Badge>
                         {/each}
                       </div>
                     {:else if isActionColumn(col)}
                       {@const items = (col.meta?.items as ActionItem[]) || []}
                       <div class="orbis-actions-group">
-                        {#each items as action}
+                        {#each items as action (action.id)}
                           {#if !action.visible || action.visible(row)}
                             <button
                               type="button"
@@ -1621,7 +2241,7 @@ export function scrollToColumnProp(prop: string) {
     style:top="{menu.y}px"
     role="menu"
   >
-    {#each menu.items as item}
+    {#each menu.items as item (item.id)}
       <li role="none">
         <button
           type="button"
@@ -1643,11 +2263,12 @@ export function scrollToColumnProp(prop: string) {
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
     min-height: 0;
     background: var(--card);
     color: var(--card-foreground);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     overflow: hidden;
     font-family: var(--font-sans, "Rubik", system-ui, sans-serif);
     font-size: 0.75rem;
@@ -1655,11 +2276,210 @@ export function scrollToColumnProp(prop: string) {
     outline: none;
   }
   .orbis-grid:focus-visible {
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+    outline: 1px solid var(--ring);
+    outline-offset: -2px;
   }
   .orbis-grid.is-selecting {
     user-select: none;
     cursor: cell;
+  }
+  .orbis-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    min-height: 2.5rem;
+    flex: 0 0 auto;
+    min-width: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+  .orbis-search {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 1 1 12rem;
+    max-width: 20rem;
+    min-width: 8rem;
+    height: 2rem;
+    padding-inline: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--muted-foreground);
+  }
+  .orbis-search:focus-within {
+    border-color: var(--ring);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .orbis-search > svg,
+  .orbis-toolbar-button > svg {
+    flex: 0 0 auto;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+  .orbis-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.75rem;
+    appearance: none;
+  }
+  .orbis-search input::placeholder {
+    color: var(--muted-foreground);
+  }
+  .orbis-toolbar-clear,
+  .orbis-filter-chip button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted-foreground);
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .orbis-toolbar-clear:hover,
+  .orbis-filter-chip button:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  .orbis-toolbar-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 2rem;
+    padding: 0 0.625rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .orbis-toolbar-button:hover,
+  .orbis-toolbar-button.active {
+    background: var(--muted);
+  }
+  .orbis-toolbar-button:focus-visible,
+  .orbis-filter-chip button:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 0;
+  }
+  .orbis-toolbar-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .orbis-add-row > span {
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .orbis-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 0.2rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 0.625rem;
+    line-height: 1;
+  }
+  .orbis-row-count {
+    margin-inline-start: auto;
+    padding-inline: 0.375rem;
+    color: var(--muted-foreground);
+    font-size: 0.6875rem;
+    white-space: nowrap;
+  }
+  .orbis-filter-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .orbis-filter-builder {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .orbis-filter-control {
+    flex: 1 1 10rem;
+    min-width: 7rem;
+    max-width: 100%;
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--card);
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.75rem;
+  }
+  .orbis-filter-control:focus {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .orbis-filter-control.filter-value {
+    flex: 1 1 8rem;
+  }
+  .orbis-filter-logic {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  .orbis-filter-logic .orbis-filter-control {
+    min-width: 6rem;
+  }
+  .orbis-filter-chips {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+  .orbis-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    padding: 0.125rem 0.25rem 0.125rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--muted);
+    color: var(--foreground);
+    font-size: 0.75rem;
+  }
+  .orbis-filter-chip button {
+    flex: 0 0 auto;
   }
   .orbis-paste-banner {
     display: flex;
@@ -1698,7 +2518,7 @@ export function scrollToColumnProp(prop: string) {
     top: 0;
     height: var(--header-h);
     background: var(--muted);
-    color: var(--muted-foreground);
+    color: var(--foreground);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     z-index: 3;
@@ -1719,6 +2539,16 @@ export function scrollToColumnProp(prop: string) {
   .orbis-hcell:hover {
     color: var(--foreground);
     background: color-mix(in oklab, var(--accent) 80%, var(--muted));
+  }
+  .orbis-hcell.align-end {
+    justify-content: flex-end;
+    padding-inline-end: 0.875rem;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+  .orbis-hcell.align-center {
+    justify-content: center;
+    text-align: center;
   }
   .hlabel {
     overflow: hidden;
@@ -1741,8 +2571,32 @@ export function scrollToColumnProp(prop: string) {
   .orbis-grid-body {
     flex: 1;
     min-height: 0;
+    min-width: 0;
     overflow: auto;
     position: relative;
+    background: var(--card);
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--card);
+    scroll-behavior: auto;
+  }
+  .orbis-grid-body::-webkit-scrollbar {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+  .orbis-grid-body::-webkit-scrollbar-track {
+    background: var(--card);
+  }
+  .orbis-grid-body::-webkit-scrollbar-thumb {
+    border: 2px solid var(--card);
+    border-radius: var(--radius-sm);
+    background: var(--border);
+  }
+  .orbis-grid-body::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+  .orbis-grid-body::-webkit-scrollbar-corner {
     background: var(--card);
   }
   .orbis-load-status {
@@ -1762,8 +2616,8 @@ export function scrollToColumnProp(prop: string) {
   }
   .orbis-load-retry {
     border: 1px solid var(--border);
-    border-radius: 0.375rem;
-    background: var(--background);
+    border-radius: var(--radius-sm);
+    background: var(--card);
     padding: 0.25rem 0.5rem;
     color: var(--foreground);
     cursor: pointer;
@@ -1775,13 +2629,14 @@ export function scrollToColumnProp(prop: string) {
     flex-direction: column;
   }
   .orbis-window {
-    will-change: transform;
+    contain: layout style;
   }
   .orbis-row {
     display: flex;
     height: var(--row-h);
     border-bottom: 1px solid var(--border);
     background: var(--card);
+    contain: layout style;
   }
   .orbis-row:hover {
     background: var(--accent);
@@ -1817,6 +2672,9 @@ export function scrollToColumnProp(prop: string) {
     z-index: 1;
     background: var(--card);
   }
+  .orbis-cell.is-editing {
+    padding: 0;
+  }
   .orbis-cell.is-error {
     background: color-mix(in oklab, var(--destructive) 16%, var(--card));
     box-shadow: inset 0 0 0 1px var(--destructive);
@@ -1833,50 +2691,30 @@ export function scrollToColumnProp(prop: string) {
   }
   .orbis-editor {
     width: 100%;
-    height: calc(100% - 2px);
+    height: 100%;
     border: 0;
-    background: var(--input);
+    box-sizing: border-box;
+    background: transparent;
     color: var(--foreground);
     font: inherit;
     outline: none;
-    border-radius: var(--radius-sm);
-    padding: 0 0.25rem;
+    border-radius: 0;
+    padding: 0 0.625rem;
   }
-  .orbis-editor:focus {
-    box-shadow: inset 0 0 0 1px var(--ring);
+  .orbis-editor.invalid {
+    color: var(--destructive);
+  }
+  .orbis-cell.is-editing.is-error {
+    box-shadow: inset 0 0 0 1px var(--destructive);
   }
 
-  /* Badges */
-  .orbis-badge {
+  .orbis-grid-badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.125rem 0.5rem;
-    border-radius: 9999px;
-    font-size: 0.6875rem;
-    font-weight: 500;
-    line-height: 1;
     text-transform: capitalize;
-    white-space: nowrap;
-  }
-  .orbis-badge-lime {
-    background: color-mix(in oklab, #84cc16 18%, transparent);
-    color: #4d7c0f;
-    border: 1px solid color-mix(in oklab, #84cc16 30%, transparent);
-  }
-  .orbis-badge-destructive {
-    background: color-mix(in oklab, var(--destructive) 15%, transparent);
-    color: var(--destructive);
-    border: 1px solid color-mix(in oklab, var(--destructive) 30%, transparent);
-  }
-  .orbis-badge-secondary {
-    background: var(--secondary);
-    color: var(--secondary-foreground);
-    border: 1px solid var(--border);
-  }
-  .orbis-badge-outline {
-    background: transparent;
-    color: var(--foreground);
-    border: 1px solid var(--border);
+    font-size: 0.6875rem;
+    line-height: 1;
+    padding: 0.125rem 0.375rem;
   }
   .orbis-tags-group {
     display: flex;
@@ -1925,31 +2763,8 @@ export function scrollToColumnProp(prop: string) {
     color: var(--foreground);
   }
 
-  /* Checkbox Button */
-  .orbis-checkbox-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1rem;
-    height: 1rem;
-    border-radius: var(--radius-sm, 3px);
-    border: 1.5px solid var(--border);
-    background: var(--card);
-    color: var(--primary-foreground);
+  .orbis-grid-checkbox {
     cursor: pointer;
-    padding: 0;
-    transition: all 0.15s ease;
-  }
-  .orbis-checkbox-btn:hover {
-    border-color: var(--primary);
-  }
-  .orbis-checkbox-btn.checked {
-    background: var(--primary);
-    border-color: var(--primary);
-  }
-  .orbis-check-icon {
-    width: 0.75rem;
-    height: 0.75rem;
   }
 
   /* Actions Group */
@@ -1988,8 +2803,8 @@ export function scrollToColumnProp(prop: string) {
     color: var(--destructive);
   }
   .orbis-action-btn.orbis-action-lime:hover:not(:disabled) {
-    background: color-mix(in oklab, #84cc16 18%, transparent);
-    color: #4d7c0f;
+    background: color-mix(in oklab, var(--brand-lime) 18%, transparent);
+    color: var(--brand-lime-dark);
   }
   .orbis-action-icon {
     width: 0.8125rem;

@@ -38,9 +38,16 @@ export interface GradeScaleItem {
   is_passing: number | boolean;
 }
 
+/**
+ * Resolve a grade letter from scaleItems if provided.
+ * When no scaleItems exist, returns `fallbackLabel` (typically the
+ * backend-provided `grade_letter`) so we never silently fabricate
+ * a grading policy on the client.
+ */
 export function scoreToGradeLetter(
   percentage: number,
   scaleItems?: GradeScaleItem[],
+  fallbackLabel?: string,
 ): string {
   if (scaleItems && scaleItems.length > 0) {
     const sorted = [...scaleItems].sort((a, b) => b.min_score - a.min_score);
@@ -51,17 +58,19 @@ export function scoreToGradeLetter(
     }
     return sorted[sorted.length - 1]?.grade_label ?? "—";
   }
-  if (percentage >= 90) return m.operations_ui_grade_excellent();
-  if (percentage >= 80) return m.operations_ui_grade_very_good();
-  if (percentage >= 70) return m.operations_ui_grade_good();
-  if (percentage >= 60) return m.operations_ui_grade_acceptable();
-  if (percentage >= 50) return m.operations_ui_grade_weak();
-  return m.operations_ui_grade_failing();
+  // No local scale → trust whatever the backend already computed
+  return fallbackLabel || "—";
 }
 
+/**
+ * Return a CSS class for the grade badge colour.
+ * Falls back to a generic passing/failing distinction when no scaleItems
+ * are configured — never uses hardcoded percentage thresholds.
+ */
 export function scoreToGradeClass(
   percentage: number,
   scaleItems?: GradeScaleItem[],
+  passingThreshold = 50,
 ): string {
   if (scaleItems && scaleItems.length > 0) {
     const sorted = [...scaleItems].sort((a, b) => b.min_score - a.min_score);
@@ -73,12 +82,7 @@ export function scoreToGradeClass(
     }
     return "grade-fail";
   }
-  if (percentage >= 90) return "grade-excellent";
-  if (percentage >= 80) return "grade-very-good";
-  if (percentage >= 70) return "grade-good";
-  if (percentage >= 60) return "grade-acceptable";
-  if (percentage >= 50) return "grade-weak";
-  return "grade-fail";
+  return percentage >= passingThreshold ? "grade-passing" : "grade-fail";
 }
 
 export function buildGradeColumns(
@@ -93,6 +97,7 @@ export function buildGradeColumns(
       total?: string;
       percentage?: string;
       grade?: string;
+      gradeLetter?: string;
     };
   } = {},
 ): OrbisColumnDef[] {
@@ -184,8 +189,8 @@ export function buildGradeColumns(
     {
       id: "grade_letter",
       prop: "grade_letter",
-      header: labels.grade || m.common_grade(),
-      name: labels.grade || m.common_grade(),
+      header: labels.grade || labels.gradeLetter || m.common_grade(),
+      name: labels.grade || labels.gradeLetter || m.common_grade(),
       width: 85,
       size: 85,
       type: "badge",
@@ -217,7 +222,7 @@ export function transformMatrixToSource(
       grade_letter:
         scaleItems && scaleItems.length > 0
           ? scoreToGradeLetter(student.percentage, scaleItems)
-          : student.grade_letter,
+          : student.grade_letter || "—",
     };
 
     for (const g of student.grades || []) {
@@ -259,6 +264,10 @@ export function recalculateRowTotals(
     total,
     max_total: maxTotal,
     percentage,
-    grade_letter: scoreToGradeLetter(percentage, scaleItems),
+    grade_letter: scoreToGradeLetter(
+      percentage,
+      scaleItems,
+      row.grade_letter as string,
+    ),
   };
 }

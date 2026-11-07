@@ -11,14 +11,12 @@ import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
 import { Card } from "@orbis/ui/card";
 import {
   ArrowPath,
   DocumentChartBar,
   Eye,
   Plus,
-  Search,
   Users,
   XMark,
 } from "@orbis/icons";
@@ -28,7 +26,6 @@ import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
-import { debounce } from "$lib/shared/utils/debounce";
 import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { exportToCsv } from "$lib/shared/utils/export";
 import type { EmployeeDetailDto } from "$lib/api/types";
@@ -43,6 +40,7 @@ import { confirmStore } from "$lib/stores";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
 import {
   OrbisGrid,
+  type DataQuery,
   type OrbisColumnDef,
   type GridActionEvent,
   type ActionItem,
@@ -124,11 +122,9 @@ const error = $derived(
     statsQuery.error,
 );
 
-// Search with debounce
-let localSearch = $state("");
-const updateSearch = debounce((q: string) => {
-  searchQuery = q;
-}, 150);
+function updateSearch(query: string) {
+  searchQuery = query;
+}
 
 function setStatusFilter(status: string) {
   statusFilter = status;
@@ -140,7 +136,6 @@ function setTypeFilter(type: string) {
 
 function clearFilters() {
   searchQuery = "";
-  localSearch = "";
   statusFilter = "all";
   typeFilter = "all";
 }
@@ -669,18 +664,7 @@ function handleGridAction(event: GridActionEvent) {
         </div>
 
         <!-- Controls Bar: Search & Action Buttons -->
-        <div class="flex items-center justify-between shrink-0 gap-3">
-          <div class="relative w-full max-w-sm shrink-0">
-            <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={m.employees_search_placeholder()}
-              class="input-sunken ps-9 text-xs py-2"
-              bind:value={localSearch}
-              oninput={() => updateSearch(localSearch)}
-            />
-          </div>
-
+        <div class="flex items-center justify-end shrink-0 gap-3">
           <div class="flex items-center gap-2">
             <Button
               variant="outline"
@@ -753,6 +737,11 @@ function handleGridAction(event: GridActionEvent) {
                 height="100%"
                 rowSize={44}
                 rtl={getLocale() === "ar"}
+                clientQuery
+                serverQuery
+                search={searchQuery}
+                searchPlaceholder={m.employees_search_placeholder()}
+                onquerychange={(query: DataQuery) => updateSearch(query.search ?? "")}
                 readonly
                 onaction={handleGridAction}
                 hasMore={employeesQuery.hasNextPage ?? false}
@@ -797,16 +786,6 @@ function handleGridAction(event: GridActionEvent) {
             {/if}
           {/if}
 
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            class="h-8 px-3 text-xs font-medium cursor-pointer gap-1.5"
-            onclick={handleExport}
-          >
-            <DocumentChartBar size={13} />
-            <span>{m.common_export()}</span>
-          </Button>
         </div>
       </div>
     </div>

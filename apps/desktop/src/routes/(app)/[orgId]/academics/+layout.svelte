@@ -2,16 +2,17 @@
 @component AcademicsLayout
 Wraps all Academics routes inside a resizable double-sidebar layout
 using <MainViewport>. Uses the shared SidebarNav component.
+Groups: General / Assessment & Grades / Outputs
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createSectionsQuery } from "$lib/features/academics";
 import {
   AcademicCap,
-  AdjustmentsHorizontal,
   BookOpen,
   Calendar,
   ChartBar,
+  ClipboardCheck,
   DocumentCheck,
   TaskList,
   UserBadgeCheck,
@@ -29,47 +30,71 @@ const sectionsCount = $derived(sectionsQuery.data?.length ?? 0);
 
 const basePath = $derived(`/${data.orgId}/academics`);
 
-const navItems = $derived([
+const navGroups = $derived([
   {
-    path: "",
-    label: m.common_nav_overview(),
-    icon: AcademicCap,
+    items: [
+      {
+        path: "",
+        label: m.common_nav_overview(),
+        icon: AcademicCap,
+      },
+      {
+        path: "sections",
+        label: m.common_search_group_classes(),
+        icon: BookOpen,
+        badge: sectionsCount > 0 ? sectionsCount : null,
+      },
+      {
+        path: "calendar",
+        label: m.academics_nav_calendar(),
+        icon: Calendar,
+      },
+      {
+        path: "schedule",
+        label: m.common_exams_detail_schedule(),
+        icon: Calendar,
+      },
+      {
+        path: "attendance",
+        label: m.common_promo_attendance(),
+        icon: UserBadgeCheck,
+      },
+    ],
   },
   {
-    path: "sections",
-    label: m.common_search_group_classes(),
-    icon: BookOpen,
-    badge: sectionsCount > 0 ? sectionsCount : null,
+    title: m.academics_nav_group_assessment(),
+    items: [
+      {
+        path: "grades",
+        label: m.academics_nav_grade_entry(),
+        icon: ClipboardCheck,
+      },
+      {
+        path: "exams",
+        label: m.common_nav_exams(),
+        icon: DocumentCheck,
+      },
+      {
+        path: "results",
+        label: m.academics_nav_results_review(),
+        icon: TaskList,
+      },
+    ],
   },
   {
-    path: "calendar",
-    label: m.academics_nav_calendar(),
-    icon: Calendar,
-  },
-  {
-    path: "schedule",
-    label: m.common_exams_detail_schedule(),
-    icon: Calendar,
-  },
-  {
-    path: "attendance",
-    label: m.common_promo_attendance(),
-    icon: UserBadgeCheck,
-  },
-  {
-    path: "exams",
-    label: m.common_nav_exams(),
-    icon: DocumentCheck,
-  },
-  {
-    path: "promotion",
-    label: m.common_promo_title(),
-    icon: ChartBar,
-  },
-  {
-    path: "reports",
-    label: m.common_nav_reports(),
-    icon: ChartBar,
+    title: m.academics_nav_group_outputs(),
+    items: [
+      {
+        path: "promotion",
+        label: m.common_promo_title(),
+        icon: ChartBar,
+      },
+      {
+        path: "reports",
+        label: m.common_nav_reports(),
+        icon: ChartBar,
+      },
+    ],
   },
 ]);
 </script>
@@ -80,7 +105,7 @@ const navItems = $derived([
       <div class="flex flex-col h-full">
         <div class="flex-1 overflow-y-auto">
           <SidebarNav
-            items={navItems}
+            groups={navGroups}
             {basePath}
             title={m.academics_layout_panel_title()}
           />

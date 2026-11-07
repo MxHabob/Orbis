@@ -2,6 +2,8 @@
 @component ExamsLayout
 Horizontal SecondaryMenu tab layout for Exams.
 Wraps all Exams routes under academics.
+Grade entry has moved to /academics/grades — this module handles
+exam session management (scheduling, proctors, seating) only.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -21,10 +23,6 @@ const menuItems = $derived([
   {
     path: "sessions",
     label: m.common_exams_sessions_title(),
-  },
-  {
-    path: "control",
-    label: m.common_control_label(),
   },
   {
     path: "reports",

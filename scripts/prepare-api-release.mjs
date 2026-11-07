@@ -34,11 +34,7 @@ const outputDir = path.resolve(
 fs.mkdirSync(outputDir, { recursive: true });
 
 const dockerStage = fs.mkdtempSync(path.join(os.tmpdir(), "orbis-api-docker-"));
-const dockerFiles = [
-  "compose.yaml",
-  ".env.example",
-  "README.md",
-];
+const dockerFiles = ["compose.yaml", ".env.example", "README.md"];
 for (const name of dockerFiles) {
   const source = path.join(
     rootDir,

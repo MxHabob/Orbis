@@ -45,7 +45,8 @@ let loadedDefinitionId = "";
 const currentBinding = $derived(
   bindings.find(
     (binding) =>
-      binding.locale.toLowerCase() === locale && binding.format.toLowerCase() === "pdf",
+      binding.locale.toLowerCase() === locale &&
+      binding.format.toLowerCase() === "pdf",
   ),
 );
 
@@ -81,7 +82,8 @@ async function loadConfiguration(report: ReportDefinitionDto) {
     bindings = reportBindings;
   } catch (error: unknown) {
     loadError =
-      extractErrorMessage(error) || m.operations_ui_report_template_load_error();
+      extractErrorMessage(error) ||
+      m.operations_ui_report_template_load_error();
     toast.error(loadError);
   } finally {
     isLoading = false;
@@ -98,7 +100,8 @@ async function saveBinding() {
     onOpenChange(false);
   } catch (error: unknown) {
     toast.error(
-      extractErrorMessage(error) || m.operations_ui_report_template_save_error(),
+      extractErrorMessage(error) ||
+        m.operations_ui_report_template_save_error(),
     );
   } finally {
     isSaving = false;

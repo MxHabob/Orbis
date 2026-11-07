@@ -16,7 +16,7 @@ Before publishing, configure these repository Actions settings:
 | --- | --- | --- |
 | `TAURI_SIGNING_PRIVATE_KEY` | Secret | Signs Tauri updater bundles |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Secret | Password for the signing key, if set |
-| `TAURI_UPDATER_PUBLIC_KEY` | Variable | Verifies updates in the installed app; must match the private signing key |
+| `TAURI_UPDATER_PUBLIC_KEY` | Variable | Verifies updates in the installed app; provide the minisign public-key text or its base64-encoded full text, and it must match the private signing key |
 | `MULVERSE_LICENSE_PUBLIC_KEY_B64` | Variable | Verifies application licenses in release builds |
 | `MULVERSE_LICENSE_KEY_ID` | Variable | Identifies the application license key |
 | `ANDROID_KEYSTORE_BASE64` | Secret | Base64-encoded Android release keystore |
@@ -25,6 +25,7 @@ Before publishing, configure these repository Actions settings:
 | `ANDROID_KEY_PASSWORD` | Secret | Password for the release key |
 
 Keep all private signing material and passwords in GitHub Secrets. Do not commit them. The workflow no longer requires Mulverse release API credentials to publish desktop updates.
+The desktop release workflow validates and decodes `TAURI_UPDATER_PUBLIC_KEY` when needed, writes a temporary Tauri config overlay, and fails before building if the value is missing or malformed. The public key itself is never logged.
 
 ## Prepare a release
 

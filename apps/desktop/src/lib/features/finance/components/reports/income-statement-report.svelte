@@ -306,6 +306,7 @@ const rtl = $derived(getLocale() === "ar");
         <OrbisGrid
           columns={statementColumns}
           source={incomeStatementSource}
+          showSearch={false}
           search={searchQuery}
           clientQuery
           {rtl}

@@ -1,13 +1,17 @@
+<!--
+  @component ExamControlRedirect
+  Grade entry has moved to /academics/grades.
+  This page redirects for backward-compatibility.
+-->
 <script lang="ts">
+import { goto } from "$app/navigation";
 import { page } from "$app/state";
-import * as m from "$lib/paraglide/messages";
-import { ExamControl } from "$lib/features/exams";
 
 const orgId = $derived(page.params.orgId || "");
+
+$effect(() => {
+  if (orgId) {
+    void goto(`/${orgId}/academics/grades`, { replaceState: true });
+  }
+});
 </script>
-
-<svelte:head>
-  <title>{m.academics_exams_center_control_title()} | Orbis</title>
-</svelte:head>
-
-<ExamControl {orgId} />
