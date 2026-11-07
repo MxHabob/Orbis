@@ -69,7 +69,7 @@ function formatSize(bytes?: number | null) {
 }
 </script>
 
-<article class="archive-card group flex flex-col justify-between rounded-xl border border-border/50 bg-card/60 p-2.5 hover:border-border hover:shadow-md transition-all duration-200 overflow-hidden min-w-0 max-w-full">
+<article class="archive-card group flex min-w-0 max-w-full flex-col justify-between overflow-hidden rounded-xl border border-border/50 bg-card/60 p-2.5 transition-[border-color,background-color,box-shadow] duration-150 ease-out hover:border-border/80 hover:bg-card hover:shadow-sm">
   <!-- Media / Thumbnail Container -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
@@ -83,7 +83,7 @@ function formatSize(bytes?: number | null) {
     <!-- Multi-select checkbox -->
     {#if ontoggle}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div class="archive-select-control absolute inset-s-2 top-2 z-10 rounded-md bg-background/85 p-1 shadow-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity {selected ? 'opacity-100' : ''}" onclick={stopPropagation}>
+      <div class="archive-select-control absolute inset-s-2 top-2 z-10 rounded-md bg-background/90 p-1 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100 {selected ? 'opacity-100' : ''}" onclick={stopPropagation}>
         <Checkbox checked={selected} onCheckedChange={(value) => ontoggle?.(document.id, value === true)} aria-label={m.operations_ui_document_select({ name: document.name })} />
       </div>
     {/if}
@@ -98,7 +98,7 @@ function formatSize(bytes?: number | null) {
     <!-- Media Rendering -->
     {#if isNearViewport && isImage}
       {#await resolveDocumentUrl(source, document.id) then mediaUrl}
-        <img src={mediaUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        <img src={mediaUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]" />
       {:catch}
         <DocumentPage class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
@@ -127,7 +127,7 @@ function formatSize(bytes?: number | null) {
     {/if}
 
     <!-- Hover Actions Overlay -->
-    <div class="absolute inset-0 flex items-center justify-center gap-1.5 bg-background/70 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
+    <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-background/45 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100 [&>*]:pointer-events-auto">
       <Button
         variant="secondary"
         size="icon-xs"
@@ -200,6 +200,25 @@ function formatSize(bytes?: number | null) {
   @media (hover: none) {
     .archive-select-control {
       opacity: 1;
+    }
+
+    .archive-card {
+      transition: none;
+    }
+
+    .archive-media img {
+      transform: none;
+    }
+
+    .archive-media > div:last-child {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .archive-card,
+    .archive-card * {
+      transition-duration: 0.01ms !important;
     }
   }
 </style>
