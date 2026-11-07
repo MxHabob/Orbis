@@ -62,7 +62,7 @@ function apply() {
     {/snippet}
   </DialogTrigger>
 
-  <DialogContent class="max-h-[80vh] max-w-3xl gap-0 overflow-hidden p-0">
+  <DialogContent class="max-h-[80vh] max-w-3xl gap-0 overflow-hidden p-0 sm:max-w-3xl">
     <DialogHeader class="gap-1 border-b border-border/60 px-5 py-4 pe-10">
       <DialogTitle class="text-sm font-semibold">{title}</DialogTitle>
     </DialogHeader>
