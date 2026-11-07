@@ -23,7 +23,9 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use orbis_domain::entities::academic_policy::{PolicyGradeBand, RankingScope, RoundingMode, TiePolicy};
+use orbis_domain::entities::academic_policy::{
+    PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstitutionBlueprintConfig {

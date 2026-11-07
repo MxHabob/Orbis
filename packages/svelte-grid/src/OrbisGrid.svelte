@@ -2,13 +2,7 @@
 import { setContext } from "svelte";
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@orbis/ui/dialog";
+import { FilterDialogFrame } from "@orbis/ui/filter-builder";
 import type {
   ActionItem,
   BulkResult,
@@ -1736,43 +1730,17 @@ export function scrollToColumnProp(prop: string) {
         </label>
       {/if}
       {#if showFilterButton}
-        <button
-          type="button"
-          class="orbis-toolbar-button"
-          class:active={filterPanelOpen || filterCount > 0}
+        <FilterDialogFrame
+          bind:open={filterPanelOpen}
+          title={rtl ? "تصفية البيانات" : "Filter records"}
+          triggerLabel={rtl ? "تصفية" : "Filter"}
+          count={filterCount}
+          clearLabel={rtl ? "مسح عوامل التصفية" : "Clear filters"}
+          applyLabel={rtl ? "تم" : "Done"}
           disabled={filterableCols.length === 0 && filterCount === 0}
-          aria-expanded={filterPanelOpen}
-          onclick={() => (filterPanelOpen = true)}
+          onClear={() => setFilter(null)}
         >
-          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M3 5h14M5.5 10h9M8 15h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          {rtl ? "تصفية" : "Filter"}
-          {#if filterCount > 0}
-            <span class="orbis-filter-count">{filterCount}</span>
-          {/if}
-        </button>
-      {/if}
-      {#if !readonly}
-        <button
-          type="button"
-          class="orbis-toolbar-button orbis-add-row"
-          disabled={loading}
-          onclick={addRowFromToolbar}
-        >
-          <span aria-hidden="true">+</span>
-          {rtl ? "إضافة صف" : "Add row"}
-        </button>
-      {/if}
-      <span class="orbis-row-count" aria-live="polite">
-        {displayRows.length} {rtl ? "صف" : "rows"}
-      </span>
-      {#if showFilterButton}
-        <Dialog bind:open={filterPanelOpen}>
-          <DialogContent class="flex max-h-[80vh] max-w-3xl flex-col overflow-hidden p-0 text-start">
-            <DialogHeader class="border-b border-border/60 px-5 py-4">
-              <DialogTitle>{rtl ? "تصفية البيانات" : "Filter records"}</DialogTitle>
-            </DialogHeader>
+          {#snippet children()}
             <div class="orbis-filter-panel">
               <div class="orbis-filter-builder">
                 <select
@@ -1875,22 +1843,23 @@ export function scrollToColumnProp(prop: string) {
                 </div>
               {/if}
             </div>
-            <DialogFooter class="border-t border-border/60 px-5 py-4">
-              <button
-                type="button"
-                class="orbis-toolbar-button"
-                disabled={filterCount === 0}
-                onclick={() => setFilter(null)}
-              >{rtl ? "مسح عوامل التصفية" : "Clear filters"}</button>
-              <button
-                type="button"
-                class="orbis-toolbar-button active"
-                onclick={() => (filterPanelOpen = false)}
-              >{rtl ? "تم" : "Done"}</button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          {/snippet}
+        </FilterDialogFrame>
       {/if}
+      {#if !readonly}
+        <button
+          type="button"
+          class="orbis-toolbar-button orbis-add-row"
+          disabled={loading}
+          onclick={addRowFromToolbar}
+        >
+          <span aria-hidden="true">+</span>
+          {rtl ? "إضافة صف" : "Add row"}
+        </button>
+      {/if}
+      <span class="orbis-row-count" aria-live="polite">
+        {displayRows.length} {rtl ? "صف" : "rows"}
+      </span>
     </div>
   {/if}
 
@@ -2450,34 +2419,32 @@ export function scrollToColumnProp(prop: string) {
   .orbis-filter-panel {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
     align-items: stretch;
-    gap: 0.75rem;
+    gap: 1rem;
     width: 100%;
     min-width: 0;
-    overflow-y: auto;
-    padding: 1rem 1.25rem 0;
   }
   .orbis-filter-builder {
     display: flex;
     flex: 1 1 auto;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
     width: 100%;
     min-width: 0;
   }
   .orbis-filter-control {
+    flex: 1 1 10rem;
     min-width: 7rem;
     max-width: 100%;
-    height: 2rem;
-    padding: 0 0.5rem;
+    height: 2.25rem;
+    padding: 0 0.75rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     background: var(--card);
     color: var(--foreground);
     font: inherit;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
   }
   .orbis-filter-control:focus {
     outline: none;
@@ -2490,9 +2457,9 @@ export function scrollToColumnProp(prop: string) {
   .orbis-filter-logic {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
     color: var(--muted-foreground);
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     white-space: nowrap;
   }
   .orbis-filter-logic .orbis-filter-control {
@@ -2514,7 +2481,7 @@ export function scrollToColumnProp(prop: string) {
     border-radius: var(--radius-sm);
     background: var(--muted);
     color: var(--foreground);
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
   }
   .orbis-filter-chip button {
     flex: 0 0 auto;

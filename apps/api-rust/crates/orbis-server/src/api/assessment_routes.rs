@@ -18,7 +18,7 @@ use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
 use orbis_domain::entities::academic_calculation::{CalculationOutputOutcome, CalculationPreview};
 use orbis_domain::entities::academic_policy::{
-    AcademicPolicy, PolicyGradeBand, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
+    AcademicPolicy, AcademicResultView, PolicyGradeBand, ResultSnapshot, StudentAnnualReportCard,
     StudentCertificateReportCard, StudentTermReportCard, TiePolicy,
 };
 use orbis_domain::entities::assessment_scheme::{

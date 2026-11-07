@@ -14,7 +14,9 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::academic_calculation::{CalculationPlan, OutcomePolicy};
-use orbis_domain::entities::academic_policy::{PolicyGradeBand, RankingScope, RoundingMode, TiePolicy};
+use orbis_domain::entities::academic_policy::{
+    PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
+};
 use orbis_domain::entities::settings::OrganizationSettings;
 use rust_decimal::Decimal;
 

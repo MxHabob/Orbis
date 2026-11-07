@@ -994,11 +994,7 @@ impl AcademicPolicy {
             .max_by_key(|band| band.minimum_score);
 
         let (letter, letter_ar, points) = match matched {
-            Some(band) => (
-                band.code.clone(),
-                band.label_ar.clone(),
-                band.grade_points,
-            ),
+            Some(band) => (band.code.clone(), band.label_ar.clone(), band.grade_points),
             None => ("F".to_string(), "راسب".to_string(), Decimal::ZERO),
         };
 

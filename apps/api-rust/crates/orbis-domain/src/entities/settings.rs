@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::academic_calculation::{CalculationPlan, OutcomePolicy};
-use super::academic_policy::{AcademicPolicy, PolicyGradeBand, RankingScope, RoundingMode, TiePolicy};
+use super::academic_policy::{
+    AcademicPolicy, PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
+};
 use super::admission::AdmissionConfiguration;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
