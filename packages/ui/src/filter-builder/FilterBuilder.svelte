@@ -105,6 +105,7 @@ function removeGroup(index: number) {
                         <FilterRow
                             bind:condition={filter.conditions[i]}
                             fields={fields}
+                            {translations}
                             onRemove={() => removeCondition(i)}
                         />
                     </div>

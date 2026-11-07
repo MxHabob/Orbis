@@ -5,15 +5,22 @@ import {
   SelectContent,
   SelectItem,
 } from "../components/ui/select";
-import type { FieldDefinition, FilterCondition } from "./types";
+import {
+  defaultFilterTranslations,
+  type FieldDefinition,
+  type FilterCondition,
+  type FilterTranslations,
+} from "./types";
 import { FilterOperator } from "./types";
 
 let {
   condition = $bindable(),
   fields = [],
+  translations = defaultFilterTranslations,
 }: {
   condition: FilterCondition;
   fields: FieldDefinition[];
+  translations?: FilterTranslations;
 } = $props();
 
 let selectedField = $derived(fields.find((f) => f.id === condition.field));
@@ -33,10 +40,10 @@ function handleFieldChange(v: string | undefined) {
 
 <Select type="single" value={condition.field} onValueChange={handleFieldChange}>
     <SelectTrigger class="w-full bg-background h-9 text-xs">
-        {selectedField?.label || "Select Field"}
+        {selectedField?.label || translations.selectField}
     </SelectTrigger>
     <SelectContent>
-        {#each fields as field}
+        {#each fields as field (field.id)}
             <SelectItem value={field.id}>{field.label}</SelectItem>
         {/each}
     </SelectContent>

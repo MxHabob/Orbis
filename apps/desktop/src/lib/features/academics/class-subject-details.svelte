@@ -17,6 +17,7 @@ import {
   CardContent,
 } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
@@ -251,16 +252,6 @@ async function handleSaveAll() {
             {#if isMatrixLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
             <span>{m.common_retry()}</span>
           </Button>
-
-          <Button 
-            variant={isDirty ? "default" : "secondary"} 
-            size="sm" 
-            class="h-8 px-3.5 gap-1.5 text-xs font-bold cursor-pointer shadow-2xs transition-all" 
-            disabled={!isDirty || isSaving || !canEnterGrades} 
-            onclick={handleSaveAll}
-          >
-            <span>{m.common_save_changes()}</span>
-          </Button>
         </div>
       </CardAction>
     </CardHeader>
@@ -293,6 +284,8 @@ async function handleSaveAll() {
             bind:source={gridSource}
             loading={isMatrixLoading}
             height="100%"
+            rtl={getLocale() === "ar"}
+            showAddRow={false}
             readonly={!canEnterGrades}
             oncelledit={handleCellEdit}
             emptyTitle={m.common_students_empty_title()}
@@ -302,3 +295,14 @@ async function handleSaveAll() {
     </CardContent>
   </Card>
 </div>
+
+<SettingsBottomBar
+  visible={canEnterGrades && isDirty}
+  isDirty={isDirty}
+  isSaving={isSaving}
+  showReset={false}
+  message={m.common_unsaved_changes()}
+  saveLabel={m.common_save_changes()}
+  savingLabel={m.common_state_saving()}
+  onsave={handleSaveAll}
+/>

@@ -87,7 +87,7 @@ const menuItems = $derived([
   },
   {
     path: "assessments",
-    label: "Assessment records",
+    label: m.academics_assessment_records_title(),
   },
 ]);
 </script>

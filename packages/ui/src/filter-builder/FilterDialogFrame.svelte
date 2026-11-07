@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../components/ui/dialog";
 
 let {
@@ -19,6 +18,7 @@ let {
   clearLabel,
   applyLabel,
   disabled = false,
+  onOpen,
   onClear,
   onApply,
   children,
@@ -30,6 +30,7 @@ let {
   clearLabel: string;
   applyLabel: string;
   disabled?: boolean;
+  onOpen?: () => void;
   onClear: () => void;
   onApply?: () => void;
   children: Snippet;
@@ -42,25 +43,26 @@ function apply() {
 </script>
 
 <Dialog bind:open>
-  <DialogTrigger>
-    {#snippet child({ props })}
-      <Button
-        variant="outline"
-        size="sm"
-        class="relative h-8 gap-1.5 px-2.5 text-xs"
-        {disabled}
-        {...props}
-      >
-        <AdjustmentsHorizontal class="size-3.5" />
-        {triggerLabel}
-        {#if count > 0}
-          <span
-            class="inline-flex h-4 min-w-4 items-center justify-center rounded-sm bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
-          >{count}</span>
-        {/if}
-      </Button>
-    {/snippet}
-  </DialogTrigger>
+  <Button
+    variant="outline"
+    size="sm"
+    class="relative h-8 gap-1.5 px-2.5 text-xs"
+    aria-haspopup="dialog"
+    aria-expanded={open}
+    {disabled}
+    onclick={() => {
+      onOpen?.();
+      open = true;
+    }}
+  >
+    <AdjustmentsHorizontal class="size-3.5" />
+    {triggerLabel}
+    {#if count > 0}
+      <span
+        class="inline-flex h-4 min-w-4 items-center justify-center rounded-sm bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
+      >{count}</span>
+    {/if}
+  </Button>
 
   <DialogContent class="max-h-[80vh] max-w-3xl gap-0 overflow-hidden p-0 sm:max-w-3xl">
     <DialogHeader class="gap-1 border-b border-border/60 px-5 py-4 pe-10">

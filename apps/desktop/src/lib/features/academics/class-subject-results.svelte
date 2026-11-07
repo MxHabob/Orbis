@@ -35,7 +35,7 @@ const periodNames = $derived(
   new Map(
     academicContext.allPeriods.map((period) => [
       period.id,
-      period.name_ar || period.name,
+      getLocale() === "ar" ? period.name_ar || period.name : period.name,
     ]),
   ),
 );
@@ -50,21 +50,21 @@ const rows = $derived(
     weight: grade.weight == null ? "—" : Number(grade.weight),
     letter_grade: grade.letter_grade ?? "—",
     record_state: grade.is_exempt
-      ? "Exempt"
+      ? m.academics_grade_state_exempt()
       : grade.is_excused
-        ? "Excused"
+        ? m.academics_grade_state_excused()
         : grade.is_final
-          ? "Final"
-          : "Recorded",
+          ? m.academics_grade_state_final()
+          : m.academics_grade_state_recorded(),
   })),
 );
 
-const columns: OrbisColumnDef[] = [
+const columns = $derived<OrbisColumnDef[]>([
   {
     id: "student_id",
     prop: "student_id",
-    header: "Learner",
-    name: "Learner",
+    header: m.common_grade_column_student(),
+    name: m.common_grade_column_student(),
     width: 230,
     size: 230,
     pin: "left",
@@ -72,24 +72,24 @@ const columns: OrbisColumnDef[] = [
   {
     id: "period",
     prop: "period",
-    header: "Period",
-    name: "Period",
+    header: m.academics_grade_column_period(),
+    name: m.academics_grade_column_period(),
     width: 170,
     size: 170,
   },
   {
     id: "component_id",
     prop: "component_id",
-    header: "Assessment component",
-    name: "Assessment component",
+    header: m.academics_grade_column_component(),
+    name: m.academics_grade_column_component(),
     width: 190,
     size: 190,
   },
   {
     id: "score",
     prop: "score",
-    header: "Score",
-    name: "Score",
+    header: m.academics_grade_column_score(),
+    name: m.academics_grade_column_score(),
     width: 100,
     size: 100,
     align: "end",
@@ -98,8 +98,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "maximum",
     prop: "maximum",
-    header: "Maximum",
-    name: "Maximum",
+    header: m.academics_grade_column_maximum(),
+    name: m.academics_grade_column_maximum(),
     width: 100,
     size: 100,
     align: "end",
@@ -108,8 +108,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "weight",
     prop: "weight",
-    header: "Weight",
-    name: "Weight",
+    header: m.academics_grade_column_weight(),
+    name: m.academics_grade_column_weight(),
     width: 90,
     size: 90,
     align: "end",
@@ -118,20 +118,20 @@ const columns: OrbisColumnDef[] = [
   {
     id: "letter_grade",
     prop: "letter_grade",
-    header: "Grade",
-    name: "Grade",
+    header: m.common_grade(),
+    name: m.common_grade(),
     width: 90,
     size: 90,
   },
   {
     id: "record_state",
     prop: "record_state",
-    header: "Record state",
-    name: "Record state",
+    header: m.academics_grade_column_record_state(),
+    name: m.academics_grade_column_record_state(),
     width: 115,
     size: 115,
   },
-];
+]);
 </script>
 
 <div class="flex h-full w-full flex-col gap-2.5 font-sans">
@@ -143,10 +143,10 @@ const columns: OrbisColumnDef[] = [
         </div>
         <div class="flex flex-col text-start">
           <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-            Assessment records
+            {m.academics_assessment_records_title()}
           </CardTitle>
           <CardDescription class="text-[10px]">
-            {rows.length} records
+            {m.academics_assessment_records_count({ count: rows.length })}
           </CardDescription>
         </div>
       </div>
@@ -192,8 +192,8 @@ const columns: OrbisColumnDef[] = [
           {columns}
           source={rows}
           rtl={getLocale() === "ar"}
-          emptyTitle="No assessment records yet"
-          emptyDescription="Assessment records for this offering will appear here."
+          emptyTitle={m.academics_assessment_records_empty_title()}
+          emptyDescription={m.academics_assessment_records_empty_description()}
           readonly
         />
       {/if}

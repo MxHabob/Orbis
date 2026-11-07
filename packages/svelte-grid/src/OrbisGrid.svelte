@@ -1,8 +1,18 @@
 <script lang="ts">
-import { setContext } from "svelte";
+import { setContext, type Snippet } from "svelte";
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
-import { FilterDialogFrame } from "@orbis/ui/filter-builder";
+import {
+  FilterBuilder,
+  FilterDialogFrame,
+  arabicFilterTranslations,
+  defaultFilterTranslations,
+  type FieldDefinition,
+  type FilterOperatorType,
+  type FilterTranslations,
+  type FilterValue,
+  type UniversalFilter,
+} from "@orbis/ui/filter-builder";
 import type {
   ActionItem,
   BulkResult,
@@ -14,8 +24,6 @@ import type {
   GridRow,
   GridRowsChangeEvent,
   OrbisColumnDef,
-  FilterCondition,
-  FilterOperator,
   SelectionSnapshot,
   SortSpec,
 } from "./types";
@@ -80,11 +88,14 @@ interface Props {
   serverQuery?: boolean;
   showSearch?: boolean;
   showFilterButton?: boolean;
+  showAddRow?: boolean;
+  filterTranslations?: FilterTranslations;
   uniformColumns?: boolean;
   search?: string;
   searchPlaceholder?: string;
   filter?: GridFilter | null;
   toolbar?: boolean;
+  toolbarActions?: Snippet;
   onquerychange?: (query: DataQuery) => void;
   onfilterchange?: (filter: GridFilter | null) => void;
   oncelledit?: (event: CellEditEvent) => void;
@@ -118,11 +129,14 @@ let {
   serverQuery = false,
   showSearch = true,
   showFilterButton = true,
+  showAddRow = true,
+  filterTranslations,
   uniformColumns = true,
   search = $bindable(""),
   searchPlaceholder,
   filter = $bindable(null),
   toolbar = true,
+  toolbarActions,
   onquerychange,
   onfilterchange,
   oncelledit,
@@ -154,10 +168,11 @@ let editing = $state<{
 } | null>(null);
 let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
 let filterPanelOpen = $state(false);
-let filterColumn = $state("");
-let filterOperator = $state<FilterOperator>("contains");
-let filterValue = $state("");
-let filterEndValue = $state("");
+let filterDraft = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 let menu = $state<{
   x: number;
   y: number;
@@ -200,9 +215,34 @@ const filterableCols = $derived(
       col.type !== "action",
   ),
 );
-const filterDraftColumn = $derived(
-  filterableCols.find((col) => columnId(col) === filterColumn) ??
-    filterableCols[0],
+const filterFields = $derived<FieldDefinition[]>(
+  filterableCols.map((col) => ({
+    id: columnId(col),
+    label: columnHeader(col),
+    type:
+      col.options?.length || ["enum", "status", "relation"].includes(col.type ?? "")
+        ? "select"
+        : ["number", "integer", "decimal", "currency", "percentage"].includes(
+              col.type ?? "",
+            )
+          ? "number"
+          : ["date", "datetime"].includes(col.type ?? "")
+            ? "date"
+            : col.type === "boolean"
+              ? "boolean"
+              : "string",
+    options: col.options?.map((option) => ({
+      label: option.label,
+      value:
+        typeof option.value === "boolean"
+          ? String(option.value)
+          : option.value,
+    })),
+  })),
+);
+const activeFilterTranslations = $derived(
+  filterTranslations ??
+    (rtl ? arabicFilterTranslations : defaultFilterTranslations),
 );
 const filterCount = $derived(countFilterConditions(filter));
 const displayRows = $derived(
@@ -286,26 +326,6 @@ function clearSearch() {
   search = "";
   notifyQueryChange();
 }
-
-const filterOperators: Array<{ value: FilterOperator; label: string }> = [
-  { value: "contains", label: "Contains" },
-  { value: "not_contains", label: "Does not contain" },
-  { value: "eq", label: "Is" },
-  { value: "neq", label: "Is not" },
-  { value: "starts_with", label: "Starts with" },
-  { value: "ends_with", label: "Ends with" },
-  { value: "gt", label: "Greater than" },
-  { value: "gte", label: "Greater than or equal" },
-  { value: "lt", label: "Less than" },
-  { value: "lte", label: "Less than or equal" },
-  { value: "between", label: "Between" },
-  { value: "in", label: "Is one of" },
-  { value: "not_in", label: "Is not one of" },
-  { value: "is_null", label: "Is empty" },
-  { value: "is_not_null", label: "Is not empty" },
-  { value: "bool_true", label: "Is true" },
-  { value: "bool_false", label: "Is false" },
-];
 
 const DEFAULT_DATA_COLUMN_WIDTH = 144;
 
@@ -477,135 +497,59 @@ function setFilter(next: GridFilter | null) {
   notifyQueryChange();
 }
 
-function filterScalar(value: string, col: OrbisColumnDef): unknown {
-  if (col.options?.length) {
-    const option = col.options.find(
-      (item) =>
-        String(item.value).toLowerCase() === value.toLowerCase() ||
-        item.label.toLowerCase() === value.toLowerCase(),
-    );
-    if (option) return option.value;
-  }
+function normalizeFilterValue(value: unknown): FilterValue {
   if (
-    col.type === "number" ||
-    col.type === "integer" ||
-    col.type === "decimal" ||
-    col.type === "currency" ||
-    col.type === "percentage"
+    value == null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
   ) {
-    const number = Number(value.replace(/[%$,\s]/g, ""));
-    return Number.isFinite(number) ? number : value;
+    return value;
   }
-  return value;
-}
-
-function filterOperatorRequiresValue(operator: FilterOperator): boolean {
-  return !["is_null", "is_not_null", "bool_true", "bool_false"].includes(
-    operator,
-  );
-}
-
-function addFilterCondition() {
-  const col = filterDraftColumn;
-  if (!canAddFilterCondition() || !col) return;
-  const field = columnId(col);
-  let value: unknown;
-  if (filterOperatorRequiresValue(filterOperator)) {
-    if (filterOperator === "between") {
-      value = [
-        filterScalar(filterValue, col),
-        filterScalar(filterEndValue, col),
-      ];
-    } else if (filterOperator === "in" || filterOperator === "not_in") {
-      value = filterValue
-        .split(",")
-        .map((item) => filterScalar(item.trim(), col))
-        .filter((item) => item !== "");
-    } else {
-      value = filterScalar(filterValue, col);
-    }
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      typeof item === "string" ||
+      typeof item === "number" ||
+      typeof item === "boolean"
+        ? item
+        : String(item),
+    );
   }
-  setFilter({
-    logic: filter?.logic ?? "AND",
-    conditions: [
-      ...(filter?.conditions ?? []),
-      { field, operator: filterOperator, value },
-    ],
-    groups: filter?.groups,
-    search: filter?.search,
-    sort_by: filter?.sort_by,
-    sort_dir: filter?.sort_dir,
-  });
-  filterValue = "";
-  filterEndValue = "";
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
-function canAddFilterCondition(): boolean {
-  if (!filterDraftColumn) return false;
-  if (!filterOperatorRequiresValue(filterOperator)) return true;
-  if (filterOperator === "between")
-    return filterValue.trim() !== "" && filterEndValue.trim() !== "";
-  return filterValue.trim() !== "";
+function toBuilderFilter(value: GridFilter | null): UniversalFilter {
+  if (!value) return { logic: "AND", conditions: [], groups: [] };
+  return {
+    logic: value.logic === "OR" ? "OR" : "AND",
+    search: value.search,
+    conditions: (value.conditions ?? []).map((condition) => ({
+      field: condition.field,
+      operator: condition.operator as FilterOperatorType,
+      value: normalizeFilterValue(condition.value),
+    })),
+    groups: (value.groups ?? []).map((group) => toBuilderFilter(group)),
+  };
 }
 
-function removeFilterCondition(index: number) {
-  if (!filter) return;
-  const conditions = filter.conditions.filter(
-    (_, itemIndex) => itemIndex !== index,
-  );
+function openFilterBuilder() {
+  filterDraft = toBuilderFilter(filter);
+  filterPanelOpen = true;
+}
+
+function clearGridFilter() {
+  filterDraft = { logic: "AND", conditions: [], groups: [] };
+  setFilter(null);
+}
+
+function applyGridFilter() {
   setFilter({
     ...filter,
-    conditions,
-    groups: filter.groups,
+    logic: filterDraft.logic,
+    conditions: filterDraft.conditions,
+    groups: filterDraft.groups,
   });
-}
-
-function filterConditionLabel(condition: FilterCondition): string {
-  const col = filterableCols.find((item) => columnId(item) === condition.field);
-  const operator = operatorLabel(condition.operator);
-  const value = Array.isArray(condition.value)
-    ? condition.value.join(" – ")
-    : condition.value == null
-      ? ""
-      : String(condition.value);
-  return [col ? columnHeader(col) : condition.field, operator, value]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function operatorLabel(value: string): string {
-  const labels: Record<string, string> = rtl
-    ? {
-        contains: "يحتوي على",
-        not_contains: "لا يحتوي على",
-        eq: "يساوي",
-        neq: "لا يساوي",
-        starts_with: "يبدأ بـ",
-        ends_with: "ينتهي بـ",
-        gt: "أكبر من",
-        gte: "أكبر من أو يساوي",
-        lt: "أقل من",
-        lte: "أقل من أو يساوي",
-        between: "بين",
-        in: "أحد القيم",
-        not_in: "ليس من القيم",
-        is_null: "فارغ",
-        is_not_null: "غير فارغ",
-        bool_true: "نعم",
-        bool_false: "لا",
-      }
-    : {};
-  return (
-    labels[value] ??
-    filterOperators.find((item) => item.value === value)?.label ??
-    value
-  );
-}
-
-function filterInputType(col: OrbisColumnDef | undefined): string {
-  if (col?.type === "date") return "date";
-  if (col?.type === "datetime") return "datetime-local";
-  return "text";
 }
 
 function createEmptyGridRow(): GridRow {
@@ -1105,7 +1049,7 @@ function handleDblClick(row: number, col: number, e: MouseEvent) {
 function handleRootKeydown(event: KeyboardEvent) {
   if (
     event.target instanceof Element &&
-    event.target.closest(".orbis-toolbar, .orbis-filter-panel")
+    event.target.closest(".orbis-toolbar")
   ) {
     return;
   }
@@ -1726,122 +1670,30 @@ export function scrollToColumnProp(prop: string) {
           {/if}
         </label>
       {/if}
+      {#if toolbarActions}
+        {@render toolbarActions()}
+      {/if}
       {#if showFilterButton}
         <FilterDialogFrame
           bind:open={filterPanelOpen}
-          title={rtl ? "تصفية البيانات" : "Filter records"}
-          triggerLabel={rtl ? "تصفية" : "Filter"}
+          title={activeFilterTranslations.advancedFilter}
+          triggerLabel={activeFilterTranslations.filter}
           count={filterCount}
-          clearLabel={rtl ? "مسح عوامل التصفية" : "Clear filters"}
-          applyLabel={rtl ? "تم" : "Done"}
+          clearLabel={activeFilterTranslations.clearAll}
+          applyLabel={activeFilterTranslations.applyFilter}
           disabled={filterableCols.length === 0 && filterCount === 0}
-          onClear={() => setFilter(null)}
+          onOpen={openFilterBuilder}
+          onClear={clearGridFilter}
+          onApply={applyGridFilter}
         >
-            <div class="orbis-filter-panel">
-              <div class="orbis-filter-builder">
-                <select
-                  class="orbis-filter-control"
-                  bind:value={filterColumn}
-                  aria-label={rtl ? "عمود التصفية" : "Filter column"}
-                  onkeydown={(event) => event.stopPropagation()}
-                >
-                  {#each filterableCols as col (columnId(col))}
-                    <option value={columnId(col)}>{columnHeader(col)}</option>
-                  {/each}
-                </select>
-                <select
-                  class="orbis-filter-control"
-                  bind:value={filterOperator}
-                  aria-label={rtl ? "نوع التصفية" : "Filter operator"}
-                  onkeydown={(event) => event.stopPropagation()}
-                >
-                  {#each filterOperators as operator (operator.value)}
-                    <option value={operator.value}>{operatorLabel(operator.value)}</option>
-                  {/each}
-                </select>
-                {#if filterOperatorRequiresValue(filterOperator) && filterDraftColumn?.options?.length}
-                  <select
-                    class="orbis-filter-control filter-value"
-                    bind:value={filterValue}
-                    aria-label={rtl ? "قيمة التصفية" : "Filter value"}
-                    onkeydown={(event) => event.stopPropagation()}
-                  >
-                    <option value="">{rtl ? "اختر قيمة" : "Choose a value"}</option>
-                    {#each filterDraftColumn.options as option (String(option.value))}
-                      <option value={String(option.value)}>{option.label}</option>
-                    {/each}
-                  </select>
-                {:else if filterOperatorRequiresValue(filterOperator)}
-                  <input
-                    class="orbis-filter-control filter-value"
-                    type={filterInputType(filterDraftColumn)}
-                    bind:value={filterValue}
-                    placeholder={filterOperator === "in" || filterOperator === "not_in"
-                      ? (rtl ? "قيم مفصولة بفواصل" : "Comma-separated values")
-                      : rtl ? "القيمة" : "Value"}
-                    aria-label={rtl ? "قيمة التصفية" : "Filter value"}
-                    onkeydown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        addFilterCondition();
-                      }
-                      event.stopPropagation();
-                    }}
-                  />
-                  {#if filterOperator === "between"}
-                    <input
-                      class="orbis-filter-control filter-value"
-                      type={filterInputType(filterDraftColumn)}
-                      bind:value={filterEndValue}
-                      placeholder={rtl ? "إلى" : "To"}
-                      aria-label={rtl ? "نهاية النطاق" : "Range end"}
-                      onkeydown={(event) => event.stopPropagation()}
-                    />
-                  {/if}
-                {/if}
-                <button
-                  type="button"
-                  class="orbis-toolbar-button filter-add"
-                  disabled={!canAddFilterCondition()}
-                  onclick={addFilterCondition}
-                >{rtl ? "إضافة" : "Add filter"}</button>
-              </div>
-              {#if (filter?.conditions.length ?? 0) > 1}
-                <label class="orbis-filter-logic">
-                  {rtl ? "مطابقة" : "Match"}
-                  <select
-                    class="orbis-filter-control"
-                    value={filter?.logic ?? "AND"}
-                    onchange={(event) =>
-                      setFilter({
-                        ...(filter ?? { conditions: [] }),
-                        logic: event.currentTarget.value === "OR" ? "OR" : "AND",
-                      })}
-                    onkeydown={(event) => event.stopPropagation()}
-                  >
-                    <option value="AND">{rtl ? "كل الشروط" : "All conditions"}</option>
-                    <option value="OR">{rtl ? "أي شرط" : "Any condition"}</option>
-                  </select>
-                </label>
-              {/if}
-              {#if filter?.conditions.length}
-                <div class="orbis-filter-chips">
-                  {#each filter.conditions as condition, index (`${condition.field}:${index}`)}
-                    <span class="orbis-filter-chip">
-                      {filterConditionLabel(condition)}
-                      <button
-                        type="button"
-                        aria-label={rtl ? "إزالة شرط التصفية" : "Remove filter"}
-                        onclick={() => removeFilterCondition(index)}
-                      >×</button>
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-            </div>
+          <FilterBuilder
+            bind:filter={filterDraft}
+            fields={filterFields}
+            translations={activeFilterTranslations}
+          />
         </FilterDialogFrame>
       {/if}
-      {#if !readonly}
+      {#if !readonly && showAddRow}
         <button
           type="button"
           class="orbis-toolbar-button orbis-add-row"
@@ -2336,8 +2188,7 @@ export function scrollToColumnProp(prop: string) {
   .orbis-search input::placeholder {
     color: var(--muted-foreground);
   }
-  .orbis-toolbar-clear,
-  .orbis-filter-chip button {
+  .orbis-toolbar-clear {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2352,8 +2203,7 @@ export function scrollToColumnProp(prop: string) {
     line-height: 1;
     cursor: pointer;
   }
-  .orbis-toolbar-clear:hover,
-  .orbis-filter-chip button:hover {
+  .orbis-toolbar-clear:hover {
     background: var(--accent);
     color: var(--foreground);
   }
@@ -2377,8 +2227,7 @@ export function scrollToColumnProp(prop: string) {
   .orbis-toolbar-button.active {
     background: var(--muted);
   }
-  .orbis-toolbar-button:focus-visible,
-  .orbis-filter-chip button:focus-visible {
+  .orbis-toolbar-button:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 0;
   }
@@ -2391,95 +2240,12 @@ export function scrollToColumnProp(prop: string) {
     font-size: 1rem;
     font-weight: 600;
   }
-  .orbis-filter-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1rem;
-    height: 1rem;
-    padding: 0 0.2rem;
-    border-radius: var(--radius-sm);
-    background: var(--primary);
-    color: var(--primary-foreground);
-    font-size: 0.625rem;
-    line-height: 1;
-  }
   .orbis-row-count {
     margin-inline-start: auto;
     padding-inline: 0.375rem;
     color: var(--muted-foreground);
     font-size: 0.6875rem;
     white-space: nowrap;
-  }
-  .orbis-filter-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-    width: 100%;
-    min-width: 0;
-  }
-  .orbis-filter-builder {
-    display: flex;
-    flex: 1 1 auto;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    min-width: 0;
-  }
-  .orbis-filter-control {
-    flex: 1 1 10rem;
-    min-width: 7rem;
-    max-width: 100%;
-    height: 2.25rem;
-    padding: 0 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--card);
-    color: var(--foreground);
-    font: inherit;
-    font-size: 0.75rem;
-  }
-  .orbis-filter-control:focus {
-    outline: none;
-    border-color: var(--ring);
-    box-shadow: inset 0 0 0 1px var(--ring);
-  }
-  .orbis-filter-control.filter-value {
-    flex: 1 1 8rem;
-  }
-  .orbis-filter-logic {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--muted-foreground);
-    font-size: 0.75rem;
-    white-space: nowrap;
-  }
-  .orbis-filter-logic .orbis-filter-control {
-    min-width: 6rem;
-  }
-  .orbis-filter-chips {
-    display: flex;
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-  }
-  .orbis-filter-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    max-width: 100%;
-    padding: 0.125rem 0.25rem 0.125rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--muted);
-    color: var(--foreground);
-    font-size: 0.75rem;
-  }
-  .orbis-filter-chip button {
-    flex: 0 0 auto;
   }
   .orbis-paste-banner {
     display: flex;
