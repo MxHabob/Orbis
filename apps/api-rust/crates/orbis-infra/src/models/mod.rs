@@ -73,6 +73,10 @@ pub mod autopilot_task;
 pub mod integration;
 pub mod workflow;
 
+// === Notifications ===
+pub mod notification;
+pub mod notification_preference;
+
 // === Reporting ===
 pub mod report;
 

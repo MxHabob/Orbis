@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface ArrowForwardProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface ArrowForwardProps extends SvgProps {
 
 export function ArrowForward({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,13 +45,18 @@ export function ArrowForward({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
-      <Path strokeLinecap="round" strokeLinejoin="round" d="M13.25 19.25L16.75 15.75L13.25 12.25" />
-	<Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="M16.75 15.75H10.75C8.54086 15.75 6.75 13.9591 6.75 11.75V7.5"
-	/>
+      {...props}
+    >
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M13.25 19.25L16.75 15.75L13.25 12.25"
+      />
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.75 15.75H10.75C8.54086 15.75 6.75 13.9591 6.75 11.75V7.5"
+      />
     </Svg>
   );
 }

@@ -28,16 +28,20 @@ import {
   type UploadDocumentRequest,
 } from "$lib/api";
 import { studentsStore } from "./store.svelte";
-import { debounce } from "$lib/shared/utils/debounce";
 import { exportToCsv } from "$lib/shared/utils/export";
 import { formatDate } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
+import { academicContext } from "$lib/stores";
 
 /** Query and actions for the students directory screen. */
 export function createStudentDirectoryQuery(orgId: () => string) {
   const getStudentFilter = () => ({
     class_id: studentsStore.selectedClassId ?? undefined,
-    status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
+    period_id: academicContext.effectivePeriodId || undefined,
+    status:
+      studentsStore.statusFilter === "all"
+        ? undefined
+        : studentsStore.statusFilter,
     search: studentsStore.searchQuery.trim() || undefined,
   });
 
@@ -64,10 +68,38 @@ export function createStudentDirectoryQuery(orgId: () => string) {
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
+  const enrollmentsQuery = createQuery(() => ({
+    queryKey: [
+      ...queryKeys.student.all,
+      "directory-enrollments",
+      orgId(),
+      academicContext.effectivePeriodId,
+    ],
+    queryFn: async () => {
+      const periodId = academicContext.effectivePeriodId;
+      if (!periodId) return [];
 
-  const updateSearch = debounce((query: string) => {
+      const enrollments = [];
+      let page = 1;
+      let pageItems: Awaited<ReturnType<typeof api.listEnrollments>> = [];
+      do {
+        pageItems = await api.listEnrollments({
+          period_id: periodId,
+          page,
+          page_size: 100,
+        });
+        enrollments.push(...pageItems);
+        page += 1;
+      } while (pageItems.length === 100);
+      return enrollments;
+    },
+    enabled: !!orgId() && !!academicContext.effectivePeriodId,
+    staleTime: 2 * 60 * 1000,
+  }));
+
+  function updateSearch(query: string) {
     studentsStore.searchQuery = query;
-  }, 150);
+  }
 
   function setStatusFilter(status: string) {
     studentsStore.statusFilter = status;
@@ -100,7 +132,9 @@ export function createStudentDirectoryQuery(orgId: () => string) {
         dataset = [];
         for (let index = 0; index < studentIds.length; index += 5) {
           const batch = studentIds.slice(index, index + 5);
-          dataset.push(...await Promise.all(batch.map((id) => api.getStudent(id))));
+          dataset.push(
+            ...(await Promise.all(batch.map((id) => api.getStudent(id)))),
+          );
         }
       } else {
         const filter = {
@@ -125,37 +159,44 @@ export function createStudentDirectoryQuery(orgId: () => string) {
       }
 
       const classNames = new Map(
-        (classesQuery.data ?? []).map((classItem) => [classItem.id, classItem.name]),
+        (classesQuery.data ?? []).map((classItem) => [
+          classItem.id,
+          classItem.name,
+        ]),
       );
-      exportToCsv(
-        `Students_Roster_${orgId()}`,
-        dataset,
-        [
-          { header: m.operations_ui_student_number(), accessor: (student) => student.student?.student_number || "—" },
-          {
-            header: m.operations_ui_student_name(),
-            accessor: (student) =>
-              (student.person?.first_name && student.person?.last_name
-                ? `${student.person.first_name} ${student.person.last_name}`
-                : "") ||
-              student.person?.full_name ||
-              m.operations_ui_student_fallback(),
-          },
-          {
-            header: m.operations_ui_class(),
-            accessor: (student) =>
-              classNames.get(student.enrollment?.section_id ?? "") ||
-              student.enrollment?.section_id ||
-              "—",
-          },
-          { header: m.operations_ui_status(), accessor: (student) => student.student?.status || "active" },
-          {
-            header: m.operations_ui_admission_date(),
-            accessor: (student) =>
-              student.student?.admitted_at ? formatDate(student.student.admitted_at, "date") : "—",
-          },
-        ],
-      );
+      exportToCsv(`Students_Roster_${orgId()}`, dataset, [
+        {
+          header: m.operations_ui_student_number(),
+          accessor: (student) => student.student?.student_number || "—",
+        },
+        {
+          header: m.operations_ui_student_name(),
+          accessor: (student) =>
+            (student.person?.first_name && student.person?.last_name
+              ? `${student.person.first_name} ${student.person.last_name}`
+              : "") ||
+            student.person?.full_name ||
+            m.operations_ui_student_fallback(),
+        },
+        {
+          header: m.operations_ui_class(),
+          accessor: (student) =>
+            classNames.get(student.enrollment?.section_id ?? "") ||
+            student.enrollment?.section_id ||
+            "—",
+        },
+        {
+          header: m.operations_ui_status(),
+          accessor: (student) => student.student?.status || "active",
+        },
+        {
+          header: m.operations_ui_admission_date(),
+          accessor: (student) =>
+            student.student?.admitted_at
+              ? formatDate(student.student.admitted_at, "date")
+              : "—",
+        },
+      ]);
       toast.success(m.operations_ui_student_export_success());
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -165,15 +206,19 @@ export function createStudentDirectoryQuery(orgId: () => string) {
   return {
     studentsQuery,
     classesQuery,
+    enrollmentsQuery,
     get classes() {
       return classesQuery.data ?? [];
     },
     get error() {
-      return (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
-        classesQuery.error;
+      return (
+        (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
+        classesQuery.error
+      );
     },
     get errorMessage() {
-      const error = (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
+      const error =
+        (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
         classesQuery.error;
       return error
         ? m.students_load_error({ error: extractErrorMessage(error) })
@@ -182,13 +227,21 @@ export function createStudentDirectoryQuery(orgId: () => string) {
     get statusFilter() {
       return studentsStore.statusFilter;
     },
+    get search() {
+      return studentsStore.searchQuery;
+    },
+    set search(query: string) {
+      studentsStore.searchQuery = query;
+    },
     get selectedClassId() {
       return studentsStore.selectedClassId;
     },
     get hasActiveFilters() {
-      return studentsStore.selectedClassId !== null ||
+      return (
+        studentsStore.selectedClassId !== null ||
         studentsStore.statusFilter !== "active" ||
-        studentsStore.searchQuery !== "";
+        studentsStore.searchQuery !== ""
+      );
     },
     get hasMore() {
       return studentsQuery.hasNextPage ?? false;
@@ -209,7 +262,10 @@ export function createStudentsQuery(
   filter?: () => StudentFilterParams | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: queryKeys.student.list(orgId(), filter?.() as Record<string, unknown>),
+    queryKey: queryKeys.student.list(
+      orgId(),
+      filter?.() as Record<string, unknown>,
+    ),
     queryFn: () => api.listStudents(filter?.()),
     enabled: !!orgId(),
     staleTime: 2 * 60 * 1000,
@@ -236,7 +292,10 @@ export function createEnrollmentsQuery(
   filter?: () => EnrollmentFilterParams | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: queryKeys.student.enrollments(orgId(), filter?.() as Record<string, unknown>),
+    queryKey: queryKeys.student.enrollments(
+      orgId(),
+      filter?.() as Record<string, unknown>,
+    ),
     queryFn: () => api.listEnrollments(filter?.()),
     enabled: !!orgId(),
     staleTime: 2 * 60 * 1000,
@@ -306,11 +365,12 @@ export function createStudentDocumentRequirementsQuery(
 ) {
   return createQuery(() => ({
     queryKey: queryKeys.student.documentRequirements(studentId()),
-    queryFn: () => api.evaluateStudentDocumentRequirements(studentId(), {
-      grade_level_id: gradeLevelId?.(),
-      is_national: isNational?.(),
-      is_transfer: isTransfer?.(),
-    }),
+    queryFn: () =>
+      api.evaluateStudentDocumentRequirements(studentId(), {
+        grade_level_id: gradeLevelId?.(),
+        is_national: isNational?.(),
+        is_transfer: isTransfer?.(),
+      }),
     enabled: !!studentId(),
     staleTime: 2 * 60 * 1000,
   }));
@@ -353,7 +413,11 @@ export function createUpdateStudentStatusMutation() {
   return createMutation(() => ({
     mutationFn: (req: UpdateStudentStatusInput) => api.updateStudentStatus(req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(vars.student_id || vars.studentId || "") });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.detail(
+          vars.student_id || vars.studentId || "",
+        ),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -363,9 +427,14 @@ export function createUpdateStudentStatusMutation() {
 export function createUpdateStudentProfileMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (req: UpdateStudentProfileInput) => api.updateStudentProfile(req),
+    mutationFn: (req: UpdateStudentProfileInput) =>
+      api.updateStudentProfile(req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(vars.student_id || vars.studentId || "") });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.detail(
+          vars.student_id || vars.studentId || "",
+        ),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -377,8 +446,28 @@ export function createDeleteStudentMutation() {
   return createMutation(() => ({
     mutationFn: (studentId: string) => api.deleteStudent(studentId),
     onSuccess: (_, studentId) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.detail(studentId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    },
+  }));
+}
+
+/** Delete selected students and invalidate the directory once after completion. */
+export function createDeleteStudentsMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (studentIds: string[]) =>
+      Promise.allSettled(
+        studentIds.map((studentId) => api.deleteStudent(studentId)),
+      ),
+    onSuccess: (results) => {
+      if (
+        results.some((result) => result.status === "fulfilled" && result.value)
+      ) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      }
     },
   }));
 }
@@ -389,7 +478,9 @@ export function createRestoreStudentMutation() {
   return createMutation(() => ({
     mutationFn: (studentId: string) => api.restoreStudent(studentId),
     onSuccess: (_, studentId) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.detail(studentId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -435,7 +526,9 @@ export function createAssignGuardianMutation() {
   return createMutation(() => ({
     mutationFn: (req: AssignGuardianRequest) => api.assignGuardian(req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.guardians(vars.student_id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.guardians(vars.student_id),
+      });
     },
   }));
 }
@@ -444,10 +537,17 @@ export function createAssignGuardianMutation() {
 export function createRemoveGuardianMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: ({ studentId, guardianId }: { studentId: string; guardianId: string }) =>
-      api.removeGuardian(studentId, guardianId),
+    mutationFn: ({
+      studentId,
+      guardianId,
+    }: {
+      studentId: string;
+      guardianId: string;
+    }) => api.removeGuardian(studentId, guardianId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.guardians(vars.studentId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.guardians(vars.studentId),
+      });
     },
   }));
 }
@@ -458,7 +558,9 @@ export function createRecordBehaviorMutation() {
   return createMutation(() => ({
     mutationFn: (req: RecordBehaviorRequest) => api.recordBehavior(req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.behavior(vars.student_id || "") });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.behavior(vars.student_id || ""),
+      });
     },
   }));
 }
@@ -470,8 +572,12 @@ export function createUploadStudentDocumentMutation() {
     mutationFn: (req: UploadDocumentRequest) => api.uploadDocument(req),
     onSuccess: (_, vars) => {
       if (vars.entity_id) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.student.documents(vars.entity_id) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.student.documentRequirements(vars.entity_id) });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.documents(vars.entity_id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.documentRequirements(vars.entity_id),
+        });
       }
     },
   }));

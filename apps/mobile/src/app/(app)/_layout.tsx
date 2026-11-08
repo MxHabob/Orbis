@@ -10,10 +10,13 @@ import { View } from "react-native";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/lib/api";
 import { useEffectiveContext } from "@/providers/effective-context";
+import { useNotificationsStream } from "@/hooks/use-notifications-stream";
 
 export default function AppProtectedLayout() {
   const { isAuthenticated, isInitializing } = useAuth();
   const { isReady: isContextReady } = useEffectiveContext();
+
+  useNotificationsStream();
 
   if (isInitializing) {
     return (

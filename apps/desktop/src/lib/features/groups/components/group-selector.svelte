@@ -8,13 +8,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
-import {
-  ArrowPath,
-  CheckCircle,
-  Search,
-  UserGroup,
-  XMark,
-} from "@orbis/icons";
+import { ArrowPath, CheckCircle, Search, UserGroup, XMark } from "@orbis/icons";
 import { formatNumber } from "$lib/core/i18n";
 import { createGroupsQuery } from "../queries";
 
@@ -43,7 +37,7 @@ const groups = $derived(
     const nameAr = (g.name_ar || "").toLowerCase();
     const desc = (g.description || "").toLowerCase();
     return name.includes(q) || nameAr.includes(q) || desc.includes(q);
-  })
+  }),
 );
 
 function toggleGroup(groupId: string) {

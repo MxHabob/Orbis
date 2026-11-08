@@ -21,7 +21,13 @@ type SubjectDraft = {
 };
 
 const form = new FormController<SubjectDraft>({
-  initialValues: { name: "", name_ar: "", code: "", credit_hours: 3, color: null },
+  initialValues: {
+    name: "",
+    name_ar: "",
+    code: "",
+    credit_hours: 3,
+    color: null,
+  },
   schema: createSubjectInputSchema,
 });
 

@@ -111,7 +111,9 @@ function setValue(language: TranslationLanguage, value: string) {
 }
 
 function isGenerated(language: TranslationLanguage): boolean {
-  return generatedLanguage === language && valueFor(language) === generatedValue;
+  return (
+    generatedLanguage === language && valueFor(language) === generatedValue
+  );
 }
 
 function clearGeneratedLink() {
@@ -140,8 +142,7 @@ function handleInput(text: string, sourceLanguage: TranslationLanguage) {
         : otherLanguage(sourceLanguage);
     if (
       pairedLanguage &&
-      ((generatedLanguage === pairedLanguage &&
-        isGenerated(pairedLanguage)) ||
+      ((generatedLanguage === pairedLanguage && isGenerated(pairedLanguage)) ||
         (pairedLanguage === generatedSourceLanguage &&
           valueFor(pairedLanguage) === generatedSourceValue))
     ) {
@@ -169,7 +170,8 @@ function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
         sourceLanguage,
         kind,
       });
-      if (sequence !== requestSequence || result.status !== "suggestion") return;
+      if (sequence !== requestSequence || result.status !== "suggestion")
+        return;
 
       const targetLanguage = otherLanguage(sourceLanguage);
       const targetValue = valueFor(targetLanguage);

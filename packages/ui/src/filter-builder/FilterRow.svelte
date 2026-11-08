@@ -1,7 +1,12 @@
 <script lang="ts">
 import { Button } from "../components/ui/button";
 import { Trash } from "@orbis/icons";
-import type { FilterCondition, FieldDefinition } from "./types";
+import {
+  defaultFilterTranslations,
+  type FilterCondition,
+  type FieldDefinition,
+  type FilterTranslations,
+} from "./types";
 import FilterFieldPicker from "./FilterFieldPicker.svelte";
 import FilterOperatorPicker from "./FilterOperatorPicker.svelte";
 import FilterValueInput from "./FilterValueInput.svelte";
@@ -9,29 +14,29 @@ import FilterValueInput from "./FilterValueInput.svelte";
 let {
   condition = $bindable(),
   fields = [],
+  translations = defaultFilterTranslations,
   onRemove,
 }: {
   condition: FilterCondition;
   fields: FieldDefinition[];
+  translations?: FilterTranslations;
   onRemove: () => void;
 } = $props();
 </script>
 
-<div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-card border rounded-lg shadow-sm w-full transition-all hover:border-primary/50">
-    <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_2fr] gap-3 flex-1 w-full">
-        <!-- Field Selection -->
-        <FilterFieldPicker bind:condition {fields} />
-
-        <!-- Operator Selection -->
-        <FilterOperatorPicker bind:condition {fields} />
-
-        <!-- Value Input -->
-        <FilterValueInput bind:condition {fields} />
-    </div>
-
-    <!-- Delete Button -->
-    <Button variant="ghost" size="icon" onclick={onRemove} class="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0 mt-2 sm:mt-0">
-        <Trash class="w-4 h-4" />
-        <span class="sr-only">Remove Condition</span>
-    </Button>
+<div
+  class="grid w-full min-w-0 grid-cols-1 items-center gap-2 border-b border-border/60 pb-2 last:border-b-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,2fr)_2rem]"
+>
+  <FilterFieldPicker bind:condition {fields} {translations} />
+  <FilterOperatorPicker bind:condition {fields} {translations} />
+  <FilterValueInput bind:condition {fields} {translations} />
+  <Button
+    variant="ghost"
+    size="icon-sm"
+    onclick={onRemove}
+    class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+  >
+        <Trash class="size-4" />
+        <span class="sr-only">{translations.removeCondition}</span>
+  </Button>
 </div>

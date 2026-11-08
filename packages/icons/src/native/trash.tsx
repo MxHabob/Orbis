@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface TrashProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface TrashProps extends SvgProps {
 
 export function Trash({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,7 +45,8 @@ export function Trash({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path d="M7 7.5h10l-.75 11.25h-8.5L7 7.5Z" />
       <Path d="M4.5 6.5h15M9.5 6.5V4.75c0-.69.56-1.25 1.25-1.25h2.5c.69 0 1.25.56 1.25 1.25V6.5M10 11v5m4-5v5" />
     </Svg>

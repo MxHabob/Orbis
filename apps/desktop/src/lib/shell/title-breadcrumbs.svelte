@@ -27,7 +27,9 @@ const breadcrumbs = $derived.by(() => {
   // Base dashboard link
   items.push({ label: m.common_nav_overview(), href: `/${currentOrgId}` });
 
-  if (pathname.includes("/reports")) {
+  if (pathname.includes("/approvals")) {
+    items.push({ label: m.settings_nav_approvals() });
+  } else if (pathname.includes("/reports")) {
     items.push({
       label: m.common_nav_reports(),
       href: `/${currentOrgId}/reports`,

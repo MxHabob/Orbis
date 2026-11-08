@@ -437,19 +437,39 @@ function collectOtherNodeBounds(excludeIds: Set<string>): BoundingBox[] {
   const pageHeight = getPageH(pageSetup);
   for (const child of page.children) {
     if (excludeIds.has(child.id)) continue;
-    const pos = (
-      "props" in child
-        ? (child.props as { position?: { x?: number; y?: number; width?: number | string; height?: number | string } }).position
-        : undefined
-    ) ?? (child as { position?: { x?: number; y?: number; width?: number | string; height?: number | string } }).position;
+    const pos =
+      ("props" in child
+        ? (
+            child.props as {
+              position?: {
+                x?: number;
+                y?: number;
+                width?: number | string;
+                height?: number | string;
+              };
+            }
+          ).position
+        : undefined) ??
+      (
+        child as {
+          position?: {
+            x?: number;
+            y?: number;
+            width?: number | string;
+            height?: number | string;
+          };
+        }
+      ).position;
     if (!pos) continue;
 
-    const width = typeof pos.width === "string" && pos.width.endsWith("%")
-      ? (Number.parseFloat(pos.width) / 100) * pageWidth
-      : Number(pos.width) || 50;
-    const height = typeof pos.height === "string" && pos.height.endsWith("%")
-      ? (Number.parseFloat(pos.height) / 100) * pageHeight
-      : Number(pos.height) || 20;
+    const width =
+      typeof pos.width === "string" && pos.width.endsWith("%")
+        ? (Number.parseFloat(pos.width) / 100) * pageWidth
+        : Number(pos.width) || 50;
+    const height =
+      typeof pos.height === "string" && pos.height.endsWith("%")
+        ? (Number.parseFloat(pos.height) / 100) * pageHeight
+        : Number(pos.height) || 20;
     bounds.push({ x: pos.x ?? 0, y: pos.y ?? 0, width, height });
   }
   return bounds;

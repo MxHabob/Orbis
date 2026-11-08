@@ -56,7 +56,7 @@ pub struct EffectiveContextDto {
 
 #[derive(Serialize, Deserialize, ToSchema, Clone, Debug)]
 pub struct TeachingClassDto {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub name: String,
     pub name_ar: Option<String>,
     pub level: Option<String>,
@@ -75,7 +75,7 @@ impl From<orbis_app::services::auth_service::EffectiveContextDto> for EffectiveC
                 .teaching_classes
                 .into_iter()
                 .map(|class| TeachingClassDto {
-                    class_id: class.class_id,
+                    section_id: class.section_id,
                     name: class.name,
                     name_ar: class.name_ar,
                     level: class.level,

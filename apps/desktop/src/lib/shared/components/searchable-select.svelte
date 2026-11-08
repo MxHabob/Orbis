@@ -55,14 +55,24 @@ let {
     if (typeof item === "string") return item;
     const localized = l(
       item.name_ar || item.nameAr || item.label_ar || item.title_ar,
-      item.name_en || item.nameEn || item.name || item.label || item.title || item.full_name,
+      item.name_en ||
+        item.nameEn ||
+        item.name ||
+        item.label ||
+        item.title ||
+        item.full_name,
     );
     if (localized) return localized;
     const composite = `${item.first_name || ""} ${item.last_name || ""}`.trim();
     if (composite) return composite;
-    return String(item.full_name || item.name || item.label || item.code || item.id || "");
+    return String(
+      item.full_name || item.name || item.label || item.code || item.id || "",
+    );
   },
-  getItemSubtitle = (item: any) => item?.employee_number ? `#${item.employee_number}` : item?.code || item?.subtitle || undefined,
+  getItemSubtitle = (item: any) =>
+    item?.employee_number
+      ? `#${item.employee_number}`
+      : item?.code || item?.subtitle || undefined,
   getItemBadge = (item: any) => item?.badge || item?.status || undefined,
   showAllOption = false,
   allOptionLabel = m.shared_ui_all(),
@@ -88,7 +98,9 @@ const filteredItems = $derived.by(() => {
     const sub = (getItemSubtitle(item) || "").toLowerCase();
     const val = getItemValue(item).toLowerCase();
     const nameAr = String(item.name_ar || item.nameAr || "").toLowerCase();
-    const nameEn = String(item.name_en || item.nameEn || item.name || "").toLowerCase();
+    const nameEn = String(
+      item.name_en || item.nameEn || item.name || "",
+    ).toLowerCase();
     const empNum = String(item.employee_number || "").toLowerCase();
     return (
       label.includes(q) ||
@@ -106,7 +118,12 @@ const selectedItem = $derived(
 );
 
 const displayLabel = $derived.by(() => {
-  if (value === "all" || value === "" || value === null || value === undefined) {
+  if (
+    value === "all" ||
+    value === "" ||
+    value === null ||
+    value === undefined
+  ) {
     return showAllOption ? allOptionLabel : placeholder;
   }
   if (selectedItem) {

@@ -181,8 +181,6 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
   if (config.centerOnSheet) {
     offsetX = config.sheetMargins.left + (printableW - contentBlockW) / 2;
     offsetY = config.sheetMargins.top + (printableH - contentBlockH) / 2;
-    offsetX = Math.max(offsetX, config.sheetMargins.left);
-    offsetY = Math.max(offsetY, config.sheetMargins.top);
   } else {
     offsetX = config.sheetMargins.left;
     offsetY = config.sheetMargins.top;

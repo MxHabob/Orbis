@@ -2,7 +2,13 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import LogoUpload from "$lib/shared/components/logo-upload.svelte";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@orbis/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 
 interface Props {
   logo: string;

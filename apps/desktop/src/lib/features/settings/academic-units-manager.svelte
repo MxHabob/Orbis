@@ -20,7 +20,23 @@ import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { BookOpen, BuildingOffice, ChevronDown, ChevronRight, Cube, Folder, Home, Keyframes, Pencil, Pin, Plus, QueueList, Search, Trash, Users } from "@orbis/icons";
+import {
+  BookOpen,
+  BuildingOffice,
+  ChevronDown,
+  ChevronRight,
+  Cube,
+  Folder,
+  Home,
+  Keyframes,
+  Pencil,
+  Pin,
+  Plus,
+  QueueList,
+  Search,
+  Trash,
+  Users,
+} from "@orbis/icons";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore, licenseStore } from "$lib/stores";
 
@@ -57,9 +73,7 @@ async function loadUnits() {
     rooms = fetchedRooms;
     if (!initializedExpanded && list.length > 0) {
       expandedIds = new Set(
-        list.map((unit) =>
-          String(unit.parent_id ? unit.parent_id : unit.id),
-        ),
+        list.map((unit) => String(unit.parent_id ? unit.parent_id : unit.id)),
       );
       initializedExpanded = true;
     }
@@ -72,12 +86,21 @@ async function loadUnits() {
 }
 
 function getUnitCapacity(unit: any): string | number {
-  if (unit.capacity !== null && unit.capacity !== undefined && Number(unit.capacity) > 0) {
+  if (
+    unit.capacity !== null &&
+    unit.capacity !== undefined &&
+    Number(unit.capacity) > 0
+  ) {
     return unit.capacity;
   }
-  const directRooms = rooms.filter((r) => String(r.org_unit_id) === String(unit.id));
+  const directRooms = rooms.filter(
+    (r) => String(r.org_unit_id) === String(unit.id),
+  );
   if (directRooms.length > 0) {
-    const total = directRooms.reduce((acc, r) => acc + (Number(r.capacity) || 0), 0);
+    const total = directRooms.reduce(
+      (acc, r) => acc + (Number(r.capacity) || 0),
+      0,
+    );
     return total > 0 ? total : "—";
   }
   if (unit.unit_type === "campus" || !unit.parent_id) {
@@ -91,7 +114,8 @@ function getUnitLocation(unit: any): string {
   if (unit.building || unit.floor !== null || unit.room_number) {
     const parts = [];
     if (unit.building) parts.push(`Bld ${unit.building}`);
-    if (unit.floor !== null && unit.floor !== undefined) parts.push(`Floor ${unit.floor}`);
+    if (unit.floor !== null && unit.floor !== undefined)
+      parts.push(`Floor ${unit.floor}`);
     if (unit.room_number) parts.push(`Room ${unit.room_number}`);
     if (parts.length > 0) return parts.join(" • ");
   }
@@ -296,7 +320,9 @@ function openEditSheet(unit: any) {
 async function handleDeleteUnit(unit: any) {
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete(),
-    description: m.settings_ui_delete_org_unit_confirm({ name: unit.name_ar || unit.name }),
+    description: m.settings_ui_delete_org_unit_confirm({
+      name: unit.name_ar || unit.name,
+    }),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface PlusAltProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface PlusAltProps extends SvgProps {
 
 export function PlusAlt({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,9 +45,13 @@ export function PlusAlt({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
-      <Path d="M6 12H12M18 12H12M12 12V6M12 12V18" strokeLinecap="round" strokeLinejoin="round"
-	></Path>
+      {...props}
+    >
+      <Path
+        d="M6 12H12M18 12H12M12 12V6M12 12V18"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></Path>
     </Svg>
   );
 }

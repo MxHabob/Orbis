@@ -9,4 +9,4 @@ let { data }: { data: { orgId: string } } = $props();
   <title>{m.ui_page_academics_attendance()} | Orbis</title>
 </svelte:head>
 
-<AttendanceTracker orgId={data.orgId} />
+<AttendanceTracker />

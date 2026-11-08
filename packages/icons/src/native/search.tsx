@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface SearchProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface SearchProps extends SvgProps {
 
 export function Search({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,9 +45,14 @@ export function Search({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Circle cx="10.75" cy="10.75" r="6.75" />
-      <Path strokeLinecap="round" strokeLinejoin="round" d="m15.5 15.5 4.25 4.25" />
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m15.5 15.5 4.25 4.25"
+      />
     </Svg>
   );
 }

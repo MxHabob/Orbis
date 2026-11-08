@@ -3,7 +3,15 @@ import { join } from "node:path";
 
 const root = process.cwd();
 const messagesDir = join(root, "apps", "desktop", "messages");
-const mobileDictDir = join(root, "apps", "mobile", "src", "lib", "i18n", "dictionaries");
+const mobileDictDir = join(
+  root,
+  "apps",
+  "mobile",
+  "src",
+  "lib",
+  "i18n",
+  "dictionaries",
+);
 
 const englishPatterns = [
   { from: /\bTeacher\/ Faculty\b/gi, to: "Academic staff" },
@@ -32,10 +40,16 @@ const englishPatterns = [
   { from: /\bNo teachers available\b/gi, to: "No staff members available" },
   { from: /\bNo teacher\b/gi, to: "No staff member" },
   { from: /\bAdd Teacher\b/gi, to: "Add staff member" },
-  { from: /\bTeacher & Subject Assignments\b/gi, to: "Staff and subject assignments" },
+  {
+    from: /\bTeacher & Subject Assignments\b/gi,
+    to: "Staff and subject assignments",
+  },
   { from: /\bTeacher\s*\(Optional\)\b/gi, to: "Staff member (optional)" },
   { from: /\bTeacher\s+role\b/gi, to: "Academic staff role" },
-  { from: /\bClassroom instruction, daily attendance, gradebook entry, student conduct logging, and schedules\.?\b/gi, to: "Academic operations, attendance tracking, grade entry, conduct activity logging, and schedule management." },
+  {
+    from: /\bClassroom instruction, daily attendance, gradebook entry, student conduct logging, and schedules\.?\b/gi,
+    to: "Academic operations, attendance tracking, grade entry, conduct activity logging, and schedule management.",
+  },
 ];
 
 const arabicPatterns = [
@@ -127,28 +141,35 @@ async function rewriteLanguageFile(language) {
   const fileContent = await readFile(filePath, "utf8");
   const parsed = JSON.parse(fileContent);
   const transformed = transformObject(parsed, language);
-  await writeFile(filePath, `${JSON.stringify(transformed, null, 2)}\n`, "utf8");
+  await writeFile(
+    filePath,
+    `${JSON.stringify(transformed, null, 2)}\n`,
+    "utf8",
+  );
   console.log(`Updated ${language}.json`);
 }
 
 async function rewriteMobileDictionary(language) {
   const filePath = join(mobileDictDir, `${language}.ts`);
   const fileContent = await readFile(filePath, "utf8");
-  const transformed = fileContent.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (_, value) => {
-    const next = value.replace(/\\["\\nrtbf]/g, (match) => {
-      if (match === '\\n') return "\n";
-      if (match === '\\r') return "\r";
-      if (match === '\\t') return "\t";
-      if (match === '\\b') return "\b";
-      if (match === '\\f') return "\f";
-      return match;
-    });
-    const normalized = mobileTextPatterns.reduce(
-      (acc, { from, to }) => acc.replace(from, to),
-      next,
-    );
-    return `: "${normalized.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-  });
+  const transformed = fileContent.replace(
+    /:\s*"((?:[^"\\]|\\.)*)"/g,
+    (_, value) => {
+      const next = value.replace(/\\["\\nrtbf]/g, (match) => {
+        if (match === "\\n") return "\n";
+        if (match === "\\r") return "\r";
+        if (match === "\\t") return "\t";
+        if (match === "\\b") return "\b";
+        if (match === "\\f") return "\f";
+        return match;
+      });
+      const normalized = mobileTextPatterns.reduce(
+        (acc, { from, to }) => acc.replace(from, to),
+        next,
+      );
+      return `: "${normalized.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+    },
+  );
   await writeFile(filePath, transformed, "utf8");
   console.log(`Updated mobile ${language}.ts`);
 }

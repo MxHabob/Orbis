@@ -95,10 +95,7 @@ export function EffectiveContextProvider({
     [authCtx?.effective_role],
   );
 
-  const roles = useMemo<string[]>(
-    () => authCtx?.roles ?? [],
-    [authCtx?.roles],
-  );
+  const roles = useMemo<string[]>(() => authCtx?.roles ?? [], [authCtx?.roles]);
 
   const permissions = useMemo<string[]>(
     () => authCtx?.permissions ?? [],
@@ -109,8 +106,7 @@ export function EffectiveContextProvider({
   );
   const activeRole =
     (activeRoleOverride &&
-    (roles.includes(activeRoleOverride) ||
-      activeRoleOverride === effectiveRole)
+    (roles.includes(activeRoleOverride) || activeRoleOverride === effectiveRole)
       ? activeRoleOverride
       : null) ??
     (roles.includes(effectiveRole) ? effectiveRole : roles[0]) ??
@@ -123,10 +119,18 @@ export function EffectiveContextProvider({
   );
 
   // Persisted scope choices are restored after the authenticated session resolves.
-  const [activePeriodOverride, setActivePeriodOverride] = useState<string | null>(null);
-  const [selectedDependentIdState, setSelectedDependentIdState] = useState<string | null>(null);
-  const [selectedClassId, setSelectedClassIdState] = useState<string | null>(null);
-  const [selectedSubjectId, setSelectedSubjectIdState] = useState<string | null>(null);
+  const [activePeriodOverride, setActivePeriodOverride] = useState<
+    string | null
+  >(null);
+  const [selectedDependentIdState, setSelectedDependentIdState] = useState<
+    string | null
+  >(null);
+  const [selectedClassId, setSelectedClassIdState] = useState<string | null>(
+    null,
+  );
+  const [selectedSubjectId, setSelectedSubjectIdState] = useState<
+    string | null
+  >(null);
   const [loadedScope, setLoadedScope] = useState<string | null>(null);
   const scopeId = userId ? `${orgId}:${userId}` : "guest";
   const isReady = !isInitializing && loadedScope === scopeId;
@@ -141,7 +145,9 @@ export function EffectiveContextProvider({
   const selectedDependent = useMemo<LinkedDependentDto | null>(() => {
     if (dependents.length === 0) return null;
     if (selectedDependentIdState) {
-      const match = dependents.find((d) => d.student_id === selectedDependentIdState);
+      const match = dependents.find(
+        (d) => d.student_id === selectedDependentIdState,
+      );
       if (match) return match;
     }
     return dependents[0] ?? null;
@@ -157,12 +163,15 @@ export function EffectiveContextProvider({
 
     let cancelled = false;
     if (!userId) {
-      setActiveRoleOverride(null);
-      setActivePeriodOverride(null);
-      setSelectedDependentIdState(null);
-      setSelectedClassIdState(null);
-      setSelectedSubjectIdState(null);
-      setLoadedScope("guest");
+      void Promise.resolve().then(() => {
+        if (cancelled) return;
+        setActiveRoleOverride(null);
+        setActivePeriodOverride(null);
+        setSelectedDependentIdState(null);
+        setSelectedClassIdState(null);
+        setSelectedSubjectIdState(null);
+        setLoadedScope("guest");
+      });
       return () => {
         cancelled = true;
       };
@@ -170,32 +179,28 @@ export function EffectiveContextProvider({
 
     const restoreScope = async () => {
       const scopedKey = (key: string) => getScopedStorageKey(key, scopeId);
-      const [
-        savedRole,
-        savedPeriod,
-        savedDependent,
-        savedClass,
-        savedSubject,
-      ] = await Promise.all([
-        getSecureItem(scopedKey("orbis_active_role")),
-        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.ACTIVE_PERIOD_ID)),
-        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_DEPENDENT_ID)),
-        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_CLASS_ID)),
-        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_SUBJECT_ID)),
-      ]);
+      const [savedRole, savedPeriod, savedDependent, savedClass, savedSubject] =
+        await Promise.all([
+          getSecureItem(scopedKey("orbis_active_role")),
+          getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.ACTIVE_PERIOD_ID)),
+          getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_DEPENDENT_ID)),
+          getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_CLASS_ID)),
+          getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_SUBJECT_ID)),
+        ]);
 
       if (cancelled) return;
 
       setActiveRoleOverride(
-        savedRole &&
-          (roles.includes(savedRole) || savedRole === effectiveRole)
+        savedRole && (roles.includes(savedRole) || savedRole === effectiveRole)
           ? savedRole
           : null,
       );
       setActivePeriodOverride(savedPeriod);
       setSelectedDependentIdState(
         savedDependent &&
-          dependents.some((dependent) => dependent.student_id === savedDependent)
+          dependents.some(
+            (dependent) => dependent.student_id === savedDependent,
+          )
           ? savedDependent
           : null,
       );
@@ -351,7 +356,8 @@ export function EffectiveContextProvider({
   const hasPermission = useCallback(
     (permission: string): boolean => {
       if (permissions.length === 0) return false;
-      if (permissions.includes("*") || permissions.includes("admin")) return true;
+      if (permissions.includes("*") || permissions.includes("admin"))
+        return true;
       return permissions.includes(permission);
     },
     [permissions],
@@ -360,7 +366,8 @@ export function EffectiveContextProvider({
   const hasAnyPermission = useCallback(
     (required: string[]): boolean => {
       if (permissions.length === 0) return false;
-      if (permissions.includes("*") || permissions.includes("admin")) return true;
+      if (permissions.includes("*") || permissions.includes("admin"))
+        return true;
       return required.some((p) => permissions.includes(p));
     },
     [permissions],
@@ -369,7 +376,8 @@ export function EffectiveContextProvider({
   const hasAllPermissions = useCallback(
     (required: string[]): boolean => {
       if (permissions.length === 0) return false;
-      if (permissions.includes("*") || permissions.includes("admin")) return true;
+      if (permissions.includes("*") || permissions.includes("admin"))
+        return true;
       return required.every((p) => permissions.includes(p));
     },
     [permissions],

@@ -57,7 +57,9 @@ const avatarUrl = $derived(user?.avatar_url ?? null);
 
 // CSPRNG Temporary Password Generation
 let credentialModalOpen = $state(false);
-let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
+let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(
+  null,
+);
 
 async function handleGenerateTempPassword() {
   if (!userId) return;
@@ -148,59 +150,67 @@ const menuItems = $derived([
   },
 ]);
 
-const relatedActionGroups = $derived<ActionGroup[]>(user ? [
-  {
-    id: "account_security",
-    title: m.ui_copy_account_security_access_8a19d0e5(),
-    icon: Lock,
-    defaultExpanded: true,
-    subLinks: [
-      {
-        id: "generate_temp_password",
-        label: m.ui_copy_generate_temp_password_5e2ee7d3(),
-        onclick: handleGenerateTempPassword,
-      },
-      {
-        id: "reset_password",
-        label: m.settings_user_detail_btn_reset_pass(),
-        onclick: () => (showResetModal = true),
-      },
-      {
-        id: "active_sessions",
-        label: m.settings_security_sessions(),
-        href: `/${orgId}/settings/users/${userId}/sessions`,
-      },
-    ],
-  },
-  {
-    id: "permissions_audit",
-    title: m.ui_copy_roles_audit_aff035ef(),
-    icon: ShieldCheck,
-    defaultExpanded: true,
-    subLinks: [
-      {
-        id: "user_roles",
-        label: m.settings_nav_permissions(),
-        href: `/${orgId}/settings/users/${userId}/roles`,
-      },
-      {
-        id: "user_audit",
-        label: m.ui_copy_user_audit_logs_55f2f1f7(),
-        href: `/${orgId}/settings/audit?userId=${userId}`,
-      },
-    ],
-  },
-] : []);
+const relatedActionGroups = $derived<ActionGroup[]>(
+  user
+    ? [
+        {
+          id: "account_security",
+          title: m.ui_copy_account_security_access_8a19d0e5(),
+          icon: Lock,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "generate_temp_password",
+              label: m.ui_copy_generate_temp_password_5e2ee7d3(),
+              onclick: handleGenerateTempPassword,
+            },
+            {
+              id: "reset_password",
+              label: m.settings_user_detail_btn_reset_pass(),
+              onclick: () => (showResetModal = true),
+            },
+            {
+              id: "active_sessions",
+              label: m.settings_security_sessions(),
+              href: `/${orgId}/settings/users/${userId}/sessions`,
+            },
+          ],
+        },
+        {
+          id: "permissions_audit",
+          title: m.ui_copy_roles_audit_aff035ef(),
+          icon: ShieldCheck,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "user_roles",
+              label: m.settings_nav_permissions(),
+              href: `/${orgId}/settings/users/${userId}/roles`,
+            },
+            {
+              id: "user_audit",
+              label: m.ui_copy_user_audit_logs_55f2f1f7(),
+              href: `/${orgId}/settings/audit?userId=${userId}`,
+            },
+          ],
+        },
+      ]
+    : [],
+);
 
-const relatedFooterActions = $derived<FooterAction[]>(user ? [
-  {
-    id: "delete_user",
-    label: m.settings_user_detail_btn_delete(),
-    icon: Trash,
-    variant: "destructive",
-    onclick: handleDeleteUser,
-  },
-] : []);
+const relatedFooterActions = $derived<FooterAction[]>(
+  user
+    ? [
+        {
+          id: "delete_user",
+          label: m.settings_user_detail_btn_delete(),
+          icon: Trash,
+          variant: "destructive",
+          onclick: handleDeleteUser,
+        },
+      ]
+    : [],
+);
 </script>
 
 <svelte:head>

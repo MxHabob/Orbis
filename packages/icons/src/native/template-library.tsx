@@ -1,6 +1,6 @@
-import React from 'react';
-import Svg, { Path, type SvgProps } from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+import React from "react";
+import Svg, { Path, type SvgProps } from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface TemplateLibraryProps extends SvgProps {
   size?: number;
@@ -11,7 +11,7 @@ export interface TemplateLibraryProps extends SvgProps {
 
 export function TemplateLibrary({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -28,7 +28,8 @@ export function TemplateLibrary({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path d="M6 3.25h8l4.75 4.5v12A1.25 1.25 0 0 1 17.5 21h-11A1.25 1.25 0 0 1 5.25 19.75V4.5A1.25 1.25 0 0 1 6.5 3.25Z" />
       <Path d="M14 3.75v4.5h4.25M8.25 11.5h3v3h-3zm5 0h2.5v3h-2.5zm-5 5h3v2h-3zm5 0h2.5v2h-2.5z" />
     </Svg>

@@ -1,4 +1,8 @@
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import type { BulkProfileId, BulkReferenceData } from "./types";
 import { getBulkProfile } from "./profiles";
 
@@ -20,7 +24,10 @@ export function createBulkReferenceDataQuery(
     const profile = getBulkProfile(pId);
 
     return {
-      queryKey: [...bulkEntryQueryKeys.referenceData(pId, curr), organizationId],
+      queryKey: [
+        ...bulkEntryQueryKeys.referenceData(pId, curr),
+        organizationId,
+      ],
       queryFn: () => profile.buildReferenceData(organizationId),
       staleTime: 1000 * 60 * 5, // 5 minutes
       enabled: !!organizationId,

@@ -12,6 +12,7 @@ export { default as ClassCurriculum } from "./class-curriculum.svelte";
 export { default as SectionSubjectDetails } from "./class-subject-details.svelte";
 export { default as SectionSubjectResults } from "./class-subject-results.svelte";
 export { default as AcademicsReports } from "./academics-reports.svelte";
+export { default as ResultsReview } from "./results-review.svelte";
 export { default as ScheduleWorkspace } from "./schedule-workspace.svelte";
 
 export { default as PromotionWizard } from "./promotion-wizard.svelte";
@@ -48,7 +49,6 @@ export { default as AssessmentCreateSheet } from "./components/assessment-create
 export { default as AssessmentForm } from "./components/assessment-form.svelte";
 export { default as TimeSlotForm } from "./components/time-slot-form.svelte";
 export { default as TimeSlotManager } from "./components/time-slot-manager.svelte";
-
 
 // Section aliases aligned with unified domain model
 export { default as SectionsDirectory } from "./classes-directory.svelte";

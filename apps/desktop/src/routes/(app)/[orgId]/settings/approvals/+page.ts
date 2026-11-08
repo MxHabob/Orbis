@@ -1,5 +1,11 @@
-import type { LayoutData } from "../../$types";
+import { redirect } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 
-export function load({ params }: { params: { orgId: string } }): LayoutData {
-  return { orgId: params.orgId };
-}
+export const load: PageLoad = ({ url }) => {
+  const destination = new URL(url);
+  destination.pathname = destination.pathname.replace(
+    /\/settings\/approvals\/?$/,
+    "/approvals",
+  );
+  redirect(307, destination);
+};

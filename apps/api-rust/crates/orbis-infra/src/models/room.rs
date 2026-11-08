@@ -11,6 +11,7 @@ pub struct Model {
     pub name_ar: Option<String>,
     pub capacity: i32,
     pub room_type: String,
+    pub is_exam_hall: bool,
     pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,

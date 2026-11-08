@@ -3,7 +3,7 @@
   Group detail inspection, member management, and 2D IAM Permission Matrix editor.
 -->
 <script lang="ts">
-  import { Skeleton } from "@orbis/ui/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
@@ -167,7 +167,7 @@ const domainMatrixData = $derived.by(() => {
           (a) =>
             a.key.toLowerCase().includes(q) ||
             translateIamMessage(a.labelKey, "ar").toLowerCase().includes(q) ||
-            translateIamMessage(a.labelKey, "en").toLowerCase().includes(q)
+            translateIamMessage(a.labelKey, "en").toLowerCase().includes(q),
         );
       }
 
@@ -189,13 +189,16 @@ const domainMatrixData = $derived.by(() => {
       translateIamMessage(domain.nameKey, "en").toLowerCase().includes(q) ||
       resources.some((r) => r.isMatch);
 
-    const filteredResources = resources.filter((r) => (q ? r.isMatch : r.filteredActions.length > 0));
+    const filteredResources = resources.filter((r) =>
+      q ? r.isMatch : r.filteredActions.length > 0,
+    );
 
     return {
       ...domain,
       totalCount: domainTotal,
       grantedCount: domainGranted,
-      percentage: domainTotal > 0 ? Math.round((domainGranted / domainTotal) * 100) : 0,
+      percentage:
+        domainTotal > 0 ? Math.round((domainGranted / domainTotal) * 100) : 0,
       resources,
       filteredResources,
       isMatch: isDomainMatch && filteredResources.length > 0,
@@ -204,13 +207,13 @@ const domainMatrixData = $derived.by(() => {
 });
 
 const totalSystemPerms = $derived(
-  domainMatrixData.reduce((acc, d) => acc + d.totalCount, 0)
+  domainMatrixData.reduce((acc, d) => acc + d.totalCount, 0),
 );
 const totalGrantedPerms = $derived(
-  domainMatrixData.reduce((acc, d) => acc + d.grantedCount, 0)
+  domainMatrixData.reduce((acc, d) => acc + d.grantedCount, 0),
 );
 const activeDomainsCount = $derived(
-  domainMatrixData.filter((d) => d.grantedCount > 0).length
+  domainMatrixData.filter((d) => d.grantedCount > 0).length,
 );
 
 const visibleDomains = $derived.by(() => {
@@ -241,12 +244,11 @@ async function handleSavePermissions() {
 }
 
 async function promptRemoveMember(member: GroupMemberInfoDto) {
-
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_remove_member_a32249bd(),
     description: l(
       `هل أنت متأكد من رغبتك في استبعاد "${member.full_name}" من هذه المجموعة؟`,
-      `Are you sure you want to remove "${member.full_name}" from this group?`
+      `Are you sure you want to remove "${member.full_name}" from this group?`,
     ),
     confirmText: m.groups_remove_member(),
     variant: "destructive",

@@ -947,7 +947,7 @@ impl AcademicCalculationEngine {
             AcademicStatus::Failed
         };
 
-        let letter_grade = Self::resolve_letter_grade(percentage);
+        let letter_grade = Self::resolve_letter_grade(percentage, policy);
 
         Ok(SubjectTermResult {
             subject_id,
@@ -1084,7 +1084,7 @@ impl AcademicCalculationEngine {
             AcademicStatus::Failed
         };
 
-        let letter_grade = Self::resolve_letter_grade(percentage);
+        let letter_grade = Self::resolve_letter_grade(percentage, policy);
 
         Ok(SubjectAnnualResult {
             subject_id,
@@ -1149,7 +1149,7 @@ impl AcademicCalculationEngine {
             AcademicStatus::Failed
         };
 
-        let letter_grade = Self::resolve_letter_grade(percentage);
+        let letter_grade = Self::resolve_letter_grade(percentage, policy);
 
         Ok(SubjectTermResult {
             subject_id,
@@ -1256,7 +1256,7 @@ impl AcademicCalculationEngine {
             AcademicStatus::Failed
         };
 
-        let letter_grade = Self::resolve_letter_grade(percentage);
+        let letter_grade = Self::resolve_letter_grade(percentage, policy);
 
         // Map onto SubjectTermResult — reuse the existing structure:
         //   monthly_contribution = cumulative_score (prior-year contribution)
@@ -1331,8 +1331,15 @@ impl AcademicCalculationEngine {
             .collect()
     }
 
-    /// Resolve letter grade based on standard 100-point scale.
-    pub fn resolve_letter_grade(percentage: Decimal) -> String {
+    /// Resolve letter grade using the configurable grade bands from AcademicPolicy.
+    /// Falls back to the policy's evaluate_percentage, which already uses grade_bands.
+    pub fn resolve_letter_grade(percentage: Decimal, policy: &AcademicPolicy) -> String {
+        policy.evaluate_percentage(percentage).letter_grade
+    }
+
+    /// Legacy fallback for contexts without a policy reference.
+    /// Prefer `resolve_letter_grade(percentage, policy)` when policy is available.
+    pub fn resolve_letter_grade_default(percentage: Decimal) -> String {
         if percentage >= Decimal::from(90) {
             "A".into()
         } else if percentage >= Decimal::from(80) {

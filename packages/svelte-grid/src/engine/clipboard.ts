@@ -111,7 +111,7 @@ export function applyPaste(args: {
       const id = columnId(col);
       if (!id || id.startsWith("__")) continue;
       const raw = line[c] ?? "";
-      const coerced = coerceValue(raw, col);
+      const coerced = coerceValue(raw, col, next);
       if (!coerced.ok) {
         errors.push({
           rowIndex: targetIndex,

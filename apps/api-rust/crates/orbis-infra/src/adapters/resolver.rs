@@ -517,9 +517,11 @@ impl SurveillancePort for IntegrationResolver {
             .integration_repo
             .find_configs_by_org(ctx.tenant_id)
             .await?;
-        let active_camera = configs
-            .into_iter()
-            .find(|c| c.category == "surveillance" && c.is_enabled);
+        let active_camera = configs.into_iter().find(|config| {
+            config.is_enabled
+                && (config.category == "surveillance"
+                    || (config.category == "ai-vision" && config.provider_name == "authen"))
+        });
 
         match active_camera {
             Some(config) => {

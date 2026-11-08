@@ -25,7 +25,14 @@ import {
 
 // @orbis/ui components
 import { Button } from "@orbis/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@orbis/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
 import { Progress } from "@orbis/ui/progress";
 import { Input } from "@orbis/ui/input";
@@ -63,9 +70,8 @@ async function loadState() {
 const state = $derived(systemStore.onboardingState);
 const tasks = $derived(systemStore.onboardingTasks);
 const steps = $derived(
-  deriveSteps(
-    tasks,
-    (permission) => effectiveContext.hasPermission(permission),
+  deriveSteps(tasks, (permission) =>
+    effectiveContext.hasPermission(permission),
   ),
 );
 const categories = $derived(state?.categories ?? []);
@@ -75,20 +81,30 @@ function getCategoryLabel(cat: string) {
   const c = categories.find((item) => item.category === cat);
   if (c) return isArabic ? c.label_ar : c.label;
   switch (cat) {
-    case "organization": return m.ui_onboarding_progress_organization();
-    case "calendar": return m.ui_onboarding_progress_calendar();
-    case "academics": return m.ui_onboarding_progress_academics();
-    case "assessment": return m.ui_onboarding_progress_assessment();
-    case "finance": return m.ui_onboarding_progress_finance();
-    case "students": return m.ui_onboarding_progress_students();
-    case "templates": return m.ui_onboarding_progress_documents();
-    case "integrations": return m.ui_onboarding_progress_integrations();
-    default: return cat;
+    case "organization":
+      return m.ui_onboarding_progress_organization();
+    case "calendar":
+      return m.ui_onboarding_progress_calendar();
+    case "academics":
+      return m.ui_onboarding_progress_academics();
+    case "assessment":
+      return m.ui_onboarding_progress_assessment();
+    case "finance":
+      return m.ui_onboarding_progress_finance();
+    case "students":
+      return m.ui_onboarding_progress_students();
+    case "templates":
+      return m.ui_onboarding_progress_documents();
+    case "integrations":
+      return m.ui_onboarding_progress_integrations();
+    default:
+      return cat;
   }
 }
 
 const selectedCategoryLabel = $derived.by(() => {
-  if (selectedCategory === "all") return m.ui_onboarding_progress_all_categories();
+  if (selectedCategory === "all")
+    return m.ui_onboarding_progress_all_categories();
   const c = categories.find((item) => item.category === selectedCategory);
   if (c) return isArabic ? c.label_ar : c.label;
   return getCategoryLabel(selectedCategory);
@@ -101,7 +117,8 @@ function getStatusInfo(status: OnboardingTaskStatus) {
       return {
         label: m.common_exams_status_completed(),
         variant: "outline" as const,
-        classes: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5",
+        classes:
+          "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5",
       };
     case "in_progress":
       return {
@@ -141,7 +158,9 @@ const filteredTasks = $derived.by(() => {
   return tasks.filter((t) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchEn = t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q);
+      const matchEn =
+        t.title.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q);
       const matchAr = t.title_ar.includes(q) || t.description_ar.includes(q);
       if (!matchEn && !matchAr) return false;
     }
@@ -161,12 +180,12 @@ async function handleNavigate(task: SetupTaskDto) {
 }
 
 async function startGuidedSetup() {
-  const target = findNextIncompleteStep(steps) ??
+  const target =
+    findNextIncompleteStep(steps) ??
     steps.find((step) => step.id === "review" && step.isAccessible);
   if (!target) return;
   await goto(resolve(localizeHref(`/${orgId}/onboarding/${target.route}`)));
 }
-
 </script>
 
 <svelte:head>

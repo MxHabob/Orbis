@@ -73,9 +73,15 @@ jobs:
 
       - name: Build native Solver sidecar
         working-directory: apps/solver-service
+        shell: bash
         env:
           MAVEN_OPTS: -Xmx6g
-        run: mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ steps.app_version.outputs.version }}"
+        run: |
+          mvn -B package \
+            -Dnative \
+            -DskipTests \
+            -Dquarkus.native.container-build=false \
+            "-Dorbis.version=${{ steps.app_version.outputs.version }}"
 
       - name: Stage Solver sidecar
         shell: bash
@@ -92,11 +98,21 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri -> target
+          shared-key: orbis-tauri-${{ matrix.target }}
+
+      - name: Setup Rust compiler cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Enable Rust compiler cache
+        shell: bash
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.2.22
+          bun-version: 1.4.0
 
       - name: Cache Bun packages
         uses: actions/cache@v4

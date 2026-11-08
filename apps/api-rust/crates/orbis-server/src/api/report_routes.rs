@@ -762,6 +762,21 @@ pub async fn list_template_bindings(
     Path(definition_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Vec<TemplateBindingDto>>>, ApiError> {
     let ctx = auth.0;
+    state
+        .permission_checker
+        .check(&ctx, Permission::TemplateRead)
+        .await?;
+    let definition = state
+        .report_definition_repo
+        .find_by_id(definition_id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .filter(|definition| definition.org_id == ctx.tenant_id)
+        .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+    if !definition.is_active {
+        return Err(ApiError::bad_request("Report definition is inactive"));
+    }
+
     let items = state
         .report_template_repo
         .find_bindings_by_definition(definition_id)
@@ -799,22 +814,63 @@ pub async fn create_template_binding(
     Json(req): Json<CreateTemplateBindingRequest>,
 ) -> Result<Json<ApiResponse<TemplateBindingDto>>, ApiError> {
     let ctx = auth.0;
+    state
+        .permission_checker
+        .check(&ctx, Permission::TemplateWrite)
+        .await?;
+    let definition = state
+        .report_definition_repo
+        .find_by_id(definition_id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .filter(|definition| definition.org_id == ctx.tenant_id)
+        .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+    if !definition.is_active {
+        return Err(ApiError::bad_request("Report definition is inactive"));
+    }
+
     let format = OutputFormat::from_str(&req.format);
+    if !definition.supported_formats.contains(&format) {
+        return Err(ApiError::bad_request(
+            "The report does not support the selected output format",
+        ));
+    }
+    let template = state
+        .report_template_repo
+        .find_by_id(req.template_id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .filter(|template| {
+            template.org_id == ctx.tenant_id
+                && template.status == TemplateStatus::Published
+                && template.deleted_at.is_none()
+                && template.document_type.eq_ignore_ascii_case("report")
+        })
+        .ok_or_else(|| ApiError::not_found("Published report template not found"))?;
+    let existing = state
+        .report_template_repo
+        .find_binding(definition_id, &req.locale, &format)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?;
+    let (binding_id, created_at) = existing.map_or_else(
+        || (Uuid::new_v4(), Utc::now()),
+        |binding| (binding.id, binding.created_at),
+    );
     let binding = ReportTemplateBinding {
-        id: Uuid::new_v4(),
+        id: binding_id,
         report_definition_id: definition_id,
-        template_id: req.template_id,
+        template_id: template.id,
         locale: req.locale,
         format,
         is_default: req.is_default.unwrap_or(false),
-        created_at: Utc::now(),
+        created_at,
     };
 
     state
         .report_template_repo
         .save_binding(&binding)
         .await
-        .map_err(|e| ApiError::bad_request(e.to_string()))?;
+        .map_err(|error| ApiError::internal(error.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(
         TemplateBindingDto {
@@ -828,6 +884,90 @@ pub async fn create_template_binding(
         },
         ctx.request_id,
     ))
+}
+
+fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue, ApiError> {
+    match value {
+        serde_json::Value::Null => Err(ApiError::bad_request(
+            "Report parameter value cannot be null",
+        )),
+        serde_json::Value::String(s) => Ok(ParamValue::Text(s)),
+        serde_json::Value::Bool(b) => Ok(ParamValue::Boolean(b)),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                Ok(ParamValue::Integer(i))
+            } else if let Some(f) = n.as_f64() {
+                Ok(ParamValue::Decimal(f))
+            } else {
+                Err(ApiError::bad_request(
+                    "Unsupported numeric report parameter value",
+                ))
+            }
+        }
+        serde_json::Value::Array(items) => {
+            let mut values = Vec::with_capacity(items.len());
+            for item in items {
+                let value = match item {
+                    serde_json::Value::String(s) => s,
+                    _ => {
+                        return Err(ApiError::bad_request(
+                            "Report parameter id list must contain only strings",
+                        ));
+                    }
+                };
+                values.push(value);
+            }
+            Ok(ParamValue::IdList(values))
+        }
+        serde_json::Value::Object(mut obj) => {
+            if let Some(kind) = obj.get("type").and_then(|value| value.as_str()) {
+                match kind {
+                    "date_range" | "dateRange" => {
+                        let from = obj
+                            .remove("from")
+                            .and_then(|value| value.as_str().map(str::to_owned))
+                            .ok_or_else(|| {
+                                ApiError::bad_request(
+                                    "date_range parameter requires a 'from' string",
+                                )
+                            })?;
+                        let to = obj
+                            .remove("to")
+                            .and_then(|value| value.as_str().map(str::to_owned))
+                            .ok_or_else(|| {
+                                ApiError::bad_request("date_range parameter requires a 'to' string")
+                            })?;
+                        Ok(ParamValue::DateRange { from, to })
+                    }
+                    _ => Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                        |error| {
+                            ApiError::bad_request(format!(
+                                "Failed to coerce report parameter object: {error}"
+                            ))
+                        },
+                    )?)),
+                }
+            } else if obj.contains_key("from") || obj.contains_key("to") {
+                let from = obj
+                    .remove("from")
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .unwrap_or_default();
+                let to = obj
+                    .remove("to")
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .unwrap_or_default();
+                Ok(ParamValue::DateRange { from, to })
+            } else {
+                Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                    |error| {
+                        ApiError::bad_request(format!(
+                            "Failed to coerce report parameter object: {error}"
+                        ))
+                    },
+                )?))
+            }
+        }
+    }
 }
 
 #[utoipa::path(
@@ -847,8 +987,14 @@ pub async fn generate_report(
 
     let params: HashMap<String, ParamValue> = req
         .parameters
-        .and_then(|v| serde_json::from_value(v).ok())
-        .unwrap_or_default();
+        .map(|value| match value {
+            serde_json::Value::Object(object) => object
+                .into_iter()
+                .map(|(key, value)| coerce_report_parameter_value(value).map(|value| (key, value)))
+                .collect::<Result<HashMap<_, _>, _>>(),
+            _ => Err(ApiError::bad_request("Report parameters must be an object")),
+        })
+        .unwrap_or_else(|| Ok(HashMap::new()))?;
 
     let output_format = req
         .format
@@ -1484,6 +1630,8 @@ pub struct AuditLogDto {
 pub struct AuditLogFilter {
     pub limit: Option<u64>,
     pub offset: Option<u64>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
 }
 
 #[utoipa::path(
@@ -1499,11 +1647,32 @@ pub async fn list_audit_logs(
     auth: AuthContext,
     Query(filter): Query<AuditLogFilter>,
 ) -> Result<Json<ApiResponse<Vec<AuditLogDto>>>, ApiError> {
-    let entries = state
-        .report_audit_repo
-        .list_by_org(auth.tenant_id, filter.limit, filter.offset)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let entries = match (filter.entity_type.as_deref(), filter.entity_id) {
+        (Some(entity_type), Some(entity_id)) => {
+            state
+                .report_audit_repo
+                .list_by_entity(
+                    auth.tenant_id,
+                    entity_type,
+                    entity_id,
+                    filter.limit,
+                    filter.offset,
+                )
+                .await
+        }
+        (None, None) => {
+            state
+                .report_audit_repo
+                .list_by_org(auth.tenant_id, filter.limit, filter.offset)
+                .await
+        }
+        _ => {
+            return Err(ApiError::bad_request(
+                "entity_type and entity_id must be provided together",
+            ));
+        }
+    }
+    .map_err(|e| ApiError::internal(e.to_string()))?;
 
     let dtos = entries
         .into_iter()
@@ -1514,7 +1683,7 @@ pub async fn list_audit_logs(
             action: e.action,
             entity_type: e.entity_type,
             entity_id: Some(e.entity_id),
-            ip_address: Some("127.0.0.1".into()),
+            ip_address: None,
             metadata: e
                 .details
                 .as_ref()

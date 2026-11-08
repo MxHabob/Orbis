@@ -12,6 +12,7 @@ import {
   View,
   TextInput,
   Pressable,
+  type TextInputInstance,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/api";
@@ -19,7 +20,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { Button } from "@/components/ui/button";
-import { XMark, ShieldCheck, KeyframePlus } from "@orbis/icons/native";
+import { XMark } from "@orbis/icons/native";
 
 export default function MFAChallengeScreen() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function MFAChallengeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const inputRefs = useRef<(TextInputInstance | null)[]>([]);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -95,10 +96,9 @@ export default function MFAChallengeScreen() {
     setErrorMsg(null);
     try {
       await mfaChallenge({
-        user_id: targetUserId,
         code: codeToSubmit,
+        mfa_token: (params as any)?.mfaToken || targetUserId,
       });
-
     } catch (err: any) {
       const msg = err?.message || t("auth_error_invalid_credentials");
       setErrorMsg(msg);
@@ -139,9 +139,7 @@ export default function MFAChallengeScreen() {
       >
         {/* Minimalist Top Bar (Like Reference 1) */}
         <View className="mb-four flex-row items-center justify-between">
-          <Text
-            className="text-xs leading-4 font-semibold tracking-[0.5px] text-muted-foreground uppercase"
-          >
+          <Text className="text-xs leading-4 font-semibold tracking-[0.5px] text-muted-foreground uppercase">
             {t("auth_setup_title")}
           </Text>
           <Pressable
@@ -156,14 +154,10 @@ export default function MFAChallengeScreen() {
         {/* Minimal Stepper Status Header */}
         <View className="mb-six">
           <View className="flex-row items-center gap-two">
-            <View
-              className="h-5 w-5 items-center justify-center rounded-full bg-primary"
-            >
+            <View className="h-5 w-5 items-center justify-center rounded-full bg-primary">
               <Text className="text-[11px] font-extrabold text-white">✓</Text>
             </View>
-            <Text
-              className="text-xs leading-4 font-semibold text-muted-foreground"
-            >
+            <Text className="text-xs leading-4 font-semibold text-muted-foreground">
               {t("auth_setup_step_device")}
             </Text>
           </View>
@@ -171,18 +165,14 @@ export default function MFAChallengeScreen() {
 
         {/* Main Content Area */}
         <View className="flex-1 justify-center">
-          <Text
-            className="mb-one text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground"
-          >
-            {isBackupMode ? t("auth_mfa_backup_code") : t("auth_setup_step_recovery")}
+          <Text className="mb-one text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground">
+            {isBackupMode
+              ? t("auth_mfa_backup_code")
+              : t("auth_setup_step_recovery")}
           </Text>
 
-          <Text
-            className="text-sm leading-5 text-muted-foreground"
-          >
-            {isBackupMode
-              ? t("auth_mfa_backup_ph")
-              : t("auth_mfa_subtitle")}
+          <Text className="text-sm leading-5 text-muted-foreground">
+            {isBackupMode ? t("auth_mfa_backup_ph") : t("auth_mfa_subtitle")}
           </Text>
 
           {/* Resend Timer Link */}
@@ -191,9 +181,7 @@ export default function MFAChallengeScreen() {
               onPress={() => countdown === 0 && setCountdown(55)}
               className="mb-four mt-two"
             >
-              <Text
-                className="text-xs leading-4 font-semibold text-primary"
-              >
+              <Text className="text-xs leading-4 font-semibold text-primary">
                 {countdown > 0
                   ? `${t("auth_mfa_resend")} (${countdown}s)`
                   : t("auth_mfa_resend")}

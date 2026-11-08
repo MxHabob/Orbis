@@ -1,40 +1,40 @@
 
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { formatDate } from "$lib/core/i18n";
-  import { Logo } from "@orbis/icons";
+import * as m from "$lib/paraglide/messages";
+import { formatDate } from "$lib/core/i18n";
+import { Logo } from "@orbis/icons";
 
-  let {
-    planCode,
-    planLabel,
-    validUntil,
-  }: {
-    planCode: string;
-    planLabel: string;
-    validUntil: string | null;
-  } = $props();
+let {
+  planCode,
+  planLabel,
+  validUntil,
+}: {
+  planCode: string;
+  planLabel: string;
+  validUntil: string | null;
+} = $props();
 
-  const planTheme = $derived.by(() => {
-    const plan = planCode.toLowerCase().replace(/[_\s-]+/g, "");
+const planTheme = $derived.by(() => {
+  const plan = planCode.toLowerCase().replace(/[_\s-]+/g, "");
 
-    if (plan.includes("enterprise")) {
-      return { color: "#EC4899", glow: "rgba(236, 72, 153, .8)" };
-    }
-    if (plan.includes("professional")) {
-      return { color: "#A821D9", glow: "rgba(168, 33, 217, .8)" };
-    }
-    if (plan.includes("growth")) {
-      return { color: "#84CC16", glow: "rgba(132, 204, 22, .8)" };
-    }
-    if (plan.includes("starter")) {
-      return { color: "#6366F1", glow: "rgba(99, 102, 241, .8)" };
-    }
-    if (plan.includes("trial") || plan.includes("free")) {
-      return { color: "#9CA3AF", glow: "rgba(156, 163, 175, .7)" };
-    }
+  if (plan.includes("enterprise")) {
+    return { color: "#EC4899", glow: "rgba(236, 72, 153, .8)" };
+  }
+  if (plan.includes("professional")) {
+    return { color: "#A821D9", glow: "rgba(168, 33, 217, .8)" };
+  }
+  if (plan.includes("growth")) {
+    return { color: "#84CC16", glow: "rgba(132, 204, 22, .8)" };
+  }
+  if (plan.includes("starter")) {
+    return { color: "#6366F1", glow: "rgba(99, 102, 241, .8)" };
+  }
+  if (plan.includes("trial") || plan.includes("free")) {
+    return { color: "#9CA3AF", glow: "rgba(156, 163, 175, .7)" };
+  }
 
-    return { color: "#7C3AED", glow: "rgba(124, 58, 237, .8)" };
-  });
+  return { color: "#7C3AED", glow: "rgba(124, 58, 237, .8)" };
+});
 </script>
 
 <div class="license-plan-card flex w-full flex-col items-center gap-4 text-center">

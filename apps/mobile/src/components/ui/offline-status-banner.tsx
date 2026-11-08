@@ -15,15 +15,10 @@ export function OfflineStatusBanner() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(
-    getNetworkStatus,
-  );
+  const [networkStatus, setNetworkStatus] =
+    useState<NetworkStatus>(getNetworkStatus);
 
-  useEffect(
-    () =>
-      subscribeToNetworkStatus(setNetworkStatus),
-    [],
-  );
+  useEffect(() => subscribeToNetworkStatus(setNetworkStatus), []);
 
   if (!networkStatus.isKnown || networkStatus.isOnline) return null;
 
@@ -47,9 +42,7 @@ export function OfflineStatusBanner() {
     >
       <View className="flex-row items-center gap-2">
         <Cloud size={18} strokeWidth={1.8} color={theme.foreground} />
-        <Text
-          className="text-[13px] font-bold leading-4.25 tracking-tight text-foreground"
-        >
+        <Text className="text-[13px] font-bold leading-4.25 tracking-tight text-foreground">
           {t("network_offline_read_only")}
         </Text>
       </View>

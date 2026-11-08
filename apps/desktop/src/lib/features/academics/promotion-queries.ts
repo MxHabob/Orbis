@@ -38,7 +38,9 @@ export function createprogressionJobQuery(jobId: string | (() => string)) {
 /** Evaluate student cohort promotion readiness and recommendations */
 export function createEvaluateCohortMutation() {
   return createMutation(() => ({
-    mutationFn: (sourcePeriodId: string): Promise<StudentProgressionItemInput[]> =>
+    mutationFn: (
+      sourcePeriodId: string,
+    ): Promise<StudentProgressionItemInput[]> =>
       api.evaluateCohort(sourcePeriodId),
   }));
 }
@@ -56,4 +58,3 @@ export function createPromoteCohortMutation() {
     },
   }));
 }
-

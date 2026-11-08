@@ -26,6 +26,7 @@ export function contextMenuItems(args: {
       items.push({ id: "edit", label: "Edit" });
       items.push({ id: "duplicate", label: "Duplicate" });
       items.push({ id: "delete", label: "Delete", danger: true });
+      items.push({ id: "delete-row", label: "Delete Row", danger: true });
     }
     items.push({ id: "select-row", label: "Select Row" });
     items.push({ id: "select-all", label: "Select All" });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface LineSpaceSmallerProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface LineSpaceSmallerProps extends SvgProps {
 
 export function LineSpaceSmaller({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,17 +45,16 @@ export function LineSpaceSmaller({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
-      <Path d="M11 6H21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
-		d="M11 12H21"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path>
-	<Path d="M11 18H21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
-		d="M5 19V5M5 10L3 8M5 10L7 8M5 14L3 16M5 14L7 16"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path>
+      {...props}
+    >
+      <Path d="M11 6H21" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path d="M11 12H21" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path d="M11 18H21" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path
+        d="M5 19V5M5 10L3 8M5 10L7 8M5 14L3 16M5 14L7 16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></Path>
     </Svg>
   );
 }

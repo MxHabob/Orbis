@@ -10,8 +10,8 @@ class LessonAssignment {
     @PlanningId
     var id: String = ""
 
-    var classSubjectId: String = ""
-    var classId: String = ""
+    var sectionSubjectId: String = ""
+    var sectionId: String = ""
     var subjectId: String = ""
     var teacherId: String = ""
     var hourIndex: Int = 0
@@ -25,6 +25,6 @@ class LessonAssignment {
     @PlanningVariable
     var dayOfWeek: Int? = null
 
-    @PlanningVariable
+    @PlanningVariable(nullable = true)
     var room: Room? = null
 }

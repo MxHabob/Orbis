@@ -2,7 +2,10 @@ import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterEmployeeCommandItem } from "$lib/api";
 import { splitPersonName } from "$lib/shared/utils/person-name";
 import * as m from "$lib/paraglide/messages";
-import { findDuplicateIndex, type BulkValidationContext } from "../engine/duplicate-index";
+import {
+  findDuplicateIndex,
+  type BulkValidationContext,
+} from "../engine/duplicate-index";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -118,7 +121,10 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
       { value: "admin", label: m.bulk_entry_enum_employee_admin() },
       { value: "principal", label: m.bulk_entry_enum_employee_principal() },
       { value: "accountant", label: m.bulk_entry_enum_employee_accountant() },
-      { value: "receptionist", label: m.bulk_entry_enum_employee_receptionist() },
+      {
+        value: "receptionist",
+        label: m.bulk_entry_enum_employee_receptionist(),
+      },
       { value: "supervisor", label: m.bulk_entry_enum_employee_supervisor() },
       { value: "driver", label: m.bulk_entry_enum_employee_driver() },
       { value: "staff", label: m.bulk_entry_enum_employee_staff() },
@@ -157,7 +163,18 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
     headerEn: "Employment Type",
     required: false,
     type: "enum",
-    allowedValues: ["full_time", "part_time", "contract", "hourly", "volunteer", "دوام كامل", "دوام جزئي", "عقد محدد", "بالساعة", "متطوع"],
+    allowedValues: [
+      "full_time",
+      "part_time",
+      "contract",
+      "hourly",
+      "volunteer",
+      "دوام كامل",
+      "دوام جزئي",
+      "عقد محدد",
+      "بالساعة",
+      "متطوع",
+    ],
     options: [
       { value: "full_time", label: m.bulk_entry_enum_employment_full_time() },
       { value: "part_time", label: m.bulk_entry_enum_employment_part_time() },
@@ -203,23 +220,82 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const employeeGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
-  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "full_name_ar", header: m.bulk_entry_employee_header_first_name_ar(), width: 200 },
+  {
+    id: "__idx",
+    header: m.bulk_entry_grid_row_number(),
+    width: 50,
+    pin: "left",
+    readonly: true,
+  },
+  {
+    id: "status",
+    header: m.bulk_entry_grid_status(),
+    width: 110,
+    pin: "left",
+    type: "badge",
+    readonly: true,
+  },
+  {
+    id: "full_name_ar",
+    header: m.bulk_entry_employee_header_first_name_ar(),
+    width: 200,
+  },
   { id: "full_name_en", header: "Full Name (English)", width: 200 },
-  { id: "national_id", header: m.bulk_entry_employee_header_national_id(), width: 130 },
-  { id: "gender", header: m.bulk_entry_header_gender(), width: 90, type: "enum", options: [{ value: "male", label: m.bulk_entry_enum_gender_male() }, { value: "female", label: m.bulk_entry_enum_gender_female() }] },
-  { id: "employee_type", header: m.bulk_entry_employee_header_employee_type(), width: 140 },
-  { id: "job_title", header: m.bulk_entry_employee_header_job_title(), width: 150 },
-  { id: "department", header: m.bulk_entry_employee_header_department(), width: 140 },
-  { id: "hire_date", header: m.bulk_entry_employee_header_hire_date(), width: 120, type: "date" },
+  {
+    id: "national_id",
+    header: m.bulk_entry_employee_header_national_id(),
+    width: 130,
+  },
+  {
+    id: "gender",
+    header: m.bulk_entry_header_gender(),
+    width: 90,
+    type: "enum",
+    options: [
+      { value: "male", label: m.bulk_entry_enum_gender_male() },
+      { value: "female", label: m.bulk_entry_enum_gender_female() },
+    ],
+  },
+  {
+    id: "employee_type",
+    header: m.bulk_entry_employee_header_employee_type(),
+    width: 140,
+  },
+  {
+    id: "job_title",
+    header: m.bulk_entry_employee_header_job_title(),
+    width: 150,
+  },
+  {
+    id: "department",
+    header: m.bulk_entry_employee_header_department(),
+    width: 140,
+  },
+  {
+    id: "hire_date",
+    header: m.bulk_entry_employee_header_hire_date(),
+    width: 120,
+    type: "date",
+  },
   { id: "phone", header: m.bulk_entry_header_phone(), width: 120 },
   { id: "email", header: m.bulk_entry_header_email(), width: 160 },
-  { id: "provision_user", header: m.bulk_entry_employee_header_provision_user(), width: 100, type: "boolean" },
-  { id: "user_group_name", header: m.bulk_entry_employee_header_user_group(), width: 140 },
+  {
+    id: "provision_user",
+    header: m.bulk_entry_employee_header_provision_user(),
+    width: 100,
+    type: "boolean",
+  },
+  {
+    id: "user_group_name",
+    header: m.bulk_entry_employee_header_user_group(),
+    width: 140,
+  },
 ];
 
-export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeePreviewDetails> = {
+export const employeeImportProfile: BulkImportProfile<
+  EmployeeRowData,
+  EmployeePreviewDetails
+> = {
   id: "employees",
   displayName: {
     ar: "استيراد وقيد موظفي وكادر المدرسة",
@@ -264,7 +340,11 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
           { value: "admin", labelAr: "إداري", labelEn: "Administrator" },
           { value: "principal", labelAr: "مدير", labelEn: "Principal" },
           { value: "accountant", labelAr: "محاسب", labelEn: "Accountant" },
-          { value: "receptionist", labelAr: "موظف استقبال", labelEn: "Receptionist" },
+          {
+            value: "receptionist",
+            labelAr: "موظف استقبال",
+            labelEn: "Receptionist",
+          },
           { value: "supervisor", labelAr: "مشرف", labelEn: "Supervisor" },
           { value: "driver", labelAr: "سائق", labelEn: "Driver" },
           { value: "staff", labelAr: "موظف", labelEn: "Staff" },
@@ -283,10 +363,19 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     };
   },
 
-  validateCell(colId: string, value: unknown, _row: EmployeeRowData, _refData: BulkReferenceData): BulkCellIssue | null {
+  validateCell(
+    colId: string,
+    value: unknown,
+    _row: EmployeeRowData,
+    _refData: BulkReferenceData,
+  ): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
 
-    if (["full_name_ar", "national_id", "employee_type", "hire_date"].includes(colId)) {
+    if (
+      ["full_name_ar", "national_id", "employee_type", "hire_date"].includes(
+        colId,
+      )
+    ) {
       if (!strVal) {
         return {
           severity: "BLOCKING_ERROR",
@@ -322,7 +411,9 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     const shouldProvision =
       row.provision_user === true ||
       ["true", "1", "نعم", "yes"].includes(
-        String(row.provision_user ?? "").trim().toLowerCase(),
+        String(row.provision_user ?? "")
+          .trim()
+          .toLowerCase(),
       );
 
     if (groupTokens.length > 0 && !shouldProvision) {
@@ -345,13 +436,17 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     if (row.national_id?.trim()) {
       const nid = row.national_id.trim();
       const duplicateIndex = context
-        ? findDuplicateIndex(context, "national_id", nid, rowIndex) ?? -1
-        : allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
+        ? (findDuplicateIndex(context, "national_id", nid, rowIndex) ?? -1)
+        : allRows.findIndex(
+            (r, idx) => idx !== rowIndex && r.national_id?.trim() === nid,
+          );
       if (duplicateIndex !== -1) {
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "national_id",
-          message: m.bulk_entry_employee_validation_duplicate_national_id({ row: duplicateIndex + 1 }),
+          message: m.bulk_entry_employee_validation_duplicate_national_id({
+            row: duplicateIndex + 1,
+          }),
         });
       }
     }
@@ -359,7 +454,10 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     return issues;
   },
 
-  async generatePreview(rows: EmployeeRowData[], _refData: BulkReferenceData): Promise<BulkPreviewSummary<EmployeePreviewDetails>> {
+  async generatePreview(
+    rows: EmployeeRowData[],
+    _refData: BulkReferenceData,
+  ): Promise<BulkPreviewSummary<EmployeePreviewDetails>> {
     let validCount = 0;
     let errorCount = 0;
     let provisionCount = 0;
@@ -367,7 +465,12 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     const groups: Record<string, number> = {};
 
     for (const row of rows) {
-      if (!row.full_name_ar?.trim() || !row.national_id?.trim() || !row.employee_type || !row.hire_date) {
+      if (
+        !row.full_name_ar?.trim() ||
+        !row.national_id?.trim() ||
+        !row.employee_type ||
+        !row.hire_date
+      ) {
         errorCount++;
       } else {
         validCount++;
@@ -376,7 +479,11 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
 
         const isProvision =
           row.provision_user === true ||
-          ["true", "1", "نعم", "yes"].includes(String(row.provision_user ?? "").trim().toLowerCase());
+          ["true", "1", "نعم", "yes"].includes(
+            String(row.provision_user ?? "")
+              .trim()
+              .toLowerCase(),
+          );
         if (isProvision) provisionCount++;
 
         const g = row.user_group_name || "الافتراضية";
@@ -415,31 +522,46 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
       const namePartsEn = splitPersonName(fullNameEn, "Employee");
 
       let typeStr = "teacher";
-      const rawType = String(row.employee_type || "").toLowerCase().trim();
-      if (rawType.includes("admin") || rawType.includes("إداري")) typeStr = "admin";
-      if (rawType.includes("principal") || rawType.includes("مدير")) typeStr = "principal";
-      if (rawType.includes("accountant") || rawType.includes("محاسب")) typeStr = "accountant";
-      if (rawType.includes("receptionist") || rawType.includes("استقبال")) typeStr = "receptionist";
-      if (rawType.includes("supervisor") || rawType.includes("مشرف")) typeStr = "supervisor";
-      if (rawType.includes("driver") || rawType.includes("سائق")) typeStr = "driver";
+      const rawType = String(row.employee_type || "")
+        .toLowerCase()
+        .trim();
+      if (rawType.includes("admin") || rawType.includes("إداري"))
+        typeStr = "admin";
+      if (rawType.includes("principal") || rawType.includes("مدير"))
+        typeStr = "principal";
+      if (rawType.includes("accountant") || rawType.includes("محاسب"))
+        typeStr = "accountant";
+      if (rawType.includes("receptionist") || rawType.includes("استقبال"))
+        typeStr = "receptionist";
+      if (rawType.includes("supervisor") || rawType.includes("مشرف"))
+        typeStr = "supervisor";
+      if (rawType.includes("driver") || rawType.includes("سائق"))
+        typeStr = "driver";
       if (rawType === "staff" || rawType === "موظف") typeStr = "staff";
-      if (rawType.includes("worker") || rawType.includes("خدمات")) typeStr = "worker";
-      const rawEmploymentType = String(row.employment_type ?? "").trim().toLowerCase();
+      if (rawType.includes("worker") || rawType.includes("خدمات"))
+        typeStr = "worker";
+      const rawEmploymentType = String(row.employment_type ?? "")
+        .trim()
+        .toLowerCase();
       const employmentType =
         rawEmploymentType === "volunteer" || rawEmploymentType === "متطوع"
           ? "volunteer"
-          : rawEmploymentType === "contractor" || rawEmploymentType === "عقد محدد"
-          ? "contract"
-          : rawEmploymentType === "hourly" || rawEmploymentType === "بالساعة"
-            ? "hourly"
-            : rawEmploymentType === "part_time" || rawEmploymentType === "دوام جزئي"
-              ? "part_time"
-              : "full_time";
+          : rawEmploymentType === "contractor" ||
+              rawEmploymentType === "عقد محدد"
+            ? "contract"
+            : rawEmploymentType === "hourly" || rawEmploymentType === "بالساعة"
+              ? "hourly"
+              : rawEmploymentType === "part_time" ||
+                  rawEmploymentType === "دوام جزئي"
+                ? "part_time"
+                : "full_time";
 
       const isProvision =
         row.provision_user === true ||
         ["true", "1", "نعم", "yes"].includes(
-          String(row.provision_user ?? "").trim().toLowerCase(),
+          String(row.provision_user ?? "")
+            .trim()
+            .toLowerCase(),
         );
 
       const matchedGroupIds = splitGroupNames(row.user_group_name)
@@ -464,15 +586,21 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
           employee_type: typeStr,
           job_title: row.job_title?.trim() || undefined,
           department: row.department?.trim() || undefined,
-          hire_date: row.hire_date?.trim() || new Date().toISOString().slice(0, 10),
+          hire_date:
+            row.hire_date?.trim() || new Date().toISOString().slice(0, 10),
           employment_type: employmentType,
           account: isProvision
             ? {
                 enabled: true,
-                preferred_username: row.email?.trim() || row.employee_number?.trim() || undefined,
+                preferred_username:
+                  row.email?.trim() || row.employee_number?.trim() || undefined,
                 role: typeStr === "teacher" ? "teacher" : "staff",
                 group_ids: matchedGroupIds,
-                delivery_channel: row.email?.trim() ? "email" : row.phone?.trim() ? "sms" : "manual",
+                delivery_channel: row.email?.trim()
+                  ? "email"
+                  : row.phone?.trim()
+                    ? "sms"
+                    : "manual",
               }
             : undefined,
         },
@@ -487,7 +615,10 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
         if (!it.success && it.error) {
           rowErrors.push({
             rowNumber: it.row_index,
-            reason: m.bulk_entry_row_error({ row: it.row_index, reason: it.error }),
+            reason: m.bulk_entry_row_error({
+              row: it.row_index,
+              reason: it.error,
+            }),
           });
         }
       }
@@ -506,7 +637,12 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
 };
 
 function splitGroupNames(value: string | undefined) {
-  return value?.split(/[|;]/).map((token) => token.trim()).filter(Boolean) ?? [];
+  return (
+    value
+      ?.split(/[|;]/)
+      .map((token) => token.trim())
+      .filter(Boolean) ?? []
+  );
 }
 
 function resolveUserGroup(value: string, refData: BulkReferenceData) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface BoltProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface BoltProps extends SvgProps {
 
 export function Bolt({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,13 @@ export function Bolt({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
-	/>
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
+      />
     </Svg>
   );
 }

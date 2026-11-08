@@ -15,7 +15,9 @@ interface Props {
   selectedLanguage: string;
   isSavingDetails?: boolean;
   onThemeChange: (theme: "light" | "dark" | "system") => void;
-  onLanguageChange: (locale: string) => void | boolean | Promise<void | boolean>;
+  onLanguageChange: (
+    locale: string,
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 let {

@@ -20,6 +20,9 @@ export { aiContext } from "./ai-context.svelte";
 // ── Workflow Inbox (pending action counts for Title Bar badge)
 export { workflowInbox } from "./workflow-inbox.svelte";
 
+// ── Notification Store
+export { notificationStore } from "./notification.svelte";
+
 // ── Effective Context & Permissions
 export {
   effectiveContext,

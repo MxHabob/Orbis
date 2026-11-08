@@ -2,11 +2,12 @@
 @component ExamsLayout
 Horizontal SecondaryMenu tab layout for Exams.
 Wraps all Exams routes under academics.
+Grade entry has moved to /academics/grades — this module handles
+exam session management (scheduling, proctors, seating) only.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { ChartBar, DocumentPage, TaskList, UserBadgeCheck } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -18,22 +19,14 @@ const menuItems = $derived([
   {
     path: "",
     label: m.common_nav_overview(),
-    icon: ChartBar,
   },
   {
     path: "sessions",
     label: m.common_exams_sessions_title(),
-    icon: TaskList,
-  },
-  {
-    path: "control",
-    label: m.common_control_label(),
-    icon: UserBadgeCheck,
   },
   {
     path: "reports",
     label: m.common_nav_reports(),
-    icon: DocumentPage,
   },
 ]);
 </script>

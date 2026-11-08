@@ -1,4 +1,9 @@
 import { normalizeTerm } from "./normalize";
+import {
+  defaultNameDictionary,
+  suggestNameTransliteration,
+  suggestPhoneticTransliteration,
+} from "./transliteration";
 import type {
   DictionaryEntry,
   DictionaryPack,
@@ -6,11 +11,6 @@ import type {
   SuggestionResult,
   TranslationLanguage,
 } from "./types";
-import {
-  defaultNameDictionary,
-  suggestPhoneticTransliteration,
-  suggestNameTransliteration,
-} from "./transliteration";
 
 const wordPattern = /^[\p{L}\p{M}\p{N}]+$/u;
 const whitespacePattern = /^\s+$/u;

@@ -206,14 +206,14 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "QRCode",
                             "id": "student-qr",
-                            "props": { "data": "{{student.studentNumber}}", "size": 11 },
+                            "props": { "data": "{{student.studentNumber}}", "size": 11, "errorCorrection": "M" },
                             "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
                         },
                         // Bottom Barcode & Expiry
                         {
                             "type": "Barcode",
                             "id": "student-barcode",
-                            "props": { "data": "{{student.studentNumber}}", "format": "CODE128" },
+                            "props": { "data": "{{student.studentNumber}}", "format": "CODE128", "height": 9.5 },
                             "position": { "x": 28, "y": 34.5, "width": 53, "height": 9.5 }
                         },
                         // Card Footer Accent
@@ -320,13 +320,13 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "QRCode",
                             "id": "emp-qr",
-                            "props": { "data": "{{employee.employeeNumber}}", "size": 11 },
+                            "props": { "data": "{{employee.employeeNumber}}", "size": 11, "errorCorrection": "M" },
                             "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
                         },
                         {
                             "type": "Barcode",
                             "id": "emp-barcode",
-                            "props": { "data": "{{employee.employeeNumber}}", "format": "CODE128" },
+                            "props": { "data": "{{employee.employeeNumber}}", "format": "CODE128", "height": 10.0 },
                             "position": { "x": 28, "y": 34, "width": 53, "height": 10 }
                         },
                         {
@@ -460,7 +460,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "QRCode",
                             "id": "cert-qr",
-                            "props": { "data": "https://verify.orbis.edu/cert/{{student.studentNumber}}", "size": 18 },
+                            "props": { "data": "https://verify.orbis.edu/cert/{{student.studentNumber}}", "size": 18, "errorCorrection": "M" },
                             "position": { "x": 25, "y": 250, "width": 18, "height": 18 }
                         },
                         {
@@ -746,7 +746,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "QRCode",
                             "id": "rcpt-qr",
-                            "props": { "data": "{{receipt.number}}", "size": 32 },
+                            "props": { "data": "{{receipt.number}}", "size": 32, "errorCorrection": "M" },
                             "position": { "x": 28, "y": 166, "width": 32, "height": 32 }
                         },
                         {
@@ -891,7 +891,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Barcode",
                             "id": "exam-barcode",
-                            "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128" },
+                            "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 14.0 },
                             "position": { "x": 25, "y": 155, "width": 98, "height": 14 }
                         },
                         {
@@ -961,7 +961,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "QRCode",
                             "id": "transcript-qr",
-                            "props": { "data": "{{student.studentNumber}}", "size": 16 },
+                            "props": { "data": "{{student.studentNumber}}", "size": 16, "errorCorrection": "M" },
                             "position": { "x": 18, "y": 15, "width": 16, "height": 16 }
                         },
                         // Student Info Bar
@@ -1784,7 +1784,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     {
                         "type": "QRCode",
                         "id": "cert-verification-qr",
-                        "props": { "data": "{{report.verificationUrl}}" },
+                        "props": { "data": "{{report.verificationUrl}}", "size": 18, "errorCorrection": "M" },
                         "position": { "x": 14, "y": 262, "width": 18, "height": 18 }
                     },
                     {
@@ -2133,7 +2133,7 @@ fn default_exam_hall_seating_card_template() -> (
                     {
                         "type": "Barcode",
                         "id": "exam-barcode",
-                        "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128" },
+                        "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 14.0 },
                         "position": { "x": 25, "y": 155, "width": 98, "height": 14 }
                     },
                     {
@@ -2250,13 +2250,13 @@ fn default_user_id_card_template() -> (
                     {
                         "type": "QRCode",
                         "id": "user-qr",
-                        "props": { "data": "{{user.employeeNumber}}", "size": 11 },
+                        "props": { "data": "{{user.employeeNumber}}", "size": 11, "errorCorrection": "M" },
                         "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
                     },
                     {
                         "type": "Barcode",
                         "id": "user-barcode",
-                        "props": { "data": "{{user.employeeNumber}}", "format": "CODE128" },
+                        "props": { "data": "{{user.employeeNumber}}", "format": "CODE128", "height": 10.0 },
                         "position": { "x": 28, "y": 34, "width": 53, "height": 10 }
                     },
                     {

@@ -99,7 +99,7 @@ class OrganizationContextStore {
     resolveIntlLocale(
       this._config?.formatLocale && this._config.formatLocale !== "auto"
         ? this._config.formatLocale
-        : this._config?.locale ?? "ar",
+        : (this._config?.locale ?? "ar"),
     ),
   );
 
@@ -129,7 +129,7 @@ class OrganizationContextStore {
 
   /** Institution type: "school" | "university" | "institute" */
   institutionType = $derived<"school" | "university" | "institute">(
-    this._config?.institutionType ?? "school"
+    this._config?.institutionType ?? "school",
   );
 
   /** Organization metadata */
@@ -155,7 +155,10 @@ class OrganizationContextStore {
       const org = await api.getCurrentOrg();
       this.setOrganization(org);
     } catch (e: unknown) {
-      console.warn("Failed to load organization context:", extractErrorMessage(e));
+      console.warn(
+        "Failed to load organization context:",
+        extractErrorMessage(e),
+      );
     } finally {
       this.isLoading = false;
     }
@@ -168,8 +171,11 @@ class OrganizationContextStore {
       "school"
     ).toLowerCase();
     const institutionType: "school" | "university" | "institute" =
-      rawType === "university" ? "university" :
-      rawType === "institute" || rawType === "training_center" ? "institute" : "school";
+      rawType === "university"
+        ? "university"
+        : rawType === "institute" || rawType === "training_center"
+          ? "institute"
+          : "school";
 
     this._config = {
       id: org.id,

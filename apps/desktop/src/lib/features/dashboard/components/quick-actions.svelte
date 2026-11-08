@@ -68,7 +68,7 @@ const ACTIONS = $derived.by(() => {
     {
       label: m.settings_nav_approvals(),
       icon: ClipboardCheck,
-      href: `/${orgId}/settings/approvals`,
+      href: `/${orgId}/approvals`,
       show: workflowInbox.hasActions && canManageApprovals,
       badge:
         workflowInbox.totalCount > 0

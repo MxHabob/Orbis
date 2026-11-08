@@ -17,6 +17,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Card, CardContent } from "@orbis/ui/card";
 import { Avatar, AvatarController } from "@orbis/avatar-engine";
+import { normalizeLicenseProductKey } from "$lib/utils/license";
 
 let {
   form,
@@ -31,7 +32,7 @@ let {
   onLaunch,
   onEnterWorkspace,
   onStartTrial,
-  onRedeemKey,
+  onActivateKey,
 }: {
   form: OnboardingFormModel;
   isSubmitting?: boolean;
@@ -45,18 +46,27 @@ let {
   onLaunch: () => void;
   onEnterWorkspace: () => void;
   onStartTrial: () => Promise<boolean>;
-  onRedeemKey: (productKey: string) => Promise<boolean>;
+  onActivateKey: (productKey: string) => Promise<boolean>;
 } = $props();
 
 const avatarController = new AvatarController();
 let productKey = $state("");
+let productKeyError = $state<string | null>(null);
 let setupStage = $state(0);
 const blueprint = $derived(getBlueprint(form.institutionType));
 const tz = $derived(TIMEZONE_OPTIONS.find((t) => t.value === form.timezone));
-const cur = $derived(CURRENCY_OPTIONS.find((c) => c.code === form.baseCurrencyCode));
-const country = $derived(COUNTRIES_LIST.find((c) => c.code === form.countryCode));
-const track = $derived(EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack));
-const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize));
+const cur = $derived(
+  CURRENCY_OPTIONS.find((c) => c.code === form.baseCurrencyCode),
+);
+const country = $derived(
+  COUNTRIES_LIST.find((c) => c.code === form.countryCode),
+);
+const track = $derived(
+  EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack),
+);
+const size = $derived(
+  ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize),
+);
 const isArabic = $derived(getLocale().startsWith("ar"));
 const organizationName = $derived(
   (isArabic
@@ -73,12 +83,13 @@ const administratorName = $derived(
     m.ui_onboarding_default_admin_name(),
 );
 const institutionTypeLabel = $derived(
-  ({
+  {
     k12_school: () => m.ui_onboarding_institution_type_school(),
     university: () => m.ui_onboarding_institution_type_university(),
-    vocational_institute: () => m.ui_onboarding_institution_type_vocational_institute(),
+    vocational_institute: () =>
+      m.ui_onboarding_institution_type_vocational_institute(),
     language_center: () => m.ui_onboarding_institution_type_language_center(),
-  })[form.institutionType](),
+  }[form.institutionType](),
 );
 
 $effect(() => {
@@ -99,13 +110,18 @@ $effect(() => {
   return () => stageTimeouts.forEach((timeout) => window.clearTimeout(timeout));
 });
 
-async function redeemProductKey(event: SubmitEvent) {
-  event.preventDefault();
+async function submitProductKey() {
   const key = productKey.trim();
   if (!key || licenseLoading) return;
-  if (await onRedeemKey(key)) productKey = "";
+  productKeyError = null;
+  const activationKey = normalizeLicenseProductKey(key);
+  if (!activationKey) {
+    productKeyError = m.license_invalid_key_format();
+    return;
+  }
+  const succeeded = await onActivateKey(activationKey);
+  if (succeeded) productKey = "";
 }
-
 </script>
 
 {#if isSubmitting}
@@ -179,19 +195,30 @@ async function redeemProductKey(event: SubmitEvent) {
           <p class="text-sm text-emerald-600 dark:text-emerald-400" role="status">
             {m.license_activation_success()}
           </p>
-        {:else}
-          <form class="flex flex-col gap-2 sm:flex-row" onsubmit={redeemProductKey}>
-            <Input
-              bind:value={productKey}
-              aria-label={m.license_key_label()}
-              placeholder={m.license_key_placeholder()}
-              disabled={licenseLoading}
-              autocomplete="off"
-            />
-            <Button type="submit" disabled={licenseLoading || !productKey.trim()}>
-              {m.license_activate_btn()}
-            </Button>
-          </form>
+        {/if}
+        <div class="flex flex-col gap-2">
+          <Input
+            bind:value={productKey}
+            aria-label={m.license_key_label()}
+            placeholder={m.license_key_placeholder()}
+            disabled={licenseLoading}
+            autocomplete="off"
+          />
+          <Button
+            type="button"
+            disabled={licenseLoading || !productKey.trim()}
+            onclick={() => void submitProductKey()}
+          >
+            {licenseLoading ? m.license_activating() : m.license_activate_btn()}
+          </Button>
+          {#if productKeyError}
+            <p class="text-sm text-destructive" role="alert">{productKeyError}</p>
+          {/if}
+          {#if licenseError}
+            <p class="text-sm text-destructive" role="alert">{licenseError}</p>
+          {/if}
+        </div>
+        {#if !licenseIsOperational}
           <Button
             type="button"
             variant="outline"
@@ -200,9 +227,6 @@ async function redeemProductKey(event: SubmitEvent) {
           >
             {m.license_start_trial_btn()}
           </Button>
-          {#if licenseError}
-            <p class="text-sm text-destructive" role="alert">{licenseError}</p>
-          {/if}
         {/if}
       </div>
     {/if}

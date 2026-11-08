@@ -49,11 +49,10 @@ const config = $derived(() => {
 });
 
 const sizeClass = $derived(
-  size === "xs" ? "text-[8px] px-1.5 py-0.5" : "text-[9px] px-2 py-0.5",
+  size === "xs" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs",
 );
 </script>
 
-<span class="inline-flex items-center gap-1 rounded-md border font-bold select-none {config().color} {sizeClass}">
-	<span class="h-1.5 w-1.5 rounded-full {config().color.includes('emerald') ? 'bg-emerald-500' : config().color.includes('blue') ? 'bg-blue-500' : config().color.includes('amber') ? 'bg-amber-500' : config().color.includes('purple') ? 'bg-purple-500' : 'bg-zinc-500'} animate-pulse"></span>
+<span class="inline-flex select-none items-center rounded-md border font-medium {config().color} {sizeClass}">
 	{config().label}
 </span>

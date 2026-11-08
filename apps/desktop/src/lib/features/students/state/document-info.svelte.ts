@@ -49,17 +49,26 @@ export class DocumentInfoState {
     this.orgRequiredDocuments = docs || [];
   }
 
-  async loadRequirements(gradeLevelId?: string, isNational = true, isTransfer = false) {
+  async loadRequirements(
+    gradeLevelId?: string,
+    isNational = true,
+    isTransfer = false,
+  ) {
     this.isLoading = true;
     try {
       if (this.studentId) {
-        this.fulfillments = await api.evaluateStudentDocumentRequirements(this.studentId, {
-          grade_level_id: gradeLevelId,
-          is_national: isNational,
-          is_transfer: isTransfer,
-        });
+        this.fulfillments = await api.evaluateStudentDocumentRequirements(
+          this.studentId,
+          {
+            grade_level_id: gradeLevelId,
+            is_national: isNational,
+            is_transfer: isTransfer,
+          },
+        );
       } else {
-        this.requirements = await api.listDocumentRequirements().catch(() => []);
+        this.requirements = await api
+          .listDocumentRequirements()
+          .catch(() => []);
       }
     } catch (err) {
       console.error("Failed to load document requirements:", err);
@@ -84,7 +93,9 @@ export class DocumentInfoState {
       this.submittedDocs = [...this.submittedDocs, reqCode];
     }
 
-    toast.success(m.operations_ui_student_document_attached({ fileName: file.name }));
+    toast.success(
+      m.operations_ui_student_document_attached({ fileName: file.name }),
+    );
   }
 
   async uploadPendingAttachments(
@@ -143,7 +154,9 @@ export class DocumentInfoState {
   removeAttachment(reqCode: string) {
     const existing = this.attachments[reqCode];
     if (existing?.documentId) {
-      api.deleteDocument(existing.documentId).catch((err) => console.warn("Delete doc error:", err));
+      api
+        .deleteDocument(existing.documentId)
+        .catch((err) => console.warn("Delete doc error:", err));
     }
     delete this.attachments[reqCode];
     this.submittedDocs = this.submittedDocs.filter((d) => d !== reqCode);
@@ -154,7 +167,9 @@ export class DocumentInfoState {
 
     try {
       await this.loadRequirements();
-      const studentDocs = await api.listDocumentsByEntity("student", this.studentId).catch(() => []);
+      const studentDocs = await api
+        .listDocumentsByEntity("student", this.studentId)
+        .catch(() => []);
 
       const submitted: string[] = [];
       const attachMap: Record<string, StudentDocAttachment> = {};

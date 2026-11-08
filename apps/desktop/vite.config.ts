@@ -35,27 +35,32 @@ export default defineConfig(({ mode }) => {
             groups: [
               {
                 name: "vendor-icons",
-                test: (id: string) => id.includes("node_modules") && id.includes("@orbis/icons"),
+                test: (id: string) =>
+                  id.includes("node_modules") && id.includes("@orbis/icons"),
                 priority: 10,
               },
               {
                 name: "vendor-tauri",
-                test: (id: string) => id.includes("node_modules") && id.includes("@tauri-apps"),
+                test: (id: string) =>
+                  id.includes("node_modules") && id.includes("@tauri-apps"),
                 priority: 10,
               },
               {
                 name: "vendor-query",
-                test: (id: string) => id.includes("node_modules") && id.includes("@tanstack"),
+                test: (id: string) =>
+                  id.includes("node_modules") && id.includes("@tanstack"),
                 priority: 10,
               },
               {
                 name: "vendor-utils",
-                test: (id: string) => id.includes("node_modules") && id.includes("zod"),
+                test: (id: string) =>
+                  id.includes("node_modules") && id.includes("zod"),
                 priority: 10,
               },
               {
                 name: "settings",
-                test: (id: string) => /[\\/]features[\\/]settings[\\/]/.test(id),
+                test: (id: string) =>
+                  /[\\/]features[\\/]settings[\\/]/.test(id),
                 entriesAware: true,
                 maxSize: 300 * 1024,
               },

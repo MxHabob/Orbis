@@ -26,7 +26,7 @@ import { Button } from "@orbis/ui";
 import Resizer from "./resizer.svelte";
 import SashLayer from "./sash-layer.svelte";
 import type { Snippet } from "svelte";
-    import { m } from "$lib/paraglide/messages";
+import { m } from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { isStandaloneWindow } from "./window-mode";
 

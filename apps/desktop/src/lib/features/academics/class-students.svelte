@@ -4,24 +4,18 @@
   Uses @orbis/svelte-grid inside a standardized Card container.
 -->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from "@orbis/ui/card";
-import { InfoCircle, Refresh, Users } from "@orbis/icons";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { InfoCircle } from "@orbis/icons";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import { createClassStudentsQuery } from "$lib/features/academics";
 import { formatDate } from "$lib/core/i18n";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
@@ -33,10 +27,10 @@ const error = $derived(studentsQuery.error);
 
 function studentName(student: any): string {
   return (
-    student.name_ar ||
-    student.full_name ||
-    student.name ||
-    student.student_id ||
+    student.person?.full_name_ar ||
+    student.person?.full_name ||
+    student.person?.display_name ||
+    student.student?.student_number ||
     "-"
   );
 }
@@ -102,21 +96,22 @@ const columns: OrbisColumnDef[] = [
 
 const gridSource = $derived(
   students.map((student) => ({
-    ...student,
+    id: student.student?.id ?? student.id,
     student_name: studentName(student),
-    student_number: student.student_number || student.student_id || student.id,
-    national_id: student.national_id || "—",
-    gender: student.gender || "—",
-    status: student.status || "active",
-    enrolled_date: student.created_at
-      ? formatDate(student.created_at, "date")
+    student_number: student.student?.student_number || "—",
+    national_id:
+      student.person?.national_id || student.person?.passport_number || "—",
+    gender: student.person?.gender || "—",
+    status: student.student?.status || "active",
+    enrolled_date: student.enrollment?.enrollment_date
+      ? formatDate(student.enrollment.enrollment_date, "date")
       : "—",
   })),
 );
 
 function handleGridAction(event: GridActionEvent) {
   if (event.actionId === "dblclick" && event.row.id) {
-    const studentId = event.row.student_id || event.row.id;
+    const studentId = event.row.id;
     goto(localizeHref(`/${orgId}/students/${studentId}`));
   }
 }
@@ -126,67 +121,26 @@ function refetch() {
 }
 </script>
 
-<div class="flex flex-col gap-4 text-start h-full font-sans">
-  <Card class="flex-1 flex flex-col min-h-0 overflow-hidden">
-    <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-          <Users class="w-4 h-4" />
-        </div>
-        <div class="flex flex-col text-start">
-          <div class="flex items-center gap-2">
-            <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-              {m.academics_class_detail_tab_students()}
-            </CardTitle>
-            <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded font-mono">
-              {students.length}
-            </Badge>
-          </div>
-          <CardDescription class="text-[10px]">
-            {m.academics_class_students_desc()}
-          </CardDescription>
-        </div>
-      </div>
-
-      <CardAction>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-8 gap-1.5 text-xs font-semibold"
-            onclick={refetch}
-          >
-            {#if isLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
-            {m.common_retry()}
-          </Button>
-        </div>
-      </CardAction>
-    </CardHeader>
-
-    <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-      {#if error}
-        <div class="flex flex-1 flex-col items-center justify-center py-16 text-destructive gap-2 font-sans p-6">
-          <InfoCircle size={24} />
-          <h3 class="font-semibold text-xs">{m.common_error_occurred()}</h3>
-          <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-          <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={refetch}>
-            {m.common_retry()}
-          </Button>
-        </div>
-      {:else}
-        <div class="flex-1 min-h-0 w-full h-full">
-          <OrbisGrid
-            {columns}
-            source={gridSource}
-            loading={isLoading}
-            height="100%"
-            rowSize={44}
-            readonly
-            onaction={handleGridAction}
-            emptyTitle={m.common_students_empty_title()}
-          />
-        </div>
-      {/if}
-    </CardContent>
-  </Card>
+<div class="h-full min-h-0 w-full overflow-hidden rounded-xl border border-border/80 bg-background font-sans">
+  {#if error}
+    <div class="flex h-full flex-col items-center justify-center gap-2 p-6 text-destructive">
+      <InfoCircle size={24} />
+      <h3 class="text-xs font-semibold">{m.common_error_occurred()}</h3>
+      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
+      <Button variant="outline" size="sm" class="mt-2 h-8 text-xs" onclick={refetch}>
+        {m.common_retry()}
+      </Button>
+    </div>
+  {:else}
+    <OrbisGrid
+      {columns}
+      source={gridSource}
+      loading={isLoading}
+      height="100%"
+      rtl={getLocale() === "ar"}
+      readonly
+      onaction={handleGridAction}
+      emptyTitle={m.common_students_empty_title()}
+    />
+  {/if}
 </div>

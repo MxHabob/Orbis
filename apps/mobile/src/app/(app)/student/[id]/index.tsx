@@ -16,10 +16,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
-import {
-  useLinkedStudentId,
-  useStudentQuery,
-} from "@/hooks/use-api-queries";
+import { useLinkedStudentId, useStudentQuery } from "@/hooks/use-api-queries";
 import {
   AcademicCap,
   Calendar,
@@ -54,13 +51,8 @@ export default function StudentIndexScreen() {
   const { t, isArabic, formatDate } = useI18n();
 
   const requestedStudentId = typeof id === "string" ? id : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const studentQuery = useStudentQuery(studentId);
   const student = studentQuery.data;
@@ -91,17 +83,12 @@ export default function StudentIndexScreen() {
           ? undefined
           : t("student_access_denied")
       }
-      onRetry={() =>
-        void (isLinked ? studentQuery.refetch() : retryIdentity())
-      }
+      onRetry={() => void (isLinked ? studentQuery.refetch() : retryIdentity())}
     >
       {student ? (
         <>
           {/* 1. Hero Identity Card */}
-          <Card
-            variant="default"
-            padding="four"
-          >
+          <Card variant="default" padding="four">
             <View className="flex-row items-center gap-four">
               <Avatar
                 fallback={(student.full_name || "S").charAt(0)}
@@ -115,7 +102,8 @@ export default function StudentIndexScreen() {
                 <View className="flex-row items-center gap-two">
                   <Badge variant="secondary" className="px-two py-half">
                     <Text className="text-xs font-bold text-primary">
-                      {student.student_number || `ID: #${student.id.slice(0, 6)}`}
+                      {student.student_number ||
+                        `ID: #${student.id.slice(0, 6)}`}
                     </Text>
                   </Badge>
                   <Badge variant="outline" className="px-two py-half">
@@ -147,7 +135,9 @@ export default function StudentIndexScreen() {
                 }
               />
               <ModuleGridCard
-                icon={<ClipboardDocumentCheck size={22} color={theme.primary} />}
+                icon={
+                  <ClipboardDocumentCheck size={22} color={theme.primary} />
+                }
                 title={t("student_attendance")}
                 subtitle={t("domain_attendance")}
                 onPress={() =>
@@ -219,16 +209,10 @@ export default function StudentIndexScreen() {
                 />
               ) : null}
               {student.email ? (
-                <DetailRow
-                  label={t("student_email")}
-                  value={student.email}
-                />
+                <DetailRow label={t("student_email")} value={student.email} />
               ) : null}
               {student.phone ? (
-                <DetailRow
-                  label={t("student_phone")}
-                  value={student.phone}
-                />
+                <DetailRow label={t("student_phone")} value={student.phone} />
               ) : null}
             </Card>
           </View>

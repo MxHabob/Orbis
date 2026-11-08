@@ -72,15 +72,36 @@ fn format_tool_execution_error(tool_name: &str, error: &DomainError) -> String {
     let error_text = error.to_string();
     let normalized = error_text.to_ascii_lowercase();
 
-    if matches!(tool_name, "generate_report" | "create_custom_report")
-        && (normalized.contains("report definition not found")
-            || normalized.contains("report code is required")
-            || normalized.contains("not found") && normalized.contains("report"))
+    if matches!(
+        tool_name,
+        "generate_report" | "inspect_report_source" | "create_custom_report"
+    ) && (normalized.contains("report definition not found")
+        || normalized.contains("report code is required")
+        || normalized.contains("not found") && normalized.contains("report"))
     {
-        return "The requested report definition could not be found. Please list available reports and use a valid report code before retrying.".to_string();
+        return "The requested report definition could not be found. Call list_available_reports, then use an exact report_code from its results before retrying.".to_string();
     }
 
     format!("Error executing {}: {}", tool_name, error)
+}
+
+fn validate_custom_report_action(arguments: &serde_json::Value) -> Result<(), &'static str> {
+    let is_pdf = arguments
+        .get("output_format")
+        .and_then(serde_json::Value::as_str)
+        .is_some_and(|format| format.eq_ignore_ascii_case("pdf"));
+    let has_template_id = arguments
+        .get("template_id")
+        .and_then(serde_json::Value::as_str)
+        .is_some_and(|template_id| Uuid::parse_str(template_id.trim()).is_ok());
+
+    if is_pdf && !has_template_id {
+        return Err(
+            "PDF reports require a published DocForge report template. Call inspect_report_source, select a template ID from published_templates, and include it as template_id before proposing the report.",
+        );
+    }
+
+    Ok(())
 }
 
 fn teacher_assigned_to_class(
@@ -792,8 +813,19 @@ impl AiOrchestrationService {
                 category: ToolCategory::Read,
             },
             AiToolDefinition {
+                name: "list_available_reports".into(),
+                description: "List active report definitions available to the current user, including their exact report codes, parameter schemas, and supported formats. Call this before inspect_report_source or creating a report; use an exact code from the results.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+                required_permission: Some("data:export".into()),
+                is_consequential: false,
+                category: ToolCategory::Read,
+            },
+            AiToolDefinition {
                 name: "list_report_templates".into(),
-                description: "List available report and document templates in the system.".into(),
+                description: "List published visual templates that can be used to format reports. This does not list report definitions or report codes; use list_available_reports for those.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {}
@@ -804,7 +836,7 @@ impl AiOrchestrationService {
             },
             AiToolDefinition {
                 name: "inspect_report_source".into(),
-                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Returns no report rows.".into(),
+                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Call list_available_reports first and pass an exact report_code from its results. For PDF creation, select a template ID from published_templates and pass it as template_id to create_custom_report. Returns no report rows.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
@@ -820,7 +852,7 @@ impl AiOrchestrationService {
             },
             AiToolDefinition {
                 name: "create_custom_report".into(),
-                description: "Propose a report using an authorized predefined data source, selected fields and a published report template. Requires explicit user confirmation before it is generated and saved.".into(),
+                description: "Propose a report using an authorized predefined data source and selected fields. For output_format 'pdf', first call inspect_report_source and include the ID of a published report template as template_id; PDFs cannot be rendered without a DocForge template. Other formats can use their default renderer without a template. Requires explicit user confirmation before it is generated and saved.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
@@ -830,7 +862,7 @@ impl AiOrchestrationService {
                         "parameters": {"type": "object"},
                         "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"]},
                         "locale": {"type": "string", "enum": ["ar", "en", "ar_en", "en_ar"]},
-                        "template_id": {"type": "string", "description": "Optional ID of a published report template returned by inspect_report_source"}
+                        "template_id": {"type": "string", "description": "Required for PDF output: ID of a published DocForge report template returned by inspect_report_source"}
                     },
                     "required": ["report_code", "title", "columns", "output_format"]
                 }),
@@ -1362,6 +1394,27 @@ impl AiOrchestrationService {
                     }
 
                     if def.is_consequential {
+                        if def.name == "create_custom_report" {
+                            if let Err(message) =
+                                validate_custom_report_action(&tool_call.arguments)
+                            {
+                                conversation_history.push(AiMessage {
+                                    role: "tool".into(),
+                                    content: message.into(),
+                                    tool_calls: None,
+                                    tool_call_id: Some(tool_call.id.clone()),
+                                    created_at: Some(Utc::now()),
+                                });
+                                executed_tools_all.push(AiToolResult {
+                                    tool_call_id: tool_call.id.clone(),
+                                    tool_name: tool_call.tool_name.clone(),
+                                    content: message.into(),
+                                    is_error: true,
+                                });
+                                continue;
+                            }
+                        }
+
                         // Consequential tool: create a proposed action for Cockpit confirmation
                         let action = AiProposedAction {
                             tool_name: tool_call.tool_name.clone(),
@@ -1704,6 +1757,34 @@ impl AiOrchestrationService {
                         "type": "unpaid_fees",
                         "items": rows
                     }
+                }))
+            }
+            "list_available_reports" => {
+                let definitions = self.report_service.list_reports(ctx, None, None).await?;
+                let mut reports = Vec::with_capacity(definitions.len());
+                for definition in definitions {
+                    if let Err(error) = self.check_report_domain_permission(ctx, &definition).await
+                    {
+                        if matches!(error, DomainError::Unauthorized(_)) {
+                            continue;
+                        }
+                        return Err(error);
+                    }
+                    reports.push(json!({
+                        "code": definition.code,
+                        "name": definition.name,
+                        "name_ar": definition.name_ar,
+                        "domain": definition.domain.to_string(),
+                        "category": definition.category,
+                        "description": definition.description,
+                        "description_ar": definition.description_ar,
+                        "parameters": definition.parameters,
+                        "supported_formats": definition.supported_formats.into_iter().map(|format| format.to_string()).collect::<Vec<_>>()
+                    }));
+                }
+                Ok(json!({
+                    "count": reports.len(),
+                    "reports": reports
                 }))
             }
             "list_report_templates" => {
@@ -2509,7 +2590,8 @@ impl AiOrchestrationService {
              2. Respect user permissions and role boundaries at all times.\n\
              3. Consequential actions (e.g. changing student status, triggering autopilot tasks) must be proposed for user review and confirmed through Cockpit.\n\
              4. For educational assessments, generate structured blueprints and draft questions adhering to Bloom's taxonomy; final publication and subjective grading suggestions always require teacher review and sign-off.\n\
-             5. Respond in Arabic or English matching the user's conversation language."
+             5. For PDF report proposals, call list_available_reports and inspect_report_source, choose a published template from published_templates, and include its ID as template_id. If no published report template is available, explain that one must be published before a PDF can be generated; do not propose an incomplete PDF action.\n\
+             6. Respond in Arabic or English matching the user's conversation language."
         );
 
         prompt
@@ -2522,6 +2604,7 @@ mod tests {
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
         format_tool_execution_error, required_tool_permission, take_private_ui_result,
         teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
+        validate_custom_report_action,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;
@@ -2651,8 +2734,88 @@ mod tests {
             &DomainError::NotFound("Report definition not found".into()),
         );
 
-        assert!(message.contains("list available reports"));
+        assert!(message.contains("list_available_reports"));
         assert!(!message.contains("NotFound: Report definition not found"));
+    }
+
+    #[test]
+    fn inspect_report_missing_definition_points_to_report_discovery() {
+        let message = format_tool_execution_error(
+            "inspect_report_source",
+            &DomainError::NotFound("Report definition not found".into()),
+        );
+
+        assert!(message.contains("list_available_reports"));
+        assert!(message.contains("exact report_code"));
+    }
+
+    #[test]
+    fn report_discovery_is_registered_separately_from_template_listing() {
+        let tools = AiOrchestrationService::registered_tools();
+        let report_tool = tools
+            .iter()
+            .find(|tool| tool.name == "list_available_reports")
+            .expect("report discovery tool is registered");
+        let template_tool = tools
+            .iter()
+            .find(|tool| tool.name == "list_report_templates")
+            .expect("template listing tool is registered");
+
+        assert_eq!(
+            report_tool.required_permission.as_deref(),
+            Some("data:export")
+        );
+        assert!(report_tool.description.contains("exact report codes"));
+        assert!(
+            template_tool
+                .description
+                .contains("does not list report definitions")
+        );
+    }
+
+    #[test]
+    fn ai_pdf_report_tool_requires_a_template_from_report_inspection() {
+        let tools = AiOrchestrationService::registered_tools();
+        let inspect_tool = tools
+            .iter()
+            .find(|tool| tool.name == "inspect_report_source")
+            .expect("report inspection tool is registered");
+        let create_tool = tools
+            .iter()
+            .find(|tool| tool.name == "create_custom_report")
+            .expect("custom report tool is registered");
+
+        assert!(inspect_tool.description.contains("select a template ID"));
+        assert!(create_tool.description.contains("include the ID"));
+        assert!(create_tool.description.contains("PDFs cannot be rendered"));
+        assert!(
+            create_tool.parameters_schema["properties"]["template_id"]["description"]
+                .as_str()
+                .is_some_and(|description| description.contains("Required for PDF output"))
+        );
+    }
+
+    #[test]
+    fn custom_pdf_report_action_requires_a_template_id() {
+        assert!(
+            validate_custom_report_action(&json!({
+                "output_format": "pdf"
+            }))
+            .is_err()
+        );
+        assert!(
+            validate_custom_report_action(&json!({
+                "output_format": "PDF",
+                "template_id": Uuid::new_v4().to_string()
+            }))
+            .is_ok()
+        );
+        assert!(
+            validate_custom_report_action(&json!({
+                "output_format": "xlsx"
+            }))
+            .is_ok()
+        );
     }
 
     #[test]

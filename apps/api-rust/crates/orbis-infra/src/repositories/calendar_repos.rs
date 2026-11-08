@@ -292,6 +292,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
         } else {
             let new_id = Uuid::new_v4();
             let (name, name_ar, sort_order) = match period.period_type {
+                PeriodType::Annual => ("Annual", Some("سنوي".to_string()), 0),
                 PeriodType::Semester => ("Semester", Some("فصل دراسي".to_string()), 1),
                 PeriodType::Trimester => ("Trimester", Some("فصل دراسي ثلثي".to_string()), 2),
                 PeriodType::Quarter => ("Quarter", Some("ربع سنوي".to_string()), 3),

@@ -7,13 +7,13 @@ export function createOfflineQueryPersister(scope: string) {
     key: `orbis-mobile-query-cache:v1:${scope}`,
     throttleTime: 1000,
     storage: {
-      async getItem(key) {
+      async getItem(key: string) {
         return sessionCache.get(key) ?? null;
       },
-      async setItem(key, value) {
+      async setItem(key: string, value: string) {
         sessionCache.set(key, value);
       },
-      async removeItem(key) {
+      async removeItem(key: string) {
         sessionCache.delete(key);
       },
     },

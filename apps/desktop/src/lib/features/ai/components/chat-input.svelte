@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import { ArrowRight, Plus, Sparkles } from "@orbis/icons";
+import { ArrowRight, Plus } from "@orbis/icons";
 import ProviderModelPicker from "./provider-model-picker.svelte";
 import * as m from "$lib/paraglide/messages";
 
@@ -96,19 +96,18 @@ function handleCommandSelect(prompt: string) {
 <div class="relative shrink-0 select-none px-3.5 pb-3.5 pt-1.5 bg-gradient-to-t from-card via-card/90 to-transparent">
   <!-- Quick Commands Popup Menu -->
   {#if showCommands}
-    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 p-2 bg-card/95 border border-border/80 shadow-2xl rounded-2xl z-30 flex flex-col gap-1 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 ring-1 ring-black/5 dark:ring-white/10">
-      <div class="text-[10px] text-muted-foreground px-2 py-1 uppercase font-bold tracking-wider flex items-center gap-1.5 border-b border-border/40 pb-1.5">
-        <Sparkles size={11} class="text-primary" />
+    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 z-30 flex max-h-[min(20rem,calc(100vh-8rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-150">
+      <div class="border-b border-border px-2 py-2 text-[10px] font-semibold text-muted-foreground">
         {m.ai_ui_suggested_smart_commands()}
       </div>
       {#each commandOptions as cmd (cmd.id)}
         <button 
           type="button" 
-          class="w-full text-start px-2.5 py-2 flex flex-col gap-0.5 hover:bg-muted/80 rounded-xl transition-colors cursor-pointer group"
+          class="group flex w-full cursor-pointer flex-col gap-0.5 rounded-md px-2.5 py-2 text-start transition-colors hover:bg-muted/50"
           onclick={() => handleCommandSelect(cmd.prompt)}
         >
-          <span class="text-[12px] font-bold text-foreground group-hover:text-primary transition-colors">{cmd.label}</span>
-          <span class="text-[10px] text-muted-foreground leading-tight">{cmd.desc}</span>
+          <span class="text-xs font-semibold text-foreground group-hover:text-primary">{cmd.label}</span>
+          <span class="text-[10px] leading-tight text-muted-foreground [overflow-wrap:anywhere]">{cmd.desc}</span>
         </button>
       {/each}
     </div>

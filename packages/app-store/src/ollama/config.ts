@@ -44,8 +44,10 @@ Connect to local Ollama ("http://localhost:11434"), vLLM, LM Studio, or custom i
       id: "endpoint_url",
       label: "Local Endpoint URL",
       label_ar: "عنوان نقطة النهاية المحلية",
-      description: "URL of your local inference server (e.g. http://localhost:11434).",
-      description_ar: "عنوان خادم الذكاء الاصطناعي المحلي (مثال: http://localhost:11434).",
+      description:
+        "URL of your local inference server (e.g. http://localhost:11434).",
+      description_ar:
+        "عنوان خادم الذكاء الاصطناعي المحلي (مثال: http://localhost:11434).",
       type: "text",
       required: true,
       value: "http://localhost:11434",
@@ -66,7 +68,8 @@ Connect to local Ollama ("http://localhost:11434"), vLLM, LM Studio, or custom i
       id: "api_key",
       label: "API Key / Auth Token (Optional)",
       label_ar: "مفتاح API أو رمز التحقق (اختياري)",
-      description: "Optional Bearer token for protected local clusters or proxies.",
+      description:
+        "Optional Bearer token for protected local clusters or proxies.",
       description_ar: "رمز التحقق في حال كان السيرفر المحلي محمياً.",
       type: "password",
       required: false,

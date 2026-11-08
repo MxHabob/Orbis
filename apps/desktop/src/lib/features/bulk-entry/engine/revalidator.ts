@@ -1,6 +1,11 @@
 import * as m from "$lib/paraglide/messages";
-import type { BulkImportProfile, BulkReferenceData, BulkRowState } from "../types";
+import type {
+  BulkImportProfile,
+  BulkReferenceData,
+  BulkRowState,
+} from "../types";
 import { createBulkValidationContext } from "./duplicate-index";
+import { validateAllRows } from "./validator";
 
 export interface RevalidationEvent {
   rowIndex: number;
@@ -13,10 +18,16 @@ export function revalidateCellChange<T = Record<string, unknown>>(
   event: RevalidationEvent,
   profile: BulkImportProfile<T, any>,
   refData: BulkReferenceData,
-): { updatedRows: BulkRowState[]; errorCount: number; warningCount: number; validCount: number } {
+): {
+  updatedRows: BulkRowState[];
+  errorCount: number;
+  warningCount: number;
+  validCount: number;
+} {
   const { rowIndex, columnId, newValue } = event;
   const targetRow = rows[rowIndex];
-  if (!targetRow) return { updatedRows: rows, errorCount: 0, warningCount: 0, validCount: 0 };
+  if (!targetRow)
+    return { updatedRows: rows, errorCount: 0, warningCount: 0, validCount: 0 };
 
   targetRow.data[columnId] = newValue;
   const plainRows = rows.map((r) => r.data as T);
@@ -26,17 +37,28 @@ export function revalidateCellChange<T = Record<string, unknown>>(
   );
 
   // 1. Revalidate the single cell
+  const affectedColumns =
+    profile.id === "grades" && columnId === "max_score"
+      ? ["max_score", "score"]
+      : [columnId];
   const rowErrors = new Map<string, string>(targetRow.errors);
   const rowWarnings = new Map<string, string>(targetRow.warnings);
-  rowErrors.delete(columnId);
-  rowWarnings.delete(columnId);
+  for (const affectedColumn of affectedColumns) {
+    rowErrors.delete(affectedColumn);
+    rowWarnings.delete(affectedColumn);
 
-  const cellIssue = profile.validateCell(columnId, newValue, targetRow.data as T, refData);
-  if (cellIssue) {
-    if (cellIssue.severity === "BLOCKING_ERROR") {
-      rowErrors.set(columnId, cellIssue.message);
-    } else if (cellIssue.severity === "WARNING") {
-      rowWarnings.set(columnId, cellIssue.message);
+    const cellIssue = profile.validateCell(
+      affectedColumn,
+      targetRow.data[affectedColumn],
+      targetRow.data as T,
+      refData,
+    );
+    if (cellIssue) {
+      if (cellIssue.severity === "BLOCKING_ERROR") {
+        rowErrors.set(cellIssue.columnId, cellIssue.message);
+      } else if (cellIssue.severity === "WARNING") {
+        rowWarnings.set(cellIssue.columnId, cellIssue.message);
+      }
     }
   }
 
@@ -62,13 +84,33 @@ export function revalidateCellChange<T = Record<string, unknown>>(
 
   if (rowErrors.size > 0) {
     targetRow.status = "error";
-    targetRow.data.status = m.bulk_entry_status_error({ count: rowErrors.size });
+    targetRow.data.status = m.bulk_entry_status_error({
+      count: rowErrors.size,
+    });
   } else if (rowWarnings.size > 0) {
     targetRow.status = "warning";
-    targetRow.data.status = m.bulk_entry_status_warning({ count: rowWarnings.size });
+    targetRow.data.status = m.bulk_entry_status_warning({
+      count: rowWarnings.size,
+    });
   } else {
     targetRow.status = "valid";
     targetRow.data.status = m.bulk_entry_status_valid();
+  }
+
+  const gradeContextColumns = [
+    "student_id",
+    "period_id",
+    "section_subject_id",
+    "component_id",
+  ];
+  if (profile.id === "grades" && gradeContextColumns.includes(columnId)) {
+    const summary = validateAllRows(rows, profile, refData);
+    return {
+      updatedRows: rows,
+      errorCount: summary.errorCount,
+      warningCount: summary.warningCount,
+      validCount: summary.validCount,
+    };
   }
 
   // 3. A changed unique value can create or resolve a duplicate for any other row.
@@ -91,16 +133,18 @@ export function revalidateCellChange<T = Record<string, unknown>>(
         otherRow.errors.delete(columnId);
       }
       otherRow.data.__errors = otherRow.errors;
-      otherRow.status = otherRow.errors.size > 0
-        ? "error"
-        : otherRow.warnings.size > 0
-          ? "warning"
-          : "valid";
-      otherRow.data.status = otherRow.status === "error"
-        ? m.bulk_entry_status_error({ count: otherRow.errors.size })
-        : otherRow.status === "warning"
-          ? m.bulk_entry_status_warning({ count: otherRow.warnings.size })
-          : m.bulk_entry_status_valid();
+      otherRow.status =
+        otherRow.errors.size > 0
+          ? "error"
+          : otherRow.warnings.size > 0
+            ? "warning"
+            : "valid";
+      otherRow.data.status =
+        otherRow.status === "error"
+          ? m.bulk_entry_status_error({ count: otherRow.errors.size })
+          : otherRow.status === "warning"
+            ? m.bulk_entry_status_warning({ count: otherRow.warnings.size })
+            : m.bulk_entry_status_valid();
     }
   }
 

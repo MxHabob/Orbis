@@ -35,7 +35,12 @@ import { Button } from "@orbis/ui/button";
 import { Textarea } from "@orbis/ui/textarea";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, ArrowPath, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  ArrowPath,
+  InfoCircle,
+  UserBadgeCheck,
+} from "@orbis/icons";
 import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {
@@ -136,9 +141,7 @@ const approvalChainPreview = $derived.by(() => {
 
 async function submit() {
   if (!reason.trim()) {
-    toast.error(
-      m.common_override_reason_required(),
-    );
+    toast.error(m.common_override_reason_required());
     return;
   }
   isSubmitting = true;
@@ -154,9 +157,7 @@ async function submit() {
         entityType,
       },
     });
-    toast.success(
-      m.common_override_submitted(),
-    );
+    toast.success(m.common_override_submitted());
     reason = "";
     open = false;
     onSuccess?.();

@@ -1,10 +1,12 @@
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { useClassScheduleQuery } from "@/hooks/use-api-queries";
+import type { StudentScheduleItem } from "@/hooks/use-api-queries";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text, View } from "react-native";
 
 const weekdayKeys: TranslationKey[] = [
@@ -20,9 +22,19 @@ const weekdayKeys: TranslationKey[] = [
 export default function ClassScheduleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const classId = typeof id === "string" ? id : undefined;
+  const router = useRouter();
   const scheduleQuery = useClassScheduleQuery(classId);
   const { t, isArabic } = useI18n();
   const schedule = scheduleQuery.data ?? [];
+  const getNextLessonDate = (dayOfWeek: number) => {
+    const date = new Date();
+    const dayOffset = (dayOfWeek - 1 - date.getDay() + 7) % 7;
+    date.setDate(date.getDate() + dayOffset);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   return (
     <StudentRecordLayout
@@ -37,7 +49,8 @@ export default function ClassScheduleScreen() {
         <View className="gap-four">
           {weekdayKeys.map((dayKey, index) => {
             const lessons = schedule.filter(
-              (item) => item.timeSlot.day_of_week === index + 1,
+              (item: StudentScheduleItem) =>
+                item.timeSlot.day_of_week === index + 1,
             );
             if (lessons.length === 0) return null;
             return (
@@ -45,28 +58,47 @@ export default function ClassScheduleScreen() {
                 <Text className="text-base font-semibold text-foreground">
                   {t(dayKey)}
                 </Text>
-                {lessons.map(({ lesson, timeSlot, subject }) => (
-                  <Card key={lesson.id} variant="outline" padding="three">
-                    <View className="flex-row items-center justify-between gap-three">
-                      <View className="flex-1 gap-one">
-                        <Text className="text-sm font-semibold text-foreground">
-                          {(isArabic ? subject?.name_ar : subject?.name) ||
-                            subject?.name ||
-                            subject?.name_ar ||
-                            t("domain_schedule")}
-                        </Text>
-                        <Text className="text-xs text-muted-foreground">
-                          {(isArabic ? timeSlot.name_ar : timeSlot.name) ||
-                            timeSlot.name ||
-                            ""}
-                        </Text>
+                {lessons.map(
+                  ({ lesson, timeSlot, subject }: StudentScheduleItem) => (
+                    <Card key={lesson.id} variant="outline" padding="three">
+                      <View className="gap-three">
+                        <View className="flex-row items-center justify-between gap-three">
+                          <View className="flex-1 gap-one">
+                            <Text className="text-sm font-semibold text-foreground">
+                              {(isArabic ? subject?.name_ar : subject?.name) ||
+                                subject?.name ||
+                                subject?.name_ar ||
+                                t("domain_schedule")}
+                            </Text>
+                            <Text className="text-xs text-muted-foreground">
+                              {(isArabic ? timeSlot.name_ar : timeSlot.name) ||
+                                timeSlot.name ||
+                                ""}
+                            </Text>
+                          </View>
+                          <Text className="text-sm font-medium text-foreground">
+                            {timeSlot.start_time} – {timeSlot.end_time}
+                          </Text>
+                        </View>
+                        <Button
+                          title={t("teacher_mark_attendance")}
+                          variant="outline"
+                          onPress={() =>
+                            router.push({
+                              pathname: "/(app)/class/[id]/attendance",
+                              params: {
+                                id: classId ?? "",
+                                lessonId: lesson.id,
+                                date: getNextLessonDate(timeSlot.day_of_week),
+                              },
+                            })
+                          }
+                          fullWidth
+                        />
                       </View>
-                      <Text className="text-sm font-medium text-foreground">
-                        {timeSlot.start_time} – {timeSlot.end_time}
-                      </Text>
-                    </View>
-                  </Card>
-                ))}
+                    </Card>
+                  ),
+                )}
               </View>
             );
           })}

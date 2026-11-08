@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { BulkEntryStudio } from "$lib/features/bulk-entry";
+import * as m from "$lib/paraglide/messages";
+import { BulkEntryStudio } from "$lib/features/bulk-entry";
 </script>
 
 <svelte:head>

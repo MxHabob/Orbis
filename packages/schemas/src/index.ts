@@ -41,7 +41,7 @@ export {
   paymentRecordInputSchema,
 } from "./finance.js";
 export type { LoginInput } from "./iam.js";
-export { loginInputSchema } from "./iam.js";
+export { createLoginInputSchema, loginInputSchema } from "./iam.js";
 export type { LedgerAccountInput } from "./ledger.js";
 export { ledgerAccountInputSchema } from "./ledger.js";
 export type { OrgUnitInput } from "./organization.js";

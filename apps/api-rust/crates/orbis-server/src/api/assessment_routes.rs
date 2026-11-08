@@ -18,7 +18,7 @@ use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
 use orbis_domain::entities::academic_calculation::{CalculationOutputOutcome, CalculationPreview};
 use orbis_domain::entities::academic_policy::{
-    AcademicPolicy, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
+    AcademicPolicy, AcademicResultView, PolicyGradeBand, ResultSnapshot, StudentAnnualReportCard,
     StudentCertificateReportCard, StudentTermReportCard, TiePolicy,
 };
 use orbis_domain::entities::assessment_scheme::{
@@ -85,6 +85,7 @@ pub struct GradeDto {
     pub is_final: bool,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub is_absent: bool,
     pub change_reason: Option<String>,
     pub recorded_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,
@@ -104,6 +105,8 @@ pub struct RecordGradeRequest {
     pub max_score: Option<Decimal>,
     pub is_excused: Option<bool>,
     pub is_exempt: Option<bool>,
+    #[serde(default)]
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -118,6 +121,8 @@ pub struct RecordGradeItemRequest {
     pub max_score: Option<Decimal>,
     pub is_excused: Option<bool>,
     pub is_exempt: Option<bool>,
+    #[serde(default)]
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -212,6 +217,7 @@ pub struct AcademicPolicyDto {
     pub tie_policy: String,
     pub ranking_enabled: bool,
     pub max_displayed_rank: Option<u32>,
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -332,6 +338,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         is_final: g.is_final,
         is_excused: g.is_excused,
         is_exempt: g.is_exempt,
+        is_absent: g.is_absent,
         change_reason: g.change_reason,
         recorded_by: g.recorded_by,
         updated_by: g.updated_by,
@@ -389,6 +396,7 @@ fn academic_policy_to_dto(policy: AcademicPolicy) -> AcademicPolicyDto {
         tie_policy: format!("{:?}", policy.tie_policy),
         ranking_enabled: policy.ranking_enabled,
         max_displayed_rank: policy.max_displayed_rank,
+        grade_bands: policy.grade_bands,
     }
 }
 
@@ -636,6 +644,7 @@ pub async fn batch_record_grades(
             max_score: i.max_score,
             is_excused: i.is_excused.unwrap_or(false),
             is_exempt: i.is_exempt.unwrap_or(false),
+            is_absent: i.is_absent,
             notes: i.notes,
         })
         .collect();
@@ -671,17 +680,14 @@ pub async fn delete_grade(
 #[utoipa::path(get, path = "/api/v1/grades",
     responses((status = 200, body = Vec<GradeDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn list_grades(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<GradeQuery>,
 ) -> Result<Json<ApiResponse<Vec<GradeDto>>>, ApiError> {
-    let grades = if let Some(sid) = q.student_id {
-        state.grade_repo.find_by_student(sid).await?
-    } else if let Some(csid) = q.section_subject_id {
-        state.grade_repo.find_by_section_subject(csid).await?
-    } else {
-        vec![]
-    };
+    let grades = state
+        .assessment_service
+        .list_grades_for_request(&ctx, q.student_id, q.section_subject_id)
+        .await?;
     let dtos = grades.into_iter().map(grade_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -736,10 +742,14 @@ pub async fn calculate_gpa(
 #[utoipa::path(post, path = "/api/v1/grades/actions/calculate-rankings", request_body = CalculateRankingsRequest,
     responses((status = 200, body = Vec<RankingItemDto>)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn calculate_rankings(
-    _ctx: AuthContext,
-    State(_state): State<AppState>,
+    ctx: AuthContext,
+    State(state): State<AppState>,
     Json(p): Json<CalculateRankingsRequest>,
 ) -> Result<Json<ApiResponse<Vec<RankingItemDto>>>, ApiError> {
+    state
+        .assessment_service
+        .authorize_grade_analytics(&ctx)
+        .await?;
     use orbis_app::services::calculation_engine::AcademicCalculationEngine;
     let tie_policy = p.tie_policy.unwrap_or_default();
 

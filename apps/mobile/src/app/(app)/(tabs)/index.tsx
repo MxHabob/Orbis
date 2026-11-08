@@ -22,10 +22,7 @@ import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useToast } from "@/components/ui/toast";
-import {
-  isApiNotFoundError,
-  useMyStudentQuery,
-} from "@/hooks/use-api-queries";
+import { isApiNotFoundError, useMyStudentQuery } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -95,7 +92,8 @@ export default function HomeTabScreen() {
         effectiveContext?.effective_role,
         ...(effectiveContext?.roles ?? []),
       ].find(
-        (candidate) => candidate !== undefined && getRoleMode(candidate) === role,
+        (candidate) =>
+          candidate !== undefined && getRoleMode(candidate) === role,
       );
       if (roleName) setContextRole(roleName);
     },
@@ -174,7 +172,9 @@ export default function HomeTabScreen() {
     effectiveContext?.teaching_classes ?? []
   )
     .filter(
-      (classItem): classItem is {
+      (
+        classItem,
+      ): classItem is {
         section_id: string;
         name?: string;
         name_ar?: string | null;
@@ -187,7 +187,8 @@ export default function HomeTabScreen() {
     )
     .map((classItem) => ({
       id: classItem.section_id,
-      title: l(classItem.name_ar, classItem.name) ?? classItem.name ?? "Section",
+      title:
+        l(classItem.name_ar, classItem.name) ?? classItem.name ?? "Section",
       subtitle: classItem.level ?? undefined,
       icon: <BookOpen size={30} color={theme.primary} />,
       onPress: () =>
@@ -299,7 +300,7 @@ export default function HomeTabScreen() {
                 onPress: () => router.push("/(app)/notifications"),
               },
             ]
-        : [];
+          : [];
 
   return (
     <ScreenScrollView

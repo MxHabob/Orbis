@@ -13,7 +13,10 @@ import {
 } from "$lib/features/documents/queries";
 
 interface Props {
-  user?: UserDto | { name?: string; full_name?: string; email?: string; avatar_url?: string } | null;
+  user?:
+    | UserDto
+    | { name?: string; full_name?: string; email?: string; avatar_url?: string }
+    | null;
   name?: string | null;
   avatarUrl?: string | null;
   role?: string | null;
@@ -35,7 +38,12 @@ const targetUser = $derived(user || (!name ? authStore.user : null));
 const displayName = $derived.by(() => {
   if (name) return name;
   if (!targetUser) return "User";
-  return (targetUser as any).full_name || (targetUser as any).name || (targetUser as any).email || "User";
+  return (
+    (targetUser as any).full_name ||
+    (targetUser as any).name ||
+    (targetUser as any).email ||
+    "User"
+  );
 });
 
 const src = $derived(avatarUrl || (targetUser as any)?.avatar_url || undefined);

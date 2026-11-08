@@ -28,12 +28,15 @@ export const ENGLISH_PERIOD_NAMES: Record<number, string> = {
   12: "12th Period",
 };
 
-export function getDurationMinutes(startTime?: string, endTime?: string): number {
+export function getDurationMinutes(
+  startTime?: string,
+  endTime?: string,
+): number {
   if (!startTime || !endTime) return 0;
   const [h1, m1] = startTime.split(":").map((v) => parseInt(v, 10));
   const [h2, m2] = endTime.split(":").map((v) => parseInt(v, 10));
   if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
-  return (h2 * 60 + m2) - (h1 * 60 + m1);
+  return h2 * 60 + m2 - (h1 * 60 + m1);
 }
 
 export function formatTimeSlotTime(val?: string, isArabic = false): string {
@@ -68,7 +71,10 @@ export interface EnrichedTimeSlot {
   [key: string]: any;
 }
 
-export function enrichTimeSlots(rawSlots: any[] = [], locale = "ar"): EnrichedTimeSlot[] {
+export function enrichTimeSlots(
+  rawSlots: any[] = [],
+  locale = "ar",
+): EnrichedTimeSlot[] {
   const isArabic = locale === "ar";
   if (!Array.isArray(rawSlots) || rawSlots.length === 0) return [];
 
@@ -76,7 +82,10 @@ export function enrichTimeSlots(rawSlots: any[] = [], locale = "ar"): EnrichedTi
     if (a.start_time && b.start_time) {
       return a.start_time.localeCompare(b.start_time);
     }
-    return (Number(a.slot_index ?? a.slot_number) || 0) - (Number(b.slot_index ?? b.slot_number) || 0);
+    return (
+      (Number(a.slot_index ?? a.slot_number) || 0) -
+      (Number(b.slot_index ?? b.slot_number) || 0)
+    );
   });
 
   let periodCounter = 0;
@@ -94,8 +103,11 @@ export function enrichTimeSlots(rawSlots: any[] = [], locale = "ar"): EnrichedTi
       Boolean(slot.break_type);
 
     const isNameBreak = Boolean(
-      (slot.name_ar && (slot.name_ar.includes("استراحة") || slot.name_ar.includes("فسحة"))) ||
-      (slot.name && (slot.name.toLowerCase().includes("break") || slot.name.toLowerCase().includes("recess")))
+      (slot.name_ar &&
+        (slot.name_ar.includes("استراحة") || slot.name_ar.includes("فسحة"))) ||
+        (slot.name &&
+          (slot.name.toLowerCase().includes("break") ||
+            slot.name.toLowerCase().includes("recess"))),
     );
 
     const isBreak = isExplicitBreak || isNameBreak;
@@ -107,12 +119,26 @@ export function enrichTimeSlots(rawSlots: any[] = [], locale = "ar"): EnrichedTi
     }
 
     const nameAr = isBreak
-      ? (slot.name_ar || (slot.break_type === "lunch" ? "استراحة الغداء" : slot.break_type === "prayer" ? "استراحة الصلاة" : "الفسحة / استراحة"))
-      : (slot.name_ar || ARABIC_PERIOD_NAMES[periodNumber] || `الحصة ${periodNumber}`);
+      ? slot.name_ar ||
+        (slot.break_type === "lunch"
+          ? "استراحة الغداء"
+          : slot.break_type === "prayer"
+            ? "استراحة الصلاة"
+            : "الفسحة / استراحة")
+      : slot.name_ar ||
+        ARABIC_PERIOD_NAMES[periodNumber] ||
+        `الحصة ${periodNumber}`;
 
     const nameEn = isBreak
-      ? (slot.name || (slot.break_type === "lunch" ? "Lunch Break" : slot.break_type === "prayer" ? "Prayer Break" : "Recess / Break"))
-      : (slot.name || ENGLISH_PERIOD_NAMES[periodNumber] || `Period ${periodNumber}`);
+      ? slot.name ||
+        (slot.break_type === "lunch"
+          ? "Lunch Break"
+          : slot.break_type === "prayer"
+            ? "Prayer Break"
+            : "Recess / Break")
+      : slot.name ||
+        ENGLISH_PERIOD_NAMES[periodNumber] ||
+        `Period ${periodNumber}`;
 
     return {
       ...slot,

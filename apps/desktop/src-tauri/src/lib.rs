@@ -19,10 +19,27 @@ use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        if let Some(main_window) = app.get_webview_window("main") {
+            let _ = main_window.show();
+            let _ = main_window.set_focus();
+        }
+
+        let deep_links = args
+            .into_iter()
+            .filter(|argument| argument.starts_with("orbis://"))
+            .collect::<Vec<_>>();
+        if !deep_links.is_empty() {
+            features::deep_link::handle_deep_link(app, deep_links);
+        }
+    }));
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
         .on_page_load(|webview, payload| {
@@ -166,6 +183,15 @@ pub fn run() {
                 })
                 .build()
                 .unwrap();
+            let window_for_close = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    if let Err(error) = window_for_close.hide() {
+                        tracing::warn!("Failed to hide window after close request: {error}");
+                    }
+                }
+            });
             // Fallback timer to ensure main window shows on first launch
             let window_clone = window.clone();
             tauri::async_runtime::spawn(async move {
@@ -191,7 +217,20 @@ pub fn run() {
                 let (width, height) = rgba.dimensions();
                 Image::new_owned(rgba.into_raw(), width, height)
             };
-            let check_updates_item = MenuItem::with_id(app, "check_updates", "Check for Updates...", true, None::<&str>)?;
+            let staging_build =
+                commands::system_cmds::is_staging_build(&app.config().identifier);
+            let check_updates_label = if staging_build {
+                "Updates unavailable for staging builds"
+            } else {
+                "Check for Updates..."
+            };
+            let check_updates_item = MenuItem::with_id(
+                app,
+                "check_updates",
+                check_updates_label,
+                !staging_build,
+                None::<&str>,
+            )?;
             let exit_item = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&check_updates_item, &exit_item])?;
             let _tray = TrayIconBuilder::new()

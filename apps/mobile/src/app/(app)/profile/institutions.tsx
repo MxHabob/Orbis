@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { BuildingOffice } from "@orbis/icons/native";
 
 import { Header } from "@/components/header";
@@ -28,20 +29,55 @@ export default function LinkedInstitutionsScreen() {
     selectInstitution,
   } = useAuth();
   const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const selectedLocalInstitution =
+    selectedInstitution?.is_local &&
+    (selectedInstitution.local_source === "qr" ||
+      selectedInstitution.local_source === "discovery")
+      ? selectedInstitution
+      : null;
+  const selectedLocalHealthQuery = useQuery({
+    queryKey: [
+      "institution-local-health",
+      selectedLocalInstitution?.deployment_id,
+    ],
+    queryFn: () => {
+      if (!selectedLocalInstitution) {
+        throw new Error("No local institution is selected.");
+      }
+      return checkInstitutionConnection(selectedLocalInstitution);
+    },
+    enabled: !isInitializing && selectedLocalInstitution !== null,
+    retry: false,
+    staleTime: 0,
+  });
 
   const linkedInstitutions = useMemo(() => {
     const byDeploymentId = new Map<string, DirectoryInstitution>();
     for (const institution of institutions) {
+      if (institution.is_local) continue;
       byDeploymentId.set(institution.deployment_id, institution);
     }
-    if (selectedInstitution) {
+    if (selectedInstitution && !selectedInstitution.is_local) {
       byDeploymentId.set(
         selectedInstitution.deployment_id,
         selectedInstitution,
       );
     }
+    if (selectedLocalInstitution && selectedLocalHealthQuery.isSuccess) {
+      byDeploymentId.set(
+        selectedLocalInstitution.deployment_id,
+        selectedLocalInstitution,
+      );
+    }
     return [...byDeploymentId.values()];
-  }, [institutions, selectedInstitution]);
+  }, [
+    institutions,
+    selectedInstitution,
+    selectedLocalHealthQuery.isSuccess,
+    selectedLocalInstitution,
+  ]);
+  const isCheckingSelectedLocal =
+    selectedLocalInstitution !== null && selectedLocalHealthQuery.isPending;
 
   const switchInstitution = async (institution: DirectoryInstitution) => {
     setSwitchingId(institution.deployment_id);
@@ -77,7 +113,7 @@ export default function LinkedInstitutionsScreen() {
           {t("auth_institution_linked_description")}
         </Text>
 
-        {isInitializing ? (
+        {isInitializing || isCheckingSelectedLocal ? (
           <View className="gap-three">
             <Skeleton className="h-20 w-full rounded-2xl" />
             <Skeleton className="h-20 w-full rounded-2xl" />

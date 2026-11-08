@@ -29,101 +29,99 @@ export interface MetricProgressProps {
   showProgress?: boolean;
 }
 
-export const MetricProgress = React.memo<MetricProgressProps>(
-  ({
-    title,
-    subtitle,
-    value = 0,
-    max = 100,
-    displayValue,
-    segments = [],
-    tone = "primary",
-    showProgress = true,
-  }) => {
-    const theme = useTheme();
-    const percentage = Math.min(
-      100,
-      Math.max(0, (value / Math.max(max, 1)) * 100),
-    );
-    const segmentTotal = Math.max(
-      segments.reduce(
-        (total, segment) => total + Math.max(0, segment.value),
-        0,
-      ),
-      1,
-    );
+export const MetricProgress = React.memo(function MetricProgress({
+  title,
+  subtitle,
+  value = 0,
+  max = 100,
+  displayValue,
+  segments = [],
+  tone = "primary",
+  showProgress = true,
+}: MetricProgressProps) {
+  const theme = useTheme();
+  const percentage = Math.min(
+    100,
+    Math.max(0, (value / Math.max(max, 1)) * 100),
+  );
+  const segmentTotal = Math.max(
+    segments.reduce((total, segment) => total + Math.max(0, segment.value), 0),
+    1,
+  );
 
-    return (
-      <View className="w-full gap-three">
-        {(title || subtitle) && (
-          <View className="flex-row items-start justify-between gap-two">
-            <View className="flex-1 gap-half">
-              {title && (
-                <Text className="text-sm leading-5 font-semibold text-foreground">
-                  {title}
-                </Text>
-              )}
-              {subtitle && (
-                <Text className="text-[11px] leading-[14px] font-medium text-muted-foreground">
-                  {subtitle}
-                </Text>
-              )}
-            </View>
-            {displayValue !== undefined && (
-              <Text className="text-lg leading-6 font-bold text-foreground">
-                {displayValue}
+  return (
+    <View className="w-full gap-three">
+      {(title || subtitle) && (
+        <View className="flex-row items-start justify-between gap-two">
+          <View className="flex-1 gap-half">
+            {title && (
+              <Text className="text-sm leading-5 font-semibold text-foreground">
+                {title}
+              </Text>
+            )}
+            {subtitle && (
+              <Text className="text-[11px] leading-[14px] font-medium text-muted-foreground">
+                {subtitle}
               </Text>
             )}
           </View>
-        )}
+          {displayValue !== undefined && (
+            <Text className="text-lg leading-6 font-bold text-foreground">
+              {displayValue}
+            </Text>
+          )}
+        </View>
+      )}
 
-        {showProgress &&
-          (segments.length > 0 ? (
-            <View className="gap-two">
-              <View className="h-2 flex-row gap-half overflow-hidden rounded-full bg-muted">
-                {segments.map((segment) => (
+      {showProgress &&
+        (segments.length > 0 ? (
+          <View className="gap-two">
+            <View className="h-2 flex-row gap-half overflow-hidden rounded-full bg-muted">
+              {segments.map((segment) => (
+                <View
+                  key={segment.label}
+                  className="h-full min-w-[2px] rounded-full"
+                  style={{
+                    width: `${(Math.max(0, segment.value) / segmentTotal) * 100}%`,
+                    backgroundColor: getToneColor(segment.tone, theme),
+                  }}
+                />
+              ))}
+            </View>
+            <View className="flex-row flex-wrap gap-three">
+              {segments.map((segment) => (
+                <View
+                  key={segment.label}
+                  className="flex-row items-center gap-one"
+                >
                   <View
-                    key={segment.label}
-                    className="h-full min-w-[2px] rounded-full"
+                    className="h-1.5 w-1.5 rounded-full"
                     style={{
-                      width: `${(Math.max(0, segment.value) / segmentTotal) * 100}%`,
                       backgroundColor: getToneColor(segment.tone, theme),
                     }}
                   />
-                ))}
-              </View>
-              <View className="flex-row flex-wrap gap-three">
-                {segments.map((segment) => (
-                  <View key={segment.label} className="flex-row items-center gap-one">
-                    <View
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: getToneColor(segment.tone, theme) }}
-                    />
-                    <Text
-                      className="text-[11px] leading-[14px] font-medium text-muted-foreground"
-                    >
-                      {segment.label}
-                      {segment.displayValue ? ` ${segment.displayValue}` : ""}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+                  <Text className="text-[11px] leading-[14px] font-medium text-muted-foreground">
+                    {segment.label}
+                    {segment.displayValue ? ` ${segment.displayValue}` : ""}
+                  </Text>
+                </View>
+              ))}
             </View>
-          ) : (
-            <View className="h-2 flex-row gap-half overflow-hidden rounded-full bg-muted">
-              <View
-                className="h-full min-w-[2px] rounded-full"
-                style={{
-                  width: `${percentage}%`,
-                  backgroundColor: getToneColor(tone, theme),
-                }}
-              />
-            </View>
-          ))}
-      </View>
-    );
-  },
-);
+          </View>
+        ) : (
+          <View className="h-2 flex-row gap-half overflow-hidden rounded-full bg-muted">
+            <View
+              className="h-full min-w-[2px] rounded-full"
+              style={{
+                width: `${percentage}%`,
+                backgroundColor: getToneColor(tone, theme),
+              }}
+            />
+          </View>
+        ))}
+    </View>
+  );
+});
 
 function getToneColor(
   tone: MetricTone = "primary",

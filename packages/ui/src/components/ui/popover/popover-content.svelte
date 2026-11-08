@@ -2,7 +2,10 @@
 import { Popover as PopoverPrimitive } from "bits-ui";
 import PopoverPortal from "./popover-portal.svelte";
 import { cn, type WithoutChildrenOrChild } from "../../../utils.js";
-import { useDirectionAwareSide, type PositionSide } from "../../../utils/direction.svelte.js";
+import {
+  useDirectionAwareSide,
+  type PositionSide,
+} from "../../../utils/direction.svelte.js";
 import type { ComponentProps } from "svelte";
 
 let {

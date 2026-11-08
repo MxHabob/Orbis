@@ -19,6 +19,76 @@ fn ok<T: serde::Serialize>(data: T) -> ApiResponse<T> {
 
 // ── Commands ────────────────────────────────────────────────────
 
+fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
+    match value {
+        serde_json::Value::Null => Err("Report parameter value cannot be null".to_string()),
+        serde_json::Value::String(s) => Ok(ParamValue::Text(s)),
+        serde_json::Value::Bool(b) => Ok(ParamValue::Boolean(b)),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                Ok(ParamValue::Integer(i))
+            } else if let Some(f) = n.as_f64() {
+                Ok(ParamValue::Decimal(f))
+            } else {
+                Err("Unsupported numeric report parameter value".to_string())
+            }
+        }
+        serde_json::Value::Array(items) => {
+            let mut values = Vec::with_capacity(items.len());
+            for item in items {
+                let entry = match item {
+                    serde_json::Value::String(s) => s,
+                    _ => {
+                        return Err(
+                            "Report parameter id list must contain only strings".to_string()
+                        );
+                    }
+                };
+                values.push(entry);
+            }
+            Ok(ParamValue::IdList(values))
+        }
+        serde_json::Value::Object(mut obj) => {
+            if let Some(kind) = obj.get("type").and_then(serde_json::Value::as_str) {
+                match kind {
+                    "date_range" | "dateRange" => {
+                        let from = obj
+                            .remove("from")
+                            .and_then(|value| value.as_str().map(str::to_owned))
+                            .ok_or_else(|| {
+                                "date_range parameter requires a 'from' string".to_string()
+                            })?;
+                        let to = obj
+                            .remove("to")
+                            .and_then(|value| value.as_str().map(str::to_owned))
+                            .ok_or_else(|| {
+                                "date_range parameter requires a 'to' string".to_string()
+                            })?;
+                        Ok(ParamValue::DateRange { from, to })
+                    }
+                    _ => Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                        |err| format!("Failed to coerce report parameter object: {err}"),
+                    )?)),
+                }
+            } else if obj.get("from").is_some() || obj.get("to").is_some() {
+                let from = obj
+                    .remove("from")
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .unwrap_or_default();
+                let to = obj
+                    .remove("to")
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .unwrap_or_default();
+                Ok(ParamValue::DateRange { from, to })
+            } else {
+                Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                    |err| format!("Failed to coerce report parameter object: {err}"),
+                )?))
+            }
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn generate_report(
     template_id: String, // Actually report_code in the new system, we keep the param name for frontend compat
@@ -30,9 +100,20 @@ pub async fn generate_report(
     let ctx = make_ctx(&state);
     let report_code = template_id; // Mapping frontend's 'template_id' to 'report_code'
 
-    // Parse parameters
-    let params: HashMap<String, ParamValue> =
-        serde_json::from_value(parameters).unwrap_or_default();
+    let params = match parameters {
+        serde_json::Value::Object(obj) => {
+            let mut mapped = HashMap::with_capacity(obj.len());
+            for (key, value) in obj {
+                mapped.insert(key, coerce_param_value(value)?);
+            }
+            mapped
+        }
+        _ => {
+            return Err(
+                "Invalid report parameters: report parameters must be an object".to_string(),
+            );
+        }
+    };
 
     let output_format = if format.is_empty() {
         OutputFormat::DataOnly
@@ -64,30 +145,9 @@ pub async fn generate_report(
         template_id: None,
     };
 
-    let (mut job, export) = state
+    let job = state
         .report_service
-        .generate_report(&ctx, input)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    // Since the frontend expects to download a file later, we write it to a temp dir
-    let temp_dir = std::env::temp_dir().join("orbis_reports");
-    tokio::fs::create_dir_all(&temp_dir)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let file_path = temp_dir.join(format!("{}.{}", job.id, export.filename));
-    tokio::fs::write(&file_path, &export.data)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    // Update job with file path
-    job.output_path = Some(file_path.to_string_lossy().to_string());
-    job.output_size_bytes = Some(export.data.len() as i64);
-
-    state
-        .report_job_repo
-        .save(&job)
+        .enqueue_report(&ctx, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -98,6 +158,7 @@ pub async fn generate_report(
 pub struct ReportJobStatus {
     pub job_id: String,
     pub status: String,
+    pub error_message: Option<String>,
 }
 
 #[tauri::command]
@@ -117,6 +178,7 @@ pub async fn get_report_job_status(
     Ok(ReportJobStatus {
         job_id: job.id.to_string(),
         status: job.status.to_string(),
+        error_message: job.error_message,
     })
 }
 
@@ -218,7 +280,7 @@ pub async fn audit_list_logs(
             action: e.action,
             entity_type: e.entity_type,
             entity_id: Some(e.entity_id.to_string()),
-            ip_address: Some("127.0.0.1".to_string()),
+            ip_address: None,
             metadata: e
                 .details
                 .as_ref()
@@ -227,6 +289,50 @@ pub async fn audit_list_logs(
             created_at: e.created_at.to_rfc3339(),
         })
         .collect();
+
+    Ok(ok(dtos))
+}
+
+#[tauri::command]
+pub async fn get_entity_audit(
+    entity_type: String,
+    entity_id: String,
+    limit: Option<u64>,
+    offset: Option<u64>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AuditLogDto>>, String> {
+    let entity_id = Uuid::parse_str(&entity_id).map_err(|_| "Invalid entity ID".to_string())?;
+    let ctx = make_ctx(&state);
+    let entries = state
+        .report_audit_repo
+        .list_by_entity(ctx.tenant_id, &entity_type, entity_id, limit, offset)
+        .await
+        .map_err(|error| error.to_string())?;
+
+    let dtos = entries
+        .into_iter()
+        .map(|entry| {
+            let metadata = entry
+                .details
+                .as_ref()
+                .map(|details| serde_json::to_string_pretty(details))
+                .transpose()
+                .map_err(|error| format!("Failed to serialize audit details: {error}"))?;
+
+            Ok::<AuditLogDto, String>(AuditLogDto {
+                id: entry.id.to_string(),
+                org_id: entry.org_id.to_string(),
+                user_id: Some(entry.actor_id.to_string()),
+                action: entry.action,
+                entity_type: entry.entity_type,
+                entity_id: Some(entry.entity_id.to_string()),
+                ip_address: None,
+                metadata,
+                details: entry.details,
+                created_at: entry.created_at.to_rfc3339(),
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
 
     Ok(ok(dtos))
 }

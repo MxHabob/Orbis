@@ -44,8 +44,13 @@ export class DatabaseManagerController {
 
   // Derived statuses
   isConnected = $derived(this.status?.state === "connected");
-  isMigrationRequired = $derived(this.status?.state === "migration_required" || (this.status?.pending_migrations.length ?? 0) > 0);
-  isLocal = $derived(this.status?.mode === "local" || this.config?.mode === "local");
+  isMigrationRequired = $derived(
+    this.status?.state === "migration_required" ||
+      (this.status?.pending_migrations.length ?? 0) > 0,
+  );
+  isLocal = $derived(
+    this.status?.mode === "local" || this.config?.mode === "local",
+  );
 
   async init(): Promise<void> {
     await this.refresh();
@@ -118,7 +123,8 @@ export class DatabaseManagerController {
         configureApiClient("local");
       }
       await api.connectionConnect();
-      this.operationSuccess = "Connection configuration updated and connected successfully.";
+      this.operationSuccess =
+        "Connection configuration updated and connected successfully.";
       await this.refresh();
     } catch (e) {
       this.operationError = e instanceof Error ? e.message : String(e);
@@ -132,7 +138,8 @@ export class DatabaseManagerController {
   async resetConnectionConfig(): Promise<void> {
     const confirmed = await confirmStore.prompt({
       title: "Reset Connection Configuration?",
-      description: "This will reset connection settings back to the default local SQLite database (orbis.db in AppData).",
+      description:
+        "This will reset connection settings back to the default local SQLite database (orbis.db in AppData).",
       variant: "destructive",
       confirmText: "Reset Connection",
     });
@@ -158,7 +165,10 @@ export class DatabaseManagerController {
     }
   }
 
-  async createNewDatabase(params: { customDir?: string; filename: string }): Promise<void> {
+  async createNewDatabase(params: {
+    customDir?: string;
+    filename: string;
+  }): Promise<void> {
     this.isOperating = true;
     this.operationName = "create_database";
     this.operationError = null;
@@ -217,7 +227,9 @@ export class DatabaseManagerController {
     }
   }
 
-  async inspectBackupFile(filePath: string): Promise<BackupInspectionDto | null> {
+  async inspectBackupFile(
+    filePath: string,
+  ): Promise<BackupInspectionDto | null> {
     this.isInspectingBackup = true;
     this.inspectedBackup = null;
     this.operationError = null;
@@ -289,7 +301,8 @@ export class DatabaseManagerController {
       const result = await api.databaseCheckIntegrity();
       this.integrityResult = result;
       if (result.is_healthy) {
-        this.operationSuccess = "Integrity check passed with 0 errors. Database is healthy.";
+        this.operationSuccess =
+          "Integrity check passed with 0 errors. Database is healthy.";
       } else {
         this.operationError = `Integrity issues detected: ${result.details.join(", ")}`;
       }
@@ -337,7 +350,10 @@ export class DatabaseManagerController {
 
   // ── Native Picker Helpers ──
 
-  async pickFile(filterName?: string, extensions?: string[]): Promise<string | null> {
+  async pickFile(
+    filterName?: string,
+    extensions?: string[],
+  ): Promise<string | null> {
     try {
       return await api.databasePickFile({ filterName, extensions });
     } catch {
@@ -353,9 +369,17 @@ export class DatabaseManagerController {
     }
   }
 
-  async pickSavePath(defaultFilename?: string, filterName?: string, extensions?: string[]): Promise<string | null> {
+  async pickSavePath(
+    defaultFilename?: string,
+    filterName?: string,
+    extensions?: string[],
+  ): Promise<string | null> {
     try {
-      return await api.databasePickSavePath({ defaultFilename, filterName, extensions });
+      return await api.databasePickSavePath({
+        defaultFilename,
+        filterName,
+        extensions,
+      });
     } catch {
       return null;
     }

@@ -14,8 +14,31 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
+use orbis_domain::entities::report::ReportAuditEntry;
 use orbis_domain::entities::student::{AcademicStanding, StudentDetail, StudentStatus};
-use orbis_domain::queries::filters::{PaginationParams, StudentFilter};
+use orbis_domain::queries::filters::{EnrollmentFilter, PaginationParams, StudentFilter};
+
+async fn record_student_audit(
+    state: &AppState,
+    ctx: &AuthContext,
+    student_id: Uuid,
+    action: &str,
+    details: serde_json::Value,
+) -> Result<(), ApiError> {
+    let entry = ReportAuditEntry {
+        id: Uuid::new_v4(),
+        org_id: ctx.tenant_id,
+        actor_id: ctx.user_id().unwrap_or_default(),
+        action: action.to_string(),
+        entity_type: "student".to_string(),
+        entity_id: student_id,
+        details: Some(details),
+        created_at: Utc::now(),
+    };
+    state.report_audit_repo.save(&entry).await.map_err(|error| {
+        ApiError::internal(format!("Failed to record student audit entry: {error}"))
+    })
+}
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StudentDto {
@@ -287,8 +310,11 @@ pub struct StudentQuery {
 
 #[derive(Deserialize, utoipa::IntoParams)]
 pub struct EnrollmentQuery {
+    pub period_id: Option<Uuid>,
     pub section_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 #[derive(Deserialize, utoipa::IntoParams)]
@@ -428,6 +454,14 @@ pub async fn register_student(
         .student_service
         .register_student(&ctx, ctx.tenant_id, input)
         .await?;
+    record_student_audit(
+        &state,
+        &ctx,
+        result.student.student.id,
+        "student.created",
+        serde_json::json!({}),
+    )
+    .await?;
     Ok(ApiResponse::ok(result.student.into()))
 }
 
@@ -548,6 +582,14 @@ pub async fn update_student_status(
         .student_service
         .update_student_status(&ctx, id, new_status, p.reason)
         .await?;
+    record_student_audit(
+        &state,
+        &ctx,
+        id,
+        "student.status_changed",
+        serde_json::json!({ "status": student.status.to_string() }),
+    )
+    .await?;
     let person = state
         .person_repo
         .find_by_id(student.person_id)
@@ -567,6 +609,31 @@ pub async fn update_student_profile(
     Path(id): Path<Uuid>,
     Json(p): Json<UpdateStudentProfileRequest>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let updated_fields = [
+        ("first_name", p.first_name.is_some()),
+        ("middle_name", p.middle_name.is_some()),
+        ("last_name", p.last_name.is_some()),
+        ("first_name_ar", p.first_name_ar.is_some()),
+        ("middle_name_ar", p.middle_name_ar.is_some()),
+        ("last_name_ar", p.last_name_ar.is_some()),
+        ("display_name", p.display_name.is_some()),
+        ("national_id", p.national_id.is_some()),
+        ("passport_number", p.passport_number.is_some()),
+        ("gender", p.gender.is_some()),
+        ("birth_date", p.birth_date.is_some()),
+        ("place_of_birth", p.place_of_birth.is_some()),
+        ("nationality", p.nationality.is_some()),
+        ("blood_type", p.blood_type.is_some()),
+        ("medical_notes", p.medical_notes.is_some()),
+        ("special_needs_notes", p.special_needs_notes.is_some()),
+        ("phone", p.phone.is_some()),
+        ("email", p.email.is_some()),
+        ("address", p.address.is_some()),
+        ("avatar_url", p.avatar_url.is_some()),
+    ]
+    .into_iter()
+    .filter_map(|(field, is_set)| is_set.then_some(field))
+    .collect::<Vec<_>>();
     let input = orbis_app::services::student_service::UpdateStudentProfileInput {
         first_name: p.first_name,
         middle_name: p.middle_name,
@@ -594,6 +661,14 @@ pub async fn update_student_profile(
         .student_service
         .update_student_profile(&ctx, id, input)
         .await?;
+    record_student_audit(
+        &state,
+        &ctx,
+        id,
+        "student.updated",
+        serde_json::json!({ "updated_fields": updated_fields }),
+    )
+    .await?;
     Ok(ApiResponse::ok(detail.into()))
 }
 
@@ -771,16 +846,31 @@ pub async fn enroll_student(
     responses((status = 200, body = Vec<EnrollmentDto>)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn list_enrollments(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<EnrollmentQuery>,
 ) -> Result<Json<ApiResponse<Vec<EnrollmentDto>>>, ApiError> {
-    let enrollments = if let Some(class_id) = q.section_id {
-        state.enrollment_repo.find_by_section(class_id).await?
-    } else if let Some(student_id) = q.student_id {
-        state.enrollment_repo.find_by_student(student_id).await?
+    let enrollments = if q.period_id.is_some() || q.section_id.is_some() || q.student_id.is_some() {
+        state
+            .student_service
+            .list_enrollments(
+                ctx.tenant_id,
+                EnrollmentFilter {
+                    period_id: q.period_id,
+                    section_id: q.section_id,
+                    student_id: q.student_id,
+                    pagination: Some(PaginationParams {
+                        page: q.page,
+                        page_size: q.page_size.or(Some(100)),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+            )
+            .await?
+            .items
     } else {
-        vec![]
+        Vec::new()
     };
     let dtos = enrollments.into_iter().map(Into::into).collect();
     Ok(ApiResponse::ok(dtos))

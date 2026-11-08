@@ -2,7 +2,12 @@
 import type { Pathname } from "$app/types";
 import { resolve } from "$app/paths";
 import { page } from "$app/state";
-import { locales, localizeHref, getLocale, getTextDirection } from "$lib/paraglide/runtime";
+import {
+  locales,
+  localizeHref,
+  getLocale,
+  getTextDirection,
+} from "$lib/paraglide/runtime";
 import { appearanceStore } from "$lib/stores/appearance.svelte";
 import "$lib/stores/theme.svelte";
 import { isDesktopApp } from "$lib/api/runtime";

@@ -6,7 +6,25 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Input } from "@orbis/ui/input";
-import { AdjustmentsHorizontal, AlignVertical, ArrowDownTray, ArrowPath, CheckBox, CheckCircle, CheckSquare, Component, Cube, Grid, H1, Hashtag, Merge, Minus, Photo, Search, Sidebar } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  AlignVertical,
+  ArrowDownTray,
+  ArrowPath,
+  CheckBox,
+  CheckCircle,
+  CheckSquare,
+  Component,
+  Cube,
+  Grid,
+  H1,
+  Hashtag,
+  Merge,
+  Minus,
+  Photo,
+  Search,
+  Sidebar,
+} from "@orbis/icons";
 
 let {
   store,

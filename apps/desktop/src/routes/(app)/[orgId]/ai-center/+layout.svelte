@@ -4,7 +4,15 @@ Full-width workspace layout for AI Center with a header sub-navigation bar using
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { AdjustmentsHorizontal, Camera, Cube, GlobeAlt, Settings, TaskList, UserBadgeCheck } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  Camera,
+  Cube,
+  GlobeAlt,
+  Settings,
+  TaskList,
+  UserBadgeCheck,
+} from "@orbis/icons";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
 let { data, children }: { data: { orgId: string }; children: Snippet } =

@@ -52,8 +52,7 @@ export async function resolveDocumentUrl(
     if (cachedDocumentUrl) return cachedDocumentUrl;
 
     const file = await api.downloadDocumentFile(documentId);
-    const blob =
-      file instanceof Blob ? file : new Blob([file.slice().buffer]);
+    const blob = file instanceof Blob ? file : new Blob([file.slice().buffer]);
     const documentUrl = URL.createObjectURL(blob);
     downloadedDocumentUrls.set(cacheKey, documentUrl);
     return documentUrl;
@@ -113,9 +112,9 @@ export async function resolveDocumentUrl(
     const resolvedUrl = convertFileSrc(absolutePath);
     resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
     return resolvedUrl;
-  } catch (e) {
-    console.warn("Tauri path resolution failed, using fallback:", e);
-    return pathOrUrl;
+  } catch (error) {
+    console.error("Failed to resolve document path:", pathOrUrl, error);
+    throw error;
   }
 }
 
@@ -148,6 +147,65 @@ export async function resolveEntityDocumentUrl(
     : resolveDocumentUrl(pathOrUrl);
 }
 
+export async function resolveDocumentImageDataUri(
+  source: string,
+  entityType: string,
+  entityId: string,
+): Promise<string> {
+  if (/^data:image\/(?:png|jpeg);base64,/i.test(source)) {
+    return source;
+  }
+
+  const resolvedUrl = await resolveEntityDocumentUrl(
+    source,
+    entityType,
+    entityId,
+  );
+  const response = await fetch(resolvedUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to load image (${response.status}).`);
+  }
+
+  let blob = await response.blob();
+  const mimeType = blob.type.split(";")[0]?.toLowerCase();
+  if (!mimeType?.startsWith("image/")) {
+    throw new Error(
+      `Expected an image, received ${blob.type || "unknown data"}.`,
+    );
+  }
+
+  if (mimeType !== "image/png" && mimeType !== "image/jpeg") {
+    const bitmap = await createImageBitmap(blob);
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Unable to convert image to PNG.");
+      context.drawImage(bitmap, 0, 0);
+      blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error("Unable to convert image to PNG."));
+        }, "image/png");
+      });
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Unable to read image data."));
+    };
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Unable to read image data."));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function getDocumentSource(document: {
   url?: string | null;
   file_path?: string | null;
@@ -168,15 +226,28 @@ export function useDocuments(
     entityId?: string;
   },
 ) {
-  return createInfiniteQuery<DocumentPageResult, Error, DocumentPageResult, readonly unknown[], string | undefined>(() => {
+  return createInfiniteQuery<
+    DocumentPageResult,
+    Error,
+    DocumentPageResult,
+    readonly unknown[],
+    string | undefined
+  >(() => {
     const f = filter ? filter() : undefined;
     return {
-      queryKey: queryKeys.document.list(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined),
+      queryKey: queryKeys.document.list(
+        f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined,
+      ),
       placeholderData: (previousData) => previousData,
       queryFn: async () => {
-        const items = f?.entityType && f?.entityId
-          ? await api.listDocumentsByEntity(f.entityType, f.entityId)
-          : await api.listDocuments(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined);
+        const items =
+          f?.entityType && f?.entityId
+            ? await api.listDocumentsByEntity(f.entityType, f.entityId)
+            : await api.listDocuments(
+                f
+                  ? { entity_type: f.entityType, entity_id: f.entityId }
+                  : undefined,
+              );
         return {
           items,
           count: items.length,
@@ -283,7 +354,9 @@ export function useUpdateDocument() {
       api.updateDocument(id, req),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.detail(vars.id),
+      });
     },
   }));
 }
@@ -307,7 +380,9 @@ export function useCreateDocumentRequirement() {
     mutationFn: (req: CreateDocumentRequirementRequest) =>
       api.createDocumentRequirement(req),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirements(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -317,11 +392,20 @@ export function useUpdateDocumentRequirement() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ id, req }: { id: string; req: UpdateDocumentRequirementRequest }) =>
-      api.updateDocumentRequirement(id, req),
+    mutationFn: ({
+      id,
+      req,
+    }: {
+      id: string;
+      req: UpdateDocumentRequirementRequest;
+    }) => api.updateDocumentRequirement(id, req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirement(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirements(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirement(vars.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -333,7 +417,9 @@ export function useDeleteDocumentRequirement() {
   return createMutation(() => ({
     mutationFn: (id: string) => api.deleteDocumentRequirement(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirements(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -341,9 +427,7 @@ export function useDeleteDocumentRequirement() {
 
 // ── Storage & Archive Hooks ─────────────────────────────────
 
-export function useUploadFile(
-  options: { invalidateOnSuccess?: boolean } = {},
-) {
+export function useUploadFile(options: { invalidateOnSuccess?: boolean } = {}) {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
@@ -386,7 +470,9 @@ export function useArchiveDocument() {
       api.archiveDocument(id, reason),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.detail(vars.id),
+      });
     },
   }));
 }
@@ -398,7 +484,9 @@ export function useRestoreDocument() {
     mutationFn: (id: string) => api.restoreDocument(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.detail(id),
+      });
     },
   }));
 }
@@ -491,7 +579,9 @@ export function useCreateFolder() {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
       if (vars.parent_id) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.parent_id) });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.folder.contents(vars.parent_id),
+        });
       }
     },
   }));
@@ -501,9 +591,12 @@ export function useCreateCurriculumFolder() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: (req: CreateCurriculumFolderRequest) => api.getOrCreateCurriculumFolder(req),
+    mutationFn: (req: CreateCurriculumFolderRequest) =>
+      api.getOrCreateCurriculumFolder(req),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.folder.curriculum() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.curriculum(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
     },
   }));
@@ -517,8 +610,12 @@ export function useUpdateFolder() {
       api.updateFolder(id, req),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.folder.detail(vars.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.detail(vars.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.contents(vars.id),
+      });
     },
   }));
 }

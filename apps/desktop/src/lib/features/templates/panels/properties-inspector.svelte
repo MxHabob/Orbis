@@ -1,16 +1,16 @@
 <script lang="ts">
 import {
-    getDocumentSource,
-    useUploadFile,
+  getDocumentSource,
+  useUploadFile,
 } from "$lib/features/documents/queries";
 import * as m from "$lib/paraglide/messages";
 import {
-    AdjustmentsHorizontal,
-    ArrowUpTray,
-    DocumentPage,
-    Plus,
-    Trash,
-    XMark,
+  AdjustmentsHorizontal,
+  ArrowUpTray,
+  DocumentPage,
+  Plus,
+  Trash,
+  XMark,
 } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
@@ -50,15 +50,22 @@ const nodeSectionTitle = $derived(
         : m.template_inspector_element_details(),
 );
 const nodeProps = $derived(
-  node && "props" in node ? ((node as any).props || {}) : {}
+  node && "props" in node ? (node as any).props || {} : {},
 );
 const pos = $derived(
-  nodeProps.position || (node as any)?.position || { x: 0, y: 0, width: 50, height: 20 }
+  nodeProps.position ||
+    (node as any)?.position || { x: 0, y: 0, width: 50, height: 20 },
 );
 
 function updateProp(key: string, value: unknown) {
   if (!node) return;
   store.updateSelectedProps({ [key]: value });
+}
+
+function updateShapePaint(property: "fill" | "stroke", value: string) {
+  if (!node) return;
+  const alias = property === "fill" ? "fillColor" : "strokeColor";
+  store.updateSelectedProps({ [property]: value, [alias]: undefined });
 }
 
 function triggerImageReplace() {
@@ -109,7 +116,10 @@ function handleImageFileSelect(event: Event) {
           });
         } catch (error) {
           uploadToast.update({
-            title: error instanceof Error ? error.message : m.template_inspector_update_failed(),
+            title:
+              error instanceof Error
+                ? error.message
+                : m.template_inspector_update_failed(),
             variant: "error",
             duration: 5000,
           });
@@ -118,7 +128,10 @@ function handleImageFileSelect(event: Event) {
       },
       onError: (error) => {
         uploadToast.update({
-          title: error instanceof Error ? error.message : m.template_inspector_image_upload_failed(),
+          title:
+            error instanceof Error
+              ? error.message
+              : m.template_inspector_image_upload_failed(),
           variant: "error",
           duration: 5000,
         });
@@ -157,9 +170,10 @@ function startResize(event: PointerEvent) {
   const startWidth = width;
   const direction = getComputedStyle(document.documentElement).direction;
   const handleMove = (moveEvent: PointerEvent) => {
-    const delta = direction === "rtl"
-      ? moveEvent.clientX - startX
-      : startX - moveEvent.clientX;
+    const delta =
+      direction === "rtl"
+        ? moveEvent.clientX - startX
+        : startX - moveEvent.clientX;
     width = Math.min(400, Math.max(260, startWidth + delta));
   };
   const stopResize = () => {
@@ -176,7 +190,10 @@ function resizeWithKeyboard(event: KeyboardEvent) {
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
   event.preventDefault();
   const direction = getComputedStyle(document.documentElement).direction;
-  const expands = direction === "rtl" ? event.key === "ArrowRight" : event.key === "ArrowLeft";
+  const expands =
+    direction === "rtl"
+      ? event.key === "ArrowRight"
+      : event.key === "ArrowLeft";
   width = Math.min(400, Math.max(260, width + (expands ? 16 : -16)));
 }
 
@@ -211,15 +228,96 @@ function updateColumn(index: number, key: string, val: unknown) {
 
 function applyYemeniCertificateColumnsPreset() {
   const preset = [
-    { id: "seq", header: "#", headerAr: "م", field: "seq", width: "6%", alignment: "center", totalType: "label", isVisible: true },
-    { id: "subject_name", header: "Subject", headerAr: "المادة الدراسية", field: "subject_name", width: "26%", alignment: "right", totalType: "none", isVisible: true },
-    { id: "max_score", header: "Max", headerAr: "النهاية الكبرى", field: "max_score", width: "10%", alignment: "center", totalType: "sum", isVisible: true },
-    { id: "min_score", header: "Min", headerAr: "النهاية الصغرى", field: "min_score", width: "10%", alignment: "center", totalType: "sum", isVisible: true },
-    { id: "t1_coursework", header: "CW 1", headerAr: "محصلة ف1", field: "t1_coursework", width: "10%", alignment: "center", totalType: "sum", isVisible: true },
-    { id: "t1_exam", header: "Exam 1", headerAr: "اختبار ف1", field: "t1_exam", width: "10%", alignment: "center", totalType: "sum", isVisible: true },
-    { id: "annual_total", header: "Total", headerAr: "المجموع السنوي", field: "annual_total", width: "12%", alignment: "center", totalType: "sum", isVisible: true },
-    { id: "appreciation", header: "Grade", headerAr: "التقدير", field: "appreciation", width: "9%", alignment: "center", totalType: "none", isVisible: true },
-    { id: "status", header: "Result", headerAr: "النتيجة", field: "status", width: "7%", alignment: "center", totalType: "none", isVisible: true },
+    {
+      id: "seq",
+      header: "#",
+      headerAr: "م",
+      field: "seq",
+      width: "6%",
+      alignment: "center",
+      totalType: "label",
+      isVisible: true,
+    },
+    {
+      id: "subject_name",
+      header: "Subject",
+      headerAr: "المادة الدراسية",
+      field: "subject_name",
+      width: "26%",
+      alignment: "right",
+      totalType: "none",
+      isVisible: true,
+    },
+    {
+      id: "max_score",
+      header: "Max",
+      headerAr: "النهاية الكبرى",
+      field: "max_score",
+      width: "10%",
+      alignment: "center",
+      totalType: "sum",
+      isVisible: true,
+    },
+    {
+      id: "min_score",
+      header: "Min",
+      headerAr: "النهاية الصغرى",
+      field: "min_score",
+      width: "10%",
+      alignment: "center",
+      totalType: "sum",
+      isVisible: true,
+    },
+    {
+      id: "t1_coursework",
+      header: "CW 1",
+      headerAr: "محصلة ف1",
+      field: "t1_coursework",
+      width: "10%",
+      alignment: "center",
+      totalType: "sum",
+      isVisible: true,
+    },
+    {
+      id: "t1_exam",
+      header: "Exam 1",
+      headerAr: "اختبار ف1",
+      field: "t1_exam",
+      width: "10%",
+      alignment: "center",
+      totalType: "sum",
+      isVisible: true,
+    },
+    {
+      id: "annual_total",
+      header: "Total",
+      headerAr: "المجموع السنوي",
+      field: "annual_total",
+      width: "12%",
+      alignment: "center",
+      totalType: "sum",
+      isVisible: true,
+    },
+    {
+      id: "appreciation",
+      header: "Grade",
+      headerAr: "التقدير",
+      field: "appreciation",
+      width: "9%",
+      alignment: "center",
+      totalType: "none",
+      isVisible: true,
+    },
+    {
+      id: "status",
+      header: "Result",
+      headerAr: "النتيجة",
+      field: "status",
+      width: "7%",
+      alignment: "center",
+      totalType: "none",
+      isVisible: true,
+    },
   ];
   updateProp("columns", preset);
   updateProp("dataSource", "subjects");
@@ -620,6 +718,7 @@ function applyYemeniCertificateColumnsPreset() {
                 <span class="text-[11px] text-muted-foreground">{m.template_inspector_header_background()}</span>
                 <ColorPicker
                   value={nodeProps.style?.headerBgColor || "#1e3a8a"}
+                  allowNone
                   onchange={(c) => updateTableStyle("headerBgColor", c)}
                 />
               </div>
@@ -898,7 +997,8 @@ function applyYemeniCertificateColumnsPreset() {
               <span class="text-[10px] text-muted-foreground">{m.template_inspector_fill_color()}</span>
               <ColorPicker
                 value={nodeProps.fill || nodeProps.fillColor || "#ffffff"}
-                onchange={(c) => updateProp("fill", c)}
+                allowNone
+                onchange={(c) => updateShapePaint("fill", c)}
               />
             </div>
 
@@ -906,7 +1006,8 @@ function applyYemeniCertificateColumnsPreset() {
               <span class="text-[10px] text-muted-foreground">{m.template_inspector_stroke_color()}</span>
               <ColorPicker
                 value={nodeProps.stroke || nodeProps.strokeColor || "#000000"}
-                onchange={(c) => updateProp("stroke", c)}
+                allowNone
+                onchange={(c) => updateShapePaint("stroke", c)}
               />
             </div>
 

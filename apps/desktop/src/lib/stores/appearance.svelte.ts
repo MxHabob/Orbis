@@ -90,7 +90,8 @@ class AppearanceStore {
         const parsed: unknown = JSON.parse(saved);
         if (typeof parsed === "object" && parsed !== null) {
           const preferences = parsed as Partial<AppearancePreferences>;
-          if (isFontSize(preferences.fontSize)) this.fontSize = preferences.fontSize;
+          if (isFontSize(preferences.fontSize))
+            this.fontSize = preferences.fontSize;
           if (typeof preferences.highContrast === "boolean") {
             this.highContrast = preferences.highContrast;
           }

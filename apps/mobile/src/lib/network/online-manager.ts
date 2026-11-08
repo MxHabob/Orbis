@@ -1,4 +1,4 @@
-import { onlineManager } from "@tanstack/react-query";
+import { onlineManager } from "@tanstack/query-core";
 
 onlineManager.setOnline(false);
 

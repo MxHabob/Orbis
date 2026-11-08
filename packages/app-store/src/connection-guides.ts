@@ -9,6 +9,7 @@ const websites: Record<string, string> = {
   "barcode-scanner": "https://www.zebra.com/us/en/products/scanners.html",
   "cloud-storage":
     "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+  "dahua-camera": "https://www.dahuasecurity.com/",
   deepseek: "https://platform.deepseek.com/",
   fingerprint: "https://www.zkteco.com/en/",
   "gemini-ai": "https://aistudio.google.com/",
@@ -28,9 +29,11 @@ const websites: Record<string, string> = {
   openrouter: "https://openrouter.ai/",
   "orbis-ai": "https://www.mulverse.com/",
   orbis_mobile: "https://www.mulverse.com/",
+  "onvif-camera": "https://www.onvif.org/",
   printer: "https://www.pwg.org/ipp/everywhere.html",
   "push-notifications": "https://firebase.google.com/docs/cloud-messaging",
   rfid: "https://www.gs1.org/standards/epc-rfid",
+  "rtsp-camera": "https://mediamtx.org/",
   sadad: "https://www.sadad.com/",
   "sms-provider": "https://www.twilio.com/docs/messaging",
   "smtp-email": "https://docs.sendgrid.com/ui/account-and-settings/api-keys",
@@ -38,8 +41,7 @@ const websites: Record<string, string> = {
   stripe: "https://dashboard.stripe.com/",
   tabby: "https://business.tabby.ai/",
   tamara: "https://tamara.co/en-SA/merchant",
-  "whatsapp-business":
-    "https://www.twilio.com/docs/whatsapp/api",
+  "whatsapp-business": "https://www.twilio.com/docs/whatsapp/api",
   "yemen-mobile-sms": "https://yemenmobile.com.ye/",
   "yemen-wallet":
     "https://play.google.com/store/apps/details?id=com.s2m.yamenpost.merchant.android",
@@ -54,8 +56,8 @@ const connectionSummaries: Record<
     ar: "للربط، أنشئ مفتاح API لدى المزود، ثم أدخله واختر النموذج أدناه. يرسل أوربيس طلب اختبار قصيراً قد تترتب عليه رسوم استخدام من المزود.",
   },
   surveillance: {
-    en: "To connect, enable the camera API, then enter its network address and credentials below.",
-    ar: "للربط، فعّل API الكاميرا، ثم أدخل عنوانها وبيانات الدخول أدناه.",
+    en: "To connect, enable the camera API if required and enter the camera's RTSP stream URL and credentials. Orbis includes and starts its local streaming relay automatically only while the live camera view is open.",
+    ar: "للربط، فعّل واجهة الكاميرا إن لزم، ثم أدخل عنوان بث RTSP وبيانات الدخول. يضم Orbis وسيط البث ويشغّله محلياً عند فتح صفحة الكاميرات فقط.",
   },
   communication: {
     en: "To connect, activate a business account, verify the sender, then enter the requested credentials below.",
@@ -91,10 +93,59 @@ const connectionSummaries: Record<
   },
 };
 
-const appSpecificSummaries: Record<
-  string,
-  { en: string; ar: string }
-> = {
+const appSpecificSummaries: Record<string, { en: string; ar: string }> = {
+  authen: {
+    en: "Enter your Authen API URL and key. Orbis verifies access with a generated blank test image; no user image is sent, but the check may count toward your Authen usage.",
+    ar: "أدخل عنوان Authen ومفتاح API. يتحقق أوربيس من الوصول بصورة اختبار اصطناعية فارغة؛ لا تُرسل صور مستخدمين، لكن قد يُحتسب الطلب ضمن استخدام Authen.",
+  },
+  fingerprint: {
+    en: "Orbis checks whether the configured device IP and port are reachable over the network. This does not verify the device protocol or synchronize attendance.",
+    ar: "يتحقق أوربيس من إمكانية الوصول إلى عنوان الجهاز ومنفذه عبر الشبكة فقط؛ ولا يؤكد دعم بروتوكول الجهاز أو يزامن سجلات الحضور.",
+  },
+  "google-workspace": {
+    en: "Orbis checks Google's OpenID Connect service and validates that the organization domain and optional OAuth client ID/secret are configured together. Credentials are not verified until an OAuth sign-in is performed.",
+    ar: "يتحقق أوربيس من خدمة OpenID Connect لدى Google ومن صحة نطاق المؤسسة وتوافق وجود معرّف OAuth ومفتاحه السري معاً. لا يتم التحقق من بيانات OAuth نفسها إلا عند تنفيذ تسجيل الدخول.",
+  },
+  "microsoft-365": {
+    en: "Orbis validates the tenant, client ID, and secret by requesting an application access token from Microsoft. This does not verify permissions for every Microsoft 365 feature.",
+    ar: "يتحقق أوربيس من المستأجر ومعرّف التطبيق والمفتاح السري بطلب رمز وصول للتطبيق من Microsoft؛ ولا يؤكد ذلك صلاحيات جميع ميزات Microsoft 365.",
+  },
+  "orbis-ai": {
+    en: "Orbis validates your Mulverse API key using its connection endpoint without sending a model inference request.",
+    ar: "يتحقق أوربيس من مفتاح Mulverse عبر نقطة فحص الاتصال دون إرسال طلب لتشغيل النموذج.",
+  },
+  "hikvision-camera": {
+    en: "Orbis verifies Hikvision ISAPI and the RTSP stream URL you provide. It manages the local relay automatically while live view is open.",
+    ar: "يتحقق Orbis من واجهة Hikvision ISAPI ومن عنوان بث RTSP الذي تدخله، ويدير وسيط البث المحلي تلقائياً أثناء فتح العرض المباشر.",
+  },
+  "dahua-camera": {
+    en: "Orbis verifies the Dahua CGI API and the RTSP stream URL you provide. It manages the local relay automatically while live view is open.",
+    ar: "يتحقق Orbis من واجهة Dahua CGI ومن عنوان بث RTSP الذي تدخله، ويدير وسيط البث المحلي تلقائياً أثناء فتح العرض المباشر.",
+  },
+  "onvif-camera": {
+    en: "Orbis verifies the ONVIF Device service and the RTSP stream URL you provide. It manages the local relay automatically while live view is open.",
+    ar: "يتحقق Orbis من خدمة ONVIF ومن عنوان بث RTSP الذي تدخله، ويدير وسيط البث المحلي تلقائياً أثناء فتح العرض المباشر.",
+  },
+  "rtsp-camera": {
+    en: "Orbis checks the RTSP endpoint with an OPTIONS request and Digest authentication, then manages its local WebRTC relay automatically while live view is open.",
+    ar: "يفحص Orbis عنوان RTSP بطلب OPTIONS ومصادقة Digest، ثم يدير وسيط WebRTC محلياً تلقائياً أثناء فتح العرض المباشر.",
+  },
+  stripe: {
+    en: "Orbis validates the Stripe secret key with a read-only account request; it does not create or modify payments.",
+    ar: "يتحقق أوربيس من المفتاح السري عبر طلب قراءة لحساب Stripe، دون إنشاء دفعات أو تعديلها.",
+  },
+  tabby: {
+    en: "Orbis validates the Tabby secret key with a read-only request limited to one payment. No payment is created or modified.",
+    ar: "يتحقق أوربيس من مفتاح تابي بطلب قراءة محدود بدفعة واحدة، دون إنشاء دفعات أو تعديلها.",
+  },
+  tamara: {
+    en: "Orbis checks Tamara credentials with a read-only lookup for a non-existent order ID; it does not create or change an order.",
+    ar: "يتحقق أوربيس من بيانات تمارا بطلب قراءة لمعرّف طلب غير موجود؛ ولا ينشئ طلباً أو يغيّره.",
+  },
+  hyperpay: {
+    en: "Orbis checks the access token and both entity IDs with read-only lookups for a non-existent payment; it does not create or change a payment.",
+    ar: "يتحقق أوربيس من رمز الوصول ومعرّفي القناتين بطلبات قراءة لمعرّف دفعة غير موجود؛ ولا ينشئ دفعة أو يغيّرها.",
+  },
   alkuraimi: {
     en: "Contact Al-Kuraimi to request merchant API specifications and confirm Orbis support before proceeding.",
     ar: "تواصل مع بنك الكريمي لطلب مواصفات API للتجار وتأكد من دعم أوربيس قبل المتابعة.",
@@ -111,7 +162,7 @@ const appSpecificSummaries: Record<
     en: "Enable a WhatsApp sender in Twilio, then enter its Account SID, Auth Token, and sender number below. Orbis verifies the Twilio account before saving; actual WhatsApp delivery requires an active sender.",
     ar: "فعّل مرسل WhatsApp في Twilio، ثم أدخل Account SID وAuth Token ورقم المرسل أدناه. يتحقق أوربيس من حساب Twilio قبل الحفظ؛ ويتطلب الإرسال الفعلي مرسلاً نشطاً.",
   },
-  "orbis_mobile": {
+  orbis_mobile: {
     en: "To connect, publish your active public HTTPS endpoint in the Mulverse deployment dashboard.",
     ar: "للربط، انشر عنوان HTTPS العام والنشط في لوحة نشر Mulverse.",
   },
@@ -126,26 +177,41 @@ const appSpecificSummaries: Record<
 };
 
 const appsWithLiveVerifier = new Set([
+  "authen",
   "anthropic",
   "cloud-storage",
   "deepseek",
   "gemini-ai",
   "groq",
+  "hikvision-camera",
+  "dahua-camera",
+  "onvif-camera",
+  "rtsp-camera",
+  "fingerprint",
+  "google-workspace",
   "mistral",
   "moyasar",
+  "microsoft-365",
   "ollama",
   "openai",
   "openrouter",
+  "orbis-ai",
   "sms-provider",
   "smtp-email",
   "solver-service",
+  "stripe",
+  "tabby",
+  "tamara",
+  "hyperpay",
   "whatsapp-business",
 ]);
 
 export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const website = websites[app.id];
   if (!website) {
-    throw new Error(`Missing official website for app-store entry "${app.id}".`);
+    throw new Error(
+      `Missing official website for app-store entry "${app.id}".`,
+    );
   }
 
   const summary =
@@ -155,14 +221,13 @@ export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const moreAr = `[لمعرفة المزيد](${website})`;
   const verificationNoteEn = canVerifyConnection
     ? ""
-    : "\n\n**Orbis availability:** Orbis cannot verify this integration yet, so it cannot be connected from the App Store.";
+    : "\n\n**Connection check:** Orbis does not currently run a live verification check for this integration.";
   const verificationNoteAr = canVerifyConnection
     ? ""
-    : "\n\n**توفر الربط في أوربيس:** لا يستطيع أوربيس التحقق من هذا التكامل حالياً، لذلك لا يمكن ربطه من المتجر بعد.";
+    : "\n\n**فحص الاتصال:** لا يجري أوربيس حالياً فحصاً حياً لهذا التكامل.";
 
   return {
     ...app,
-    active: app.active && canVerifyConnection,
     description: `${app.description}\n\n**Connect:** ${summary.en} ${moreEn}${verificationNoteEn}`,
     description_ar: `${app.description_ar ?? ""}\n\n**طريقة الربط:** ${summary.ar} ${moreAr}${verificationNoteAr}`,
   };

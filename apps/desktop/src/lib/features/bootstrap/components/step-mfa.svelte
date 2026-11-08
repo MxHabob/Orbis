@@ -1,14 +1,16 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import { Label } from "@orbis/ui/label";
-  import { Check, ShieldCheck } from "@orbis/icons";
-  import { Card, CardContent } from "@orbis/ui/card";
-  import type { OnboardingFormModel } from "../types";
+import * as m from "$lib/paraglide/messages";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Label } from "@orbis/ui/label";
+import { Check, ShieldCheck } from "@orbis/icons";
+import { Card, CardContent } from "@orbis/ui/card";
+import type { OnboardingFormModel } from "../types";
 
-  let { form = $bindable<OnboardingFormModel>() }: {
-    form: OnboardingFormModel;
-  } = $props();
+let {
+  form = $bindable<OnboardingFormModel>(),
+}: {
+  form: OnboardingFormModel;
+} = $props();
 </script>
 
 <div class="mx-auto w-full max-w-3xl space-y-6 py-2 text-start">

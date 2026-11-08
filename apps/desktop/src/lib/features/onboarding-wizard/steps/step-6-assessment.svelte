@@ -1,56 +1,56 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { systemStore } from "$lib/stores";
-  import AcademicPolicyManager from "$lib/features/settings/academic-policy-manager.svelte";
-  import AssessmentSchemesManager from "$lib/features/settings/assessment-schemes-manager.svelte";
-  import OnboardingStepHeader from "../onboarding-step-header.svelte";
-  import { getTasksForStep } from "../onboarding-steps";
-  import { refreshOnboardingState } from "../refresh-onboarding-state";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
+import * as m from "$lib/paraglide/messages";
+import { systemStore } from "$lib/stores";
+import AcademicPolicyManager from "$lib/features/settings/academic-policy-manager.svelte";
+import AssessmentSchemesManager from "$lib/features/settings/assessment-schemes-manager.svelte";
+import OnboardingStepHeader from "../onboarding-step-header.svelte";
+import { getTasksForStep } from "../onboarding-steps";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
 
-  let { orgId }: { orgId: string } = $props();
-  const stepTasks = $derived(
-    getTasksForStep("assessment", systemStore.onboardingTasks),
-  );
-  const taskStatus = $derived(stepTasks[0]?.status ?? "not_started");
+let { orgId }: { orgId: string } = $props();
+const stepTasks = $derived(
+  getTasksForStep("assessment", systemStore.onboardingTasks),
+);
+const taskStatus = $derived(stepTasks[0]?.status ?? "not_started");
 
-  let activeTab = $state<"calculation" | "schemes">("calculation");
+let activeTab = $state<"calculation" | "schemes">("calculation");
 
-  async function refreshTasks() {
-    await refreshOnboardingState(orgId, m.common_action_failed());
-  }
+async function refreshTasks() {
+  await refreshOnboardingState(orgId, m.common_action_failed());
+}
 
-  const YEMEN_STATUTORY_TIERS = [
-    {
-      title: () => m.onboarding_step6_tier_monthly_title(),
-      score: () => m.onboarding_step6_tier_score_100(),
-      details: () => m.onboarding_step6_tier_monthly_details(),
-      badge: () => m.onboarding_step6_tier_monthly_badge(),
-      color: "border-blue-500/30 bg-blue-500/5",
-    },
-    {
-      title: () => m.onboarding_step6_tier_term_title(),
-      score: () => m.onboarding_step6_tier_score_50(),
-      details: () => m.onboarding_step6_tier_term_details(),
-      badge: () => m.onboarding_step6_tier_term_badge(),
-      color: "border-primary/30 bg-primary/5",
-    },
-    {
-      title: () => m.onboarding_step6_tier_annual_title(),
-      score: () => m.onboarding_step6_tier_score_100(),
-      details: () => m.onboarding_step6_tier_annual_details(),
-      badge: () => m.onboarding_step6_tier_annual_badge(),
-      color: "border-emerald-500/30 bg-emerald-500/5",
-    },
-    {
-      title: () => m.onboarding_step6_tier_certificate_title(),
-      score: () => m.onboarding_step6_tier_score_80_20(),
-      details: () => m.onboarding_step6_tier_certificate_details(),
-      badge: () => m.onboarding_step6_tier_certificate_badge(),
-      color: "border-amber-500/30 bg-amber-500/5",
-    },
-  ];
+const YEMEN_STATUTORY_TIERS = [
+  {
+    title: () => m.onboarding_step6_tier_monthly_title(),
+    score: () => m.onboarding_step6_tier_score_100(),
+    details: () => m.onboarding_step6_tier_monthly_details(),
+    badge: () => m.onboarding_step6_tier_monthly_badge(),
+    color: "border-blue-500/30 bg-blue-500/5",
+  },
+  {
+    title: () => m.onboarding_step6_tier_term_title(),
+    score: () => m.onboarding_step6_tier_score_50(),
+    details: () => m.onboarding_step6_tier_term_details(),
+    badge: () => m.onboarding_step6_tier_term_badge(),
+    color: "border-primary/30 bg-primary/5",
+  },
+  {
+    title: () => m.onboarding_step6_tier_annual_title(),
+    score: () => m.onboarding_step6_tier_score_100(),
+    details: () => m.onboarding_step6_tier_annual_details(),
+    badge: () => m.onboarding_step6_tier_annual_badge(),
+    color: "border-emerald-500/30 bg-emerald-500/5",
+  },
+  {
+    title: () => m.onboarding_step6_tier_certificate_title(),
+    score: () => m.onboarding_step6_tier_score_80_20(),
+    details: () => m.onboarding_step6_tier_certificate_details(),
+    badge: () => m.onboarding_step6_tier_certificate_badge(),
+    color: "border-amber-500/30 bg-amber-500/5",
+  },
+];
 </script>
 
 <div class="space-y-6">

@@ -54,7 +54,9 @@ export function exportToJson<T>(
   if (!data || data.length === 0) return null;
 
   const jsonContent = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+  const blob = new Blob([jsonContent], {
+    type: "application/json;charset=utf-8;",
+  });
   return downloadBlob(
     blob,
     `${filename}_${new Date().toISOString().slice(0, 10)}.json`,

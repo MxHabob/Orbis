@@ -7,14 +7,23 @@ Product key activation dialog. Can be opened from:
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@orbis/ui/dialog";
 import { Button, LoadingIndicator } from "@orbis/ui";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { confirmStore, licenseStore } from "$lib/stores";
 import { Check } from "@orbis/icons";
-import { formatLicensePlan } from "$lib/utils/license";
+import {
+  formatLicensePlan,
+  normalizeLicenseProductKey,
+} from "$lib/utils/license";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -23,6 +32,7 @@ let isActivating = $state(false);
 let isDeactivating = $state(false);
 let activationError = $state<string | null>(null);
 let activationSuccess = $state(false);
+const isSubmittingKey = $derived(isActivating);
 const planDisplay = $derived(
   formatLicensePlan(licenseStore.planName) ??
     formatLicensePlan(licenseStore.plan) ??
@@ -30,20 +40,18 @@ const planDisplay = $derived(
     m.settings_entitlement_plan_unavailable(),
 );
 
-function normalizeProductKey(value: string): string | null {
-  let clean = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  if (clean.startsWith("ORBIS")) {
-    clean = clean.slice(5);
-  }
-  if (clean.length !== 20) return null;
-
-  const segments = clean.match(/.{5}/g);
-  if (!segments || segments.length !== 4) return null;
-  return `ORBIS-${segments.join("-")}`;
+function showActivationSuccess() {
+  activationSuccess = true;
+  toast.success(m.license_activation_success());
+  setTimeout(() => {
+    open = false;
+    activationSuccess = false;
+    productKey = "";
+  }, 1500);
 }
 
 async function handleActivate() {
-  const normalizedKey = normalizeProductKey(productKey);
+  const normalizedKey = normalizeLicenseProductKey(productKey);
   if (!normalizedKey) {
     activationError = m.license_invalid_key_format();
     return;
@@ -55,13 +63,7 @@ async function handleActivate() {
   try {
     const result = await licenseStore.activateKey(normalizedKey);
     if (result) {
-      activationSuccess = true;
-      toast.success(m.license_activation_success());
-      setTimeout(() => {
-        open = false;
-        activationSuccess = false;
-        productKey = "";
-      }, 1500);
+      showActivationSuccess();
     } else {
       activationError = licenseStore.error ?? m.license_activation_failed();
     }
@@ -143,27 +145,26 @@ function handleClose() {
               {m.license_active_change_plan_hint()}
             </p>
           </div>
-        {:else}
-          <!-- Product Key Input -->
-          <div class="flex flex-col gap-2">
-            <Label for="product_key" class="text-[11px] font-semibold">
-              {m.license_key_label()}
-            </Label>
-            <Input
-              id="product_key"
-              type="text"
-              bind:value={productKey}
-              placeholder={m.license_key_placeholder()}
-              disabled={isActivating || activationSuccess}
-              class="h-11 text-center font-mono text-[14px] tracking-[0.08em] uppercase"
-              dir="ltr"
-              autocapitalize="characters"
-              autocorrect="off"
-              autocomplete="off"
-              spellcheck={false}
-            />
-          </div>
         {/if}
+
+        <div class="flex flex-col gap-2">
+          <Label for="product_key" class="text-[11px] font-semibold">
+            {m.license_key_label()}
+          </Label>
+          <Input
+            id="product_key"
+            type="text"
+            bind:value={productKey}
+            placeholder={m.license_key_placeholder()}
+            disabled={isSubmittingKey || activationSuccess}
+            class="h-11 text-center font-mono text-[14px] tracking-[0.08em] uppercase"
+            dir="ltr"
+            autocapitalize="characters"
+            autocorrect="off"
+            autocomplete="off"
+            spellcheck={false}
+          />
+        </div>
 
       <!-- Error Message -->
       {#if activationError}
@@ -183,12 +184,12 @@ function handleClose() {
       {/if}
 
       <!-- Actions -->
-      <div class="flex items-center justify-end gap-3 pt-1">
+      <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
         {#if licenseStore.isActive}
           <Button
             variant="destructive"
             onclick={handleDeactivate}
-            disabled={isDeactivating}
+            disabled={isDeactivating || isSubmittingKey}
             class="text-[11px]"
           >
             {#if isDeactivating}
@@ -198,21 +199,23 @@ function handleClose() {
               {m.license_deactivate_btn()}
             {/if}
           </Button>
-          <Button variant="outline" onclick={handleClose} disabled={isDeactivating} class="text-[11px]">
+          <Button variant="outline" onclick={handleClose} disabled={isDeactivating || isSubmittingKey} class="text-[11px]">
             {m.common_btn_cancel()}
           </Button>
         {:else}
           <Button
             variant="outline"
             onclick={handleClose}
-            disabled={isActivating}
+            disabled={isSubmittingKey}
             class="text-[11px]"
           >
             {m.common_btn_cancel()}
           </Button>
+        {/if}
+        {#if !licenseStore.isActive}
           <Button
             onclick={handleActivate}
-            disabled={isActivating || !normalizeProductKey(productKey) || activationSuccess}
+            disabled={isSubmittingKey || !productKey.trim() || activationSuccess}
             class="text-[11px] min-w-[7rem]"
           >
             {#if isActivating}

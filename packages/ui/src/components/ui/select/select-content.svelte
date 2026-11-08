@@ -4,7 +4,10 @@ import SelectPortal from "./select-portal.svelte";
 import SelectScrollUpButton from "./select-scroll-up-button.svelte";
 import SelectScrollDownButton from "./select-scroll-down-button.svelte";
 import { cn, type WithoutChild } from "../../../utils.js";
-import { useDirectionAwareSide, type PositionSide } from "../../../utils/direction.svelte.js";
+import {
+  useDirectionAwareSide,
+  type PositionSide,
+} from "../../../utils/direction.svelte.js";
 import type { ComponentProps } from "svelte";
 import type { WithoutChildrenOrChild } from "../../../utils.js";
 

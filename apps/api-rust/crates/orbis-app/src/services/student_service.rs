@@ -3,12 +3,14 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::license::LicenseRuntime;
 use crate::ports::repositories::{
-    EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository, PersonRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, EnrollmentRepository,
+    FeeTemplateRepository, OrganizationRepository, OverrideRequestRepository, PersonRepository,
     SectionRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
     StudentGuardianRepository, StudentRepository,
 };
 use chrono::{Datelike, NaiveDate, Utc};
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
+use orbis_domain::entities::organization::InstitutionType;
 use orbis_domain::entities::override_request::{
     AcademicOverrideRequest, OverrideStatus, OverrideType, RiskLevel,
 };
@@ -28,6 +30,9 @@ pub struct StudentService {
     pub student_repo: Arc<dyn StudentRepository>,
     pub person_repo: Arc<dyn PersonRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
+    pub org_repo: Arc<dyn OrganizationRepository>,
+    pub calendar_repo: Arc<dyn AcademicCalendarRepository>,
+    pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub guardian_repo: Arc<dyn StudentGuardianRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
     pub sequence_repo: Arc<dyn SequenceCounterRepository>,
@@ -169,6 +174,9 @@ impl StudentService {
         student_repo: Arc<dyn StudentRepository>,
         person_repo: Arc<dyn PersonRepository>,
         enrollment_repo: Arc<dyn EnrollmentRepository>,
+        org_repo: Arc<dyn OrganizationRepository>,
+        calendar_repo: Arc<dyn AcademicCalendarRepository>,
+        period_repo: Arc<dyn AcademicPeriodRepository>,
         guardian_repo: Arc<dyn StudentGuardianRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
         sequence_repo: Arc<dyn SequenceCounterRepository>,
@@ -183,6 +191,9 @@ impl StudentService {
             student_repo,
             person_repo,
             enrollment_repo,
+            org_repo,
+            calendar_repo,
+            period_repo,
             guardian_repo,
             settings_repo,
             sequence_repo,
@@ -445,7 +456,36 @@ impl StudentService {
         let mut created_override_req: Option<AcademicOverrideRequest> = None;
         let mut auto_assigned_fees_count = 0usize;
 
-        if let Some(period_id) = input.initial_period_id.filter(|_| !is_draft) {
+        // 5. Resolve enrollment period
+        // For schools: auto-resolve the Annual period from the active calendar
+        // For universities/institutes: use the explicitly provided period_id
+        let resolved_period_id = if let Some(pid) = input.initial_period_id {
+            Some(pid)
+        } else if !is_draft {
+            // Auto-resolve for schools: find the Annual period in the active calendar
+            let org = self.org_repo.find_by_id(org_id).await?;
+            let institution_type = org
+                .as_ref()
+                .map(|o| InstitutionType::from_str_loose(&o.institution_type))
+                .unwrap_or(InstitutionType::School);
+            if institution_type == InstitutionType::School {
+                if let Some(calendar) = self.calendar_repo.find_current(org_id).await? {
+                    let periods = self.period_repo.find_by_year(calendar.id).await?;
+                    periods
+                        .into_iter()
+                        .find(|p| p.period_type.is_annual())
+                        .map(|p| p.id)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some(period_id) = resolved_period_id.filter(|_| !is_draft) {
             let mode = input.study_mode.unwrap_or(StudyMode::Regular);
             let mut enrollment_status = EnrollmentStatus::Active;
 

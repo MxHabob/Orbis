@@ -42,7 +42,9 @@ function compareVersions(left: string, right: string): number {
   const leftParts = parseVersion(left);
   const rightParts = parseVersion(right);
   if (!leftParts || !rightParts) {
-    throw new Error("App versions must use the stable MAJOR.MINOR.PATCH format.");
+    throw new Error(
+      "App versions must use the stable MAJOR.MINOR.PATCH format.",
+    );
   }
 
   for (let index = 0; index < leftParts.length; index += 1) {
@@ -80,7 +82,9 @@ function validateReleaseUrl(value: string): string {
     releaseUrl.hostname !== "github.com" ||
     !releaseUrl.pathname.startsWith("/MxHabob/Orbis/releases/tag/")
   ) {
-    throw new Error("The mobile release URL is not a valid Orbis GitHub release.");
+    throw new Error(
+      "The mobile release URL is not a valid Orbis GitHub release.",
+    );
   }
   return releaseUrl.toString();
 }
@@ -122,10 +126,7 @@ export async function checkForMobileAppUpdate(
       }
 
       const payload: unknown = await response.json();
-      if (
-        !Array.isArray(payload) ||
-        !payload.every(isGitHubRelease)
-      ) {
+      if (!Array.isArray(payload) || !payload.every(isGitHubRelease)) {
         throw new Error("GitHub returned an invalid release list.");
       }
 

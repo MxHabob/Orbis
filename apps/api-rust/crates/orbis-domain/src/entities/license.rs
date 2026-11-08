@@ -167,10 +167,13 @@ pub struct EntitlementPayload {
     /// License UUID from Mulverse.
     pub license_id: String,
     /// The product key used for activation (e.g. "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST").
+    #[serde(rename = "application_key", alias = "product_key")]
     pub product_key: String,
     /// Mulverse product UUID ("11111111-1111-4111-8111-111111111111").
+    #[serde(rename = "application_id", alias = "product_id")]
     pub product_id: String,
     /// Organization UUID that owns this license.
+    #[serde(rename = "customer_id", alias = "organization_id")]
     pub organization_id: String,
     /// Edition key (e.g. "SCHOOL", "UNIVERSITY"), if assigned to the license.
     pub edition_key: Option<String>,
@@ -199,6 +202,52 @@ pub struct EntitlementPayload {
     pub offline_grace_period_days: Option<i32>,
     /// How often (hours) the app should verify/refresh online.
     pub verification_interval_hours: Option<i32>,
+}
+
+impl EntitlementPayload {
+    pub fn serialize_legacy_signature_payload(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&LegacyEntitlementPayload {
+            license_id: &self.license_id,
+            product_key: &self.product_key,
+            product_id: &self.product_id,
+            organization_id: &self.organization_id,
+            edition_key: &self.edition_key,
+            plan_key: &self.plan_key,
+            plan_name: &self.plan_name,
+            entitlements: &self.entitlements,
+            limits: &self.limits,
+            activation_id: &self.activation_id,
+            installation_id: &self.installation_id,
+            issued_at: &self.issued_at,
+            valid_from: &self.valid_from,
+            valid_until: &self.valid_until,
+            offline_allowed: self.offline_allowed,
+            offline_grace_period_days: self.offline_grace_period_days,
+            verification_interval_hours: self.verification_interval_hours,
+        })
+    }
+}
+
+#[derive(Serialize)]
+struct LegacyEntitlementPayload<'a> {
+    license_id: &'a str,
+    product_key: &'a str,
+    product_id: &'a str,
+    organization_id: &'a str,
+    edition_key: &'a Option<String>,
+    plan_key: &'a Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    plan_name: &'a Option<String>,
+    entitlements: &'a [EntitlementItem],
+    limits: &'a [LimitItem],
+    activation_id: &'a str,
+    installation_id: &'a str,
+    issued_at: &'a DateTime<Utc>,
+    valid_from: &'a DateTime<Utc>,
+    valid_until: &'a Option<DateTime<Utc>>,
+    offline_allowed: bool,
+    offline_grace_period_days: Option<i32>,
+    verification_interval_hours: Option<i32>,
 }
 
 /// A boolean entitlement entry from the Mulverse catalog.
@@ -233,7 +282,9 @@ pub type LimitEntry = LimitItem;
 /// `POST /api/v1/public/licenses/activate`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivationRequest {
+    #[serde(rename = "application_key", alias = "product_key")]
     pub product_key: String,
+    #[serde(rename = "customer_id", alias = "organization_id")]
     pub organization_id: uuid::Uuid,
     pub installation_id: String,
     pub platform: String,
@@ -269,7 +320,9 @@ pub struct ActivationResponse {
 pub struct ActivationInfo {
     pub id: String,
     pub license_id: String,
+    #[serde(rename = "application_id", alias = "product_id")]
     pub product_id: String,
+    #[serde(rename = "customer_id", alias = "organization_id")]
     pub organization_id: String,
     pub installation_id: String,
     pub platform: String,
@@ -854,13 +907,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn activation_response_accepts_nullable_fields_from_mulverse() {
+    fn activation_request_uses_application_and_customer_fields() {
+        let request = ActivationRequest {
+            product_key: "ORBIS-TEST".to_owned(),
+            organization_id: uuid::Uuid::nil(),
+            installation_id: "installation".to_owned(),
+            platform: "windows".to_owned(),
+            app_version: "1.0.0".to_owned(),
+            machine_label: None,
+        };
+        let serialized = serde_json::to_value(request).expect("request should serialize");
+        assert_eq!(serialized["application_key"], "ORBIS-TEST");
+        assert_eq!(serialized["customer_id"], uuid::Uuid::nil().to_string());
+        assert!(serialized.get("product_key").is_none());
+        assert!(serialized.get("organization_id").is_none());
+    }
+
+    #[test]
+    fn activation_response_accepts_application_customer_contract() {
         let response = serde_json::from_value::<ActivationResponse>(serde_json::json!({
             "activation": {
                 "id": "activation-id",
                 "license_id": "license-id",
-                "product_id": CANONICAL_PRODUCT_ID,
-                "organization_id": "organization-id",
+                "application_id": CANONICAL_PRODUCT_ID,
+                "customer_id": "customer-id",
                 "installation_id": "installation-id",
                 "platform": "windows",
                 "app_version": null,
@@ -879,9 +949,9 @@ mod tests {
                 "alg": "Ed25519",
                 "payload": {
                     "license_id": "license-id",
-                    "product_key": "FREE_TRIAL",
-                    "product_id": CANONICAL_PRODUCT_ID,
-                    "organization_id": "organization-id",
+                    "application_key": "FREE_TRIAL",
+                    "application_id": CANONICAL_PRODUCT_ID,
+                    "customer_id": "customer-id",
                     "edition_key": "SCHOOL",
                     "plan_key": "SCHOOL_PRO",
                     "plan_name": "School Professional",
@@ -1078,7 +1148,7 @@ mod tests {
     }
 
     #[test]
-    fn old_signed_entitlements_without_plan_name_keep_their_serialized_payload_shape() {
+    fn old_signed_entitlements_deserialize_and_keep_the_legacy_signature_shape() {
         let payload: EntitlementPayload = serde_json::from_value(serde_json::json!({
             "license_id": "license",
             "product_key": "ORBIS-TEST",
@@ -1099,8 +1169,25 @@ mod tests {
         }))
         .expect("legacy entitlement should deserialize");
 
-        let serialized = serde_json::to_value(payload).expect("payload should serialize");
+        let serialized = serde_json::to_value(&payload).expect("payload should serialize");
+        assert_eq!(serialized["application_key"], "ORBIS-TEST");
+        assert_eq!(serialized["application_id"], CANONICAL_PRODUCT_ID);
+        assert_eq!(serialized["customer_id"], "organization");
+        assert!(serialized.get("product_key").is_none());
+        assert!(serialized.get("product_id").is_none());
+        assert!(serialized.get("organization_id").is_none());
         assert!(serialized.get("plan_name").is_none());
+
+        let legacy_signature_payload = payload
+            .serialize_legacy_signature_payload()
+            .expect("legacy payload should serialize for signature verification");
+        let legacy_value: serde_json::Value = serde_json::from_str(&legacy_signature_payload)
+            .expect("legacy signature payload should be valid JSON");
+        assert_eq!(legacy_value["product_key"], "ORBIS-TEST");
+        assert_eq!(legacy_value["product_id"], CANONICAL_PRODUCT_ID);
+        assert_eq!(legacy_value["organization_id"], "organization");
+        assert!(legacy_value.get("application_key").is_none());
+        assert!(legacy_value.get("plan_name").is_none());
     }
 
     #[test]

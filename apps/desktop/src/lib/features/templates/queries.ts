@@ -20,7 +20,9 @@ import {
 /** Query for listing templates with optional filters */
 export function createTemplatesQuery(
   orgId: () => string,
-  filter?: () => { documentType?: string; entityType?: string; status?: string } | undefined,
+  filter?: () =>
+    | { documentType?: string; entityType?: string; status?: string }
+    | undefined,
 ) {
   return createQuery(() => ({
     queryKey: queryKeys.report.templates(orgId(), filter?.()),
@@ -78,7 +80,9 @@ export function createUpdateTemplateMutation() {
     mutationFn: ({ id, req }: { id: string; req: UpdateTemplateRequest }) =>
       api.updateTemplate(id, req),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.report.template(data.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.report.template(data.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.report.all });
     },
   }));
@@ -90,7 +94,9 @@ export function createPublishTemplateMutation() {
   return createMutation(() => ({
     mutationFn: (id: string) => api.publishTemplate(id),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.report.template(data.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.report.template(data.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.report.all });
     },
   }));
@@ -117,4 +123,3 @@ export function createArchiveTemplateMutation() {
     },
   }));
 }
-

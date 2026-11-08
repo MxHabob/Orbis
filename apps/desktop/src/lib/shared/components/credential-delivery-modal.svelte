@@ -28,7 +28,6 @@ import {
 } from "@orbis/icons";
 import type { AccountProvisioningResultDto } from "$lib/api/types";
 
-
 interface Props {
   open: boolean;
   provisioning?: AccountProvisioningResultDto | null;
@@ -48,7 +47,10 @@ let copiedPassword = $state(false);
 let copiedUsername = $state(false);
 let copiedAll = $state(false);
 
-async function copyToClipboard(text: string, type: "password" | "username" | "all") {
+async function copyToClipboard(
+  text: string,
+  type: "password" | "username" | "all",
+) {
   try {
     await navigator.clipboard.writeText(text);
     if (type === "password") {
@@ -74,10 +76,14 @@ function handleCopyAll() {
     `Orbis Workspace User Credentials`,
     `User: ${userName || "User"}`,
     `Username: ${provisioning.username}`,
-    provisioning.temporary_password ? `Temporary Password: ${provisioning.temporary_password}` : "",
+    provisioning.temporary_password
+      ? `Temporary Password: ${provisioning.temporary_password}`
+      : "",
     `Delivery: ${provisioning.delivery_channel || "manual"}`,
     `Note: Password must be changed upon first login.`,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   copyToClipboard(text, "all");
 }

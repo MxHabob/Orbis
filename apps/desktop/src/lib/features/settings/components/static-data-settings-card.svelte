@@ -1,54 +1,58 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { toast } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@orbis/ui/card";
-  import { Refresh } from "@orbis/icons";
-  import {
-    loadModelCatalog,
-    modelCatalog,
-    refreshModelCatalog,
-  } from "$lib/features/ai/model-catalog.svelte";
+import { onMount } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@orbis/ui/card";
+import { Refresh } from "@orbis/icons";
+import {
+  loadModelCatalog,
+  modelCatalog,
+  refreshModelCatalog,
+} from "$lib/features/ai/model-catalog.svelte";
 
-  let isRefreshing = $state(false);
-  let errorMessage = $state("");
+let isRefreshing = $state(false);
+let errorMessage = $state("");
 
-  onMount(() => {
-    loadModelCatalog().catch((error: unknown) => {
-      errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error("Failed to load the cached AI model catalog", error);
-    });
+onMount(() => {
+  loadModelCatalog().catch((error: unknown) => {
+    errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Failed to load the cached AI model catalog", error);
   });
+});
 
-  const cachedModelCount = $derived(
-    Object.values(modelCatalog.providers).reduce(
-      (count, options) => count + options.length,
-      0,
-    ),
-  );
+const cachedModelCount = $derived(
+  Object.values(modelCatalog.providers).reduce(
+    (count, options) => count + options.length,
+    0,
+  ),
+);
 
-  async function handleRefresh() {
-    isRefreshing = true;
-    errorMessage = "";
-    try {
-      const result = await refreshModelCatalog();
-      toast.success(
-        m.settings_static_data_updated({
-          providers: result.providerCount,
-          models: result.modelCount,
-        }),
-      );
-    } catch (error) {
-      errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error("Failed to refresh the AI model catalog", error);
-      toast.error(m.settings_static_data_update_failed());
-    } finally {
-      isRefreshing = false;
-    }
+async function handleRefresh() {
+  isRefreshing = true;
+  errorMessage = "";
+  try {
+    const result = await refreshModelCatalog();
+    toast.success(
+      m.settings_static_data_updated({
+        providers: result.providerCount,
+        models: result.modelCount,
+      }),
+    );
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Failed to refresh the AI model catalog", error);
+    toast.error(m.settings_static_data_update_failed());
+  } finally {
+    isRefreshing = false;
   }
+}
 </script>
 
 <Card>

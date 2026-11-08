@@ -28,6 +28,7 @@ import {
   OrbisGrid,
   type GridActionEvent,
   type OrbisColumnDef,
+  selectionColumn,
 } from "@orbis/svelte-grid";
 import { api } from "$lib/api";
 import {
@@ -47,7 +48,6 @@ import FolderCard from "$lib/features/documents/folder-card.svelte";
 import FolderBreadcrumbs from "$lib/features/documents/folder-breadcrumbs.svelte";
 import FolderCreateModal from "$lib/features/documents/folder-create-modal.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
-import ArchiveSelectionCell from "$lib/features/documents/archive-selection-cell.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -94,36 +94,42 @@ const rootFoldersQuery = useFolders(() => undefined);
 const curriculumFoldersQuery = useCurriculumFolders();
 
 // 4. Documents query (if root or general)
-const rootDocumentsQuery = useDocuments(() => (isRoot ? undefined : { entityId: folderId || undefined }));
+const rootDocumentsQuery = useDocuments(() =>
+  isRoot ? undefined : { entityId: folderId || undefined },
+);
 
 // Active Data Derivatives
 const currentFolder = $derived<FolderDto | null>(
-  !isRoot && folderContentsQuery.data?.folder ? folderContentsQuery.data.folder : null
+  !isRoot && folderContentsQuery.data?.folder
+    ? folderContentsQuery.data.folder
+    : null,
 );
 
 const subfolders = $derived<FolderDto[]>(
   isRoot
-    ? (rootFoldersQuery.data || [])
-    : (folderContentsQuery.data?.subfolders || [])
+    ? rootFoldersQuery.data || []
+    : folderContentsQuery.data?.subfolders || [],
 );
 
 const rawDocuments = $derived<DocumentDto[]>(
   isRoot
-    ? (rootDocumentsQuery.data?.pages.flatMap((p) => p.items) || [])
-    : (folderContentsQuery.data?.documents || [])
+    ? rootDocumentsQuery.data?.pages.flatMap((p) => p.items) || []
+    : folderContentsQuery.data?.documents || [],
 );
 
 const isLoading = $derived(
   isRoot
     ? rootFoldersQuery.isLoading || rootDocumentsQuery.isLoading
-    : folderContentsQuery.isLoading
+    : folderContentsQuery.isLoading,
 );
 
 // Filtering & Search
 const filteredFolders = $derived.by(() => {
   const q = searchQuery.trim().toLowerCase();
   if (!q) return subfolders;
-  return subfolders.filter((f) => f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q));
+  return subfolders.filter(
+    (f) => f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q),
+  );
 });
 
 const selectedFileTypes = $derived(
@@ -151,7 +157,8 @@ const filteredDocuments = $derived.by(() => {
       const mime = doc.mime_type?.toLowerCase() || "";
       const extension = doc.extension?.toLowerCase();
       const matchesType = selectedFileTypes.some((type) => {
-        if (type === "pdf") return mime === "application/pdf" || extension === "pdf";
+        if (type === "pdf")
+          return mime === "application/pdf" || extension === "pdf";
         return mime.startsWith(`${type}/`);
       });
       if (!matchesType) return false;
@@ -173,23 +180,14 @@ const gridSource = $derived(
   filteredDocuments.map((doc) => ({
     ...doc,
     id: doc.id,
-    selected: selectedIds.has(doc.id),
-    toggleSelection: toggleSelect,
+    __selected: selectedIds.has(doc.id),
     sizeLabel: formatSize(doc.file_size_bytes),
     created_at_display: formatDate(doc.created_at, "datetime"),
   })),
 );
 
 const documentColumns = $derived<OrbisColumnDef[]>([
-  {
-    id: "selected",
-    header: "",
-    width: 42,
-    flex: 0,
-    readonly: true,
-    sort: false,
-    cell: ArchiveSelectionCell,
-  },
+  selectionColumn(),
   {
     id: "name",
     header: m.settings_ui_archive_file_name(),
@@ -256,6 +254,32 @@ function formatSize(bytes?: number | null): string {
 }
 
 function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "toggle-select" || event.actionId === "select") {
+    const id = String(event.row?.id || "");
+    if (!id) return;
+    const next = new Set(selectedIds);
+    if (
+      event.selected === false ||
+      (event.selected === undefined && next.has(id))
+    ) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    selectedIds = next;
+    return;
+  }
+
+  if (event.actionId === "select-all") {
+    const next = new Set(selectedIds);
+    for (const id of event.selectedIds ?? []) {
+      if (event.selected) next.add(id);
+      else next.delete(id);
+    }
+    selectedIds = next;
+    return;
+  }
+
   const doc = rawDocuments.find((item) => item.id === String(event.row.id));
   if (!doc) return;
 
@@ -312,14 +336,16 @@ const archiveFilterGroups = $derived<SearchableMultiFilterGroup[]>([
     ],
   },
   ...(availableCategories.length > 0
-    ? [{
-        id: "categories",
-        label: m.settings_ui_archive_category(),
-        options: availableCategories.map((category) => ({
-          value: `category:${category}`,
-          label: category,
-        })),
-      }]
+    ? [
+        {
+          id: "categories",
+          label: m.settings_ui_archive_category(),
+          options: availableCategories.map((category) => ({
+            value: `category:${category}`,
+            label: category,
+          })),
+        },
+      ]
     : []),
 ]);
 
@@ -363,7 +389,10 @@ function navigateToFolder(targetFolderId?: string | null) {
 // Preview Handler
 async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
+  selectedDocumentUrl = await resolveDocumentUrl(
+    getDocumentSource(doc),
+    doc.id,
+  );
   isPreviewOpen = true;
 }
 
@@ -392,7 +421,10 @@ async function handleDeleteDoc(id: string) {
 // Archive Document Handler
 async function handleArchiveDoc(id: string) {
   try {
-    await archiveDocMutation.mutateAsync({ id, reason: m.settings_ui_archive_manual_reason() });
+    await archiveDocMutation.mutateAsync({
+      id,
+      reason: m.settings_ui_archive_manual_reason(),
+    });
     toast.success(m.settings_ui_archive_document_archived());
     if (!isRoot) folderContentsQuery.refetch();
   } catch (e: any) {
@@ -423,7 +455,6 @@ async function handleDeleteFolder(f: FolderDto) {
   }
 }
 
-// Multi-select Handlers
 function toggleSelect(id: string, isSelected: boolean) {
   if (isSelected) {
     selectedIds.add(id);
@@ -431,14 +462,6 @@ function toggleSelect(id: string, isSelected: boolean) {
     selectedIds.delete(id);
   }
   selectedIds = new Set(selectedIds);
-}
-
-function selectAllDocuments() {
-  if (selectedIds.size === filteredDocuments.length) {
-    selectedIds = new Set();
-  } else {
-    selectedIds = new Set(filteredDocuments.map((d) => d.id));
-  }
 }
 
 async function handleBulkDelete() {
@@ -453,7 +476,9 @@ async function handleBulkDelete() {
   if (!confirmed) return;
 
   try {
-    await Promise.all(Array.from(selectedIds).map((id) => deleteDocMutation.mutateAsync(id)));
+    await Promise.all(
+      Array.from(selectedIds).map((id) => deleteDocMutation.mutateAsync(id)),
+    );
     toast.success(m.settings_ui_archive_files_deleted({ count }));
     selectedIds = new Set();
     if (!isRoot) folderContentsQuery.refetch();
@@ -466,16 +491,19 @@ async function handleBulkDelete() {
 async function runWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  fn: (item: T, index: number) => Promise<R>
+  fn: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = [];
   let index = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (index < items.length) {
-      const currentIndex = index++;
-      results[currentIndex] = await fn(items[currentIndex], currentIndex);
-    }
-  });
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (index < items.length) {
+        const currentIndex = index++;
+        results[currentIndex] = await fn(items[currentIndex], currentIndex);
+      }
+    },
+  );
   await Promise.all(workers);
   return results;
 }
@@ -531,10 +559,14 @@ async function handleFilesUpload(fileList: FileList | File[]) {
 
   if (successCount > 0) {
     toastHandle.update({
-      title: m.settings_ui_archive_files_uploaded({ uploaded: successCount, total }),
-      description: failCount > 0
-        ? m.settings_ui_archive_upload_fail_count({ count: failCount })
-        : undefined,
+      title: m.settings_ui_archive_files_uploaded({
+        uploaded: successCount,
+        total,
+      }),
+      description:
+        failCount > 0
+          ? m.settings_ui_archive_upload_fail_count({ count: failCount })
+          : undefined,
       progress: 100,
       variant: "success",
       duration: 4000,
@@ -732,15 +764,6 @@ function onContainerDrop(e: DragEvent) {
               <span>{m.settings_ui_archive_documents_count({ count: filteredDocuments.length })}</span>
             </h4>
 
-            {#if viewMode === "table"}
-              <button
-                type="button"
-                onclick={selectAllDocuments}
-                class="text-xs text-primary hover:underline font-medium"
-              >
-                {selectedIds.size === filteredDocuments.length ? m.settings_ui_archive_deselect_all() : m.settings_ui_archive_select_all()}
-              </button>
-            {/if}
           </div>
 
           {#if viewMode === "grid"}
@@ -758,10 +781,11 @@ function onContainerDrop(e: DragEvent) {
             </div>
           {:else}
             <!-- Table View -->
-            <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden rounded-xl border border-border/60 bg-card">
+            <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden">
               <OrbisGrid
                 columns={documentColumns}
                 source={gridSource}
+                toolbar={false}
                 emptyTitle={m.settings_ui_archive_folder_empty()}
                 emptyDescription={m.settings_ui_archive_empty_description()}
                 rtl={getLocale() === "ar"}

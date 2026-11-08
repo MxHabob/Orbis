@@ -1,1 +1,1 @@
-export * from './svelte/index';
+export * from "./svelte/index";

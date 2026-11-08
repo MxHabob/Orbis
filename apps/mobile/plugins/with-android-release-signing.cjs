@@ -1,4 +1,4 @@
-const { withAppBuildGradle } = require("@expo/config-plugins");
+const { withAppBuildGradle } = require("expo/config-plugins");
 
 const signingEnvironment = [
   "ORBIS_ANDROID_KEYSTORE_PATH",
@@ -17,31 +17,35 @@ module.exports = function withAndroidReleaseSigning(config) {
       );
     }
 
-    const releaseSigningConfig = `
-    release {
-        storeFile file(System.getenv('ORBIS_ANDROID_KEYSTORE_PATH'))
-        storePassword System.getenv('ORBIS_ANDROID_KEYSTORE_PASSWORD')
-        keyAlias System.getenv('ORBIS_ANDROID_KEY_ALIAS')
-        keyPassword System.getenv('ORBIS_ANDROID_KEY_PASSWORD')
-    }
-`;
     const signingConfigsEndMarker = "\n    }\n    buildTypes {";
     if (!modConfig.modResults.contents.includes(signingConfigsEndMarker)) {
-      throw new Error("Could not find the Android buildTypes block to configure release signing.");
+      throw new Error(
+        "Could not find the Android buildTypes block to configure release signing.",
+      );
     }
 
     let contents = modConfig.modResults.contents.replace(
       signingConfigsEndMarker,
-      `${releaseSigningConfig}    }\n    buildTypes {`,
+      `
+        release {
+            storeFile file(System.getenv('ORBIS_ANDROID_KEYSTORE_PATH'))
+            storePassword System.getenv('ORBIS_ANDROID_KEYSTORE_PASSWORD')
+            keyAlias System.getenv('ORBIS_ANDROID_KEY_ALIAS')
+            keyPassword System.getenv('ORBIS_ANDROID_KEY_PASSWORD')
+        }
+    }
+    buildTypes {`,
     );
     const releaseSigningPattern =
-      /(buildTypes\s*\{[\s\S]*?\n\s*release\s*\{\s*)signingConfig\s+signingConfigs\.debug/;
+      /(buildTypes\s*\{[\s\S]*?^\s*release\s*\{[\s\S]*?^\s*signingConfig\s+)[^\r\n]+/m;
     if (!releaseSigningPattern.test(contents)) {
-      throw new Error("Could not find the generated Android release signing configuration.");
+      throw new Error(
+        "Could not find the generated Android release signing configuration.",
+      );
     }
     contents = contents.replace(
       releaseSigningPattern,
-      "$1signingConfig signingConfigs.release",
+      "$1signingConfigs.release",
     );
     modConfig.modResults.contents = contents;
     return modConfig;

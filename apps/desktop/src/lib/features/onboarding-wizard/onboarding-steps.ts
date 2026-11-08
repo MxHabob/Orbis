@@ -157,18 +157,23 @@ export function deriveSteps(
     const status = deriveStepStatus(stepTasks, def.id === "review");
     const progress = deriveStepProgress(stepTasks);
     const isRequired = stepTasks.some((t) => t.is_required);
-    const accessibleTaskIds = stepTasks.filter((task) => {
-      const canAccess = task.status !== "blocked" &&
-        task.status !== "not_applicable" &&
-        task.required_permissions.every(hasPermission);
-      const dependenciesMet = task.dependencies.every((dependencyId) => {
-        const dependency = taskById.get(dependencyId);
-        return dependency?.status === "completed" ||
-          dependency?.status === "optional" ||
-          dependency?.status === "not_applicable";
-      });
-      return canAccess && dependenciesMet;
-    }).map((task) => task.id);
+    const accessibleTaskIds = stepTasks
+      .filter((task) => {
+        const canAccess =
+          task.status !== "blocked" &&
+          task.status !== "not_applicable" &&
+          task.required_permissions.every(hasPermission);
+        const dependenciesMet = task.dependencies.every((dependencyId) => {
+          const dependency = taskById.get(dependencyId);
+          return (
+            dependency?.status === "completed" ||
+            dependency?.status === "optional" ||
+            dependency?.status === "not_applicable"
+          );
+        });
+        return canAccess && dependenciesMet;
+      })
+      .map((task) => task.id);
     const isAccessible = def.id === "review" || accessibleTaskIds.length > 0;
 
     return {
@@ -201,19 +206,28 @@ function deriveStepStatus(
 
   if (isReview) {
     const requiredTasks = tasks.filter((t) => t.is_required);
-    if (requiredTasks.every((t) =>
-      t.status === "completed" || t.status === "not_applicable"
-    )) return "completed";
-    if (requiredTasks.some((t) => t.status === "completed")) return "in_progress";
+    if (
+      requiredTasks.every(
+        (t) => t.status === "completed" || t.status === "not_applicable",
+      )
+    )
+      return "completed";
+    if (requiredTasks.some((t) => t.status === "completed"))
+      return "in_progress";
     return "not_started";
   }
 
-  const applicableTasks = tasks.filter((task) => task.status !== "not_applicable");
+  const applicableTasks = tasks.filter(
+    (task) => task.status !== "not_applicable",
+  );
   if (applicableTasks.length === 0) return "not_applicable";
   const requiredTasks = applicableTasks.filter((task) => task.is_required);
-  const statusTasks = requiredTasks.length > 0 ? requiredTasks : applicableTasks;
-  if (statusTasks.every((task) => task.status === "completed")) return "completed";
-  if (statusTasks.every((task) => task.status === "optional")) return "optional";
+  const statusTasks =
+    requiredTasks.length > 0 ? requiredTasks : applicableTasks;
+  if (statusTasks.every((task) => task.status === "completed"))
+    return "completed";
+  if (statusTasks.every((task) => task.status === "optional"))
+    return "optional";
   if (statusTasks.some((task) => task.status === "blocked")) return "blocked";
   if (
     statusTasks.some(

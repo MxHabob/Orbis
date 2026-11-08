@@ -6,7 +6,8 @@ import { formatNumber, formatPercent } from "$lib/core/i18n";
 import type { DashboardCountsDto } from "$lib/api/types";
 import { createSectionsQuery } from "$lib/features/academics";
 
-let { stats, orgId }: { stats: DashboardCountsDto | null; orgId: string } = $props();
+let { stats, orgId }: { stats: DashboardCountsDto | null; orgId: string } =
+  $props();
 const sectionsQuery = createSectionsQuery(() => orgId);
 const sections = $derived(sectionsQuery.data ?? []);
 

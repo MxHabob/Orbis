@@ -422,6 +422,61 @@ impl OnboardingService {
         let mut next_month_start = start_date;
         let mut month_ranges = Vec::with_capacity(8);
 
+        // Create an Annual period covering the full academic year.
+        // Schools enroll students in this period; terms and months are its children.
+        let annual_period_id = if let Some(existing) = periods
+            .iter()
+            .find(|p| p.period_type.is_annual() && p.code.as_deref() == Some("ANNUAL"))
+        {
+            existing.id
+        } else {
+            let id = Uuid::new_v4();
+            let annual = AcademicPeriod {
+                id,
+                org_id,
+                year_id,
+                parent_id: None,
+                name: format!("Academic Year {}", hijri_start_year),
+                name_ar: Some(format!("العام الدراسي {}", hijri_start_year)),
+                code: Some("ANNUAL".to_string()),
+                period_type: PeriodType::Annual,
+                period_kind: PeriodKind::Teaching,
+                state: calendar_period_state(
+                    at_day_start(start_date),
+                    at_day_end(calendar_end_date),
+                    now,
+                    false,
+                ),
+                start_date: at_day_start(start_date),
+                end_date: at_day_end(calendar_end_date),
+                hijri_start: Some(format!(
+                    "{} {} {}",
+                    hijri_start_day,
+                    month_names_en[(hijri_start_month - 1) as usize],
+                    hijri_start_year
+                )),
+                hijri_end: None,
+                enrollment_starts_at: None,
+                enrollment_ends_at: None,
+                is_enrollment_open: true,
+                grade_entry_starts_at: None,
+                grade_entry_ends_at: None,
+                is_grade_entry_open: false,
+                exam_starts_at: None,
+                exam_ends_at: None,
+                is_locked: false,
+                locked_at: None,
+                locked_by: None,
+                sort_order: Some(0),
+                metadata: None,
+                created_at: now,
+                updated_at: now,
+            };
+            self.period_repo.save(&annual).await?;
+            periods.push(annual);
+            id
+        };
+
         for (index, days) in lengths.iter().enumerate() {
             let month_start = next_month_start;
             let month_end = month_start + Duration::days(i64::from(*days) - 1);
@@ -443,7 +498,8 @@ impl OnboardingService {
             let term_id = if let Some(term) = periods
                 .iter()
                 .find(|period| {
-                    period.parent_id.is_none() && period.code.as_deref() == Some(term_name.2)
+                    period.parent_id == Some(annual_period_id)
+                        && period.code.as_deref() == Some(term_name.2)
                 })
                 .cloned()
             {
@@ -462,7 +518,7 @@ impl OnboardingService {
                     id,
                     org_id,
                     year_id,
-                    parent_id: None,
+                    parent_id: Some(annual_period_id),
                     name: term_name.0.to_string(),
                     name_ar: Some(term_name.1.to_string()),
                     code: Some(term_name.2.to_string()),
@@ -509,7 +565,8 @@ impl OnboardingService {
                 periods
                     .iter()
                     .find(|period| {
-                        period.parent_id.is_none() && period.code.as_deref() == Some(term_name.2)
+                        period.parent_id == Some(annual_period_id)
+                            && period.code.as_deref() == Some(term_name.2)
                     })
                     .map(|period| period.id)
                     .ok_or_else(|| {

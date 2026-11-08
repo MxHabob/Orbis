@@ -17,7 +17,8 @@ export function getOrgUnitLocationPath(
       : undefined;
   }
 
-  return path
-    .map((unit) => l(unit.name_ar, unit.name) || unit.name)
-    .join(" / ") || null;
+  return (
+    path.map((unit) => l(unit.name_ar, unit.name) || unit.name).join(" / ") ||
+    null
+  );
 }

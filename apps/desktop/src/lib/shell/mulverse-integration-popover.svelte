@@ -35,22 +35,26 @@ let { orgId }: { orgId: string } = $props();
     side="inline-end"
     align="end"
     sideOffset={12}
-	 class="w-64 p-4 space-y-3 backdrop-blur-md">
-		<div class="space-y-1">
-			<h4 class="text-xs font-bold text-foreground">
-				{m.common_sidebar_mulverse_connect_title()}
-			</h4>
-			<p class="text-[10px] text-muted-foreground leading-normal">
-				{m.common_sidebar_mulverse_connect_desc()}
-			</p>
-		</div>
+	  class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(320px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+	>
+	  <div class="border-b border-border px-4 py-3">
+	    <h4 class="text-sm font-semibold text-foreground">
+	      {m.common_sidebar_mulverse_connect_title()}
+	    </h4>
+	  </div>
 
-		<Button
-			href={localizeHref(`/${orgId}/settings/mulverse`)}
-			size="sm"
-			class="w-full text-[10px] h-8 rounded-lg font-semibold"
-		>
-			{m.common_sidebar_mulverse_configure()}
-		</Button>
+	  <p class="px-4 py-3 text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+	    {m.common_sidebar_mulverse_connect_desc()}
+	  </p>
+
+	  <div class="border-t border-border px-4 py-3">
+	    <Button
+	      href={localizeHref(`/${orgId}/settings/mulverse`)}
+	      size="sm"
+	      class="w-full text-xs font-semibold"
+	    >
+	      {m.common_sidebar_mulverse_configure()}
+	    </Button>
+	  </div>
 	</PopoverContent>
 </Popover>

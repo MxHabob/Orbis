@@ -81,7 +81,9 @@ export function matchStudent(student: any, query: string): boolean {
     p.address || s.address,
   ]
     .filter(Boolean)
-    .map((value) => normalizeArabic(normalizeDigits(String(value).toLowerCase())));
+    .map((value) =>
+      normalizeArabic(normalizeDigits(String(value).toLowerCase())),
+    );
 
   // Student numbers may contain punctuation or Arabic-Indic digits.
   const rawStudentNumber = String(

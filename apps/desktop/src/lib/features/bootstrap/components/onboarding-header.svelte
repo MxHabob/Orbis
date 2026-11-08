@@ -20,7 +20,8 @@ const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
 const stepLabels: Record<OnboardingStep, () => string> = {
   intro: () => m.ui_onboarding_intro_release_notes(),
   blueprint: () => m.ui_onboarding_blueprint_select_institutional_blueprint(),
-  organization: () => m.ui_onboarding_organization_organization_profile_identity(),
+  organization: () =>
+    m.ui_onboarding_organization_organization_profile_identity(),
   region: () => m.ui_onboarding_organization_regional_fiscal_parameters(),
   admin: () => m.ui_onboarding_admin_primary_administrator_account(),
   mfa: () => m.ui_onboarding_mfa_two_factor_authentication_setup(),

@@ -44,8 +44,13 @@ const sectionsQuery = createSectionsQuery(() => orgId);
 const periodsQuery = createPeriodsQuery(() => orgId);
 const progressionJobsQuery = createprogressionJobsQuery(() => orgId);
 const teachersQuery = createQuery(() => ({
-  queryKey: ["employees", orgId, { employee_type: "teacher", status: "active" }],
-  queryFn: () => api.listEmployees({ employee_type: "teacher", status: "active" }),
+  queryKey: [
+    "employees",
+    orgId,
+    { employee_type: "teacher", status: "active" },
+  ],
+  queryFn: () =>
+    api.listEmployees({ employee_type: "teacher", status: "active" }),
   enabled: !!orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -66,7 +71,10 @@ const currentYear = $derived(
 );
 
 const activeYearName = $derived(
-  currentYear?.name_ar || currentYear?.name || academicContext.yearLabelAr || "",
+  currentYear?.name_ar ||
+    currentYear?.name ||
+    academicContext.yearLabelAr ||
+    "",
 );
 
 // Keep academicContext synced with the resolved active year

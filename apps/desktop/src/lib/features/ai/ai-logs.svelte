@@ -60,7 +60,8 @@ const allLogs = $derived.by<LogItem[]>(() => {
       id: t.id || `task-${Math.random()}`,
       source: "autopilot",
       title: t.task_type || m.ai_ui_automation_task(),
-      description: t.reason || t.task_type || m.ai_ui_periodic_autopilot_operation(),
+      description:
+        t.reason || t.task_type || m.ai_ui_periodic_autopilot_operation(),
       status: t.status || "pending",
       timestamp: t.scheduled_at || t.created_at || new Date().toISOString(),
       target: t.target_id
@@ -76,7 +77,9 @@ const allLogs = $derived.by<LogItem[]>(() => {
       id: s.id || `session-${Math.random()}`,
       source: "agent",
       title: s.title || m.ai_ui_smart_processing_session(),
-      description: m.ai_ui_agent_description({ agent: s.agent_id || m.ai_ui_ai_assistant() }),
+      description: m.ai_ui_agent_description({
+        agent: s.agent_id || m.ai_ui_ai_assistant(),
+      }),
       status: s.status === "active" ? "completed" : "pending",
       timestamp: s.created_at || s.updated_at || new Date().toISOString(),
       target: s.acting_as_role || undefined,

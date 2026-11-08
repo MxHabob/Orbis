@@ -40,14 +40,30 @@ impl FromRequestParts<AppState> for AuthContext {
     ) -> Result<Self, Self::Rejection> {
         let request_id = Uuid::new_v4();
 
-        // Extract bearer token from Authorization header
-        let token = parts
+        // Extract bearer token from Authorization header or query param (?token=... or ?access_token=...)
+        let token_header = parts
             .headers
             .get(header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "));
+            .and_then(|v| v.strip_prefix("Bearer "))
+            .map(|s| s.to_string());
 
-        match token {
+        let token = token_header.or_else(|| {
+            parts.uri.query().and_then(|q| {
+                q.split('&').find_map(|pair| {
+                    let mut split = pair.splitn(2, '=');
+                    let key = split.next()?;
+                    let val = split.next()?;
+                    if key == "token" || key == "access_token" {
+                        Some(val.to_string())
+                    } else {
+                        None
+                    }
+                })
+            })
+        });
+
+        match token.as_deref() {
             Some(token_str) => {
                 // Enterprise DI: Delegate 100% of token verification to the injected TokenService
                 let claims = state

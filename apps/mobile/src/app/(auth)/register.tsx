@@ -111,7 +111,10 @@ export default function RegisterScreen() {
             returnKeyType="go"
           />
           {errorMessage ? (
-            <Text accessibilityRole="alert" className="text-sm text-destructive">
+            <Text
+              accessibilityRole="alert"
+              className="text-sm text-destructive"
+            >
               {errorMessage}
             </Text>
           ) : null}
