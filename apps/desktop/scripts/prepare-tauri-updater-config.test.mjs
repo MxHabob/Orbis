@@ -5,12 +5,22 @@ import { normalizeUpdaterPublicKey } from "./prepare-tauri-updater-config.mjs";
 const publicKey = `untrusted comment: minisign public key\n${Buffer.alloc(42).toString("base64")}`;
 
 test("accepts a raw minisign public key", () => {
-  assert.equal(normalizeUpdaterPublicKey(publicKey), publicKey);
+  assert.equal(
+    Buffer.from(normalizeUpdaterPublicKey(publicKey), "base64").toString(
+      "utf8",
+    ),
+    publicKey,
+  );
 });
 
 test("decodes a base64-encoded minisign public key", () => {
   const encoded = Buffer.from(`${publicKey}\n`).toString("base64");
-  assert.equal(normalizeUpdaterPublicKey(encoded), publicKey);
+  assert.equal(
+    Buffer.from(normalizeUpdaterPublicKey(encoded), "base64").toString(
+      "utf8",
+    ),
+    publicKey,
+  );
 });
 
 test("rejects a public key without its minisign comment", () => {

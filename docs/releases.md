@@ -16,7 +16,7 @@ Before publishing, configure these repository Actions settings:
 | --- | --- | --- |
 | `TAURI_SIGNING_PRIVATE_KEY` | Secret | Signs Tauri updater bundles |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Secret | Password for the signing key, if set |
-| `TAURI_UPDATER_PUBLIC_KEY` | Variable | Verifies updates in the installed app; provide the minisign public-key text or its base64-encoded full text, and it must match the private signing key |
+| `TAURI_UPDATER_PUBLIC_KEY` | Variable | Verifies updates in the installed app; provide the minisign public-key text or its base64-encoded full text, and it must match the private signing key. The release helper validates either form and writes the base64-encoded text required by Tauri's updater config. |
 | `MULVERSE_LICENSE_PUBLIC_KEY_B64` | Variable | Verifies application licenses in release builds |
 | `MULVERSE_LICENSE_KEY_ID` | Variable | Identifies the application license key |
 | `ANDROID_KEYSTORE_BASE64` | Secret | Base64-encoded Android release keystore |
