@@ -32,7 +32,7 @@
 
 ## 1.1 التجربة المركزية وملف المؤسسة
 
-لا يبدأ Orbis طلب التجربة إلا بعد اكتمال إعداد المؤسسة. يتضمن `POST /api/v1/public/trials/register` معرّف المؤسسة المحلي الثابت وبياناتها؛ وتُرسل أسماء الحقول وفق عقد Mulverse (`customer_id` و`customer_name` و`customer_slug` و`customer_profile`، مع `customer_size` داخل الملف). يوقّع مفتاح Ed25519 الخاص بالجهاز قيم هذه الحقول مع `challenge_id` و`challenge` وبيانات التثبيت؛ لذلك لا يمكن تبديل المؤسسة أو ملفها أثناء نقل الطلب.
+لا يبدأ Orbis طلب التجربة إلا بعد اكتمال إعداد المؤسسة. يتضمن `POST /api/v1/public/trials/register` معرّف المؤسسة المحلي الثابت (`organization_id`)، والاسم (`organization_name`)، والمعرّف المقروء (`organization_slug`)، و`organization_profile` الذي يحمل نوع المؤسسة وحجمها والمنهج والموقع والاسم العربي عند توفره. يوقّع مفتاح Ed25519 الخاص بالجهاز هذه الحقول مع `challenge_id` و`challenge` وبيانات التثبيت؛ لذلك لا يمكن تبديل المؤسسة أو ملفها أثناء نقل الطلب.
 
 ينشئ Mulverse المؤسسة بنفس المعرّف والاسم والملف ويعرض الملف لمسؤولي المنصة. التسجيل وإعادة المحاولة متوافقان مع idempotency، ولا يسمحان بتغيير ملف مؤسسة مسجلة أو نقل سجل التجربة إلى مؤسسة أخرى. تبدأ مدة التجربة المركزية البالغة 30 يوماً عند أول تسجيل ناجح، ويعيد Orbis التحقق من توقيع Mulverse وربط المؤسسة والتثبيت قبل حفظ الاستحقاق. يختار مسؤول المنصة خطة ما بعد التجربة يدوياً بناءً على ملف المؤسسة؛ لا يستنتج Orbis أو Mulverse خطة تجارية تلقائياً من الحجم أو المنهج. لا يعيد مسار إلغاء التفعيل منح تجربة جديدة.
 
@@ -42,18 +42,18 @@
 
 ## 1.2 مطالبة مفاتيح الموزعين والبيع بالتجزئة
 
-بعد إنشاء المؤسسة في Orbis، يرسل العميل مفتاح الشراء إلى `POST /api/v1/public/keys/claim` باستخدام أسماء الحقول المتوافقة مع عقد Mulverse: `application_key` و`customer_id` و`customer_name` و`customer_slug` و`customer_profile`. لا يرسل Orbis بيانات دفع أو ينشئ المؤسسة بمعرّف جديد. ينشئ Mulverse المؤسسة بنفس UUID إن لم تكن موجودة، أو يتحقق من تطابق المؤسسة القائمة، ثم يربط مفتاح الموزع بها وينشئ الترخيص من الخطة/الطبعة المحفوظة في المفتاح.
+بعد إنشاء المؤسسة في Orbis، يرسل العميل مفتاح الشراء إلى `POST /api/v1/public/keys/claim` مع UUID المؤسسة المحلي نفسه والاسم والـslug وملف المؤسسة. لا يرسل Orbis بيانات دفع أو ينشئ المؤسسة بمعرّف جديد. ينشئ Mulverse المؤسسة بنفس UUID إن لم تكن موجودة، أو يتحقق من تطابق المؤسسة القائمة، ثم يربط مفتاح الموزع بها وينشئ الترخيص من الخطة/الطبعة المحفوظة في المفتاح.
 
 ```json
 {
-  "application_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
-  "customer_id": "00000000-0000-0000-0000-000000000002",
-  "customer_name": "Example Academy",
-  "customer_slug": "example-academy",
-  "customer_profile": {
+  "product_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
+  "organization_id": "00000000-0000-0000-0000-000000000002",
+  "organization_name": "Example Academy",
+  "organization_slug": "example-academy",
+  "organization_profile": {
     "name_ar": "أكاديمية المثال",
     "institution_type": "school",
-    "customer_size": "medium",
+    "organization_size": "medium",
     "educational_track": "national",
     "country_code": "SA",
     "country_name": "Saudi Arabia",
@@ -82,10 +82,10 @@ sequenceDiagram
     Orbis->>SecStorage: حفظ الـ SignedEntitlement وتاريخ آخر تحقق سليم
 
     Note over Orbis, Platform: مطالبة رمز موزع بعد إعداد المؤسسة (Retail Claim)
-    Orbis->>Platform: POST /api/v1/public/keys/claim (application_key, customer_id, customer_name, customer_slug, customer_profile)
+    Orbis->>Platform: POST /api/v1/public/keys/claim (product_key, organization_id, organization_name, organization_slug, organization_profile)
     Platform->>Platform: ربط المفتاح بالمؤسسة وإنشاء ترخيص الخطة وبدء مدته
-    Platform-->>Orbis: 200 OK (customer_id, license_id, valid_until)
-    Orbis->>Platform: POST /api/v1/public/licenses/activate (application_key, customer_id, installation_id)
+    Platform-->>Orbis: 200 OK (organization_id, license_id, valid_until)
+    Orbis->>Platform: POST /api/v1/public/licenses/activate (product_key, organization_id, installation_id)
     Platform-->>Orbis: 201 Created (Activation + SignedEntitlement)
     Orbis->>SecStorage: التحقق من الاستحقاق الموقع وحفظه محليًا
 
@@ -226,15 +226,15 @@ sequenceDiagram
 * **Request Body:**
 ```json
 {
-  "application_key": "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST",
-  "customer_id": "33333333-3333-4333-8333-333333333333",
+  "product_key": "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST",
+  "organization_id": "33333333-3333-4333-8333-333333333333",
   "installation_id": "inst_win_8b9f71c42de34",
   "platform": "windows",
   "app_version": "1.0.0",
   "machine_label": "School Server 01"
 }
 ```
-* `customer_id` هو معرّف المؤسسة النشطة في Orbis؛ يرسله التطبيق ويجب أن يطابق المؤسسة المسند إليها الترخيص في Mulverse. كما يستخدم Orbis `application_key` لحمل مفتاح الترخيص. التفعيل لا ينشئ مؤسسة جديدة ولا يغيّر ربط المنتج بالمؤسسة.
+* `organization_id` هو معرّف المؤسسة النشطة في Orbis؛ يرسله التطبيق ويجب أن يطابق المؤسسة المسند إليها الترخيص في Mulverse. التفعيل لا ينشئ مؤسسة جديدة ولا يغيّر ربط المنتج بالمؤسسة.
 * **Response `201 Created`:** كائن `activation` مع `signed_entitlement`. حقلا `activation.app_version` و`activation.last_seen_at` اختياريان وقد تكون قيمتهما `null`.
 * **الأخطاء الشائعة:**
   * `400`: بيانات ناقصة أو غير صالحة.
