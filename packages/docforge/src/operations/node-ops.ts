@@ -375,7 +375,15 @@ export function updateNodeProps(
             "props" in updated &&
             updated.props
           ) {
-            updated.props = { ...updated.props, ...innerUpdates };
+            const nextProps = { ...updated.props };
+            for (const [key, value] of Object.entries(innerUpdates)) {
+              if (value === undefined) {
+                delete nextProps[key];
+              } else {
+                nextProps[key] = value;
+              }
+            }
+            updated.props = nextProps;
           }
           return updated as TemplateNode;
         }) as PageNode,

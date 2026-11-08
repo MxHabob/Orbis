@@ -105,7 +105,7 @@ function updateProp(key: string, value: unknown) {
 function updateShapePaint(property: "fill" | "stroke", value: string) {
   const alias = property === "fill" ? "fillColor" : "strokeColor";
   store.updateSelectedProps({
-    props: { ...nodeProps, [property]: value, [alias]: value },
+    props: { ...nodeProps, [property]: value, [alias]: undefined },
   } as any);
 }
 

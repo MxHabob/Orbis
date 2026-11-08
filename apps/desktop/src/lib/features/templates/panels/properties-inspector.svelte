@@ -65,7 +65,7 @@ function updateProp(key: string, value: unknown) {
 function updateShapePaint(property: "fill" | "stroke", value: string) {
   if (!node) return;
   const alias = property === "fill" ? "fillColor" : "strokeColor";
-  store.updateSelectedProps({ [property]: value, [alias]: value });
+  store.updateSelectedProps({ [property]: value, [alias]: undefined });
 }
 
 function triggerImageReplace() {
