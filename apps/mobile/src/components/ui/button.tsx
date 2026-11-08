@@ -88,61 +88,70 @@ const variantClasses: Record<
 
 const sizeClasses: Record<
   ButtonSize,
-  { container: string; contentGap: string; text: string; iconOnly: boolean }
+  { container: string; contentGap: string; text: string; iconOnly: boolean; hitSlop: number }
 > = {
   xs: {
     container: "h-[26px] gap-1 rounded-sm px-2",
     contentGap: "gap-1",
     text: "text-[11px]",
     iconOnly: false,
+    hitSlop: 9,
   },
   sm: {
     container: "h-8 gap-[5px] rounded-sm px-3",
     contentGap: "gap-[5px]",
     text: "text-xs",
     iconOnly: false,
+    hitSlop: 6,
   },
   default: {
     container: "h-[38px] gap-1.5 rounded-md px-[14px]",
     contentGap: "gap-1.5",
     text: "text-[13.5px]",
     iconOnly: false,
+    hitSlop: 3,
   },
   md: {
     container: "h-[38px] gap-1.5 rounded-md px-[14px]",
     contentGap: "gap-1.5",
     text: "text-[13.5px]",
     iconOnly: false,
+    hitSlop: 3,
   },
   lg: {
     container: "h-[46px] gap-2 rounded-md px-[18px]",
     contentGap: "gap-2",
     text: "text-[15px]",
     iconOnly: false,
+    hitSlop: 0,
   },
   icon: {
     container: "h-[38px] w-[38px] rounded-md",
     contentGap: "gap-0",
     text: "text-sm",
     iconOnly: true,
+    hitSlop: 3,
   },
   "icon-xs": {
     container: "h-[26px] w-[26px] rounded-sm",
     contentGap: "gap-0",
     text: "text-[11px]",
     iconOnly: true,
+    hitSlop: 9,
   },
   "icon-sm": {
     container: "h-8 w-8 rounded-sm",
     contentGap: "gap-0",
     text: "text-xs",
     iconOnly: true,
+    hitSlop: 6,
   },
   "icon-lg": {
     container: "h-[46px] w-[46px] rounded-md",
     contentGap: "gap-0",
     text: "text-[15px]",
     iconOnly: true,
+    hitSlop: 0,
   },
 };
 
@@ -191,10 +200,13 @@ export const Button = React.memo<ButtonProps>(
           : normalizedVariant === "destructive"
             ? theme.destructiveForeground
             : normalizedVariant === "lime"
-              ? "#152E05"
+              ? theme.brandLimeForeground
               : normalizedVariant === "link"
                 ? theme.primary
                 : theme.primaryForeground;
+
+    // Ensure 44pt minimum touch target for small button sizes
+    const hitSlop = sizeStyle.hitSlop;
 
     return (
       <AnimatedPressable
@@ -204,6 +216,7 @@ export const Button = React.memo<ButtonProps>(
         onPressIn={tactilePress.onPressIn}
         onPressOut={tactilePress.onPressOut}
         disabled={isDisabled}
+        hitSlop={hitSlop}
         className={`flex-row items-center justify-center ${sizeStyle.container} ${variantStyle.container} ${fullWidth ? "w-full" : ""} ${className ?? ""}`}
         style={[
           {

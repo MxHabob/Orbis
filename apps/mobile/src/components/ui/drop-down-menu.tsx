@@ -18,6 +18,7 @@ import React, {
   useState,
 } from "react";
 import {
+  type GestureResponderEvent,
   Modal,
   Platform,
   Pressable,
@@ -63,7 +64,7 @@ interface DropdownMenuContextValue {
   open: boolean;
   openMenu: () => void;
   closeMenu: (callback?: () => void) => void;
-  triggerRef: React.RefObject<View | null>;
+  triggerRef: React.RefObject<ViewInstance | null>;
   menuPosition: {
     top: number;
     left?: number;
@@ -72,6 +73,8 @@ interface DropdownMenuContextValue {
   };
 }
 
+type ViewInstance = React.ComponentRef<typeof View>;
+
 const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(
   null,
 );
@@ -79,7 +82,7 @@ const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(
 // ─── Trigger Measurement ────────────────────────────────────────────────────────
 
 function measureTrigger(
-  ref: React.RefObject<View | null>,
+  ref: React.RefObject<ViewInstance | null>,
   callback: (x: number, y: number, width: number, height: number) => void,
 ) {
   if (!ref.current) return;
@@ -102,7 +105,7 @@ export const DropdownMenu = ({
   menuWidth = 240,
 }: DropdownMenuProps) => {
   const [visible, setVisible] = useState(false);
-  const triggerRef = useRef<View>(null);
+  const triggerRef = useRef<ViewInstance>(null);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -184,15 +187,21 @@ export const DropdownMenuTrigger = ({
     return null;
   }
 
-  const handlePress = () => context.openMenu();
+  const { openMenu, triggerRef } = context;
+  const handlePress = () => openMenu();
   const suppressLongPress = () => undefined;
 
   if (asChild && isValidElement(children)) {
+    const childElement = children as ReactElement<{
+      onPress?: (event: GestureResponderEvent) => void;
+      onLongPress?: () => void;
+      delayLongPress?: number;
+    }>;
     return (
-      <View ref={context.triggerRef} collapsable={false}>
-        {cloneElement(children as ReactElement<any>, {
-          onPress: (event: any) => {
-            (children as ReactElement<any>).props?.onPress?.(event);
+      <View ref={triggerRef} collapsable={false}>
+        {cloneElement(childElement, {
+          onPress: (event: GestureResponderEvent) => {
+            childElement.props?.onPress?.(event);
             handlePress();
           },
           onLongPress: suppressLongPress,
@@ -203,7 +212,7 @@ export const DropdownMenuTrigger = ({
   }
 
   return (
-    <View ref={context.triggerRef} collapsable={false}>
+    <View ref={triggerRef} collapsable={false}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handlePress}
@@ -322,11 +331,11 @@ export const DropdownMenuItem = ({
     return null;
   }
 
-  const handlePress = () => {
+  const handlePress = (event: GestureResponderEvent) => {
     if (disabled) return;
     onSelect?.();
     context.closeMenu();
-    onPress?.({} as any);
+    onPress?.(event);
   };
 
   return (
@@ -359,9 +368,7 @@ export const DropdownMenuItem = ({
         </Text>
       </View>
 
-      {selected ? (
-        <CheckCircle size={18} color={theme.primary} />
-      ) : null}
+      {selected ? <CheckCircle size={18} color={theme.primary} /> : null}
     </TouchableOpacity>
   );
 };
@@ -444,7 +451,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuItemText: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
+    ...{ fontSize: 14, lineHeight: 20, fontWeight: "400" },
     flexShrink: 1,
   },
   menuAvatar: {
@@ -461,7 +468,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   labelText: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
+    ...{ fontSize: 12, lineHeight: 16, fontWeight: "600" },
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },

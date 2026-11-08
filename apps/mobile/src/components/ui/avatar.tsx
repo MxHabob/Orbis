@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { Image } from "expo-image";
 
 export type AvatarSize = number | "sm" | "md" | "lg" | "xl";
 
@@ -38,6 +39,8 @@ export const Avatar = React.memo<AvatarProps>(
 
     return (
       <View
+        accessibilityRole="image"
+        accessibilityLabel={name ?? undefined}
         className={`items-center justify-center overflow-hidden rounded-full border border-border bg-brand-pink ${className ?? ""}`}
         style={[
           {
@@ -53,13 +56,12 @@ export const Avatar = React.memo<AvatarProps>(
         ) : showImage ? (
           <Image
             source={{ uri: imageUrl! }}
-            className="rounded-full"
             style={{
               width: pixelSize,
               height: pixelSize,
               borderRadius: pixelSize / 2,
             }}
-            resizeMode="cover"
+            contentFit="cover"
             onError={() => setFailedImageUrl(imageUrl ?? null)}
           />
         ) : (

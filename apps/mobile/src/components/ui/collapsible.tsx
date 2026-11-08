@@ -14,8 +14,10 @@ export function Collapsible({
   return (
     <View>
       <Pressable
-        className="flex-row items-center gap-2"
-        style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+        className="min-h-[44px] flex-row items-center gap-2"
+        style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
         onPress={() => setIsOpen((value) => !value)}
       >
         <View className="h-4 w-4 items-center justify-center rounded-xl">

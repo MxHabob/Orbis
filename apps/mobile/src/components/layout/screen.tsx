@@ -2,19 +2,19 @@
  * @module @orbis/mobile/components/layout/screen
  *
  * Universal Screen wrapper for mobile pages.
- * Handles safe area insets, keyboard avoidance, status bar, and root backgrounds.
+ * Handles safe area insets, keyboard avoidance, and root backgrounds.
+ *
+ * StatusBar is managed by the root layout's ThemedStatusBar — individual
+ * screens should NOT render their own StatusBar component. Use the
+ * `statusBarStyle` prop when a screen needs to override the bar style
+ * (e.g. light text over a dark hero header).
  */
 
 import React from "react";
-import {
-  View,
-  type ViewProps,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, type ViewProps } from "react-native";
 import { useSafeAreaInsets, type Edge } from "react-native-safe-area-context";
-import { useTheme } from "@/hooks/use-theme";
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { StatusBar } from "expo-status-bar";
 
 export interface ScreenProps extends ViewProps {
   children?: React.ReactNode;
@@ -22,7 +22,7 @@ export interface ScreenProps extends ViewProps {
   footer?: React.ReactNode;
   edges?: Edge[];
   backgroundColor?: string;
-  statusBarColor?: string;
+  /** Override the status bar style for this screen (e.g. "light" over dark hero). */
   statusBarStyle?: "auto" | "light" | "dark" | "inverted";
   keyboardAvoiding?: boolean;
   keyboardVerticalOffset?: number;
@@ -34,17 +34,13 @@ export function Screen({
   footer,
   edges = ["top", "bottom", "left", "right"],
   backgroundColor,
-  statusBarColor,
   statusBarStyle,
   keyboardAvoiding = false,
   keyboardVerticalOffset = 0,
   style,
   ...props
 }: ScreenProps) {
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
-
-  const resolvedBg = backgroundColor ?? theme.background;
 
   const edgePadding = {
     paddingTop: edges.includes("top") ? insets.top : 0,
@@ -63,10 +59,8 @@ export function Screen({
       ]}
       {...props}
     >
-      <ThemedStatusBar
-        backgroundColor={statusBarColor ?? resolvedBg}
-        style={statusBarStyle}
-      />
+      {/* Only render a StatusBar override when this screen needs a different style */}
+      {statusBarStyle ? <StatusBar style={statusBarStyle} /> : null}
 
       {header}
       <View className="flex-1 w-full">{children}</View>
@@ -77,8 +71,7 @@ export function Screen({
   if (keyboardAvoiding) {
     return (
       <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
         {content}

@@ -27,6 +27,7 @@ import {
 } from "react-native";
 
 import { ChartBar, Document, Grid } from "@orbis/icons/native";
+import type { BottomTabBarProps } from "expo-router/tabs";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -37,34 +38,7 @@ import { useI18n } from "@/lib/i18n";
 // Types
 // ---------------------------------------------------------------------------
 
-type TabRoute = {
-  key: string;
-  name: string;
-  params?: unknown;
-};
-
-type TabBarState = {
-  index: number;
-  routes: TabRoute[];
-};
-
-type TabBarNavigation = {
-  emit: (event: {
-    type: string;
-    target: string;
-    canPreventDefault: boolean;
-  }) => { defaultPrevented: boolean };
-
-  navigate: (name: string, params?: unknown) => void;
-};
-
-type TabBarDescriptors = Record<string, { options: { title?: string } }>;
-
-type FloatingTabBarProps = {
-  state: TabBarState;
-  navigation: TabBarNavigation;
-  descriptors: TabBarDescriptors;
-};
+export type FloatingTabBarProps = BottomTabBarProps;
 
 type FloatingControlProps = {
   children: React.ReactNode;
@@ -77,7 +51,11 @@ type FloatingControlProps = {
 const ROUTE_APPS = "index";
 const ROUTE_ANALYTICS = "behavior";
 
-export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
+export function FloatingTabBar({
+  state,
+  emitter,
+  navigateToTab,
+}: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const router = useRouter();
@@ -143,14 +121,14 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
     }
 
     const route = state.routes[routeIndex];
-    const event = navigation.emit({
+    const event = emitter.emit({
       type: "tabPress",
       target: route.key,
       canPreventDefault: true,
     });
 
     if (!event.defaultPrevented) {
-      navigation.navigate(route.name, route.params);
+      navigateToTab(route.key);
     }
   };
 

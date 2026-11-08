@@ -5,38 +5,8 @@
  */
 
 import React from "react";
-import {
-  View,
-  Text,
-  type ViewProps,
-} from "react-native";
-
-type SpacingScale =
-  | "half"
-  | "one"
-  | "two"
-  | "three"
-  | "four"
-  | "five"
-  | "six"
-  | "eight"
-  | "ten"
-  | "twelve"
-  | "sixteen";
-
-const marginBottomClasses: Record<SpacingScale, string> = {
-  half: "mb-half",
-  one: "mb-one",
-  two: "mb-two",
-  three: "mb-three",
-  four: "mb-four",
-  five: "mb-five",
-  six: "mb-six",
-  eight: "mb-eight",
-  ten: "mb-ten",
-  twelve: "mb-twelve",
-  sixteen: "mb-sixteen",
-};
+import { View, Text, type ViewProps } from "react-native";
+import { type SpacingScale, marginBottomClasses } from "@/lib/design-tokens";
 
 export interface SectionProps extends ViewProps {
   title?: string;
@@ -57,7 +27,6 @@ export function Section({
   children,
   ...props
 }: SectionProps) {
-
   const hasHeader = title || subtitle || action;
   const sectionSpacingClass =
     typeof spacing === "string" ? marginBottomClasses[spacing] : undefined;

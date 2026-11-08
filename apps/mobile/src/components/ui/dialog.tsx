@@ -82,7 +82,12 @@ export function Dialog({ visible, onClose, children }: DialogProps) {
         onRequestClose={onClose}
       >
         <View style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close dialog"
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+          />
           {children}
         </View>
       </Modal>

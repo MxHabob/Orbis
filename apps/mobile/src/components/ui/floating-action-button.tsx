@@ -5,7 +5,13 @@
  */
 
 import React from "react";
-import { StyleSheet, Text, View, type ViewStyle } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
+} from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
@@ -37,6 +43,7 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
     style,
   }) => {
     const theme = useTheme();
+    const { width: screenWidth } = useWindowDimensions();
     const isDisabled = disabled || loading;
     const tactilePress = useTactilePress(
       true,
@@ -44,12 +51,17 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
       theme.btnShadowPrimary,
     );
 
+    // FAB icon-only size is w-14 (56px); half = 28px for centering offset
+    const FAB_ICON_HALF_WIDTH = 28;
+
     const positionStyle: ViewStyle = {
       position: "absolute",
       bottom: offsetBottom,
       ...(position === "bottom-right" ? { right: offsetHorizontal } : {}),
       ...(position === "bottom-left" ? { left: offsetHorizontal } : {}),
-      ...(position === "bottom-center" ? { left: "50%", marginLeft: -28 } : {}),
+      ...(position === "bottom-center"
+        ? { left: screenWidth / 2 - FAB_ICON_HALF_WIDTH }
+        : {}),
     };
 
     return (

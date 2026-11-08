@@ -5,44 +5,13 @@
  */
 
 import React from "react";
-import {
-  View,
-  type ViewProps,
-  type FlexAlignType,
-  type ViewStyle,
-} from "react-native";
-
-type SpacingScale =
-  | "half"
-  | "one"
-  | "two"
-  | "three"
-  | "four"
-  | "five"
-  | "six"
-  | "eight"
-  | "ten"
-  | "twelve"
-  | "sixteen";
-
-const gapClasses: Record<SpacingScale, string> = {
-  half: "gap-half",
-  one: "gap-one",
-  two: "gap-two",
-  three: "gap-three",
-  four: "gap-four",
-  five: "gap-five",
-  six: "gap-six",
-  eight: "gap-eight",
-  ten: "gap-ten",
-  twelve: "gap-twelve",
-  sixteen: "gap-sixteen",
-};
+import { View, type ViewProps, type ViewStyle } from "react-native";
+import { type SpacingScale, gapClasses } from "@/lib/design-tokens";
 
 export interface StackProps extends ViewProps {
   direction?: "column" | "row" | "column-reverse" | "row-reverse";
   gap?: SpacingScale | number;
-  align?: FlexAlignType;
+  align?: ViewStyle["alignItems"];
   justify?:
     | "flex-start"
     | "flex-end"

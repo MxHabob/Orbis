@@ -7,12 +7,8 @@
  */
 
 import React, { useState } from "react";
-import {
-  View,
-  Image,
-  type ViewStyle,
-  type ImageSourcePropType,
-} from "react-native";
+import { View, type ViewStyle } from "react-native";
+import { Image, type ImageSource } from "expo-image";
 import Svg, { Path } from "react-native-svg";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -21,7 +17,7 @@ interface OrganizationLogoProps {
   size?: number;
   logoUrl?: string | null;
   uri?: string | null;
-  imageSource?: ImageSourcePropType;
+  imageSource?: ImageSource;
   color?: string;
   dotColor?: string;
   withContainer?: boolean;
@@ -67,7 +63,7 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
           <Image
             source={imageSource || { uri: resolvedLogoUrl! }}
             style={{ width: size, height: size, borderRadius: size * 0.25 }}
-            resizeMode="contain"
+            contentFit="contain"
             onError={() => setImageError(true)}
           />
         ) : (

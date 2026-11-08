@@ -35,7 +35,7 @@ export function Radio({
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={disabled ? undefined : onSelect}
-      className="flex-row items-start gap-two py-one"
+      className="min-h-[44px] flex-row items-start gap-two py-one"
       style={({ pressed }) => [
         { opacity: disabled ? 0.5 : 1 },
         pressed && !disabled && { opacity: 0.75 },
