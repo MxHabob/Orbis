@@ -8,6 +8,8 @@ Staging builds intentionally do not use the production updater channel. Their up
 
 The mobile release workflow builds and attaches a signed arm64 Android APK to the same GitHub Release. It decodes `ANDROID_KEYSTORE_BASE64` into a temporary runner file and maps the Android signing secrets to the `ORBIS_ANDROID_*` variables consumed by the Expo config plugin. This workflow does not currently publish an AAB. Do not use the debug keystore for public distribution.
 
+The optional [Retry Mulverse Release Sync](../.github/workflows/mulverse.yml) workflow requires the repository Actions secrets `MULVERSE_API_BASE_URL` (HTTPS API base URL), `MULVERSE_API_TOKEN`, and `MULVERSE_PRODUCT_ID`. The retry validates these settings before downloading release assets and never prints their values. These credentials are not required to build or publish desktop updates.
+
 ## Configure GitHub Actions
 
 Before publishing, configure these repository Actions settings:
@@ -17,6 +19,9 @@ Before publishing, configure these repository Actions settings:
 | `TAURI_SIGNING_PRIVATE_KEY` | Secret | Signs Tauri updater bundles |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Secret | Password for the signing key, if set |
 | `TAURI_UPDATER_PUBLIC_KEY` | Variable | Verifies updates in the installed app; provide the minisign public-key text or its base64-encoded full text, and it must match the private signing key. The release helper validates either form and writes the base64-encoded text required by Tauri's updater config. |
+| `MULVERSE_API_BASE_URL` | Secret | HTTPS base URL for the Mulverse admin API; required only by the optional Mulverse release sync workflow |
+| `MULVERSE_API_TOKEN` | Secret | Authorization token for the Mulverse admin API; required only by the optional Mulverse release sync workflow |
+| `MULVERSE_PRODUCT_ID` | Secret | Product identifier in Mulverse; required only by the optional Mulverse release sync workflow |
 | `MULVERSE_LICENSE_PUBLIC_KEY_B64` | Variable | Verifies application licenses in release builds |
 | `MULVERSE_LICENSE_KEY_ID` | Variable | Identifies the application license key |
 | `ANDROID_KEYSTORE_BASE64` | Secret | Base64-encoded Android release keystore |
