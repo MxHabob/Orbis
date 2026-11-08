@@ -27,9 +27,9 @@ jobs:
     timeout-minutes: 45
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MULVERSE_API_BASE_URL: ${{ secrets.MULVERSE_API_BASE_URL }}
-      MULVERSE_API_TOKEN: ${{ secrets.MULVERSE_API_TOKEN }}
-      MULVERSE_PRODUCT_ID: ${{ secrets.MULVERSE_PRODUCT_ID }}
+      MULVERSE_API_BASE_URL: ${{ vars.MULVERSE_API_BASE_URL }}
+      MULVERSE_API_TOKEN: ${{ secrets.MULVERSE_RELEASE_API_TOKEN }}
+      MULVERSE_PRODUCT_ID: ${{ vars.MULVERSE_PRODUCT_ID }}
       MULVERSE_CHANNEL_STABLE_KEY: ${{ inputs.channel }}
       RELEASE_VERSION: ${{ inputs.version }}
       RELEASE_ARTIFACT_DIR: release-artifacts
@@ -60,14 +60,14 @@ jobs:
 
       - name: Validate Mulverse API configuration
         env:
-          MULVERSE_API_BASE_URL: ${{ secrets.MULVERSE_API_BASE_URL }}
-          MULVERSE_API_TOKEN: ${{ secrets.MULVERSE_API_TOKEN }}
-          MULVERSE_PRODUCT_ID: ${{ secrets.MULVERSE_PRODUCT_ID }}
+          MULVERSE_API_BASE_URL: ${{ vars.MULVERSE_API_BASE_URL }}
+          MULVERSE_RELEASE_API_TOKEN: ${{ secrets.MULVERSE_RELEASE_API_TOKEN }}
+          MULVERSE_PRODUCT_ID: ${{ vars.MULVERSE_PRODUCT_ID }}
         run: |
           node <<'NODE'
           const required = [
             "MULVERSE_API_BASE_URL",
-            "MULVERSE_API_TOKEN",
+            "MULVERSE_RELEASE_API_TOKEN",
             "MULVERSE_PRODUCT_ID",
           ];
           const missing = required.filter(
