@@ -59,8 +59,48 @@ jobs:
           echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
 
       - name: Download signed updater artifacts from the private release
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p "$RELEASE_ARTIFACT_DIR"
+          asset_names="$(gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json assets \
+            --jq '.assets[].name')"
+          if [[ -z "$asset_names" ]]; then
+            echo "::error::Release $RELEASE_TAG has no uploaded assets. Publish the desktop release before retrying Mulverse sync."
+            exit 1
+          fi
+
+          echo "Assets currently published for $RELEASE_TAG:"
+          printf '%s\n' "$asset_names"
+          export RELEASE_ASSET_NAMES="$asset_names"
+          node <<'NODE'
+          const names = (process.env.RELEASE_ASSET_NAMES ?? '')
+            .split(/\r?\n/)
+            .filter(Boolean);
+          const required = [
+            ['Windows NSIS installer', (name) => /-setup\.exe$/i.test(name)],
+            ['Windows NSIS signature', (name) => /-setup\.exe\.sig$/i.test(name)],
+            ['macOS updater archive', (name) => /\.app\.tar\.gz$/i.test(name)],
+            ['macOS updater signature', (name) => /\.app\.tar\.gz\.sig$/i.test(name)],
+            ['Tauri updater metadata', (name) => name.toLowerCase() === 'latest.json'],
+          ];
+          const missing = [];
+          for (const [label, matches] of required) {
+            const count = names.filter(matches).length;
+            if (count !== 1) {
+              missing.push(`${label} (expected 1, found ${count})`);
+            }
+          }
+          if (missing.length) {
+            console.error(
+              `::error::Release ${process.env.RELEASE_TAG} is not ready for Mulverse sync. Missing or ambiguous assets: ${missing.join('; ')}. Wait for the Desktop Release workflow to publish its signed assets, then retry.`,
+            );
+            process.exit(1);
+          }
+          NODE
+
           gh release download "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --dir "$RELEASE_ARTIFACT_DIR" \
