@@ -131,17 +131,6 @@ onMount(() => {
           <span>{m.ui_changelog_loading_release_changelog()}</span>
         </div>
       {:else if currentRelease}
-        <!-- Visual Banner (Dynamic - only if release provides images) -->
-        {#if currentRelease.images && currentRelease.images.length > 0}
-          <div class="relative w-full h-48 sm:h-56 overflow-hidden rounded-2xl border border-border/40 flex items-center justify-center bg-muted/20 shadow-xs">
-            <img
-              src={currentRelease.images[0]}
-              alt={currentRelease.title}
-              class="w-full h-full object-cover select-none"
-            />
-          </div>
-        {/if}
-
         <!-- Current Release Header & Typography -->
         <div class="flex flex-col gap-1.5 text-start">
           {#if appInfo?.name}
@@ -201,46 +190,6 @@ onMount(() => {
           </section>
         {/if}
 
-        <!-- Additional Images (Dynamic - only if release provides multiple images) -->
-        {#if currentRelease.images && currentRelease.images.length > 1}
-          <section class="space-y-2 pt-2">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {m.ui_changelog_release_images()}
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {#each currentRelease.images.slice(1) as img (img)}
-                <img
-                  src={img}
-                  alt={currentRelease.title}
-                  loading="lazy"
-                  class="w-full max-h-60 rounded-xl border border-border/50 bg-muted/20 object-contain"
-                />
-              {/each}
-            </div>
-          </section>
-        {/if}
-
-        <!-- Release Resources (Dynamic - only if release provides resources) -->
-        {#if currentRelease.resources && currentRelease.resources.length > 0}
-          <section class="space-y-2 pt-2">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {m.ui_changelog_release_resources()}
-            </h2>
-            <div class="flex flex-col gap-2">
-              {#each currentRelease.resources as res (res.url)}
-                <a
-                  href={res.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-card/60 hover:bg-muted/40 transition-colors text-xs"
-                >
-                  <span class="font-medium text-foreground">{res.name}</span>
-                  <span class="font-mono text-muted-foreground">{(res.size / 1024).toFixed(0)} KB</span>
-                </a>
-              {/each}
-            </div>
-          </section>
-        {/if}
       {:else}
         <!-- System Empty State when no releases are available -->
         <EmptyState

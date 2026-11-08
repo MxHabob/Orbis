@@ -127,20 +127,6 @@ function handleOpenChange(open: boolean) {
             </Badge>
           </div>
 
-          {#if latestRelease.images.length > 0}
-            <div class="grid grid-cols-2 gap-2">
-              {#each latestRelease.images.slice(0, 2) as image (image)}
-                <img
-                  src={image}
-                  alt={latestRelease.title}
-                  loading="lazy"
-                  referrerpolicy="no-referrer"
-                  class="max-h-24 w-full rounded-md border border-border bg-muted/20 object-cover"
-                />
-              {/each}
-            </div>
-          {/if}
-
           {#if latestRelease.body?.trim()}
             <div class="max-h-56 min-w-0 overflow-x-hidden overflow-y-auto rounded-md border border-border bg-muted/20 p-3 [overflow-wrap:anywhere]">
               <ReleaseMarkdown markdown={latestRelease.body} />

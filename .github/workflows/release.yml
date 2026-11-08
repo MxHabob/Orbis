@@ -349,15 +349,15 @@ jobs:
           console.log('Validated desktop updater manifest before publish.');
           NODE
 
-      - name: Select final public desktop assets
+      - name: Select final public desktop artifacts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p public-release-assets
-          find release-artifacts -type f \( -name 'Orbis_*.exe' -o -name 'Orbis_*.exe.sig' -o -name 'Orbis*.app.tar.gz' -o -name 'Orbis*.app.tar.gz.sig' -o \( -name 'solver-service-*' ! -name '*.sha256' \) \) -exec cp {} public-release-assets/ \;
-          cp release-artifacts/merged-latest.json public-release-assets/latest.json
-          find public-release-assets -maxdepth 1 -type f | sort
-          test "$(find public-release-assets -type f | wc -l)" -eq 7
+          mkdir -p release-package
+          find release-artifacts -type f \( -name 'Orbis_*.exe' -o -name 'Orbis_*.exe.sig' -o -name 'Orbis*.app.tar.gz' -o -name 'Orbis*.app.tar.gz.sig' -o \( -name 'solver-service-*' ! -name '*.sha256' \) \) -exec cp {} release-package/ \;
+          cp release-artifacts/merged-latest.json release-package/latest.json
+          find release-package -maxdepth 1 -type f | sort
+          test "$(find release-package -type f | wc -l)" -eq 7
 
       - name: Publish release with supported desktop artifacts only
         uses: softprops/action-gh-release@v2
@@ -365,4 +365,4 @@ jobs:
           tag_name: ${{ needs.validate.outputs.tag }}
           generate_release_notes: true
           files: |
-            public-release-assets/*
+            release-package/*

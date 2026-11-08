@@ -10,7 +10,6 @@ const rootDir = path.resolve(
 );
 const desktopPackagePath = path.join(rootDir, "apps/desktop/package.json");
 const releasesDir = path.join(rootDir, "releases");
-const assetsRoot = path.join(rootDir, "release-assets");
 
 function git(args) {
   return execFileSync("git", args, { cwd: rootDir, encoding: "utf8" });
@@ -66,19 +65,6 @@ function classify({ subject, body }) {
   return { category, entry: `- ${text}${scope}` };
 }
 
-function readAssets(version) {
-  const versionDir = path.join(assetsRoot, `v${version}`);
-  const imagesDir = path.join(versionDir, "images");
-  const resourcesDir = path.join(versionDir, "resources");
-  fs.mkdirSync(imagesDir, { recursive: true });
-  fs.mkdirSync(resourcesDir, { recursive: true });
-  for (const folder of [imagesDir, resourcesDir]) {
-    const keepFile = path.join(folder, ".gitkeep");
-    if (!fs.existsSync(keepFile)) fs.writeFileSync(keepFile, "");
-  }
-  return { versionDir };
-}
-
 function createNotes(version, commits) {
   const buckets = new Map([
     ["breaking", "Breaking Changes"],
@@ -125,12 +111,6 @@ function createNotes(version, commits) {
     '<!-- Write "None" or list user-relevant known issues. -->',
     "",
   );
-  lines.push(
-    "## Release Assets",
-    "",
-    "Version-specific images and supporting resources are attached to this GitHub Release. Images are also shown in the app's release history when available.",
-    "",
-  );
   return lines.join("\n");
 }
 
@@ -138,7 +118,6 @@ function main() {
   const force = process.argv.includes("--force");
   const { version } = JSON.parse(fs.readFileSync(desktopPackagePath, "utf8"));
   const notesPath = path.join(releasesDir, `v${version}.md`);
-  const assets = readAssets(version);
   fs.mkdirSync(releasesDir, { recursive: true });
 
   if (fs.existsSync(notesPath) && !force) {
@@ -152,12 +131,6 @@ function main() {
   fs.writeFileSync(notesPath, notes);
   console.log(
     `Generated editable release notes: ${path.relative(rootDir, notesPath)}`,
-  );
-  console.log(
-    `Add screenshots to ${path.relative(rootDir, path.join(assets.versionDir, "images"))}`,
-  );
-  console.log(
-    `Add supporting files to ${path.relative(rootDir, path.join(assets.versionDir, "resources"))}`,
   );
 }
 
