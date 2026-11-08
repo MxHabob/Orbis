@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Lint & Typecheck
+  javascript:
+    name: Validate JavaScript
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -51,8 +51,23 @@ jobs:
       - name: Run JavaScript tests
         run: bun test
 
+  rust:
+    name: Validate Rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust compiler cache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Enable Rust compiler cache
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
 
       - name: Install Linux native dependencies
         run: |
@@ -62,9 +77,8 @@ jobs:
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            apps/api-rust -> target
-            apps/desktop/src-tauri -> target
+          workspaces: apps/api-rust -> target
+          shared-key: orbis-api-rust
 
       - name: Check Rust formatting
         run: |
@@ -78,3 +92,19 @@ jobs:
       - name: Test API Rust workspace
         working-directory: apps/api-rust
         run: cargo test --workspace
+
+  validate:
+    name: Lint & Typecheck
+    if: always()
+    needs: [javascript, rust]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all validation jobs to pass
+        env:
+          JAVASCRIPT_RESULT: ${{ needs.javascript.result }}
+          RUST_RESULT: ${{ needs.rust.result }}
+        run: |
+          if [[ "$JAVASCRIPT_RESULT" != "success" || "$RUST_RESULT" != "success" ]]; then
+            echo "::error::Validation failed (JavaScript: $JAVASCRIPT_RESULT, Rust: $RUST_RESULT)."
+            exit 1
+          fi
