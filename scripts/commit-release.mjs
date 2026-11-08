@@ -68,6 +68,10 @@ function main() {
   }
 
   const files = [
+    "apps/api-rust/package.json",
+    "apps/api-rust/Cargo.lock",
+    "apps/api-rust/crates/orbis-app/Cargo.toml",
+    "apps/api-rust/crates/orbis-server/Cargo.toml",
     "apps/desktop/package.json",
     "apps/mobile/package.json",
     "apps/mobile/app.json",

@@ -40,7 +40,7 @@ Run release commands from an up-to-date `main` checkout with a clean working tre
 bun run release:prepare patch
 ```
 
-`release:prepare` updates the synchronized desktop, mobile, Tauri, solver, and Bun lockfile versions, increments the Android `versionCode`, then generates editable notes in `releases/` and asset folders under `release-assets/`. Review the notes and add any release images or resources before continuing.
+`release:prepare` updates the synchronized desktop, mobile, Rust API, Tauri, solver, Cargo/Bun lockfile versions, increments the Android `versionCode`, then generates editable notes in `releases/` and asset folders under `release-assets/`. Review the notes and add any release images or resources before continuing.
 
 ```sh
 bun run release:commit
