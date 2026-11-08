@@ -53,10 +53,11 @@ export function createUpdaterManifest({
     encodeURIComponent(artifactName),
     `https://github.com/${repository}/releases/download/${tag}/`,
   ).toString();
+  const normalizedNotes = notes.replace(/\r\n?/g, "\n").trim();
 
   return {
     version,
-    notes: notes.trim(),
+    notes: normalizedNotes,
     platforms: {
       [platform.updaterPlatform]: {
         url: artifactUrl,
