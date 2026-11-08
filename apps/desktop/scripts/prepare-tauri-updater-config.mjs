@@ -45,7 +45,7 @@ export function normalizeUpdaterPublicKey(rawValue) {
     );
   }
 
-  return publicKey;
+  return Buffer.from(publicKey, "utf8").toString("base64");
 }
 
 if (
