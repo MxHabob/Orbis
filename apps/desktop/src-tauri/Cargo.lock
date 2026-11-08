@@ -3,46 +3,6 @@
 version = 4
 
 [[package]]
-name = "Orbis-Svelte"
-version = "1.1.1"
-dependencies = [
- "base64 0.22.1",
- "bcrypt",
- "chrono",
- "docforge-engine",
- "hostname",
- "image 0.24.9",
- "keyring",
- "minisign-verify",
- "orbis-app",
- "orbis-domain",
- "orbis-infra",
- "rand 0.8.6",
- "reqwest 0.13.4",
- "rust_decimal",
- "sea-orm",
- "sea-orm-migration",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-deep-link",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "tokio",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1470,17 +1430,13 @@ dependencies = [
  "cosmic-text",
  "image 0.25.10",
  "krilla",
- "num_cpus",
  "qrcode",
- "rayon",
  "serde",
  "serde_json",
  "taffy",
  "thiserror 1.0.69",
- "tokio",
  "tracing",
  "unicode-bidi",
- "uuid",
 ]
 
 [[package]]
@@ -3572,16 +3528,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num_cpus"
-version = "1.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91df4bbde75afed763b708b7eee1e8e7651e02d97f6d5dd763e89367e957b23b"
-dependencies = [
- "hermit-abi",
- "libc",
-]
-
-[[package]]
 name = "num_enum"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3901,9 +3847,46 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "orbis-desktop"
+version = "1.1.1"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "docforge-engine",
+ "image 0.24.9",
+ "keyring",
+ "minisign-verify",
+ "orbis-app",
+ "orbis-domain",
+ "orbis-infra",
+ "rand 0.8.6",
+ "reqwest 0.13.4",
+ "rust_decimal",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "tokio",
+ "tracing",
+ "url",
  "uuid",
 ]
 
