@@ -233,7 +233,9 @@ pub type LimitEntry = LimitItem;
 /// `POST /api/v1/public/licenses/activate`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivationRequest {
+    #[serde(rename = "application_key")]
     pub product_key: String,
+    #[serde(rename = "customer_id")]
     pub organization_id: uuid::Uuid,
     pub installation_id: String,
     pub platform: String,
@@ -928,6 +930,32 @@ mod tests {
             response.signed_entitlement.payload.limits[0].max_value,
             None
         );
+    }
+
+    #[test]
+    fn activation_request_serializes_using_mulverse_field_names() {
+        let request = ActivationRequest {
+            product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_owned(),
+            organization_id: "33333333-3333-4333-8333-333333333333"
+                .parse()
+                .expect("valid customer UUID"),
+            installation_id: "installation".to_owned(),
+            platform: "windows".to_owned(),
+            app_version: "1.0.0".to_owned(),
+            machine_label: None,
+        };
+
+        let serialized = serde_json::to_value(request).expect("request should serialize");
+        assert_eq!(
+            serialized["application_key"],
+            "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST"
+        );
+        assert_eq!(
+            serialized["customer_id"],
+            "33333333-3333-4333-8333-333333333333"
+        );
+        assert!(serialized.get("product_key").is_none());
+        assert!(serialized.get("organization_id").is_none());
     }
 
     #[test]

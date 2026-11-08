@@ -98,9 +98,13 @@ pub struct RegisterTrialRequest {
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
+    #[serde(rename = "customer_id")]
     pub organization_id: String,
+    #[serde(rename = "customer_name")]
     pub organization_name: String,
+    #[serde(rename = "customer_slug")]
     pub organization_slug: String,
+    #[serde(rename = "customer_profile")]
     pub organization_profile: TrialOrganizationProfile,
     pub platform: String,
     pub app_version: String,
@@ -111,6 +115,7 @@ pub struct RegisterTrialRequest {
 pub struct TrialOrganizationProfile {
     pub name_ar: Option<String>,
     pub institution_type: String,
+    #[serde(rename = "customer_size")]
     pub organization_size: Option<String>,
     pub educational_track: Option<String>,
     pub country_code: Option<String>,
@@ -121,15 +126,21 @@ pub struct TrialOrganizationProfile {
 
 #[derive(Debug, Serialize)]
 pub struct ClaimProductKeyRequest {
+    #[serde(rename = "application_key")]
     pub product_key: String,
+    #[serde(rename = "customer_id")]
     pub organization_id: String,
+    #[serde(rename = "customer_name")]
     pub organization_name: String,
+    #[serde(rename = "customer_slug")]
     pub organization_slug: String,
+    #[serde(rename = "customer_profile")]
     pub organization_profile: TrialOrganizationProfile,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ClaimProductKeyResponse {
+    #[serde(rename = "customer_id")]
     pub organization_id: String,
     pub license_id: String,
     pub valid_until: Option<chrono::DateTime<chrono::Utc>>,
@@ -143,6 +154,7 @@ pub struct RefreshTrialRequest {
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
+    #[serde(rename = "customer_id")]
     pub organization_id: String,
     pub app_version: String,
 }
@@ -764,7 +776,106 @@ impl From<MulverseApiError> for orbis_domain::errors::DomainError {
 
 #[cfg(test)]
 mod tests {
-    use super::{MulverseApiError, format_api_error_body};
+    use super::{
+        ClaimProductKeyRequest, ClaimProductKeyResponse, MulverseApiError, RefreshTrialRequest,
+        RegisterTrialRequest, TrialOrganizationProfile, format_api_error_body,
+    };
+
+    fn organization_profile() -> TrialOrganizationProfile {
+        TrialOrganizationProfile {
+            name_ar: Some("أكاديمية المثال".to_owned()),
+            institution_type: "school".to_owned(),
+            organization_size: Some("medium".to_owned()),
+            educational_track: Some("national".to_owned()),
+            country_code: Some("SA".to_owned()),
+            country_name: Some("Saudi Arabia".to_owned()),
+            region_name: Some("Riyadh".to_owned()),
+            city: Some("Riyadh".to_owned()),
+        }
+    }
+
+    #[test]
+    fn trial_registration_serializes_using_mulverse_customer_contract() {
+        let request = RegisterTrialRequest {
+            device_public_key: "public-key".to_owned(),
+            device_signature: "signature".to_owned(),
+            challenge_id: "challenge-id".to_owned(),
+            challenge: "challenge".to_owned(),
+            installation_id: "installation-id".to_owned(),
+            organization_id: "customer-id".to_owned(),
+            organization_name: "Example Academy".to_owned(),
+            organization_slug: "example-academy".to_owned(),
+            organization_profile: organization_profile(),
+            platform: "windows".to_owned(),
+            app_version: "1.0.0".to_owned(),
+            machine_label: Some("School Server".to_owned()),
+        };
+
+        let serialized = serde_json::to_value(request).expect("request should serialize");
+        assert_eq!(serialized["customer_id"], "customer-id");
+        assert_eq!(serialized["customer_name"], "Example Academy");
+        assert_eq!(serialized["customer_slug"], "example-academy");
+        assert_eq!(serialized["customer_profile"]["customer_size"], "medium");
+        assert!(serialized.get("organization_id").is_none());
+        assert!(serialized.get("organization_name").is_none());
+        assert!(serialized.get("organization_slug").is_none());
+        assert!(serialized.get("organization_profile").is_none());
+        assert!(
+            serialized["customer_profile"]
+                .get("organization_size")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn trial_refresh_serializes_customer_id() {
+        let request = RefreshTrialRequest {
+            trial_id: "trial-id".to_owned(),
+            device_public_key: "public-key".to_owned(),
+            device_signature: "signature".to_owned(),
+            challenge_id: "challenge-id".to_owned(),
+            challenge: "challenge".to_owned(),
+            installation_id: "installation-id".to_owned(),
+            organization_id: "customer-id".to_owned(),
+            app_version: "1.0.0".to_owned(),
+        };
+
+        let serialized = serde_json::to_value(request).expect("request should serialize");
+        assert_eq!(serialized["customer_id"], "customer-id");
+        assert!(serialized.get("organization_id").is_none());
+    }
+
+    #[test]
+    fn product_key_claim_uses_customer_contract_and_reads_customer_id_response() {
+        let request = ClaimProductKeyRequest {
+            product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_owned(),
+            organization_id: "customer-id".to_owned(),
+            organization_name: "Example Academy".to_owned(),
+            organization_slug: "example-academy".to_owned(),
+            organization_profile: organization_profile(),
+        };
+
+        let serialized = serde_json::to_value(request).expect("request should serialize");
+        assert_eq!(
+            serialized["application_key"],
+            "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST"
+        );
+        assert_eq!(serialized["customer_id"], "customer-id");
+        assert_eq!(serialized["customer_name"], "Example Academy");
+        assert_eq!(serialized["customer_slug"], "example-academy");
+        assert_eq!(serialized["customer_profile"]["customer_size"], "medium");
+        assert!(serialized.get("organization_id").is_none());
+        assert!(serialized.get("product_key").is_none());
+        assert!(serialized.get("organization_profile").is_none());
+
+        let response = serde_json::from_value::<ClaimProductKeyResponse>(serde_json::json!({
+            "customer_id": "customer-id",
+            "license_id": "license-id",
+            "valid_until": null
+        }))
+        .expect("Mulverse claim response should deserialize");
+        assert_eq!(response.organization_id, "customer-id");
+    }
 
     #[test]
     fn api_error_envelope_displays_message_instead_of_raw_json() {

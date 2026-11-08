@@ -1508,12 +1508,13 @@ export function scrollToColumnProp(prop: string) {
 
 <style>
   .orbis-grid {
+    --grid-surface: color-mix(in oklab, var(--card) 94%, var(--foreground));
     position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
     min-height: 0;
-    background: var(--card);
+    background: var(--grid-surface);
     color: var(--card-foreground);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -1612,7 +1613,7 @@ export function scrollToColumnProp(prop: string) {
     min-height: 0;
     overflow: auto;
     position: relative;
-    background: var(--card);
+    background: var(--grid-surface);
   }
   .orbis-load-status {
     position: sticky;
@@ -1650,13 +1651,13 @@ export function scrollToColumnProp(prop: string) {
     display: flex;
     height: var(--row-h);
     border-bottom: 1px solid var(--border);
-    background: var(--card);
+    background: var(--grid-surface);
   }
   .orbis-row:hover {
     background: var(--accent);
   }
   .orbis-row.selected {
-    background: color-mix(in oklab, var(--primary) 8%, var(--card));
+    background: color-mix(in oklab, var(--primary) 8%, var(--grid-surface));
   }
   .orbis-cell {
     display: flex;
@@ -1684,10 +1685,10 @@ export function scrollToColumnProp(prop: string) {
   .orbis-cell.is-active {
     box-shadow: inset 0 0 0 1.5px var(--ring);
     z-index: 1;
-    background: var(--card);
+    background: var(--grid-surface);
   }
   .orbis-cell.is-error {
-    background: color-mix(in oklab, var(--destructive) 16%, var(--card));
+    background: color-mix(in oklab, var(--destructive) 16%, var(--grid-surface));
     box-shadow: inset 0 0 0 1px var(--destructive);
   }
   .orbis-text {
