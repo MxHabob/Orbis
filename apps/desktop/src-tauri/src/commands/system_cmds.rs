@@ -78,16 +78,6 @@ pub struct ReleaseChangelogItem {
     pub is_current: bool,
     pub is_latest: bool,
     pub html_url: String,
-    pub images: Vec<String>,
-    pub resources: Vec<ReleaseResource>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReleaseResource {
-    pub name: String,
-    pub url: String,
-    pub content_type: String,
-    pub size: u64,
 }
 
 /// Structured update check result with GitHub Releases comparison.
@@ -254,8 +244,6 @@ fn load_release_notes_document(app: &AppHandle) -> Result<Vec<ReleaseChangelogIt
             is_current: version == app.package_info().version.to_string(),
             is_latest: index == 0,
             html_url: String::new(),
-            images: Vec::new(),
-            resources: Vec::new(),
         });
     }
     Ok(result)

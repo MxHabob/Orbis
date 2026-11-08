@@ -1,10 +1,6 @@
 import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
 import type { BulkImportProfile, BulkProfileId } from "./types";
-
-const localizedHeader = (ar: string, en: string) => () =>
-  getLocale() === "ar" ? ar : en;
 
 const profileNames: Record<BulkProfileId, () => string> = {
   students: m.bulk_entry_profile_students,
@@ -61,19 +57,13 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     weekly_hours: m.bulk_entry_localized_weekly_hours,
   },
   grades: {
-    student_id: localizedHeader("معرف الطالب", "Student ID"),
+    student_id: m.bulk_entry_grade_header_student_id,
     student_name: m.bulk_entry_grade_header_student_name,
-    period_id: localizedHeader("معرف الفترة الأكاديمية", "Academic Period ID"),
-    section_subject_id: localizedHeader(
-      "معرف عرض المادة",
-      "Section Subject ID",
-    ),
-    component_id: localizedHeader(
-      "معرف مكون التقييم",
-      "Assessment Component ID",
-    ),
+    period_id: m.bulk_entry_grade_header_period_id,
+    section_subject_id: m.bulk_entry_grade_header_section_subject_id,
+    component_id: m.bulk_entry_grade_header_component_id,
     score: m.bulk_entry_grade_header_score,
-    max_score: localizedHeader("الدرجة العظمى", "Maximum Score"),
+    max_score: m.bulk_entry_grade_header_max_score,
     is_excused: m.bulk_entry_grade_header_is_excused,
     notes: m.bulk_entry_grade_header_notes,
   },

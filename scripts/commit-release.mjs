@@ -47,27 +47,11 @@ function main() {
     );
   }
 
-  const assetDir = path.join(rootDir, "release-assets", tag);
-  const filenames = [];
-  function collectFiles(directory) {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      const fullPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) collectFiles(fullPath);
-      else filenames.push(path.relative(rootDir, fullPath));
-    }
-  }
-  collectFiles(assetDir);
-
-  const basenames = filenames
-    .filter((filename) => path.basename(filename) !== ".gitkeep")
-    .map((filename) => path.basename(filename).toLowerCase());
-  if (new Set(basenames).size !== basenames.length) {
-    throw new Error(
-      "Release asset filenames must be unique because GitHub Release assets share one flat namespace.",
-    );
-  }
-
   const files = [
+    "apps/api-rust/package.json",
+    "apps/api-rust/Cargo.lock",
+    "apps/api-rust/crates/orbis-app/Cargo.toml",
+    "apps/api-rust/crates/orbis-server/Cargo.toml",
     "apps/desktop/package.json",
     "apps/mobile/package.json",
     "apps/mobile/app.json",
@@ -78,7 +62,6 @@ function main() {
     "apps/desktop/src-tauri/tauri.staging.conf.json",
     "bun.lock",
     path.relative(rootDir, notesPath),
-    ...filenames,
   ];
   git(["add", "--", ...files]);
   if (git(["diff", "--cached", "--name-only"])) {

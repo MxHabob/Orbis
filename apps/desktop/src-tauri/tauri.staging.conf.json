@@ -1,10 +1,12 @@
 {
   "productName": "Orbis Staging",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "identifier": "com.mulverse.orbis.staging",
   "bundle": {
     "createUpdaterArtifacts": false,
-    "externalBin": ["binaries/solver-service"],
+    "externalBin": [
+      "binaries/solver-service"
+    ],
     "icon": [
       "icons/staging/32x32.png",
       "icons/staging/128x128.png",
@@ -16,7 +18,9 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["orbis-staging"]
+        "schemes": [
+          "orbis-staging"
+        ]
       }
     },
     "updater": {

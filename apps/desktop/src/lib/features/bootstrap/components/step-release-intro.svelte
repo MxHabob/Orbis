@@ -91,25 +91,6 @@ onMount(async () => {
           </a>
         </div>
 
-        {#if latestRelease.images.length > 0}
-          <section class="space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
-              {m.ui_onboarding_intro_release_images()}
-            </h3>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {#each latestRelease.images as image (image)}
-                <img
-                  src={image}
-                  alt={latestRelease.title}
-                  loading="lazy"
-                  referrerpolicy="no-referrer"
-                  class="max-h-72 w-full rounded-xl border border-border/60 bg-muted/20 object-contain"
-                />
-              {/each}
-            </div>
-          </section>
-        {/if}
-
         {#if latestRelease.body?.trim()}
           <section class="space-y-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -125,28 +106,6 @@ onMount(async () => {
           </p>
         {/if}
 
-        {#if latestRelease.resources.length > 0}
-          <section class="space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
-              {m.ui_changelog_release_resources()}
-            </h3>
-            <ul class="space-y-2">
-              {#each latestRelease.resources as resource (resource.url)}
-                <li>
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm text-primary underline underline-offset-4"
-                  >
-                    <span class="min-w-0 truncate">{resource.name}</span>
-                    <span class="shrink-0 font-mono text-xs text-muted-foreground">{(resource.size / 1024).toFixed(0)} KB</span>
-                  </a>
-                </li>
-              {/each}
-            </ul>
-          </section>
-        {/if}
       {:else}
         <EmptyState
           icon={Sparkles}

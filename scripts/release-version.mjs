@@ -9,6 +9,10 @@ const rootDir = path.resolve(
   "..",
 );
 const paths = {
+  apiPackage: "apps/api-rust/package.json",
+  apiAppCargo: "apps/api-rust/crates/orbis-app/Cargo.toml",
+  apiServerCargo: "apps/api-rust/crates/orbis-server/Cargo.toml",
+  apiCargoLock: "apps/api-rust/Cargo.lock",
   desktopPackage: "apps/desktop/package.json",
   mobilePackage: "apps/mobile/package.json",
   mobileConfig: "apps/mobile/app.json",
@@ -46,16 +50,30 @@ function versionFromCargo(source) {
   return match[1];
 }
 
-function versionFromCargoLock(source) {
-  const match =
-    /^\[\[package\]\]\r?\nname = "Orbis-Svelte"\r?\nversion = "([^"]+)"/m.exec(
-      source,
-    );
+function versionFromCargoLock(source, packageName) {
+  const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(
+    `^\\[\\[package\\]\\]\\r?\\nname = "${escapedName}"\\r?\\nversion = "([^"]+)"`,
+    "m",
+  ).exec(source);
   if (!match)
     throw new Error(
-      "Could not read Orbis-Svelte package version from desktop Cargo.lock.",
+      `Could not read ${packageName} package version from Cargo.lock.`,
     );
   return match[1];
+}
+
+function replaceCargoLockPackageVersion(source, packageName, version) {
+  const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return replaceVersion(
+    source,
+    new RegExp(
+      `(^\\[\\[package\\]\\]\\r?\\nname = "${escapedName}"\\r?\\nversion = ")([^"]+)(")`,
+      "m",
+    ),
+    version,
+    `${packageName} Cargo.lock package`,
+  );
 }
 
 function versionFromLockfile(source) {
@@ -131,6 +149,7 @@ function main() {
   const dryRun = args.includes("--dry-run");
   const requested = args.find((arg) => !arg.startsWith("--")) ?? "patch";
   const pkg = JSON.parse(read(paths.desktopPackage));
+  const apiPkg = JSON.parse(read(paths.apiPackage));
   const currentVersion = pkg.version;
   const latestTag = latestTaggedVersion();
   const baselineVersion =
@@ -159,6 +178,10 @@ function main() {
     throw new Error(`Release tag v${nextVersion} already exists.`);
 
   const original = {
+    apiPackage: read(paths.apiPackage),
+    apiAppCargo: read(paths.apiAppCargo),
+    apiServerCargo: read(paths.apiServerCargo),
+    apiCargoLock: read(paths.apiCargoLock),
     package: read(paths.desktopPackage),
     mobilePackage: read(paths.mobilePackage),
     mobileConfig: read(paths.mobileConfig),
@@ -171,6 +194,7 @@ function main() {
   };
   const mobilePackage = JSON.parse(original.mobilePackage);
   const mobileConfig = JSON.parse(original.mobileConfig);
+  parseSemver(apiPkg.version);
   const currentAndroidVersionCode = androidVersionCodeFromConfig(mobileConfig);
   const nextAndroidVersionCode = currentAndroidVersionCode + 1;
   if (
@@ -186,7 +210,7 @@ function main() {
     mobilePackage: mobilePackage.version,
     mobileConfig: mobileConfig.expo?.version,
     cargo: versionFromCargo(original.cargo),
-    cargoLock: versionFromCargoLock(original.cargoLock),
+    cargoLock: versionFromCargoLock(original.cargoLock, "orbis-desktop"),
     solver: original.solver.match(
       /<orbis\.version>([^<]+)<\/orbis\.version>/,
     )?.[1],
@@ -204,6 +228,28 @@ function main() {
   }
 
   const updated = {
+    apiPackage: `${JSON.stringify({ ...apiPkg, version: nextVersion }, null, 2)}\n`,
+    apiAppCargo: replaceVersion(
+      original.apiAppCargo,
+      /(^\[package\][\s\S]*?^version\s*=\s*")([^"]+)(")/m,
+      nextVersion,
+      "API application Cargo package",
+    ),
+    apiServerCargo: replaceVersion(
+      original.apiServerCargo,
+      /(^\[package\][\s\S]*?^version\s*=\s*")([^"]+)(")/m,
+      nextVersion,
+      "API server Cargo package",
+    ),
+    apiCargoLock: replaceCargoLockPackageVersion(
+      replaceCargoLockPackageVersion(
+        original.apiCargoLock,
+        "orbis-app",
+        nextVersion,
+      ),
+      "orbis-server",
+      nextVersion,
+    ),
     desktopPackage: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
     mobilePackage: `${JSON.stringify({ ...mobilePackage, version: nextVersion }, null, 2)}\n`,
     mobileConfig: `${JSON.stringify(
@@ -227,11 +273,14 @@ function main() {
       nextVersion,
       "Cargo package",
     ),
-    cargoLock: replaceVersion(
-      original.cargoLock,
-      /^(\[\[package\]\]\r?\nname = "Orbis-Svelte"\r?\nversion = ")([^"]+)(")/m,
+    cargoLock: replaceCargoLockPackageVersion(
+      replaceCargoLockPackageVersion(
+        original.cargoLock,
+        "orbis-app",
+        nextVersion,
+      ),
+      "orbis-desktop",
       nextVersion,
-      "Cargo lockfile package",
     ),
     solver: replaceVersion(
       original.solver,
@@ -243,7 +292,12 @@ function main() {
     staging: `${JSON.stringify({ ...JSON.parse(original.staging), version: nextVersion }, null, 2)}\n`,
     lockfile: replaceVersion(
       replaceVersion(
-        original.lockfile,
+        replaceVersion(
+          original.lockfile,
+          /("apps\/api-rust":\s*\{\s*"name":\s*"@orbis\/api-rust",\s*"version":\s*")([^"]+)(")/,
+          nextVersion,
+          "Bun lockfile API workspace",
+        ),
         /("apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*")([^"]+)(")/,
         nextVersion,
         "Bun lockfile mobile workspace",

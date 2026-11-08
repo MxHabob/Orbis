@@ -8,7 +8,7 @@ Staging builds intentionally do not use the production updater channel. Their up
 
 The mobile release workflow builds and attaches a signed arm64 Android APK to the same GitHub Release. It decodes `ANDROID_KEYSTORE_BASE64` into a temporary runner file and maps the Android signing secrets to the `ORBIS_ANDROID_*` variables consumed by the Expo config plugin. This workflow does not currently publish an AAB. Do not use the debug keystore for public distribution.
 
-The optional [Retry Mulverse Release Sync](../.github/workflows/mulverse.yml) workflow requires the repository Actions variable `MULVERSE_API_BASE_URL` (`https://api.mulverse.com`), the repository variable `MULVERSE_PRODUCT_ID` (the canonical Orbis product UUID), and the repository secret `MULVERSE_RELEASE_API_TOKEN`. The retry validates these settings before downloading release assets and never prints the token. These settings are not required to build or publish desktop updates.
+The optional [Retry Mulverse Release Sync](../.github/workflows/mulverse.yml) workflow requires the repository Actions variable `MULVERSE_API_BASE_URL` (`https://api.mulverse.com`), the repository variable `MULVERSE_PRODUCT_ID` (the canonical Orbis product UUID), and the repository secret `MULVERSE_RELEASE_API_TOKEN`. The retry validates these settings before downloading signed updater files and never prints the token. These settings are not required to build or publish desktop updates.
 
 ## Configure GitHub Actions
 
@@ -40,7 +40,7 @@ Run release commands from an up-to-date `main` checkout with a clean working tre
 bun run release:prepare patch
 ```
 
-`release:prepare` updates the synchronized desktop, mobile, Tauri, solver, and Bun lockfile versions, increments the Android `versionCode`, then generates editable notes in `releases/` and asset folders under `release-assets/`. Review the notes and add any release images or resources before continuing.
+`release:prepare` updates the synchronized desktop, mobile, Rust API, Tauri, solver, Cargo/Bun lockfile versions, increments the Android `versionCode`, then generates editable notes in `releases/`. Review the notes before continuing. Installers, updater metadata, signatures, and other required release artifacts are built and attached automatically by CI.
 
 ```sh
 bun run release:commit
@@ -48,7 +48,7 @@ git push origin main
 git push origin vX.Y.Z
 ```
 
-`release:commit` validates the notes, commits the release version and assets, and creates an annotated local tag. It does not push. Push the release commit to `main` before pushing its tag; the workflow rejects tags that do not point to a commit reachable from `main`.
+`release:commit` validates the notes, commits the release version and notes, and creates an annotated local tag. It does not push. Push the release commit to `main` before pushing its tag; the workflow rejects tags that do not point to a commit reachable from `main`.
 
 The workflow requires the Android signing secrets above and publishes signed APK and AAB assets alongside the desktop release. For the initial release when the manifests already contain the desired version, use `bun run release:notes` instead of `release:prepare`, edit `releases/vX.Y.Z.md`, then run `bun run release:commit`. `release:prepare` always increments the current or latest tagged version, so it is not the command for reusing an already-selected initial version.
 
