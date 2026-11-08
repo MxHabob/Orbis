@@ -43,6 +43,18 @@ test("creates macOS updater metadata for the Apple Silicon archive", () => {
   );
 });
 
+test("normalizes cross-platform release note line endings", () => {
+  const windowsNotes = release.notes.replace(/\n/g, "\r\n");
+  const manifest = createUpdaterManifest({
+    ...release,
+    notes: windowsNotes,
+    target: "x86_64-pc-windows-msvc",
+    artifactName: "Orbis_1.2.3_x64-setup.exe",
+  });
+
+  assert.equal(manifest.notes, release.notes);
+});
+
 test("rejects unsupported targets and mismatched release versions", () => {
   assert.throws(
     () =>

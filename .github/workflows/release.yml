@@ -287,7 +287,8 @@ jobs:
             if (typeof candidate.notes !== 'string' || !candidate.notes.trim()) {
               throw new Error(`latest.json for ${metadataVersion} is missing release notes.`);
             }
-            if (candidate.notes.trim() !== manifests[0].notes.trim()) {
+            const normalizeNotes = (notes) => notes.replace(/\r\n?/g, '\n').trim();
+            if (normalizeNotes(candidate.notes) !== normalizeNotes(manifests[0].notes)) {
               throw new Error('latest.json platform files contain different release notes.');
             }
             for (const [platform, entry] of Object.entries(candidate.platforms || {})) {
@@ -345,6 +346,7 @@ jobs:
             }
           }
 
+          manifest.notes = manifest.notes.replace(/\r\n?/g, '\n').trim();
           fs.writeFileSync(path.join(releaseRoot, 'merged-latest.json'), JSON.stringify(manifest, null, 2));
           console.log('Validated desktop updater manifest before publish.');
           NODE
