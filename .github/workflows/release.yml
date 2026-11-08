@@ -195,18 +195,16 @@ jobs:
             find "$bundle_dir" -maxdepth 1 -type f -name '*.app.tar.gz.sig' -exec cp {} ci-artifacts/ \;
           fi
 
-          latest_json=$(find "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle" -name latest.json | head -n 1)
-          if [[ -z "$latest_json" ]]; then
-            echo "::error::Tauri did not generate latest.json for target ${{ matrix.target }}"
-            exit 1
-          fi
-          cp "$latest_json" ci-artifacts/latest.json
-
           ls -l ci-artifacts
-          if [[ ! -s ci-artifacts/latest.json ]]; then
-            echo "::error::latest.json is empty"
-            exit 1
-          fi
+
+      - name: Create updater metadata from signed artifacts
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          TAURI_UPDATER_TARGET: ${{ matrix.target }}
+          CI_ARTIFACT_DIR: ci-artifacts
+        run: node release-tools/apps/desktop/scripts/create-tauri-updater-manifest.mjs
 
       - name: Upload desktop artifacts
         uses: actions/upload-artifact@v4
