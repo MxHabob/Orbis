@@ -50,9 +50,7 @@ jobs:
           const lockfile = fs.readFileSync("./bun.lock", "utf8");
           const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
           const mobileLockfileVersion = lockfile.match(/"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/)?.[1];
-          const solverPom = fs.readFileSync("./apps/solver-service/pom.xml", "utf8");
-          const solverVersion = solverPom.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1];
-          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion, solverVersion };
+          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion };
           if (Object.values(versions).some((candidate) => !candidate || candidate !== version)) {
             throw new Error(`Tag v${version} must match release versions: ${JSON.stringify(versions)}`);
           }
@@ -80,46 +78,15 @@ jobs:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             bundles: nsis
-            exe_extension: .exe
-            exe_target: solver-service-x86_64-pc-windows-msvc.exe
           - platform: macos-latest
             target: aarch64-apple-darwin
             bundles: app,dmg
-            exe_extension: ""
-            exe_target: solver-service-aarch64-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-
-      - name: Setup GraalVM Mandrel
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: "21"
-          distribution: mandrel
-          github-token: ${{ github.token }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ runner.os }}-${{ hashFiles('apps/solver-service/pom.xml') }}
-          restore-keys: |
-            maven-${{ runner.os }}-
-
-      - name: Build native Solver sidecar
-        working-directory: apps/solver-service
-        env:
-          MAVEN_OPTS: -Xmx6g
-        run: mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ needs.validate.outputs.version }}"
-
-      - name: Stage Solver sidecar
-        shell: bash
-        run: |
-          mkdir -p apps/desktop/src-tauri/binaries
-          cp "apps/solver-service/target/orbis-solver-${{ needs.validate.outputs.version }}-runner${{ matrix.exe_extension }}" "apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -152,11 +119,19 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+          TAURI_UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT }}
+          ORBIS_COMPONENT_PUBLIC_KEY: ${{ vars.ORBIS_COMPONENT_PUBLIC_KEY }}
+          ORBIS_SOLVER_MANIFEST_URL: ${{ vars.ORBIS_SOLVER_MANIFEST_URL }}
           MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
           MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
         run: |
-          if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" || -z "$MULVERSE_LICENSE_PUBLIC_KEY_B64" || -z "$MULVERSE_LICENSE_KEY_ID" ]]; then
-            echo "::error::Configure updater signing and application license verification variables before releasing."
+          if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" || -z "$TAURI_UPDATER_ENDPOINT" || -z "$ORBIS_COMPONENT_PUBLIC_KEY" || -z "$ORBIS_SOLVER_MANIFEST_URL" || -z "$MULVERSE_LICENSE_PUBLIC_KEY_B64" || -z "$MULVERSE_LICENSE_KEY_ID" ]]; then
+            echo "::error::Configure desktop updater, solver component verification, and application license variables before releasing."
+            exit 1
+          fi
+          expected_manifest="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/components/stable/components/orbis-solver.json"
+          if [[ "$ORBIS_SOLVER_MANIFEST_URL" != "$expected_manifest" ]]; then
+            echo "::error::The stable Solver catalog is published at $expected_manifest; configure ORBIS_SOLVER_MANIFEST_URL to that URL."
             exit 1
           fi
 
@@ -164,8 +139,10 @@ jobs:
         working-directory: apps/desktop
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-        run: |
-          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; const endpoint = 'https://github.com/MxHabob/Orbis/releases/latest/download/latest.json'; const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: [endpoint] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
+          TAURI_UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT }}
+          ORBIS_COMPONENT_PUBLIC_KEY: ${{ vars.ORBIS_COMPONENT_PUBLIC_KEY }}
+          ORBIS_SOLVER_MANIFEST_URL: ${{ vars.ORBIS_SOLVER_MANIFEST_URL }}
+        run: node scripts/prepare-tauri-updater-config.mjs
 
       - name: Build signed Tauri app and upload to draft release
         uses: tauri-apps/tauri-action@v1
@@ -341,6 +318,9 @@ jobs:
           if (!release.isDraft) throw new Error("Expected the Tauri build to leave a draft GitHub Release.");
           const names = release.assets.map((asset) => asset.name.toLowerCase());
           const has = (pattern) => names.some((name) => pattern.test(name));
+          if (names.some((name) => name.startsWith("solver-service-") || name.startsWith("orbis-solver-"))) {
+            throw new Error("Desktop releases must not bundle the independently managed scheduling engine.");
+          }
           for (const [label, pattern] of [
             ["Windows installer", /\.exe$/],
             ["macOS disk image", /\.dmg$/],

@@ -2021,6 +2021,10 @@ export class RemoteClient implements OrbisApiClient {
     throw new Error("In-app updates are only available in the desktop application.");
   }
 
+  async systemDownloadUpdate(): Promise<string> {
+    throw new Error("In-app updates are only available in the desktop application.");
+  }
+
   async systemInstallUpdate(): Promise<void> {
     throw new Error("In-app updates are only available in the desktop application.");
   }

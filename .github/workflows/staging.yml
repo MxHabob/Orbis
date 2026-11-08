@@ -37,51 +37,15 @@ jobs:
           - name: windows
             platform: windows-latest
             target: x86_64-pc-windows-msvc
-            exe_extension: .exe
-            exe_target: solver-service-x86_64-pc-windows-msvc.exe
           - name: macos
             platform: macos-latest
             target: aarch64-apple-darwin
-            exe_extension: ""
-            exe_target: solver-service-aarch64-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: main
-
-      - name: Resolve app version
-        id: app_version
-        shell: bash
-        run: node -e "console.log('version=' + require('./apps/desktop/src-tauri/tauri.conf.json').version)" >> "$GITHUB_OUTPUT"
-
-      - name: Setup GraalVM Mandrel
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: "21"
-          distribution: mandrel
-          github-token: ${{ github.token }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ runner.os }}-${{ hashFiles('apps/solver-service/pom.xml') }}
-          restore-keys: |
-            maven-${{ runner.os }}-
-
-      - name: Build native Solver sidecar
-        working-directory: apps/solver-service
-        env:
-          MAVEN_OPTS: -Xmx6g
-        run: mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ steps.app_version.outputs.version }}"
-
-      - name: Stage Solver sidecar
-        shell: bash
-        run: |
-          mkdir -p apps/desktop/src-tauri/binaries
-          cp "apps/solver-service/target/orbis-solver-${{ steps.app_version.outputs.version }}-runner${{ matrix.exe_extension }}" "apps/desktop/src-tauri/binaries/${{ matrix.exe_target }}"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -108,6 +72,13 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Validate solver component configuration
+        working-directory: apps/desktop
+        env:
+          ORBIS_COMPONENT_PUBLIC_KEY: ${{ vars.ORBIS_COMPONENT_PUBLIC_KEY }}
+          ORBIS_SOLVER_MANIFEST_URL: ${{ vars.ORBIS_SOLVER_BETA_MANIFEST_URL }}
+        run: node scripts/prepare-component-config.mjs
 
       - name: Build Tauri staging installer
         working-directory: apps/desktop

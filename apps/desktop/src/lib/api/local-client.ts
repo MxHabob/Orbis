@@ -1543,6 +1543,9 @@ export class LocalClient implements OrbisApiClient {
   async systemCheckForUpdates(): Promise<UpdateCheckResult> {
     return invoke<UpdateCheckResult>("system_check_for_updates");
   }
+  async systemDownloadUpdate(): Promise<string> {
+    return invoke<string>("system_download_update");
+  }
   async systemInstallUpdate(): Promise<void> {
     return invoke<void>("system_install_update");
   }

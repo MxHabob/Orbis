@@ -2213,6 +2213,7 @@ export interface OrbisApiClient {
   systemGetAppInfo(): Promise<AppInfo>;
   systemGetChangelog(): Promise<ReleaseChangelogItem[]>;
   systemCheckForUpdates(): Promise<UpdateCheckResult>;
+  systemDownloadUpdate(): Promise<string>;
   systemInstallUpdate(): Promise<void>;
   openChangelogWindow(): Promise<void>;
   openAgentWindow(): Promise<void>;

@@ -224,85 +224,82 @@ pub async fn open_changelog_window<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+pub async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
     use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
-    use tauri_plugin_updater::UpdaterExt;
-    #[cfg(desktop)]
-    {
-        let updater = match app.updater() {
-            Ok(updater) => updater,
-            Err(error) => {
-                app.dialog()
-                    .message(format!("Failed to initialize updater: {error}"))
-                    .title("Update Check Failed")
-                    .kind(MessageDialogKind::Error)
-                    .buttons(MessageDialogButtons::Ok)
-                    .blocking_show();
-                return Err(error.to_string());
-            }
-        };
-
-        match updater.check().await {
-            Ok(Some(update)) => {
-                let answer = app
-                    .dialog()
-                    .message(format!(
-                        "A new version {} is available. Would you like to update now?",
-                        update.version
-                    ))
-                    .title("Update Available")
-                    .kind(MessageDialogKind::Info)
-                    .buttons(MessageDialogButtons::OkCancel)
-                    .blocking_show();
-                if answer {
-                    match update
-                        .download_and_install(
-                            |_chunk_length, _content_length| {},
-                            || tracing::info!("Update download finished"),
-                        )
-                        .await
-                    {
-                        Ok(()) => app.restart(),
-                        Err(error) => {
-                            app.dialog()
-                                .message(format!("Failed to install update: {error}"))
-                                .title("Update Installation Failed")
-                                .kind(MessageDialogKind::Error)
-                                .buttons(MessageDialogButtons::Ok)
-                                .blocking_show();
-                            return Err(error.to_string());
-                        }
-                    }
-                }
-            }
-            Ok(None) => {
-                let version = app.package_info().version.to_string();
-                app.dialog()
-                    .message(format!("Orbis\nversion {}\n\nYou're up to date!", version))
-                    .title("No Updates Available")
-                    .kind(MessageDialogKind::Info)
-                    .buttons(MessageDialogButtons::Ok)
-                    .blocking_show();
-            }
-            Err(error) => {
-                app.dialog()
-                    .message(format!("Failed to check for updates: {error}"))
-                    .title("Update Check Failed")
-                    .kind(MessageDialogKind::Error)
-                    .buttons(MessageDialogButtons::Ok)
-                    .blocking_show();
-                return Err(error.to_string());
-            }
+    let result = match super::system_cmds::system_check_for_updates(app.clone()).await {
+        Ok(result) => result,
+        Err(error) => {
+            app.dialog()
+                .message(format!("Failed to check for updates: {error}"))
+                .title("Update Check Failed")
+                .kind(MessageDialogKind::Error)
+                .buttons(MessageDialogButtons::Ok)
+                .blocking_show();
+            return Err(error);
         }
-    }
-    #[cfg(not(desktop))]
-    {
+    };
+
+    if !result.has_update {
         app.dialog()
-            .message("Updates are managed through your app store.")
-            .title("Check App Store")
+            .message(format!(
+                "Orbis\nversion {}\n\nYou're up to date!",
+                result.current_version
+            ))
+            .title("No Updates Available")
             .kind(MessageDialogKind::Info)
             .buttons(MessageDialogButtons::Ok)
             .blocking_show();
+        return Ok(());
+    }
+
+    let download_answer = app
+        .dialog()
+        .message(format!(
+            "A new version {} is available. Would you like to download it now?",
+            result.latest_version
+        ))
+        .title("Update Available")
+        .kind(MessageDialogKind::Info)
+        .buttons(MessageDialogButtons::OkCancel)
+        .blocking_show();
+    if download_answer {
+        let pending = app.state::<super::system_cmds::PendingUpdateState>();
+        let version = match super::system_cmds::system_download_update(app.clone(), pending).await {
+            Ok(version) => version,
+            Err(error) => {
+                app.dialog()
+                    .message(format!("Failed to download update: {error}"))
+                    .title("Update Download Failed")
+                    .kind(MessageDialogKind::Error)
+                    .buttons(MessageDialogButtons::Ok)
+                    .blocking_show();
+                return Err(error);
+            }
+        };
+
+        let restart_answer = app
+            .dialog()
+            .message(format!(
+                "Orbis {version} has been downloaded and verified. Restart now to apply the update?"
+            ))
+            .title("Update Ready")
+            .kind(MessageDialogKind::Info)
+            .buttons(MessageDialogButtons::OkCancel)
+            .blocking_show();
+        if restart_answer {
+            let pending = app.state::<super::system_cmds::PendingUpdateState>();
+            if let Err(error) =
+                super::system_cmds::system_install_update(app.clone(), pending).await
+            {
+                app.dialog()
+                    .message(format!("Failed to apply update: {error}"))
+                    .title("Update Installation Failed")
+                    .kind(MessageDialogKind::Error)
+                    .buttons(MessageDialogButtons::Ok)
+                    .blocking_show();
+                return Err(error);
+            }
+        }
     }
     Ok(())
 }

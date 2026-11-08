@@ -584,7 +584,9 @@ impl AppState {
             system_repo_impl.clone(),
         ));
 
-        let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
+        let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new(
+            app_data_dir,
+        )?);
 
         // ── Employee Affairs & User Groups Wiring ───────────────────
         let group_repo =

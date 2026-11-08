@@ -2,20 +2,23 @@
   import * as m from "$lib/paraglide/messages";
   import { onMount } from "svelte";
   import { api } from "$lib/api/client";
-  import type { AppInfo, ReleaseChangelogItem, UpdateCheckResult } from "$lib/api/types";
+  import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
   import { formatDate as formatOrgDate } from "$lib/core/i18n";
   import { Button } from "@orbis/ui/button";
   import { LoadingIndicator, toast } from "@orbis/ui";
   import { ArrowPath, Sparkles } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
   import EmptyState from "$lib/shared/components/empty-state.svelte";
+  import { updateManager } from "$lib/features/system/update-manager.svelte";
 
   let releases = $state<ReleaseChangelogItem[]>([]);
   let appInfo = $state<AppInfo | null>(null);
   let isLoading = $state(true);
-  let isCheckingUpdate = $state(false);
-  let isInstallingUpdate = $state(false);
-  let updateResult = $state<UpdateCheckResult | null>(null);
+  let isCheckingUpdate = $derived(updateManager.isChecking);
+  let isDownloadingUpdate = $derived(updateManager.isDownloading);
+  let isReadyToRestart = $derived(updateManager.isReadyToRestart);
+  let updateResult = $derived(updateManager.updateResult);
+  let updateProgress = $derived(updateManager.progress);
 
   // Focus strictly on the current installed release
   const currentRelease = $derived(
@@ -57,11 +60,8 @@
   }
 
   async function handleCheckForUpdates() {
-    isCheckingUpdate = true;
-    updateResult = null;
     try {
-      const res = await api.systemCheckForUpdates();
-      updateResult = res;
+      const res = await updateManager.checkForUpdates();
       if (!res.has_update) {
         toast.info(m.shared_ui_latest_version_installed({ version: res.current_version }));
       }
@@ -69,21 +69,26 @@
       console.warn("Check for updates failed:", error);
       const msg = error instanceof Error ? error.message : String(error);
       toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
-    } finally {
-      isCheckingUpdate = false;
+    }
+  }
+
+  async function handleDownloadUpdate() {
+    try {
+      await updateManager.downloadUpdate();
+    } catch (error) {
+      console.error("Failed to download update:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`${m.ui_download_manager_update_failed()} ${msg}`);
     }
   }
 
   async function handleInstallUpdate() {
-    isInstallingUpdate = true;
     try {
-      await api.systemInstallUpdate();
+      await updateManager.installUpdate();
     } catch (error) {
       console.error("Failed to install update:", error);
       const msg = error instanceof Error ? error.message : String(error);
       toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
-    } finally {
-      isInstallingUpdate = false;
     }
   }
 
@@ -110,13 +115,48 @@
           <Button
             variant="default"
             size="sm"
-            disabled={isInstallingUpdate}
-            onclick={handleInstallUpdate}
+            disabled={isDownloadingUpdate || updateManager.isApplying}
+            onclick={isReadyToRestart ? handleInstallUpdate : handleDownloadUpdate}
             class="h-7 px-3 text-xs font-medium cursor-pointer"
           >
-            {isInstallingUpdate ? m.ui_changelog_installing_update() : m.ui_changelog_install_and_restart()}
+            {#if isDownloadingUpdate}
+              {m.ui_download_manager_downloading_update()}
+            {:else if isReadyToRestart}
+              {m.ui_download_manager_restart_to_update()}
+            {:else}
+              {m.ui_download_manager_download_update()}
+            {/if}
           </Button>
         </div>
+        {#if isDownloadingUpdate}
+          <div class="space-y-2 rounded-xl border border-border/50 bg-card/60 p-3 text-xs" aria-live="polite">
+            <div class="flex items-center justify-between gap-3">
+              <span>{m.ui_download_manager_downloading_update()}</span>
+              {#if updateProgress?.total_bytes}
+                <span class="font-mono text-muted-foreground">
+                  {Math.min(100, Math.round((updateProgress.downloaded_bytes / updateProgress.total_bytes) * 100))}%
+                </span>
+              {:else if updateProgress}
+                <span class="font-mono text-muted-foreground">
+                  {(updateProgress.downloaded_bytes / (1024 * 1024)).toFixed(1)} MB
+                </span>
+              {/if}
+            </div>
+            {#if updateProgress?.total_bytes}
+              <progress
+                class="h-1.5 w-full overflow-hidden rounded-full accent-primary"
+                max={updateProgress.total_bytes}
+                value={Math.min(updateProgress.downloaded_bytes, updateProgress.total_bytes)}
+                aria-label="Update download progress"
+              ></progress>
+            {/if}
+          </div>
+        {/if}
+        {#if isReadyToRestart}
+          <p class="text-xs text-muted-foreground" aria-live="polite">
+            {m.ui_download_manager_update_ready()}
+          </p>
+        {/if}
       {/if}
 
       {#if isLoading}

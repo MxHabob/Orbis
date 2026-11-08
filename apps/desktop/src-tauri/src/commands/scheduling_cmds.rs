@@ -597,7 +597,7 @@ pub async fn solver_submit_timetable(
         .ensure_running()
         .await
         .map_err(|e| e.to_string())?;
-    state.solver_sidecar.increment_active_jobs();
+    state.solver_sidecar.increment_active_jobs()?;
 
     if let Err(error) = state
         .integration_resolver
@@ -646,7 +646,7 @@ pub async fn solver_submit_exam(
         .ensure_running()
         .await
         .map_err(|e| e.to_string())?;
-    state.solver_sidecar.increment_active_jobs();
+    state.solver_sidecar.increment_active_jobs()?;
 
     state
         .integration_resolver

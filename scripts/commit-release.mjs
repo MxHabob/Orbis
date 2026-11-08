@@ -57,7 +57,6 @@ function main() {
     "apps/mobile/package.json",
     "apps/mobile/app.json",
     "apps/desktop/src-tauri/Cargo.toml",
-    "apps/solver-service/pom.xml",
     "apps/desktop/src-tauri/tauri.conf.json",
     "apps/desktop/src-tauri/tauri.staging.conf.json",
     "bun.lock",
