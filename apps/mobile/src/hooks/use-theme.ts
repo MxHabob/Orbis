@@ -55,5 +55,6 @@ export function useTheme() {
     tabBarBorder: variable("--tab-bar-border"),
     tabBarActive: variable("--tab-bar-active"),
     tabBarInactive: variable("--tab-bar-inactive"),
+    brandLimeForeground: variable("--brand-lime-foreground"),
   };
 }

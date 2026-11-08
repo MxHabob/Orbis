@@ -18,6 +18,7 @@ import React, {
   useState,
 } from "react";
 import {
+  type GestureResponderEvent,
   Modal,
   Platform,
   Pressable,
@@ -191,11 +192,16 @@ export const DropdownMenuTrigger = ({
   const suppressLongPress = () => undefined;
 
   if (asChild && isValidElement(children)) {
+    const childElement = children as ReactElement<{
+      onPress?: (event: GestureResponderEvent) => void;
+      onLongPress?: () => void;
+      delayLongPress?: number;
+    }>;
     return (
       <View ref={triggerRef} collapsable={false}>
-        {cloneElement(children as ReactElement<any>, {
-          onPress: (event: any) => {
-            (children as ReactElement<any>).props?.onPress?.(event);
+        {cloneElement(childElement, {
+          onPress: (event: GestureResponderEvent) => {
+            childElement.props?.onPress?.(event);
             handlePress();
           },
           onLongPress: suppressLongPress,
@@ -325,11 +331,11 @@ export const DropdownMenuItem = ({
     return null;
   }
 
-  const handlePress = () => {
+  const handlePress = (event: GestureResponderEvent) => {
     if (disabled) return;
     onSelect?.();
     context.closeMenu();
-    onPress?.({} as any);
+    onPress?.(event);
   };
 
   return (

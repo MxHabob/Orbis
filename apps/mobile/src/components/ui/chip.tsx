@@ -52,14 +52,14 @@ export function Chip({
           accessibilityRole="button"
           accessibilityLabel={`Remove ${label}`}
           onPress={onDelete}
-          hitSlop={6}
+          hitSlop={15}
           className="ml-0.5 items-center justify-center"
         >
           <View
             className={`relative h-3.5 w-3.5 items-center justify-center rounded-full ${selected ? "bg-primary" : "bg-muted-foreground"}`}
           >
-            <View className="absolute h-[1.2px] w-2 rotate-45 bg-white" />
-            <View className="absolute h-[1.2px] w-2 -rotate-45 bg-white" />
+            <View className="absolute h-[1.2px] w-2 rotate-45 bg-primary-foreground" />
+            <View className="absolute h-[1.2px] w-2 -rotate-45 bg-primary-foreground" />
           </View>
         </Pressable>
       )}

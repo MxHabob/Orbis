@@ -79,8 +79,8 @@ export function SearchInput({
           className="ms-two items-center justify-center"
         >
           <View className="relative h-[18px] w-[18px] items-center justify-center rounded-full bg-muted-foreground">
-            <View className="absolute h-[1.5px] w-2.5 rotate-45 bg-white" />
-            <View className="absolute h-[1.5px] w-2.5 -rotate-45 bg-white" />
+            <View className="absolute h-[1.5px] w-2.5 rotate-45 bg-primary-foreground" />
+            <View className="absolute h-[1.5px] w-2.5 -rotate-45 bg-primary-foreground" />
           </View>
         </Pressable>
       ) : null}

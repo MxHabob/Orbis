@@ -12,68 +12,13 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Screen, type ScreenProps } from "./screen";
-
-type SpacingScale =
-  | "half"
-  | "one"
-  | "two"
-  | "three"
-  | "four"
-  | "five"
-  | "six"
-  | "eight"
-  | "ten"
-  | "twelve"
-  | "sixteen";
-
-const contentPaddingClasses: Record<SpacingScale, string> = {
-  half: "p-half",
-  one: "p-one",
-  two: "p-two",
-  three: "p-three",
-  four: "p-four",
-  five: "p-five",
-  six: "p-six",
-  eight: "p-eight",
-  ten: "p-ten",
-  twelve: "p-twelve",
-  sixteen: "p-sixteen",
-};
-
-const horizontalPaddingClasses: Record<SpacingScale, string> = {
-  half: "px-half",
-  one: "px-one",
-  two: "px-two",
-  three: "px-three",
-  four: "px-four",
-  five: "px-five",
-  six: "px-six",
-  eight: "px-eight",
-  ten: "px-ten",
-  twelve: "px-twelve",
-  sixteen: "px-sixteen",
-};
-
-const verticalPaddingClasses: Record<SpacingScale, string> = {
-  half: "py-half",
-  one: "py-one",
-  two: "py-two",
-  three: "py-three",
-  four: "py-four",
-  five: "py-five",
-  six: "py-six",
-  eight: "py-eight",
-  ten: "py-ten",
-  twelve: "py-twelve",
-  sixteen: "py-sixteen",
-};
-
-function resolveClass(
-  value: SpacingScale | number | undefined,
-  classes: Record<SpacingScale, string>,
-) {
-  return typeof value === "string" ? classes[value] : undefined;
-}
+import {
+  type SpacingScale,
+  paddingClasses,
+  horizontalPaddingClasses,
+  verticalPaddingClasses,
+  resolveClass,
+} from "@/lib/design-tokens";
 
 export interface ScreenScrollViewProps extends ScreenProps {
   contentContainerStyle?: ViewStyle | ViewStyle[];
@@ -110,7 +55,7 @@ export function ScreenScrollView({
   };
   const contentPaddingClass = resolveClass(
     contentPadding,
-    contentPaddingClasses,
+    paddingClasses,
   );
   const horizontalPaddingClass = resolveClass(
     horizontalPadding,

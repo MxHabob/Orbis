@@ -362,7 +362,12 @@ export function Drawer({
               pointerEvents="none"
               style={[StyleSheet.absoluteFill, styles.backdropTint]}
             />
-            <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close drawer"
+              style={StyleSheet.absoluteFill}
+              onPress={onClose}
+            />
           </Animated.View>
           {disableContentDrag ? (
             content
@@ -406,7 +411,7 @@ export function DrawerContent({
           backgroundColor: theme.card,
           paddingBottom: hasCloseButton
             ? 0
-            : Math.max(insets.bottom, Platform.OS === "ios" ? 34 : 16),
+            : insets.bottom,
         },
       ]}
     >
@@ -497,10 +502,7 @@ export function DrawerCloseButton({ title = "Cancel" }: { title?: string }) {
         {
           borderColor: theme.border,
           backgroundColor: theme.card,
-          paddingBottom: Math.max(
-            insets.bottom,
-            Platform.OS === "ios" ? 34 : 16,
-          ),
+          paddingBottom: insets.bottom,
         },
       ]}
     >

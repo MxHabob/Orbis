@@ -38,7 +38,7 @@ export default function TabsLayout() {
           display: "none",
         },
       }}
-      tabBar={(props: any) => <FloatingTabBar {...(props as any)} />}
+      tabBar={(props) => <FloatingTabBar {...props} />}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="behavior" />

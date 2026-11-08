@@ -1,5 +1,10 @@
 import React from "react";
-import { Pressable, View } from "react-native";
+import { Pressable } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { Check, XMark } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -17,6 +22,15 @@ export function Switch({
   accessibilityLabel,
 }: SwitchProps) {
   const theme = useTheme();
+  const progress = useSharedValue(value ? 1 : 0);
+
+  React.useEffect(() => {
+    progress.value = withTiming(value ? 1 : 0, { duration: 180 });
+  }, [value, progress]);
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: progress.value * 20 }],
+  }));
 
   return (
     <Pressable
@@ -25,21 +39,22 @@ export function Switch({
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={() => onValueChange?.(!value)}
+      hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }}
       className={`h-6 w-11 justify-start rounded-sm border ${value ? "border-primary bg-primary" : "border-border bg-background-element"} ${disabled ? "opacity-50" : ""}`}
       style={({ pressed }) =>
         pressed && !disabled ? { opacity: 0.8 } : undefined
       }
     >
-      <View
+      <Animated.View
         className={`h-[22px] w-[22px] rounded-md border bg-background shadow-sm ${value ? "border-primary" : "border-border"}`}
-        style={{ transform: [{ translateX: value ? 20 : 0 }] }}
+        style={thumbStyle}
       >
         {value ? (
           <Check size={12} color={theme.primary} />
         ) : (
           <XMark size={12} color={theme.mutedForeground} />
         )}
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }

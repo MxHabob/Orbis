@@ -21,6 +21,7 @@ export function Checkbox({
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={() => onValueChange?.(!value)}
+      hitSlop={Math.max(0, (44 - 16) / 2)}
       className={`h-4 w-4 items-center justify-center rounded-full ${value ? "border-4 border-primary" : "border border-input"}`}
       style={({ pressed }) => [
         disabled && { opacity: 0.5 },

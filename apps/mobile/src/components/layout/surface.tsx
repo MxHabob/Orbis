@@ -5,57 +5,13 @@
  */
 
 import React from "react";
-import { View, type ViewProps } from "react-native";
-import type { ViewStyle } from "react-native";
-
-type SpacingScale =
-  | "half"
-  | "one"
-  | "two"
-  | "three"
-  | "four"
-  | "five"
-  | "six"
-  | "eight"
-  | "ten"
-  | "twelve"
-  | "sixteen";
-type RadiusScale =
-  | "none"
-  | "xs"
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl"
-  | "2xl"
-  | "3xl"
-  | "full";
-
-const paddingClasses: Record<SpacingScale, string> = {
-  half: "p-half",
-  one: "p-one",
-  two: "p-two",
-  three: "p-three",
-  four: "p-four",
-  five: "p-five",
-  six: "p-six",
-  eight: "p-eight",
-  ten: "p-ten",
-  twelve: "p-twelve",
-  sixteen: "p-sixteen",
-};
-
-const radiusClasses: Record<RadiusScale, string> = {
-  none: "rounded-none",
-  xs: "rounded-xs",
-  sm: "rounded-sm",
-  md: "rounded-md",
-  lg: "rounded-lg",
-  xl: "rounded-xl",
-  "2xl": "rounded-2xl",
-  "3xl": "rounded-3xl",
-  full: "rounded-full",
-};
+import { View, type ViewProps, type ViewStyle } from "react-native";
+import {
+  type SpacingScale,
+  type RadiusScale,
+  paddingClasses,
+  radiusClasses,
+} from "@/lib/design-tokens";
 
 export interface SurfaceProps extends ViewProps {
   variant?: "flat" | "elevated" | "outlined" | "sunken";
