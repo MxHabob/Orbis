@@ -21,6 +21,7 @@ export function createUpdaterManifest({
   target,
   artifactName,
   signature,
+  notes,
 }) {
   const platform = targetPlatforms[target];
   if (!platform) {
@@ -44,6 +45,9 @@ export function createUpdaterManifest({
   if (typeof signature !== "string" || !signature.trim()) {
     throw new Error(`Updater signature is missing for ${artifactName}.`);
   }
+  if (typeof notes !== "string" || !notes.trim()) {
+    throw new Error(`Release notes are missing for ${tag}.`);
+  }
 
   const artifactUrl = new URL(
     encodeURIComponent(artifactName),
@@ -52,6 +56,7 @@ export function createUpdaterManifest({
 
   return {
     version,
+    notes: notes.trim(),
     platforms: {
       [platform.updaterPlatform]: {
         url: artifactUrl,
@@ -92,6 +97,13 @@ if (
   if (!fs.statSync(signaturePath, { throwIfNoEntry: false })?.isFile()) {
     throw new Error(`Updater signature is missing: ${signaturePath}.`);
   }
+  const releaseNotesPath = path.resolve(
+    process.env.RELEASE_NOTES_PATH ??
+      path.join(process.cwd(), "releases", `${process.env.RELEASE_TAG}.md`),
+  );
+  if (!fs.statSync(releaseNotesPath, { throwIfNoEntry: false })?.isFile()) {
+    throw new Error(`Release notes file is missing: ${releaseNotesPath}.`);
+  }
 
   const manifest = createUpdaterManifest({
     repository: process.env.GITHUB_REPOSITORY,
@@ -100,6 +112,7 @@ if (
     target,
     artifactName,
     signature: fs.readFileSync(signaturePath, "utf8"),
+    notes: fs.readFileSync(releaseNotesPath, "utf8"),
   });
   fs.writeFileSync(
     path.join(artifactDir, "latest.json"),

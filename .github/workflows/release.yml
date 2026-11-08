@@ -227,6 +227,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
           TAURI_UPDATER_TARGET: ${{ matrix.target }}
           CI_ARTIFACT_DIR: ci-artifacts
+          RELEASE_NOTES_PATH: ${{ github.workspace }}/releases/${{ needs.validate.outputs.tag }}.md
         run: node release-tools/apps/desktop/scripts/create-tauri-updater-manifest.mjs
 
       - name: Upload desktop artifacts
@@ -282,6 +283,12 @@ jobs:
             const metadataVersion = candidate.version ? String(candidate.version).replace(/^v/, '') : '';
             if (metadataVersion !== version) {
               throw new Error(`latest.json version ${candidate.version} does not match tag version ${version}.`);
+            }
+            if (typeof candidate.notes !== 'string' || !candidate.notes.trim()) {
+              throw new Error(`latest.json for ${metadataVersion} is missing release notes.`);
+            }
+            if (candidate.notes.trim() !== manifests[0].notes.trim()) {
+              throw new Error('latest.json platform files contain different release notes.');
             }
             for (const [platform, entry] of Object.entries(candidate.platforms || {})) {
               if (manifest.platforms[platform]) {
