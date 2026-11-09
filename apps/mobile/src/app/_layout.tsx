@@ -18,6 +18,10 @@ import { useI18n } from "@/lib/i18n";
 import { AppProviders } from "@/providers/app-providers";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import {
+  getNetworkStatus,
+  subscribeToNetworkStatus,
+} from "@/lib/network/online-manager";
+import {
   applyThemePreference,
   loadThemePreference,
 } from "@/lib/theme-preference";
@@ -98,6 +102,10 @@ function StartupErrorFallback({
 
 function RootLayoutContent() {
   const [isThemeReady, setIsThemeReady] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => {
+    const status = getNetworkStatus();
+    return status.isKnown && !status.isOnline;
+  });
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const systemBackgroundColor = isDark ? "#1f1f1f" : "#fcfcfc";
@@ -125,6 +133,12 @@ function RootLayoutContent() {
     currentColors.primary,
     currentColors.text,
   ]);
+
+  useEffect(() => {
+    return subscribeToNetworkStatus((status) => {
+      setIsOffline(status.isKnown && !status.isOnline);
+    });
+  }, []);
 
   useEffect(() => {
     loadThemePreference()
@@ -161,7 +175,7 @@ function RootLayoutContent() {
           className="flex-1"
           style={{ direction: isArabic ? "rtl" : "ltr" }}
         >
-          <OfflineStatusBanner />
+          <OfflineStatusBanner visible={isOffline} />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -169,6 +183,7 @@ function RootLayoutContent() {
               contentStyle: {
                 backgroundColor: currentColors.background,
                 direction: isArabic ? "rtl" : "ltr",
+                paddingTop: isOffline ? 32 : 0,
               },
             }}
           >
@@ -184,7 +199,10 @@ function RootLayoutContent() {
                 presentation: "modal",
                 animation: "slide_from_bottom",
                 headerShown: false,
-                contentStyle: { backgroundColor: "#000000" },
+                contentStyle: {
+                  backgroundColor: "#000000",
+                  paddingTop: isOffline ? 32 : 0,
+                },
               }}
             />
             <Stack.Screen

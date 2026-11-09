@@ -272,6 +272,8 @@ export const queryKeys = {
     },
     studentFeesPaginated: (orgId?: string, filter?: unknown) =>
       [...queryKeys.finance.studentFees(orgId, filter), "paginated"] as const,
+    studentFeeSummary: (orgId?: string) =>
+      [...queryKeys.finance.all, "studentFeeSummary", orgId ?? "current"] as const,
     payments: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
         return [

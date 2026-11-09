@@ -124,6 +124,7 @@ import type {
   CreateFeeTemplateRequest,
   UpdateFeeTemplateRequest,
   StudentFeeDto,
+  StudentFeeSummaryDto,
   GenerateFeeRequest,
   PaymentDto,
   ProcessPaymentRequest,
@@ -1246,6 +1247,9 @@ export class LocalClient implements OrbisApiClient {
         },
       }),
     );
+  }
+  async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
+    return unwrap(await invoke("finance_get_student_fee_summary"));
   }
   async deleteStudentFee(id: string): Promise<boolean> {
     return unwrap(await invoke("finance_delete_student_fee", { id }));

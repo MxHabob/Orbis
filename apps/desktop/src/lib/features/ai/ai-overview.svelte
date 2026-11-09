@@ -259,7 +259,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
                       <span class="w-2 h-2 rounded-full {log.status === 'completed' ? 'bg-primary' : log.status === 'failed' ? 'bg-destructive' : 'bg-muted-foreground/60'} shrink-0"></span>
                       <div class="text-start">
                         <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.task_type || log.action_code || log.action || m.ai_ui_automation_task()}</code>
-                        <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.last_error || log.reason || log.reasoning || (log.status === 'completed' ? m.ai_ui_task_executed_period() : m.ai_ui_scheduled_for_next_run())}</p>
+                        <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.error_log || log.reason || log.reasoning || (log.status === 'completed' ? m.ai_ui_task_executed_period() : m.ai_ui_scheduled_for_next_run())}</p>
                       </div>
                     </div>
                     <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.scheduled_at || log.executed_at || "—"}</span>

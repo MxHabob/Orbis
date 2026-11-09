@@ -16,7 +16,7 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::finance_service::{
     CreateSubAccountInput, DisbursementInput, PayrollItemInput, PostPayrollInput,
-    SettleGatewayPayoutInput, StatementFilter,
+    SettleGatewayPayoutInput, StatementFilter, StudentFeeSummary,
 };
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
@@ -173,6 +173,14 @@ pub struct StudentFeeDto {
     pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, ToSchema, Clone)]
+pub struct StudentFeeSummaryDto {
+    pub currency: String,
+    pub due: Decimal,
+    pub paid: Decimal,
+    pub balance: Decimal,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -905,6 +913,29 @@ pub async fn list_fees(
         fees.page_size,
     );
     Ok(ApiResponse::ok(result))
+}
+
+#[utoipa::path(get, path = "/api/v1/student-fees/summary",
+    responses((status = 200, body = Vec<StudentFeeSummaryDto>)), security(("bearer" = [])), tag = "Finance")]
+pub async fn summarize_student_fees(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<StudentFeeSummaryDto>>>, ApiError> {
+    let summary = state
+        .finance_service
+        .summarize_student_fees(ctx.tenant_id)
+        .await?;
+    Ok(ApiResponse::ok(
+        summary
+            .into_iter()
+            .map(|total| StudentFeeSummaryDto {
+                currency: total.currency,
+                due: total.due,
+                paid: total.paid,
+                balance: total.balance,
+            })
+            .collect(),
+    ))
 }
 
 #[utoipa::path(post, path = "/api/v1/payments", request_body = ProcessPaymentRequest,
@@ -1944,6 +1975,7 @@ pub fn routes() -> Router<AppState> {
             delete(delete_discount_template),
         )
         .route("/api/v1/student-fees", post(generate_fee).get(list_fees))
+        .route("/api/v1/student-fees/summary", get(summarize_student_fees))
         .route("/api/v1/student-fees/:id", delete(delete_student_fee))
         .route("/api/v1/student-fees/:id/split", post(split_fee))
         .route("/api/v1/student-fees/:id/refund", post(refund_fee))

@@ -55,7 +55,7 @@ import AddDocumentRequirementSheet from "./add-document-requirement-sheet.svelte
 let { org, isSaving, onsave } = $props<{
   org: any;
   isSaving: boolean;
-  onsave: (registrationConfig: any) => void;
+  onsave: (registrationConfig: any) => Promise<boolean>;
 }>();
 
 // Required Documents Interface
@@ -324,7 +324,7 @@ let selectedClassFilter = $state<string>("all");
 let activeTab = $state<"policies" | "documents" | "fields">("policies");
 
 // Initial state snapshot for dirty checking
-const initialState = {
+let initialState = $state({
   institutionType: parsed.institutionType,
   studentNumberPrefix: parsed.studentNumberPrefix,
   studentNumberYearFormat: parsed.studentNumberYearFormat,
@@ -340,7 +340,27 @@ const initialState = {
   maxClassCapacity: parsed.maxClassCapacity,
   requiredDocuments: JSON.parse(JSON.stringify(parsed.requiredDocuments)),
   formFields: parsed.formFields.map((field) => ({ ...field })),
-};
+});
+
+function syncInitialState() {
+  initialState = {
+    institutionType,
+    studentNumberPrefix,
+    studentNumberYearFormat,
+    studentNumberDigits,
+    registrationEnabled,
+    requiresApproval,
+    allowWaitlist,
+    siblingPriorityEnabled,
+    allowLateEnrollment,
+    allowNoGuardian,
+    allowDuplicateNationalId,
+    autoAssignFees,
+    maxClassCapacity,
+    requiredDocuments: JSON.parse(JSON.stringify(requiredDocuments)),
+    formFields: formFields.map((field) => ({ ...field })),
+  };
+}
 
 const isDirty = $derived.by(() => {
   return (
@@ -426,20 +446,6 @@ onMount(async () => {
             allowLateEnrollment = Boolean(a.policy.allow_late_enrollment);
         }
       }
-      // Re-synchronize initial state
-      initialState.institutionType = institutionType;
-      initialState.studentNumberPrefix = studentNumberPrefix;
-      initialState.studentNumberYearFormat = studentNumberYearFormat;
-      initialState.studentNumberDigits = studentNumberDigits;
-      initialState.registrationEnabled = registrationEnabled;
-      initialState.requiresApproval = requiresApproval;
-      initialState.allowWaitlist = allowWaitlist;
-      initialState.siblingPriorityEnabled = siblingPriorityEnabled;
-      initialState.allowLateEnrollment = allowLateEnrollment;
-      initialState.allowNoGuardian = allowNoGuardian;
-      initialState.allowDuplicateNationalId = allowDuplicateNationalId;
-      initialState.autoAssignFees = autoAssignFees;
-      initialState.maxClassCapacity = maxClassCapacity;
     }
 
     if (backendReqs && backendReqs.length > 0) {
@@ -456,8 +462,8 @@ onMount(async () => {
         }),
       );
       requiredDocuments = mapped;
-      initialState.requiredDocuments = JSON.parse(JSON.stringify(mapped));
     }
+    syncInitialState();
   } catch (err) {
     console.error("Failed to load registration requirements data:", err);
   }
@@ -819,7 +825,7 @@ function handleFieldGridAction(event: GridActionEvent) {
 }
 
 // Save form
-function handleFormSave() {
+async function handleFormSave() {
   const payload = {
     admission: {
       institution_type: institutionType,
@@ -865,7 +871,9 @@ function handleFormSave() {
     },
   };
 
-  onsave(payload);
+  if (await onsave(payload)) {
+    syncInitialState();
+  }
 }
 </script>
 

@@ -14,8 +14,8 @@ let isSaving = $state(false);
 
 let isLoading = $derived(orgQuery.isLoading);
 
-async function handleSave(registrationConfig: any) {
-  if (!orgId) return;
+async function handleSave(registrationConfig: any): Promise<boolean> {
+  if (!orgId) return false;
 
   isSaving = true;
   try {
@@ -27,10 +27,12 @@ async function handleSave(registrationConfig: any) {
     };
     await api.updateSettings(updatedSettings);
     toast.success(m.settings_registration_save_success());
+    return true;
   } catch (e: unknown) {
     toast.error(
       m.settings_registration_save_error({ error: extractErrorMessage(e) }),
     );
+    return false;
   } finally {
     isSaving = false;
   }

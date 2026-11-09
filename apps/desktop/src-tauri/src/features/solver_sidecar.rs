@@ -2,6 +2,7 @@
 
 use super::managed_components::ManagedComponentManager;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
@@ -28,6 +29,7 @@ pub struct SidecarStatus {
 
 pub struct SolverSidecarManager {
     child: Arc<Mutex<Option<Child>>>,
+    active_job_ids: Arc<Mutex<HashSet<String>>>,
     endpoint_url: String,
     last_activity: Arc<AtomicI64>,
     active_jobs: Arc<AtomicUsize>,
@@ -52,6 +54,7 @@ impl SolverSidecarManager {
 
         let manager = Self {
             child: Arc::new(Mutex::new(None)),
+            active_job_ids: Arc::new(Mutex::new(HashSet::new())),
             endpoint_url: format!("http://127.0.0.1:{DEFAULT_PORT}"),
             last_activity: Arc::new(AtomicI64::new(chrono::Utc::now().timestamp())),
             active_jobs: Arc::new(AtomicUsize::new(0)),
@@ -73,15 +76,20 @@ impl SolverSidecarManager {
             .store(chrono::Utc::now().timestamp(), Ordering::Relaxed);
     }
 
-    pub fn increment_active_jobs(&self) -> Result<(), String> {
+    pub async fn begin_job(&self, job_id: &str) -> Result<(), String> {
         if self.update_in_progress.load(Ordering::Acquire) {
             return Err(
                 "An Orbis update is being installed; try scheduling again shortly.".to_string(),
             );
         }
+        let mut active_job_ids = self.active_job_ids.lock().await;
+        if !active_job_ids.insert(job_id.to_string()) {
+            return Err("This scheduling job is already active.".to_string());
+        }
         self.active_jobs.fetch_add(1, Ordering::Relaxed);
         if self.update_in_progress.load(Ordering::Acquire) {
-            self.decrement_active_jobs();
+            active_job_ids.remove(job_id);
+            self.decrement_active_job_count();
             return Err(
                 "An Orbis update is being installed; try scheduling again shortly.".to_string(),
             );
@@ -90,7 +98,20 @@ impl SolverSidecarManager {
         Ok(())
     }
 
-    pub fn decrement_active_jobs(&self) {
+    pub async fn finish_job(&self, job_id: &str) {
+        if self.active_job_ids.lock().await.remove(job_id) {
+            self.decrement_active_job_count();
+            self.mark_activity();
+        }
+    }
+
+    pub async fn mark_job_activity(&self, job_id: &str) {
+        if self.active_job_ids.lock().await.contains(job_id) {
+            self.mark_activity();
+        }
+    }
+
+    fn decrement_active_job_count(&self) {
         let mut current = self.active_jobs.load(Ordering::Relaxed);
         while current > 0 {
             match self.active_jobs.compare_exchange_weak(
@@ -103,7 +124,6 @@ impl SolverSidecarManager {
                 Err(actual) => current = actual,
             }
         }
-        self.mark_activity();
     }
 
     pub fn begin_application_update(&self) -> Result<ApplicationUpdateGuard, String> {
@@ -385,16 +405,18 @@ mod tests {
         let data_dir = std::env::temp_dir().join(format!("orbis-sidecar-{}", uuid::Uuid::new_v4()));
         let manager = SolverSidecarManager::new(&data_dir).expect("manager");
 
-        manager.increment_active_jobs().expect("start job");
+        manager.begin_job("job-1").await.expect("start job");
         assert!(manager.begin_application_update().is_err());
-        manager.decrement_active_jobs();
+        manager.finish_job("job-1").await;
+        manager.finish_job("job-1").await;
 
         let update_guard = manager.begin_application_update().expect("begin update");
-        assert!(manager.increment_active_jobs().is_err());
+        assert!(manager.begin_job("job-2").await.is_err());
         drop(update_guard);
         manager
-            .increment_active_jobs()
+            .begin_job("job-2")
+            .await
             .expect("start job after update");
-        manager.decrement_active_jobs();
+        manager.finish_job("job-2").await;
     }
 }

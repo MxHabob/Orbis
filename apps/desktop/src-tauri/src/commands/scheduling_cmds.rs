@@ -635,19 +635,25 @@ pub async fn solver_submit_timetable(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
-    state
-        .solver_sidecar
-        .ensure_running()
-        .await
-        .map_err(|e| e.to_string())?;
-    state.solver_sidecar.increment_active_jobs()?;
+    let settings = configured_solver_settings(&state, ctx.tenant_id).await?;
+    let embedded = uses_embedded_solver(settings.as_ref())?;
+    if embedded {
+        state
+            .solver_sidecar
+            .ensure_running()
+            .await
+            .map_err(|error| error.to_string())?;
+        state.solver_sidecar.begin_job(&problem.job_id).await?;
+    }
 
     if let Err(error) = state
         .integration_resolver
         .submit_timetable(&ctx, &problem)
         .await
     {
-        state.solver_sidecar.decrement_active_jobs();
+        if embedded {
+            state.solver_sidecar.finish_job(&problem.job_id).await;
+        }
         return Err(error.to_string());
     }
 
@@ -660,7 +666,7 @@ pub async fn solver_get_timetable_status(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<SolveJobStatus>, String> {
     let ctx = make_ctx(&state);
-    state.solver_sidecar.mark_activity();
+    state.solver_sidecar.mark_job_activity(&job_id).await;
 
     let status = state
         .integration_resolver
@@ -672,7 +678,7 @@ pub async fn solver_get_timetable_status(
         || status.status == JobStatus::Failed
         || status.status == JobStatus::Cancelled
     {
-        state.solver_sidecar.decrement_active_jobs();
+        state.solver_sidecar.finish_job(&job_id).await;
     }
 
     Ok(ok(status))
@@ -684,18 +690,23 @@ pub async fn solver_submit_exam(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<()>, String> {
     let ctx = make_ctx(&state);
-    state
-        .solver_sidecar
-        .ensure_running()
-        .await
-        .map_err(|e| e.to_string())?;
-    state.solver_sidecar.increment_active_jobs()?;
+    let settings = configured_solver_settings(&state, ctx.tenant_id).await?;
+    let embedded = uses_embedded_solver(settings.as_ref())?;
+    if embedded {
+        state
+            .solver_sidecar
+            .ensure_running()
+            .await
+            .map_err(|error| error.to_string())?;
+        state.solver_sidecar.begin_job(&problem.job_id).await?;
+    }
 
-    state
-        .integration_resolver
-        .submit_exam(&ctx, &problem)
-        .await
-        .map_err(|e| e.to_string())?;
+    if let Err(error) = state.integration_resolver.submit_exam(&ctx, &problem).await {
+        if embedded {
+            state.solver_sidecar.finish_job(&problem.job_id).await;
+        }
+        return Err(error.to_string());
+    }
 
     Ok(ok(()))
 }
@@ -706,7 +717,7 @@ pub async fn solver_get_exam_status(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<ExamSolveJobStatus>, String> {
     let ctx = make_ctx(&state);
-    state.solver_sidecar.mark_activity();
+    state.solver_sidecar.mark_job_activity(&job_id).await;
 
     let status = state
         .integration_resolver
@@ -718,8 +729,36 @@ pub async fn solver_get_exam_status(
         || status.status == JobStatus::Failed
         || status.status == JobStatus::Cancelled
     {
-        state.solver_sidecar.decrement_active_jobs();
+        state.solver_sidecar.finish_job(&job_id).await;
     }
 
     Ok(ok(status))
+}
+
+async fn configured_solver_settings(
+    state: &AppState,
+    org_id: Uuid,
+) -> Result<Option<serde_json::Value>, String> {
+    for provider_name in ["solver_service", "solver-service"] {
+        let config = state
+            .integration_service
+            .get_integration_by_provider(org_id, provider_name)
+            .await
+            .map_err(|error| error.to_string())?;
+        if let Some(config) = config {
+            return Ok(config.is_enabled.then(|| config.settings).flatten());
+        }
+    }
+    Ok(None)
+}
+
+fn uses_embedded_solver(settings: Option<&serde_json::Value>) -> Result<bool, String> {
+    match settings
+        .and_then(|value| value.get("mode"))
+        .and_then(serde_json::Value::as_str)
+    {
+        Some("embedded") => Ok(true),
+        Some("remote") | None => Ok(false),
+        Some(mode) => Err(format!("Unsupported solver deployment mode '{mode}'.")),
+    }
 }

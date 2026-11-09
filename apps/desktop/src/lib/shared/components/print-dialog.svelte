@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onDestroy } from "svelte";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 /**
@@ -80,6 +81,8 @@ let loadingTemplates = $state(false);
 let generatingPdf = $state(false);
 let pdfUrl = $state<string | null>(null);
 let previewError = $state<string | null>(null);
+let pdfPreviewFrame: HTMLIFrameElement | undefined = $state();
+let printAfterPreviewLoad = false;
 let activeTab = $state("preview");
 
 // Batch progress
@@ -209,7 +212,7 @@ function updateConfigFromTemplate(template: any) {
 $effect(() => {
   if (open && entityType) {
     loadTemplates();
-    pdfUrl = null;
+    clearPdfPreview();
     previewError = null;
     batchProgress = 0;
     isBatchProcessing = false;
@@ -232,21 +235,19 @@ $effect(() => {
     const tpl = templates.find((t: any) => t.id === selectedTemplateId);
     if (tpl) {
       updateConfigFromTemplate(tpl);
-      pdfUrl = null;
+      clearPdfPreview();
     }
   }
 });
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function uint8ArrayToBase64(bytes: number[]): string {
-  let binary = "";
-  const len = bytes.length;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
+function clearPdfPreview() {
+  if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  pdfUrl = null;
 }
+
+onDestroy(clearPdfPreview);
 
 function serializeMultiUpConfig(config: MultiUpConfig): string {
   const sheetSize =
@@ -364,7 +365,7 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
 async function generatePdf(): Promise<boolean> {
   if (!selectedTemplateId || entityIds.length === 0) return false;
   generatingPdf = true;
-  pdfUrl = null;
+  clearPdfPreview();
   previewError = null;
   try {
     const template = templates.find((t) => t.id === selectedTemplateId);
@@ -381,8 +382,9 @@ async function generatePdf(): Promise<boolean> {
     });
     if (!pdfBytes.length) throw new Error(m.shared_ui_print_preview_failed());
 
-    const base64 = uint8ArrayToBase64(Array.from(pdfBytes));
-    pdfUrl = `data:application/pdf;base64,${base64}`;
+    pdfUrl = URL.createObjectURL(
+      new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }),
+    );
     activeTab = "pdf";
     return true;
   } catch (e: unknown) {
@@ -398,72 +400,45 @@ const generatePreview = () => generatePdf();
 
 // ── Print Action ─────────────────────────────────────────────
 
+function handlePdfPreviewLoad() {
+  if (!printAfterPreviewLoad) return;
+  printAfterPreviewLoad = false;
+  const printWindow = pdfPreviewFrame?.contentWindow;
+  if (!printWindow) {
+    toast.error(m.shared_ui_print_frame_unavailable());
+    return;
+  }
+  try {
+    printWindow.focus();
+    printWindow.print();
+    toast.success(
+      m.common_print_multi_up_complete_detail({
+        count: String(entityIds.length),
+      }),
+    );
+  } catch (error) {
+    toast.error(extractErrorMessage(error) || m.shared_ui_print_frame_unavailable());
+  }
+}
+
 async function handlePrintAction() {
   if (!selectedTemplateId) {
     toast.error(m.common_print_multi_up_no_templates());
     return;
   }
 
-  if (entityIds.length <= multiUpLayout.itemsPerSheet) {
+  isBatchProcessing = true;
+  batchProgress = 30;
+  batchStatusText = m.common_print_multi_up_processing();
+  printAfterPreviewLoad = true;
+  try {
     if (await generatePdf()) {
-      toast.success(m.shared_ui_template_preview_generated());
-    }
-  } else {
-    const printWin = window.open("", "_blank");
-    if (!printWin) {
-      toast.error(m.shared_ui_print_frame_unavailable());
-      return;
-    }
-
-    isBatchProcessing = true;
-    batchProgress = 30;
-    batchStatusText = m.common_print_multi_up_processing();
-
-    try {
-      const template = templates.find((item) => item.id === selectedTemplateId);
-      if (!template) throw new Error(m.shared_ui_print_generation_failed());
-      const docJson = template.documentJson ?? (template as any).document_json;
-      const pdfBytes = await api.batchPrint({
-        templateId: selectedTemplateId,
-        documentJson: docJson,
-        contexts: await resolveContexts(),
-        title: template.name,
-        batchConfig: JSON.parse(serializeMultiUpConfig(multiUpConfig)),
-        locale: getLocale(),
-      });
-      if (!pdfBytes.length)
-        throw new Error(m.shared_ui_print_generation_failed());
-      batchProgress = 80;
-
-      const pdfBuffer = new Uint8Array(pdfBytes).buffer;
-      const blobUrl = URL.createObjectURL(
-        new Blob([pdfBuffer], { type: "application/pdf" }),
-      );
-      printWin.addEventListener(
-        "load",
-        () => {
-          printWin.focus();
-          printWin.print();
-          URL.revokeObjectURL(blobUrl);
-        },
-        { once: true },
-      );
-      printWin.location.href = blobUrl;
-
       batchProgress = 100;
-      toast.success(
-        m.common_print_multi_up_complete_detail({
-          count: String(entityIds.length),
-        }),
-      );
-    } catch (e: unknown) {
-      printWin.close();
-      toast.error(
-        extractErrorMessage(e) || m.shared_ui_print_generation_failed(),
-      );
-    } finally {
-      isBatchProcessing = false;
+    } else {
+      printAfterPreviewLoad = false;
     }
+  } finally {
+    isBatchProcessing = false;
   }
 }
 
@@ -482,7 +457,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
       ? "portrait"
       : "landscape";
   // Recalculate will happen automatically via $derived
-  pdfUrl = null;
+  clearPdfPreview();
 }
 </script>
 
@@ -534,7 +509,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                 <span>{m.common_print_multi_up_no_templates()}</span>
               </div>
             {:else}
-              <Select type="single" bind:value={selectedTemplateId} onValueChange={(val) => { if (val) { selectedTemplateId = val; pdfUrl = null; } }}>
+              <Select type="single" bind:value={selectedTemplateId} onValueChange={(val) => { if (val) { selectedTemplateId = val; clearPdfPreview(); } }}>
                 <SelectTrigger class="h-8 text-xs">
                   {(() => {
                     const selected = templates.find((t: any) => t.id === selectedTemplateId);
@@ -621,9 +596,11 @@ function applySuggestion(suggestion: MultiUpLayout) {
 
               {#if pdfUrl}
                 <iframe
+                  bind:this={pdfPreviewFrame}
                   src={pdfUrl}
                   title={m.shared_ui_multi_up_print_preview()}
                   class="w-full h-full border-none"
+                  onload={handlePdfPreviewLoad}
                 ></iframe>
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
