@@ -55,9 +55,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Rust compiler cache
+        id: sccache
         uses: mozilla-actions/sccache-action@v0.0.11
+        continue-on-error: true
 
       - name: Enable Rust compiler cache
+        if: steps.sccache.outcome == 'success'
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
           echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"

@@ -59,9 +59,12 @@ jobs:
           shared-key: orbis-tauri-${{ matrix.target }}
 
       - name: Setup Rust compiler cache
+        id: sccache
         uses: mozilla-actions/sccache-action@v0.0.11
+        continue-on-error: true
 
       - name: Enable Rust compiler cache
+        if: steps.sccache.outcome == 'success'
         shell: bash
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
