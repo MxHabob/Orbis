@@ -4018,6 +4018,8 @@
   "setup_connection_connect_btn": "Connect & Continue",
   "setup_connection_connected_status": "Connected ({version}, {latency}ms latency)",
   "setup_connection_connecting": "Connecting...",
+  "ai_ui_solver_embedded_startup": "Preparing the embedded scheduling engine. On first connection it may need to download the engine, which can take a few minutes.",
+  "ai_ui_solver_remote_check": "Checking the remote scheduling service...",
   "setup_connection_configuration_title": "Connection details",
   "setup_connection_db_file_hint": "Stored securely in application AppData folder",
   "setup_connection_db_file_label": "Database File Name",

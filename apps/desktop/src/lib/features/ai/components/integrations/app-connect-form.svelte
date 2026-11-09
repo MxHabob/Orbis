@@ -33,6 +33,7 @@ let {
   formId,
   settings,
   initialValues = {},
+  submitting = false,
   authenticationRequired = false,
   onsubmit,
 }: {
@@ -40,30 +41,44 @@ let {
   formId: string;
   settings: AppSetting[];
   initialValues?: Record<string, unknown>;
+  submitting?: boolean;
   authenticationRequired?: boolean;
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
+
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 let values = $state<Record<string, any>>(
   untrack(() =>
     Object.fromEntries(
       settings.map((setting) => [
         setting.id,
-        setting.id === "use_authentication"
-          ? Boolean(
-              initialValues.use_authentication ??
-                initialValues.username ??
-                initialValues.password,
-            )
-          : (initialValues[setting.id] ??
-            setting.value ??
-            (setting.type === "switch" ? false : "")),
+        appId === "solver-service" &&
+        setting.id === "mode" &&
+        !isTauri
+          ? "remote"
+          : setting.id === "use_authentication"
+            ? Boolean(
+                initialValues.use_authentication ??
+                  initialValues.username ??
+                  initialValues.password,
+              )
+            : (initialValues[setting.id] ??
+              setting.value ??
+              (setting.type === "switch" ? false : "")),
       ]),
     ),
   ),
 );
 const effectiveSettings = $derived(
   settings.map((setting) => {
+    if (appId === "solver-service" && setting.id === "mode" && !isTauri) {
+      return {
+        ...setting,
+        value: "remote",
+        options: setting.options?.filter((option) => option.value === "remote"),
+      };
+    }
     if (setting.id !== "model" || setting.type !== "select") return setting;
     const options = getModelOptions(appId, setting.options ?? []);
     return {
@@ -74,10 +89,6 @@ const effectiveSettings = $derived(
     };
   }),
 );
-const isTauri = $derived(
-  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
-);
-
 const visibleSettings = $derived(
   effectiveSettings
     .filter((setting) => {
@@ -90,6 +101,10 @@ const visibleSettings = $derived(
           values.use_authentication === true ||
           authenticationRequired
         );
+      }
+      if (setting.visibleWhen &&
+        values[setting.visibleWhen.settingId] !== setting.visibleWhen.value) {
+        return false;
       }
       if (setting.id === "local_path") return values.provider === "local";
       if (
@@ -138,7 +153,8 @@ async function browseDirectory(settingId: string) {
 }
 </script>
 
-<form id={formId} class="space-y-4" onsubmit={handleSubmit}>
+<form id={formId} onsubmit={handleSubmit}>
+  <fieldset class="space-y-4" disabled={submitting}>
   {#each visibleSettings as setting (setting.id)}
     <FormField id={setting.id} label={l(setting.label_ar, setting.label) || setting.id} error={undefined} required={setting.required}>
       {#snippet children()}
@@ -239,5 +255,22 @@ async function browseDirectory(settingId: string) {
       {/snippet}
     </FormField>
   {/each}
-
+  {#if submitting && appId === "solver-service"}
+    <div
+      class="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground"
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        class="mt-0.5 size-4 shrink-0 animate-spin rounded-full border-2 border-current border-e-transparent"
+        aria-hidden="true"
+      ></span>
+      <p>
+        {values.mode === "embedded"
+          ? m.ai_ui_solver_embedded_startup()
+          : m.ai_ui_solver_remote_check()}
+      </p>
+    </div>
+  {/if}
+  </fieldset>
 </form>

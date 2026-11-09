@@ -16,6 +16,14 @@ export type AvatarHat =
   | "viking"
   | "propeller"
   | "santa"
+  | "flower"
+  | "duck"
+  | "cat"
+  | "cowboy"
+  | "beanie"
+  | "rainbow"
+  | "apple"
+  | "leaf"
   | "random";
 
 /** Single source of truth for available hats. */
@@ -36,6 +44,14 @@ export const ALL_AVATAR_HATS: readonly Exclude<AvatarHat, "random">[] = [
   "santa",
   "chef",
   "firefighter",
+  "flower",
+  "duck",
+  "cat",
+  "cowboy",
+  "beanie",
+  "rainbow",
+  "apple",
+  "leaf",
 ];
 
 export function resolveAvatarHat(

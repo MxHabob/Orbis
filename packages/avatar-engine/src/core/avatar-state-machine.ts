@@ -1,4 +1,12 @@
-export type AvatarState = "idle" | "blinking" | "thinking" | "happy" | "error";
+export type AvatarState =
+  | "idle"
+  | "blinking"
+  | "thinking"
+  | "happy"
+  | "error"
+  | "celebrating"
+  | "curious"
+  | "sleepy";
 
 type StateCallback = (state: AvatarState) => void;
 type TransitionCallback = (from: AvatarState, to: AvatarState) => void;
@@ -10,11 +18,78 @@ export class AvatarStateMachine {
   private onExitCallbacks: Map<AvatarState, StateCallback[]> = new Map();
 
   private allowedTransitions: Record<AvatarState, AvatarState[]> = {
-    idle: ["blinking", "thinking", "happy", "error"],
-    blinking: ["idle", "thinking", "happy", "error"],
-    thinking: ["idle", "blinking", "happy", "error"],
-    happy: ["idle", "blinking", "thinking", "error"],
-    error: ["idle", "blinking", "thinking", "happy"],
+    idle: [
+      "blinking",
+      "thinking",
+      "happy",
+      "error",
+      "celebrating",
+      "curious",
+      "sleepy",
+    ],
+    blinking: [
+      "idle",
+      "thinking",
+      "happy",
+      "error",
+      "celebrating",
+      "curious",
+      "sleepy",
+    ],
+    thinking: [
+      "idle",
+      "blinking",
+      "happy",
+      "error",
+      "celebrating",
+      "curious",
+      "sleepy",
+    ],
+    happy: [
+      "idle",
+      "blinking",
+      "thinking",
+      "error",
+      "celebrating",
+      "curious",
+      "sleepy",
+    ],
+    error: [
+      "idle",
+      "blinking",
+      "thinking",
+      "happy",
+      "celebrating",
+      "curious",
+      "sleepy",
+    ],
+    celebrating: [
+      "idle",
+      "blinking",
+      "thinking",
+      "happy",
+      "error",
+      "curious",
+      "sleepy",
+    ],
+    curious: [
+      "idle",
+      "blinking",
+      "thinking",
+      "happy",
+      "error",
+      "celebrating",
+      "sleepy",
+    ],
+    sleepy: [
+      "idle",
+      "blinking",
+      "thinking",
+      "happy",
+      "error",
+      "celebrating",
+      "curious",
+    ],
   };
 
   constructor(initialState: AvatarState = "idle") {

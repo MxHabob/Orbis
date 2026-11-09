@@ -12,6 +12,7 @@ use tracing::warn;
 
 const MAX_MANIFEST_BYTES: usize = 64 * 1024;
 const MAX_ARTIFACT_BYTES: u64 = 512 * 1024 * 1024;
+const MANIFEST_FETCH_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Deserialize)]
 struct SignedManifest {
@@ -148,6 +149,7 @@ impl ManagedComponentManager {
                     .ok_or_else(|| "The component update source is not configured.".to_string())?
                     .clone(),
             )
+            .timeout(MANIFEST_FETCH_TIMEOUT)
             .send()
             .await
             .map_err(|error| format!("Could not fetch the {component_id} manifest: {error}"))?;

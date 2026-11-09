@@ -59,16 +59,30 @@ export function Avatar({
   const scale = useRef(new Animated.Value(1)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
   const resolvedHat = useMemo(() => resolveAvatarHat(hat), [hat]);
   const markup = useMemo(
     () => renderAvatarSvg({ hat: resolvedHat, state, faceColor, featureColor }),
     [resolvedHat, state, faceColor, featureColor],
   );
+  const animatedRotate = useMemo(
+    () =>
+      rotate.interpolate({
+        inputRange: [-1, 1],
+        outputRange: ["-8deg", "8deg"],
+      }),
+    [rotate],
+  );
   const animatedStyle = useMemo(
     () => ({
-      transform: [{ translateX }, { translateY }, { scale }],
+      transform: [
+        { translateX },
+        { translateY },
+        { scale },
+        { rotate: animatedRotate },
+      ],
     }),
-    [translateX, translateY, scale],
+    [animatedRotate, translateX, translateY, scale],
   );
 
   useEffect(() => {
@@ -96,9 +110,11 @@ export function Avatar({
     scale.stopAnimation();
     translateX.stopAnimation();
     translateY.stopAnimation();
+    rotate.stopAnimation();
     scale.setValue(1);
     translateX.setValue(0);
     translateY.setValue(0);
+    rotate.setValue(0);
 
     if (reduceMotion) return;
 
@@ -148,11 +164,95 @@ export function Avatar({
           useNativeDriver: true,
         }),
       ]);
+    } else if (state === "celebrating") {
+      animation = Animated.sequence([
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(translateY, {
+              toValue: -8,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+            Animated.timing(translateY, {
+              toValue: 0,
+              duration: 170,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(scale, {
+              toValue: 1.08,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scale, {
+              toValue: 1,
+              duration: 170,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(translateY, {
+              toValue: -5,
+              duration: 130,
+              useNativeDriver: true,
+            }),
+            Animated.timing(translateY, {
+              toValue: 0,
+              duration: 170,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(rotate, {
+              toValue: 1,
+              duration: 130,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rotate, {
+              toValue: 0,
+              duration: 170,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      ]);
+    } else if (state === "curious") {
+      animation = Animated.sequence([
+        Animated.timing(rotate, {
+          toValue: 1,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+        Animated.delay(320),
+        Animated.timing(rotate, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]);
+    } else if (state === "sleepy") {
+      animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: 1.025,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+        ]),
+      );
     }
 
     animation?.start();
     return () => animation?.stop();
-  }, [reduceMotion, scale, state, translateX, translateY]);
+  }, [reduceMotion, rotate, scale, state, translateX, translateY]);
 
   const avatar = (
     <Animated.View

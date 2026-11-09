@@ -139,6 +139,7 @@ import type {
   CreateFeeTemplateRequest,
   UpdateFeeTemplateRequest,
   StudentFeeDto,
+  StudentFeeSummaryDto,
   GenerateFeeRequest,
   PaymentDto,
   ProcessPaymentRequest,
@@ -1924,6 +1925,10 @@ export class RemoteClient implements OrbisApiClient {
 
   async generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto> {
     return this.call(sdk.generateFee({ client: this.client, body: req }));
+  }
+
+  async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
+    return this.fetchApi<StudentFeeSummaryDto[]>("/api/v1/student-fees/summary");
   }
 
   async listStudentFees(

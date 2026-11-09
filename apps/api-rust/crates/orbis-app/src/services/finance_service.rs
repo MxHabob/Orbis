@@ -20,7 +20,10 @@ use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{PaginatedList, PaymentFilter, StudentFeeFilter};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
+};
 use uuid::Uuid;
 
 fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
@@ -387,6 +390,14 @@ pub struct FinanceService {
     pub payment_gateway: Arc<dyn PaymentGatewayPort>,
     pub notification_gateway: Arc<dyn NotificationPort>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StudentFeeSummary {
+    pub currency: String,
+    pub due: Decimal,
+    pub paid: Decimal,
+    pub balance: Decimal,
 }
 
 impl FinanceService {
@@ -1521,6 +1532,41 @@ impl FinanceService {
         filter: StudentFeeFilter,
     ) -> Result<PaginatedList<StudentFee>, DomainError> {
         self.student_fee_repo.list(org_id, filter).await
+    }
+
+    pub async fn summarize_student_fees(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<StudentFeeSummary>, DomainError> {
+        let (fees, templates) = tokio::try_join!(
+            self.student_fee_repo.find_by_org(org_id),
+            self.fee_template_repo.find_by_org(org_id)
+        )?;
+        let currencies: HashMap<_, _> = templates
+            .into_iter()
+            .map(|template| (template.id, template.currency_code))
+            .collect();
+        let mut totals: BTreeMap<String, StudentFeeSummary> = BTreeMap::new();
+
+        for fee in fees {
+            let currency = currencies
+                .get(&fee.fee_template_id)
+                .cloned()
+                .unwrap_or_default();
+            let total = totals
+                .entry(currency.clone())
+                .or_insert_with(|| StudentFeeSummary {
+                    currency,
+                    due: Decimal::ZERO,
+                    paid: Decimal::ZERO,
+                    balance: Decimal::ZERO,
+                });
+            total.due += fee.net_amount;
+            total.paid += fee.paid_amount;
+            total.balance += fee.balance_due;
+        }
+
+        Ok(totals.into_values().collect())
     }
 
     /// List payments

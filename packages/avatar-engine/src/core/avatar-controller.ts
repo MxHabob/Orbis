@@ -75,6 +75,18 @@ export class AvatarController {
     this.transitionTo("happy");
   }
 
+  celebrate(): void {
+    this.transitionTo("celebrating");
+  }
+
+  curious(): void {
+    this.transitionTo("curious");
+  }
+
+  sleepy(): void {
+    this.transitionTo("sleepy");
+  }
+
   error(): void {
     this.transitionTo("error");
   }
@@ -103,6 +115,18 @@ export class AvatarController {
       this.schedule(() => {
         if (this.state === "happy") this.transitionTo("idle");
       }, 1800);
+    } else if (to === "celebrating") {
+      this.schedule(() => {
+        if (this.state === "celebrating") this.transitionTo("idle");
+      }, 1500);
+    } else if (to === "curious") {
+      this.schedule(() => {
+        if (this.state === "curious") this.transitionTo("idle");
+      }, 1300);
+    } else if (to === "sleepy") {
+      this.schedule(() => {
+        if (this.state === "sleepy") this.transitionTo("idle");
+      }, 2400);
     } else if (to === "idle") {
       this.startBlinkScheduler();
     }

@@ -36,6 +36,13 @@ pub async fn integration_connect_app(
     request: ConnectAppInput,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<IntegrationDto>, String> {
+    let ConnectAppInput {
+        provider_name,
+        category,
+        env,
+        mut settings,
+        secrets,
+    } = request;
     let ctx = make_ctx(&state);
     state
         .integration_service
@@ -43,29 +50,29 @@ pub async fn integration_connect_app(
         .check(&ctx, Permission::OrganizationWrite)
         .await
         .map_err(|error| error.to_string())?;
-    if request.category.eq_ignore_ascii_case("automation")
-        && matches!(
-            request.provider_name.as_str(),
-            "solver_service" | "solver-service"
-        )
-        && request
-            .settings
-            .get("mode")
-            .and_then(serde_json::Value::as_str)
-            == Some("embedded")
-    {
+    let embedded_solver = category.eq_ignore_ascii_case("automation")
+        && matches!(provider_name.as_str(), "solver_service" | "solver-service")
+        && settings.get("mode").and_then(serde_json::Value::as_str) == Some("embedded");
+    if embedded_solver {
         state
             .solver_sidecar
             .ensure_running()
             .await
             .map_err(|error| format!("Could not start the embedded Solver service: {error}"))?;
+        settings
+            .as_object_mut()
+            .ok_or_else(|| "Solver settings must be an object.".to_string())?
+            .insert(
+                "endpoint_url".to_string(),
+                serde_json::Value::String(state.solver_sidecar.endpoint_url().to_string()),
+            );
     }
     orbis_infra::adapters::verification::verify_integration_connection(
         &ctx,
-        &request.provider_name,
-        &request.category,
-        &request.settings,
-        &request.secrets,
+        &provider_name,
+        &category,
+        &settings,
+        &secrets,
         &state.integration_resolver,
         &state.notification_adapter,
         &state.storage_resolver,
@@ -77,11 +84,11 @@ pub async fn integration_connect_app(
         .connect_app(
             &ctx,
             ctx.tenant_id,
-            request.provider_name,
-            request.category,
-            request.env,
-            request.settings,
-            request.secrets,
+            provider_name,
+            category,
+            env,
+            settings,
+            secrets,
         )
         .await
         .map_err(|e| e.to_string())?;

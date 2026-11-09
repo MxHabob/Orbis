@@ -12,6 +12,7 @@ use crate::ports::repositories::{AutopilotTaskRepository, PolicyRepository};
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskStatus};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
+use tracing::warn;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutopilotDiagnostics {
@@ -98,7 +99,20 @@ impl AutopilotService {
                 self.task_repo.save_task(&task).await?;
                 match self.engine.process_task(ctx, task.clone()).await {
                     Ok(completed) => output_tasks.push(completed),
-                    Err(_) => output_tasks.push(task),
+                    Err(error) => {
+                        warn!(
+                            "Autopilot task {} ({:?}) failed during evaluation tick: {:?}",
+                            task.id, task.task_type, error
+                        );
+                        let persisted_task =
+                            self.task_repo.find_by_id(task.id).await?.ok_or_else(|| {
+                                DomainError::Internal(format!(
+                                    "Autopilot task {} disappeared after execution failed",
+                                    task.id
+                                ))
+                            })?;
+                        output_tasks.push(persisted_task);
+                    }
                 }
             } else if dry_run
                 || settings.autopilot.mode == "suggested"
@@ -131,11 +145,18 @@ impl AutopilotService {
                 && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodActivate)
                 || (settings.autopilot.auto_period_lock
                     && task.task_type == orbis_domain::autopilot::task::TaskType::PeriodLock);
+            let task_id = task.id;
+            let task_type = task.task_type.clone();
             if !dry_run
                 && settings.autopilot.enabled
                 && (settings.autopilot.mode == "automatic" || is_enabled_period_lifecycle)
             {
-                let _ = self.engine.process_task(ctx, task).await;
+                if let Err(error) = self.engine.process_task(ctx, task).await {
+                    warn!(
+                        "Pending autopilot task {} ({:?}) failed during execution tick: {:?}",
+                        task_id, task_type, error
+                    );
+                }
             }
         }
 

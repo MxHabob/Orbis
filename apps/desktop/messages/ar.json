@@ -4018,6 +4018,8 @@
   "setup_connection_connect_btn": "اتصال ومتابعة",
   "setup_connection_connected_status": "الخادم متصل ({version}، زمن الاستجابة {latency}ms)",
   "setup_connection_connecting": "جارٍ الاتصال...",
+  "ai_ui_solver_embedded_startup": "جارٍ تجهيز محرك الجدولة المدمج. قد يتطلب الاتصال الأول تنزيل المحرك، وقد يستغرق ذلك بضع دقائق.",
+  "ai_ui_solver_remote_check": "جارٍ التحقق من خدمة الجدولة البعيدة...",
   "setup_connection_configuration_title": "تفاصيل الاتصال",
   "setup_connection_db_file_hint": "يتم إنشاء الملف تلقائياً داخل مجلد بيانات التطبيق",
   "setup_connection_db_file_label": "اسم ملف قاعدة البيانات",

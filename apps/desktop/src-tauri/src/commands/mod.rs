@@ -329,6 +329,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         finance_cmds::finance_generate_fee,
         finance_cmds::finance_list_student_fees,
         finance_cmds::finance_list_student_fees_paginated,
+        finance_cmds::finance_get_student_fee_summary,
         finance_cmds::finance_delete_student_fee,
         finance_cmds::finance_process_payment,
         finance_cmds::finance_list_payments,

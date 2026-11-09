@@ -1062,6 +1062,19 @@ pub async fn finance_list_student_fees_paginated(
 }
 
 #[tauri::command]
+pub async fn finance_get_student_fee_summary(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<orbis_app::services::finance_service::StudentFeeSummary>>, String> {
+    let ctx = make_ctx(&state);
+    state
+        .finance_service
+        .summarize_student_fees(ctx.tenant_id)
+        .await
+        .map(ok)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub async fn finance_process_payment(
     request: ProcessPaymentInput,
     state: State<'_, AppState>,

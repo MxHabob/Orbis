@@ -574,6 +574,13 @@ export interface StudentFeeFilterParams {
   sort_dir?: string;
 }
 
+export interface StudentFeeSummaryDto {
+  currency: string;
+  due: number;
+  paid: number;
+  balance: number;
+}
+
 export interface PaymentFilterParams {
   fee_id?: string;
   student_id?: string;
@@ -2134,6 +2141,7 @@ export interface OrbisApiClient {
   deleteFeeTemplate(id: string): Promise<boolean>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
+  getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
   listStudentFeesPaginated(
     filter?: StudentFeeFilterParams,

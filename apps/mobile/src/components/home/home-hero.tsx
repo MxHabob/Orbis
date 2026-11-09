@@ -49,8 +49,11 @@ export const HomeHero = memo(function HomeHero({ firstName }: HomeHeroProps) {
   const handleAvatarPress = useCallback(() => {
     setAvatarHat((current) => pickNextHat(current));
     const mood = Math.random();
-    if (mood < 0.34) avatarController.happy();
-    else if (mood < 0.67) avatarController.think();
+    if (mood < 0.2) avatarController.happy();
+    else if (mood < 0.4) avatarController.celebrate();
+    else if (mood < 0.6) avatarController.curious();
+    else if (mood < 0.75) avatarController.sleepy();
+    else if (mood < 0.9) avatarController.think();
     else avatarController.blink();
   }, [avatarController]);
 

@@ -79,32 +79,9 @@ const config: OrbisApp = {
       description_ar: "عنوان الخدمة (الافتراضي: http://127.0.0.1:8081).",
       type: "url",
       required: true,
-      value: "http://127.0.0.1:8081",
-      placeholder: "http://127.0.0.1:8081",
-    },
-    {
-      id: "idle_timeout_minutes",
-      label: "Auto-Sleep Idle Timeout (Minutes)",
-      label_ar: "مهلة الإيقاف التلقائي عند الخمول (دقائق)",
-      description:
-        "Automatically stops the desktop sidecar when idle to free RAM & CPU.",
-      description_ar:
-        "إيقاف خدمة الديسكتوب تلقائياً عند عدم الاستخدام لتحرير موارد الجهاز.",
-      type: "number",
-      required: false,
-      value: 5,
-    },
-    {
-      id: "timeout_seconds",
-      label: "Solving Timeout (Seconds)",
-      label_ar: "المهلة الزمنية للحل (بالثواني)",
-      description:
-        "Maximum time allowed for solving before returning the best solution found.",
-      description_ar:
-        "أقصى وقت مسموح به لحساب وتوليد الجدول قبل اعتماد أفضل حل.",
-      type: "number",
-      required: false,
-      value: 30,
+      value: "",
+      placeholder: "https://solver.example.com",
+      visibleWhen: { settingId: "mode", value: "remote" },
     },
   ],
   adapter_name: "solver_service",

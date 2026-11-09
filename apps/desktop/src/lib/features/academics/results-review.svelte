@@ -243,8 +243,8 @@ $effect(() => {
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 font-sans text-start select-none">
-  <div class="max-w-7xl mx-auto flex flex-col gap-6">
+<div class="h-full min-h-0 w-full overflow-hidden p-6 font-sans text-start select-none">
+  <div class="mx-auto flex h-full min-h-0 max-w-7xl flex-col gap-6">
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-border/40 pb-4">
       <div>
@@ -299,8 +299,8 @@ $effect(() => {
     {:else if !selectedClassId}
       <!-- Overview mode: show all sections -->
       {#if isLoadingOverview || isLoading}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each Array(6) as _}
+        <div class="grid min-h-0 flex-1 grid-cols-1 content-start gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
+          {#each Array(6) as _, i (i)}
             <Skeleton class="h-28 w-full rounded-xl" />
           {/each}
         </div>
@@ -313,7 +313,7 @@ $effect(() => {
         </Card>
       {:else}
         <!-- Section cards overview -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid min-h-0 flex-1 grid-cols-1 content-start gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
           {#each sectionOverview as section (section.id)}
             <button
               class="text-start"
@@ -358,74 +358,76 @@ $effect(() => {
       {/if}
     {:else}
       <!-- Detail mode: show results for selected class -->
-      {#if isLoadingResults}
-        <div class="flex items-center justify-center py-16">
-          <LoadingIndicator size="lg" label={m.common_control_loading()} />
-        </div>
-      {:else if resultError}
-        <Card class="flex flex-col items-center justify-center py-12 gap-3 border-destructive/20 bg-destructive/5 rounded-xl p-6">
-          <InfoCircle size={32} class="text-destructive opacity-80" />
-          <p class="text-sm text-destructive font-medium">{resultError}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-8 gap-1.5 text-xs font-semibold"
-            onclick={() => void loadResults()}
-          >
-            <Refresh size={13} />
-            <span>{m.common_retry()}</span>
-          </Button>
-        </Card>
-      {:else if termResults.length === 0}
-        <Card class="flex flex-col items-center justify-center py-16 gap-3 border-border/40 bg-card/40 rounded-xl">
-          <DocumentCheck size={36} class="text-muted-foreground opacity-40" />
-          <p class="text-sm text-muted-foreground">
-            {m.academics_results_empty_section()}
-          </p>
-        </Card>
-      {:else}
-        <!-- Summary stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card class="p-3 rounded-xl border-border/60">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.academics_results_stat_total_students()}
-            </p>
-            <p class="text-xl font-bold text-foreground mt-1">{totalStudents}</p>
-          </Card>
-          <Card class="p-3 rounded-xl border-border/60">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.academics_results_stat_pass_rate()}
-            </p>
-            <p class="text-xl font-bold text-foreground mt-1">{passRate}%</p>
-          </Card>
-          <Card class="p-3 rounded-xl border-border/60">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.academics_results_stat_average()}
-            </p>
-            <p class="text-xl font-bold text-foreground mt-1">{avgPercentage}%</p>
-          </Card>
-          <Card class="p-3 rounded-xl border-border/60">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.academics_results_stat_failed()}
-            </p>
-            <p class="text-xl font-bold mt-1"
-              class:text-destructive={failedStudents > 0}
-              class:text-foreground={failedStudents === 0}
-            >{failedStudents}</p>
-          </Card>
-        </div>
-
-        <!-- Results grid -->
-        <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div class="flex-1 min-h-[300px]">
-            <OrbisGrid
-              source={gridSource}
-              columns={columns}
-              readonly
-            />
+      <div class="flex min-h-0 flex-1 flex-col">
+        {#if isLoadingResults}
+          <div class="flex flex-1 items-center justify-center py-16">
+            <LoadingIndicator size="lg" label={m.common_control_loading()} />
           </div>
-        </div>
-      {/if}
+        {:else if resultError}
+          <Card class="flex flex-col items-center justify-center py-12 gap-3 border-destructive/20 bg-destructive/5 rounded-xl p-6">
+            <InfoCircle size={32} class="text-destructive opacity-80" />
+            <p class="text-sm text-destructive font-medium">{resultError}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-8 gap-1.5 text-xs font-semibold"
+              onclick={() => void loadResults()}
+            >
+              <Refresh size={13} />
+              <span>{m.common_retry()}</span>
+            </Button>
+          </Card>
+        {:else if termResults.length === 0}
+          <Card class="flex flex-col items-center justify-center py-16 gap-3 border-border/40 bg-card/40 rounded-xl">
+            <DocumentCheck size={36} class="text-muted-foreground opacity-40" />
+            <p class="text-sm text-muted-foreground">
+              {m.academics_results_empty_section()}
+            </p>
+          </Card>
+        {:else}
+          <!-- Summary stats -->
+          <div class="grid shrink-0 grid-cols-2 gap-3 md:grid-cols-4">
+            <Card class="rounded-xl border-border/60 p-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {m.academics_results_stat_total_students()}
+              </p>
+              <p class="text-xl font-bold text-foreground mt-1">{totalStudents}</p>
+            </Card>
+            <Card class="p-3 rounded-xl border-border/60">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {m.academics_results_stat_pass_rate()}
+              </p>
+              <p class="text-xl font-bold text-foreground mt-1">{passRate}%</p>
+            </Card>
+            <Card class="p-3 rounded-xl border-border/60">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {m.academics_results_stat_average()}
+              </p>
+              <p class="text-xl font-bold text-foreground mt-1">{avgPercentage}%</p>
+            </Card>
+            <Card class="p-3 rounded-xl border-border/60">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {m.academics_results_stat_failed()}
+              </p>
+              <p class="text-xl font-bold mt-1"
+                class:text-destructive={failedStudents > 0}
+                class:text-foreground={failedStudents === 0}
+              >{failedStudents}</p>
+            </Card>
+          </div>
+
+          <!-- Results grid -->
+          <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div class="min-h-0 flex-1">
+              <OrbisGrid
+                source={gridSource}
+                columns={columns}
+                readonly
+              />
+            </div>
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 </div>

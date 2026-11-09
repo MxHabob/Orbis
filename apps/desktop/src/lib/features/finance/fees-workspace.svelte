@@ -12,7 +12,7 @@
 import { Card, LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { createInfiniteQuery } from "@tanstack/svelte-query";
+import { createInfiniteQuery, createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import type {
@@ -138,9 +138,16 @@ const feesQuery = createInfiniteQuery(() => ({
   enabled: !!orgId,
   staleTime: 2 * 60 * 1000,
 }));
+const feeSummaryQuery = createQuery(() => ({
+  queryKey: queryKeys.finance.studentFeeSummary(orgId),
+  queryFn: () => api.getStudentFeeSummary(),
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
 const fees = $derived(
   feesQuery.data?.pages.flatMap((page) => page.items) ?? [],
 );
+const feeTotals = $derived(feeSummaryQuery.data ?? []);
 const gridLoading = $derived(
   isLoading || (feesQuery.isLoading && !feesQuery.data),
 );
@@ -202,9 +209,14 @@ async function loadData(refreshFees = true) {
       formPeriodId = periods[0].id;
     }
     if (refreshFees) {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.studentFees(orgId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.studentFees(orgId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.studentFeeSummary(orgId),
+        }),
+      ]);
     }
   } catch (e) {
     console.error("Failed to load fees master data:", e);
@@ -214,34 +226,14 @@ async function loadData(refreshFees = true) {
   }
 }
 
-// ── KPI Summary Calculations ───────────────────────────────────────────
-const feeTotals = $derived.by(() => {
-  const totals = new Map<
-    string,
-    { currency: string; due: number; paid: number; balance: number }
-  >();
-  for (const fee of fees) {
-    const currency = getFeeCurrency(fee);
-    const key = currency || "unspecified";
-    const total = totals.get(key) || { currency, due: 0, paid: 0, balance: 0 };
-    total.due += Number(fee.net_amount ?? fee.original_amount ?? 0);
-    total.paid += Number(fee.paid_amount ?? 0);
-    total.balance += Number(
-      fee.balance_due ??
-        Math.max(
-          0,
-          Number(fee.net_amount ?? fee.original_amount ?? 0) -
-            Number(fee.paid_amount ?? 0),
-        ),
-    );
-    totals.set(key, total);
-  }
-  return [...totals.values()].map((total) => ({
+// Summary metrics come from the full organization totals, independently of table pagination and filters.
+const feeTotalsWithRate = $derived(
+  feeTotals.map((total) => ({
     ...total,
     collectionRate:
       total.due > 0 ? Math.round((total.paid / total.due) * 100) : 0,
-  }));
-});
+  })),
+);
 
 // ── Form Actions ───────────────────────────────────────────────────────
 async function handleCreateFee() {
@@ -567,8 +559,8 @@ async function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-primary"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-foreground">
-          {#if feeTotals.length}
-            {#each feeTotals as totals (totals.currency || "unspecified")}
+          {#if feeTotalsWithRate.length}
+            {#each feeTotalsWithRate as totals (totals.currency || "unspecified")}
               <span class="block">{formatFeeAmount(totals.due, totals.currency)}</span>
             {/each}
           {:else}
@@ -583,8 +575,8 @@ async function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400">
-          {#if feeTotals.length}
-            {#each feeTotals as totals (totals.currency || "unspecified")}
+          {#if feeTotalsWithRate.length}
+            {#each feeTotalsWithRate as totals (totals.currency || "unspecified")}
               <span class="block">{formatFeeAmount(totals.paid, totals.currency)}</span>
             {/each}
           {:else}
@@ -599,8 +591,8 @@ async function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-rose-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-rose-600 dark:text-rose-400">
-          {#if feeTotals.length}
-            {#each feeTotals as totals (totals.currency || "unspecified")}
+          {#if feeTotalsWithRate.length}
+            {#each feeTotalsWithRate as totals (totals.currency || "unspecified")}
               <span class="block">{formatFeeAmount(totals.balance, totals.currency)}</span>
             {/each}
           {:else}
@@ -615,8 +607,8 @@ async function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
-          {#if feeTotals.length}
-            {#each feeTotals as totals (totals.currency || "unspecified")}
+          {#if feeTotalsWithRate.length}
+            {#each feeTotalsWithRate as totals (totals.currency || "unspecified")}
               <span class="block">{totals.collectionRate}%{totals.currency ? ` (${totals.currency})` : ""}</span>
             {/each}
           {:else}

@@ -13,12 +13,14 @@ import { Camera, XMark } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 
 export default function InstitutionScanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
+  const theme = useTheme();
   const { t } = useI18n();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -58,8 +60,8 @@ export default function InstitutionScanScreen() {
   }, []);
 
   return (
-    <View style={styles.screen}>
-      <ThemedStatusBar style="light" />
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <ThemedStatusBar style={permission?.granted ? "light" : "auto"} />
 
       {permission?.granted ? (
         <View style={styles.preview}>
@@ -83,7 +85,7 @@ export default function InstitutionScanScreen() {
 
           {!cameraReady && !cameraError ? (
             <View pointerEvents="none" style={styles.cameraLoading}>
-              <LoadingIndicator size="lg" color="#FFFFFF" />
+              <LoadingIndicator size="lg" color={theme.primary} />
             </View>
           ) : null}
 
@@ -120,14 +122,30 @@ export default function InstitutionScanScreen() {
           ) : null}
         </View>
       ) : (
-        <View style={styles.permissionState}>
-          <View style={styles.stateIcon}>
-            <Camera size={28} color="#FFFFFF" />
+        <View
+          style={[
+            styles.permissionState,
+            { backgroundColor: theme.background },
+          ]}
+        >
+          <View
+            style={[
+              styles.stateIcon,
+              { backgroundColor: theme.backgroundElement },
+            ]}
+          >
+            <Camera size={28} color={theme.foreground} />
           </View>
-          <Text className="text-center text-2xl leading-8 font-bold text-white">
+          <Text
+            className="text-center text-2xl leading-8 font-bold"
+            style={{ color: theme.foreground }}
+          >
             {t("auth_institution_local_camera_title")}
           </Text>
-          <Text className="text-center text-base leading-6 text-white/75">
+          <Text
+            className="text-center text-base leading-6"
+            style={{ color: theme.mutedForeground }}
+          >
             {permission || permissionRequestError
               ? t("auth_institution_local_camera_error")
               : t("auth_institution_local_camera_loading")}
@@ -164,9 +182,20 @@ export default function InstitutionScanScreen() {
           accessibilityLabel={t("common_cancel")}
           onPress={() => router.back()}
           hitSlop={8}
-          className="h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40"
+          style={[
+            styles.closeButton,
+            permission?.granted
+              ? styles.closeButtonOverCamera
+              : {
+                  borderColor: theme.border,
+                  backgroundColor: theme.backgroundElement,
+                },
+          ]}
         >
-          <XMark size={22} color="#FFFFFF" />
+          <XMark
+            size={22}
+            color={permission?.granted ? "#FFFFFF" : theme.foreground}
+          />
         </Pressable>
       </View>
 
@@ -191,7 +220,6 @@ export default function InstitutionScanScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#000000",
   },
   preview: {
     ...StyleSheet.absoluteFill,
@@ -223,6 +251,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 20,
     paddingHorizontal: 32,
+  },
+  closeButton: {
+    height: 48,
+    width: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  closeButtonOverCamera: {
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   stateIcon: {
     width: 64,

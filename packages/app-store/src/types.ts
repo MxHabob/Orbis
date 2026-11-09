@@ -57,6 +57,11 @@ export interface AppSetting {
     min?: number;
     max?: number;
   };
+  /** Show this setting only when another setting has the specified value. */
+  visibleWhen?: {
+    settingId: string;
+    value: string | number | boolean;
+  };
 }
 
 /** Unified app/integration definition */
