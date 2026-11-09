@@ -49,7 +49,7 @@ pub struct EffectiveContextDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TeachingClassDto {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub name: String,
     pub name_ar: Option<String>,
     pub level: Option<String>,
@@ -305,7 +305,7 @@ impl AuthService {
                                 && !section.is_deleted
                             {
                                 teaching_classes.push(TeachingClassDto {
-                                    class_id: section.id,
+                                    section_id: section.id,
                                     name: section.name,
                                     name_ar: section.name_ar,
                                     level: section.level,

@@ -5,12 +5,7 @@
  */
 
 import React from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  type ViewStyle,
-} from "react-native";
+import { View, Text, Pressable, type ViewStyle } from "react-native";
 import { ChevronRight, ChevronLeft } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
@@ -84,13 +79,12 @@ export function ListItem({
       {(right || chevron) && (
         <View className="ms-two flex-row items-center gap-two">
           {right}
-          {chevron && (
-            isArabic ? (
+          {chevron &&
+            (isArabic ? (
               <ChevronLeft size={18} color={theme.textMuted} />
             ) : (
               <ChevronRight size={18} color={theme.textMuted} />
-            )
-          )}
+            ))}
         </View>
       )}
     </View>

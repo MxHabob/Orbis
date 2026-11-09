@@ -14,7 +14,7 @@ use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    PaginatedList, SectionFilter, SectionSubjectFilter, SubjectFilter,
+    PaginatedList, PaginationParams, SectionFilter, SectionSubjectFilter, SubjectFilter,
 };
 use rust_decimal::Decimal;
 use std::sync::Arc;
@@ -644,6 +644,44 @@ impl AcademicService {
         filter: SectionSubjectFilter,
     ) -> Result<PaginatedList<SectionSubject>, DomainError> {
         self.section_subject_repo.list(org_id, filter).await
+    }
+
+    pub async fn list_all_section_subjects(
+        &self,
+        org_id: Uuid,
+        mut filter: SectionSubjectFilter,
+    ) -> Result<Vec<SectionSubject>, DomainError> {
+        let mut items = Vec::new();
+        let mut page = 1;
+
+        loop {
+            filter.pagination = Some(PaginationParams {
+                page: Some(page),
+                page_size: Some(PaginationParams::MAX_PAGE_SIZE),
+                ..Default::default()
+            });
+            let result = self
+                .section_subject_repo
+                .list(org_id, filter.clone())
+                .await?;
+            let total_pages = result.total_pages;
+            let received = result.items.len();
+            items.extend(result.items);
+
+            if page >= total_pages {
+                break;
+            }
+            if received == 0 {
+                return Err(DomainError::Internal(
+                    "Section subject pagination returned an empty page before completion"
+                        .to_string(),
+                ));
+            }
+
+            page += 1;
+        }
+
+        Ok(items)
     }
 
     /// Check prerequisites for a student before enrolling in a subject

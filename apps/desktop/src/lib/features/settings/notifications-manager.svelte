@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
+import { Button } from "@orbis/ui/button";
 import { Switch } from "@orbis/ui/switch";
 import {
   Select,
@@ -13,12 +14,15 @@ import { api, extractErrorMessage } from "$lib/api";
 import type { IntegrationDto, OrganizationSettingsDto } from "@orbis/sdk";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { AppNotification } from "@orbis/icons";
+import { isDesktopApp } from "$lib/api/runtime";
 
 let { orgId }: { orgId: string } = $props();
 
 let isSaving = $state(false);
 let isLoading = $state(true);
 let isLoadingIntegrations = $state(true);
+let isSystemNotificationsEnabled = $state(false);
+let isUpdatingSystemNotifications = $state(false);
 let rawSettings = $state<OrganizationSettingsDto | null>(null);
 let integrations = $state<IntegrationDto[]>([]);
 let defaultIntegrationIds = $state<Record<string, string>>({});
@@ -34,10 +38,12 @@ function channelsForIntegration(integration: IntegrationDto): string[] {
       : {};
   const declaredChannels = settings.__notification_channels;
   if (Array.isArray(declaredChannels)) {
-    return declaredChannels.filter(
-      (channel): channel is string =>
-        typeof channel === "string" && channel.trim().length > 0,
-    ).map((channel) => channel.trim().toLowerCase());
+    return declaredChannels
+      .filter(
+        (channel): channel is string =>
+          typeof channel === "string" && channel.trim().length > 0,
+      )
+      .map((channel) => channel.trim().toLowerCase());
   }
   return integration.category.trim().toLowerCase() === "communication"
     ? []
@@ -72,7 +78,8 @@ function channelLabel(channel: string): string {
 function selectedProviderLabel(channel: string): string {
   const selectedId = defaultIntegrationIds[channel];
   return (
-    integrations.find((integration) => integration.id === selectedId)?.provider_name ??
+    integrations.find((integration) => integration.id === selectedId)
+      ?.provider_name ??
     (selectedId || m.settings_ui_notification_no_default())
   );
 }
@@ -108,12 +115,19 @@ let prefs = $state({
 });
 
 onMount(async () => {
+  if (isDesktopApp) {
+    isSystemNotificationsEnabled =
+      localStorage.getItem("orbis_system_notifications_enabled") === "true";
+  }
+
   try {
     isLoading = true;
     rawSettings = await api.getSettings();
     if (rawSettings?.notifications) {
-      notifyParentsOnAbsence = rawSettings.notifications.notify_parents_on_absence ?? true;
-      notifyParentsOnGradePublish = rawSettings.notifications.notify_parents_on_grade_publish ?? true;
+      notifyParentsOnAbsence =
+        rawSettings.notifications.notify_parents_on_absence ?? true;
+      notifyParentsOnGradePublish =
+        rawSettings.notifications.notify_parents_on_grade_publish ?? true;
       defaultIntegrationIds = {
         ...(rawSettings.notifications.default_integration_ids ?? {}),
       };
@@ -159,6 +173,40 @@ onMount(async () => {
   });
 });
 
+async function toggleSystemNotifications() {
+  if (!isDesktopApp || isUpdatingSystemNotifications) return;
+
+  isUpdatingSystemNotifications = true;
+  try {
+    if (isSystemNotificationsEnabled) {
+      localStorage.setItem("orbis_system_notifications_enabled", "false");
+      isSystemNotificationsEnabled = false;
+      toast.success(m.settings_notifications_system_disabled());
+      return;
+    }
+
+    const { isPermissionGranted, requestPermission } = await import(
+      "@tauri-apps/plugin-notification"
+    );
+    let permissionGranted = await isPermissionGranted();
+    if (!permissionGranted) {
+      permissionGranted = (await requestPermission()) === "granted";
+    }
+    if (!permissionGranted) {
+      toast.error(m.settings_notifications_system_permission_denied());
+      return;
+    }
+
+    localStorage.setItem("orbis_system_notifications_enabled", "true");
+    isSystemNotificationsEnabled = true;
+    toast.success(m.settings_notifications_system_enabled());
+  } catch (error: unknown) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isUpdatingSystemNotifications = false;
+  }
+}
+
 const currentSnapshot = $derived(
   JSON.stringify({
     prefs,
@@ -188,7 +236,10 @@ async function handleSave(e?: Event) {
   e?.preventDefault();
   isSaving = true;
   try {
-    localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
+    localStorage.setItem(
+      "orbis_notification_preferences",
+      JSON.stringify(prefs),
+    );
     if (rawSettings) {
       const updatedSettings: OrganizationSettingsDto = {
         ...rawSettings,
@@ -200,7 +251,8 @@ async function handleSave(e?: Event) {
           whatsapp_integration_id: defaultIntegrationIds.whatsapp ?? null,
           notify_parents_on_absence: notifyParentsOnAbsence,
           notify_parents_on_grade_publish: notifyParentsOnGradePublish,
-          finance_reminder_days: rawSettings.notifications?.finance_reminder_days ?? [7, 3, 1],
+          finance_reminder_days: rawSettings.notifications
+            ?.finance_reminder_days ?? [7, 3, 1],
         },
       };
       rawSettings = await api.updateSettings(updatedSettings);
@@ -258,6 +310,28 @@ async function handleSave(e?: Event) {
         </div>
       {/if}
     </section>
+    {#if isDesktopApp}
+      <section class="flex items-center justify-between gap-4 rounded-lg border border-border/60 p-4 text-start">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-sm font-semibold text-foreground">
+            {m.settings_notifications_system_desktop()}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            {m.settings_notifications_system_desktop_description()}
+          </p>
+        </div>
+        <Button
+          variant={isSystemNotificationsEnabled ? "outline" : "lime"}
+          size="sm"
+          disabled={isUpdatingSystemNotifications}
+          onclick={toggleSystemNotifications}
+        >
+          {isSystemNotificationsEnabled
+            ? m.settings_notifications_system_disable()
+            : m.settings_notifications_system_enable()}
+        </Button>
+      </section>
+    {/if}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
       <!-- In-App Notifications -->
       <div class="flex flex-col gap-6 text-start">

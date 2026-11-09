@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import * as m from "$lib/paraglide/messages";
-  import AcademicCalendar from "$lib/features/academics/academic-calendar.svelte";
+import { page } from "$app/state";
+import * as m from "$lib/paraglide/messages";
+import AcademicCalendar from "$lib/features/academics/academic-calendar.svelte";
 
-  const orgId = $derived(page.params.orgId || "");
+const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>

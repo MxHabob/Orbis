@@ -1,174 +1,186 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { quadOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
-  import { localizeHref } from "$lib/paraglide/runtime";
-  import type { DashboardCountsDto } from "$lib/api/types";
-  import DashboardGreeting from "./dashboard-greeting.svelte";
+import * as m from "$lib/paraglide/messages";
+import { quadOut } from "svelte/easing";
+import { fly } from "svelte/transition";
+import { localizeHref } from "$lib/paraglide/runtime";
+import type { DashboardCountsDto } from "$lib/api/types";
+import DashboardGreeting from "./dashboard-greeting.svelte";
 
-  let {
-    type = "both",
-    stats,
-    orgId,
-  }: {
-    type?: "greeting" | "summary" | "both";
-    stats?: DashboardCountsDto | null;
-    orgId: string;
-  } = $props();
+let {
+  type = "both",
+  stats,
+  orgId,
+}: {
+  type?: "greeting" | "summary" | "both";
+  stats?: DashboardCountsDto | null;
+  orgId: string;
+} = $props();
 
-  // Ticker / Insights Logic
-  let index = $state(0);
-  let progress = $state(0);
-  let isHovered = $state(false);
+// Ticker / Insights Logic
+let index = $state(0);
+let progress = $state(0);
+let isHovered = $state(false);
 
-  const TICK_DURATION = 6000;
-  let start = $state(Date.now());
-  let elapsedOnPause = $state(0);
-  let rafId: number;
+const TICK_DURATION = 6000;
+let start = $state(Date.now());
+let elapsedOnPause = $state(0);
+let rafId: number;
 
-  type Insight = {
-    key: string;
-    before: string;
-    link: string;
-    after: string;
-    href: string;
-  };
+type Insight = {
+  key: string;
+  before: string;
+  link: string;
+  after: string;
+  href: string;
+};
 
-  const insights = $derived.by<Insight[]>(() => {
-    if (!stats) return [];
+const insights = $derived.by<Insight[]>(() => {
+  if (!stats) return [];
 
-    const items: Insight[] = [];
+  const items: Insight[] = [];
 
-    if (stats.ai_insights && Array.isArray(stats.ai_insights)) {
-      for (const ai of stats.ai_insights) {
-        if (ai.key === "critical") {
-          const link = m.ai_insight_critical_link({ count: ai.count });
-          const parts = m.ai_insight_critical({
+  if (stats.ai_insights && Array.isArray(stats.ai_insights)) {
+    for (const ai of stats.ai_insights) {
+      if (ai.key === "critical") {
+        const link = m.ai_insight_critical_link({ count: ai.count });
+        const parts = m
+          .ai_insight_critical({
             link: "||LINK||",
-          }).split("||LINK||");
-          items.push({
-            key: "critical",
-            before: parts[0] ?? "",
-            link,
-            after: parts[1] ?? "",
-            href: ai.href ?? `/${orgId}/settings`,
-          });
-        } else if (ai.key === "warning") {
-          const link = m.ai_insight_warning_link({ count: ai.count });
-          const parts = m.ai_insight_warning({
+          })
+          .split("||LINK||");
+        items.push({
+          key: "critical",
+          before: parts[0] ?? "",
+          link,
+          after: parts[1] ?? "",
+          href: ai.href ?? `/${orgId}/settings`,
+        });
+      } else if (ai.key === "warning") {
+        const link = m.ai_insight_warning_link({ count: ai.count });
+        const parts = m
+          .ai_insight_warning({
             link: "||LINK||",
-          }).split("||LINK||");
-          items.push({
-            key: "warning",
-            before: parts[0] ?? "",
-            link,
-            after: parts[1] ?? "",
-            href: ai.href ?? `/${orgId}/settings`,
-          });
-        } else if (ai.key === "healthy") {
-          const link = m.ai_insight_healthy_link();
-          const parts = m.ai_insight_healthy({
+          })
+          .split("||LINK||");
+        items.push({
+          key: "warning",
+          before: parts[0] ?? "",
+          link,
+          after: parts[1] ?? "",
+          href: ai.href ?? `/${orgId}/settings`,
+        });
+      } else if (ai.key === "healthy") {
+        const link = m.ai_insight_healthy_link();
+        const parts = m
+          .ai_insight_healthy({
             link: "||LINK||",
-          }).split("||LINK||");
-          items.push({
-            key: "healthy",
-            before: parts[0] ?? "",
-            link,
-            after: parts[1] ?? "",
-            href: ai.href ?? `/${orgId}/settings`,
-          });
-        }
+          })
+          .split("||LINK||");
+        items.push({
+          key: "healthy",
+          before: parts[0] ?? "",
+          link,
+          after: parts[1] ?? "",
+          href: ai.href ?? `/${orgId}/settings`,
+        });
       }
     }
+  }
 
-    if (items.length === 0) {
-      const studentLink = m.common_insight_students_link({
-        count: stats.total_students ?? 0,
-      });
-      const studentParts = m.common_insight_students({
+  if (items.length === 0) {
+    const studentLink = m.common_insight_students_link({
+      count: stats.total_students ?? 0,
+    });
+    const studentParts = m
+      .common_insight_students({
         link: "||LINK||",
-      }).split("||LINK||");
-      items.push({
-        key: "students",
-        before: studentParts[0] ?? "",
-        link: studentLink,
-        after: studentParts[1] ?? "",
-        href: `/${orgId}/students`,
-      });
+      })
+      .split("||LINK||");
+    items.push({
+      key: "students",
+      before: studentParts[0] ?? "",
+      link: studentLink,
+      after: studentParts[1] ?? "",
+      href: `/${orgId}/students`,
+    });
 
-      const classLink = m.common_insight_classes_link({
-        count: stats.active_classes ?? 0,
-      });
-      const classParts = m.common_insight_classes({
+    const classLink = m.common_insight_classes_link({
+      count: stats.active_classes ?? 0,
+    });
+    const classParts = m
+      .common_insight_classes({
         link: "||LINK||",
-      }).split("||LINK||");
-      items.push({
-        key: "classes",
-        before: classParts[0] ?? "",
-        link: classLink,
-        after: classParts[1] ?? "",
-        href: `/${orgId}/academics`,
-      });
+      })
+      .split("||LINK||");
+    items.push({
+      key: "classes",
+      before: classParts[0] ?? "",
+      link: classLink,
+      after: classParts[1] ?? "",
+      href: `/${orgId}/academics`,
+    });
 
-      const employeeLink = m.common_insight_staff_link({
-        count: stats.active_employees ?? 0,
-      });
-      const employeeParts = m.common_insight_staff({
+    const employeeLink = m.common_insight_staff_link({
+      count: stats.active_employees ?? 0,
+    });
+    const employeeParts = m
+      .common_insight_staff({
         link: "||LINK||",
-      }).split("||LINK||");
-      items.push({
-        key: "employees",
-        before: employeeParts[0] ?? "",
-        link: employeeLink,
-        after: employeeParts[1] ?? "",
-        href: `/${orgId}/employees`,
-      });
+      })
+      .split("||LINK||");
+    items.push({
+      key: "employees",
+      before: employeeParts[0] ?? "",
+      link: employeeLink,
+      after: employeeParts[1] ?? "",
+      href: `/${orgId}/employees`,
+    });
+  }
+
+  return items;
+});
+
+function tick() {
+  if (!isHovered && insights.length > 1) {
+    const now = Date.now();
+    const elapsed = now - start;
+    progress = Math.min(elapsed / TICK_DURATION, 1);
+
+    if (elapsed >= TICK_DURATION) {
+      index = (index + 1) % insights.length;
+      start = Date.now();
+      elapsedOnPause = 0;
+      progress = 0;
     }
+  }
+  rafId = requestAnimationFrame(tick);
+}
 
-    return items;
-  });
+function goTo(i: number) {
+  index = i;
+  start = Date.now();
+  elapsedOnPause = 0;
+  progress = 0;
+}
 
-  function tick() {
-    if (!isHovered && insights.length > 1) {
-      const now = Date.now();
-      const elapsed = now - start;
-      progress = Math.min(elapsed / TICK_DURATION, 1);
-
-      if (elapsed >= TICK_DURATION) {
-        index = (index + 1) % insights.length;
-        start = Date.now();
-        elapsedOnPause = 0;
-        progress = 0;
-      }
-    }
+$effect(() => {
+  if (insights.length > 1 && !rafId) {
     rafId = requestAnimationFrame(tick);
   }
+  return () => {
+    if (rafId) cancelAnimationFrame(rafId);
+  };
+});
 
-  function goTo(i: number) {
-    index = i;
-    start = Date.now();
-    elapsedOnPause = 0;
-    progress = 0;
-  }
+function handleMouseEnter() {
+  isHovered = true;
+  elapsedOnPause += Date.now() - start;
+}
 
-  $effect(() => {
-    if (insights.length > 1 && !rafId) {
-      rafId = requestAnimationFrame(tick);
-    }
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  });
-
-  function handleMouseEnter() {
-    isHovered = true;
-    elapsedOnPause += Date.now() - start;
-  }
-
-  function handleMouseLeave() {
-    isHovered = false;
-    start = Date.now();
-  }
+function handleMouseLeave() {
+  isHovered = false;
+  start = Date.now();
+}
 </script>
 
 {#if type === "greeting" || type === "both"}

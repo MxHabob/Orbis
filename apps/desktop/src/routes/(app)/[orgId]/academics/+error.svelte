@@ -13,7 +13,9 @@ import { localizeHref } from "$lib/paraglide/runtime";
 
 const orgId = $derived(page.params.orgId || "");
 const status = $derived(page.status || 500);
-const errorMessage = $derived(page.error?.message || m.common_unexpected_error_message());
+const errorMessage = $derived(
+  page.error?.message || m.common_unexpected_error_message(),
+);
 </script>
 
 <svelte:head>

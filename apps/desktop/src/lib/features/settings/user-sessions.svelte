@@ -34,7 +34,7 @@ async function handleRevoke(deviceId: string, deviceName: string) {
     title: m.ui_copy_revoke_device_session_359e4435(),
     description: l(
       m.settings_ui_session_terminate_confirm({ device: deviceName }),
-      `Are you sure you want to revoke the session for ${deviceName}?`
+      `Are you sure you want to revoke the session for ${deviceName}?`,
     ),
     confirmText: m.ui_copy_revoke_session_3a121f98(),
     variant: "destructive",

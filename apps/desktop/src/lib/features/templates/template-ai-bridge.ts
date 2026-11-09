@@ -95,7 +95,9 @@ export function getTemplateAiEditorContext(): TemplateAiEditorContext | null {
 
   const document = activeEditor.document;
   const variables: TemplateAiEditorContext["variables"] = [];
-  for (const [namespace, schema] of Object.entries(activeEditor.systemSchemas)) {
+  for (const [namespace, schema] of Object.entries(
+    activeEditor.systemSchemas,
+  )) {
     flattenSchema(schema, namespace, variables);
   }
   for (const [path, definition] of Object.entries(document.variables)) {
@@ -121,11 +123,12 @@ export function getTemplateAiEditorContext(): TemplateAiEditorContext | null {
   };
 }
 
-function normalizeNode(
-  value: unknown,
-  depth: number,
-): TemplateNode {
-  if (!isObject(value) || typeof value.type !== "string" || !NODE_TYPES.has(value.type)) {
+function normalizeNode(value: unknown, depth: number): TemplateNode {
+  if (
+    !isObject(value) ||
+    typeof value.type !== "string" ||
+    !NODE_TYPES.has(value.type)
+  ) {
     throw new Error(m.template_ai_invalid_design());
   }
   if (depth > MAX_NESTING_DEPTH) {
@@ -235,7 +238,11 @@ export function applyTemplateAiDesign(toolContent: string): string {
   const current = store.document;
   const assets = current.assets;
   const pages = generated.pages.map((page) => {
-    if (!isObject(page) || page.type !== "Page" || !Array.isArray(page.children)) {
+    if (
+      !isObject(page) ||
+      page.type !== "Page" ||
+      !Array.isArray(page.children)
+    ) {
       throw new Error(m.template_ai_invalid_design());
     }
     return {

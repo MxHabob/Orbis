@@ -34,7 +34,9 @@ const integrationsQuery = createQuery(() => ({
     try {
       return await api.listIntegrations();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : m.common_action_failed());
+      toast.error(
+        error instanceof Error ? error.message : m.common_action_failed(),
+      );
       throw error;
     }
   },
@@ -46,9 +48,8 @@ const connectedIntegrations = $derived(integrationsQuery.data ?? []);
 const isLoading = $derived(integrationsQuery.isLoading);
 
 const stepStatus = $derived(
-  deriveSteps(
-    systemStore.onboardingTasks,
-    (permission) => effectiveContext.hasPermission(permission),
+  deriveSteps(systemStore.onboardingTasks, (permission) =>
+    effectiveContext.hasPermission(permission),
   ).find((step) => step.id === "integrations")?.status ?? "not_started",
 );
 
@@ -57,7 +58,9 @@ async function loadData() {
     await integrationsQuery.refetch();
   } catch (error) {
     console.error("Failed to reload integrations:", error);
-    toast.error(error instanceof Error ? error.message : m.common_action_failed());
+    toast.error(
+      error instanceof Error ? error.message : m.common_action_failed(),
+    );
   }
 }
 
@@ -66,7 +69,7 @@ function isAppConnected(app: OrbisApp): boolean {
   return connectedIntegrations.some(
     (item) =>
       item.provider_name.toLowerCase() === provider ||
-      item.provider_name.toLowerCase() === app.id.toLowerCase()
+      item.provider_name.toLowerCase() === app.id.toLowerCase(),
   );
 }
 
@@ -82,7 +85,8 @@ const filteredApps = $derived.by(() => {
         (app.name_ar && app.name_ar.toLowerCase().includes(q)) ||
         app.id.toLowerCase().includes(q) ||
         app.short_description.toLowerCase().includes(q) ||
-        (app.short_description_ar && app.short_description_ar.toLowerCase().includes(q))
+        (app.short_description_ar &&
+          app.short_description_ar.toLowerCase().includes(q)),
     );
   }
 
@@ -90,7 +94,7 @@ const filteredApps = $derived.by(() => {
 });
 
 const connectedCount = $derived(
-  apps.filter((app) => isAppConnected(app)).length
+  apps.filter((app) => isAppConnected(app)).length,
 );
 
 function openConnectSheet(app: OrbisApp) {
@@ -100,10 +104,17 @@ function openConnectSheet(app: OrbisApp) {
 
 function refreshAfterIntegrationChange() {
   void loadData();
-  void refreshOnboardingState(orgId, m.common_action_failed()).catch((error) => {
-    console.error("Failed to refresh onboarding state after integration changes:", error);
-    toast.error(error instanceof Error ? error.message : m.common_action_failed());
-  });
+  void refreshOnboardingState(orgId, m.common_action_failed()).catch(
+    (error) => {
+      console.error(
+        "Failed to refresh onboarding state after integration changes:",
+        error,
+      );
+      toast.error(
+        error instanceof Error ? error.message : m.common_action_failed(),
+      );
+    },
+  );
 }
 </script>
 

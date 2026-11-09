@@ -7,5 +7,5 @@ class TeacherUnavailability {
     var id: String = ""
     var teacherId: String = ""
     var dayOfWeek: Int = 0
-    var timeSlotId: String = ""
+    var timeSlot: TimeSlot? = null
 }

@@ -20,6 +20,7 @@ import { toast } from "@orbis/ui";
 import { api } from "$lib/api";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { authStore, uiStore } from "$lib/stores";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -32,7 +33,7 @@ let {
   open: boolean;
   orgId: string;
   session?: any;
-  onSuccess: () => void;
+  onSuccess: (periodId?: string) => void;
 } = $props();
 
 const isEdit = $derived(!!session);
@@ -57,6 +58,10 @@ const form = new FormController({
   schema: examSessionInputSchema,
 });
 const isSaving = $derived(form.isSubmitting);
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
 
 // Reset form when session changes
 $effect(() => {
@@ -65,7 +70,26 @@ $effect(() => {
   sessionType = session?.session_type || "final";
   startDate = session?.start_date || "";
   endDate = session?.end_date || "";
-  periodId = session?.period_id ? String(session.period_id) : "";
+  periodId = session?.period_id
+    ? String(session.period_id)
+    : uiStore.getPreference(
+        preferenceScope(),
+        "exams.selectedPeriodId",
+        "",
+        (value): value is string => typeof value === "string",
+      );
+  if (!session) {
+    sessionType = uiStore.getPreference(
+      preferenceScope(),
+      "exams.sessionType",
+      "final",
+      (value): value is "final" | "midterm" | "quiz" | "practical" =>
+        value === "final" ||
+        value === "midterm" ||
+        value === "quiz" ||
+        value === "practical",
+    );
+  }
 });
 
 async function handleSubmit() {
@@ -78,6 +102,7 @@ async function handleSubmit() {
     period_id: periodId,
   };
   const submitted = await form.submit(async (payload) => {
+    let savedPeriodId = payload.period_id;
     if (isEdit && session?.id) {
       await api.updateExamSession(session.id, {
         name: payload.name || payload.name_ar,
@@ -85,11 +110,10 @@ async function handleSubmit() {
         session_type: payload.session_type,
         start_date: payload.start_date,
         end_date: payload.end_date,
-        period_id: payload.period_id,
       });
       toast.success(m.operations_ui_exam_session_update_success());
     } else {
-      await api.createExamSession({
+      const createdSession = await api.createExamSession({
         name: payload.name || payload.name_ar,
         name_ar: payload.name_ar || undefined,
         session_type: payload.session_type,
@@ -97,6 +121,17 @@ async function handleSubmit() {
         end_date: payload.end_date,
         period_id: payload.period_id,
       });
+      savedPeriodId = createdSession.period_id;
+      uiStore.setPreference(
+        preferenceScope(),
+        "exams.selectedPeriodId",
+        String(savedPeriodId),
+      );
+      uiStore.setPreference(
+        preferenceScope(),
+        "exams.sessionType",
+        payload.session_type,
+      );
       toast.success(m.common_exams_create_success());
     }
     // Reset form
@@ -104,9 +139,9 @@ async function handleSubmit() {
     nameAr = "";
     startDate = "";
     endDate = "";
-    periodId = "";
+    periodId = isEdit ? "" : String(savedPeriodId);
     open = false;
-    onSuccess();
+    onSuccess(isEdit ? undefined : savedPeriodId);
   });
   if (!submitted && form.formError) toast.error(form.formError);
   else if (!submitted) {
@@ -136,6 +171,7 @@ async function handleSubmit() {
           id="session-period"
           bind:value={periodId}
           placeholder={m.exams_session_select_term()}
+          disabled={isEdit || isSaving}
           class="text-sm"
         />
         {/snippet}

@@ -7,4 +7,5 @@ export { default as FilterOperatorPicker } from "./FilterOperatorPicker.svelte";
 export { default as FilterValueInput } from "./FilterValueInput.svelte";
 export { default as FilterSummary } from "./FilterSummary.svelte";
 export { default as FilterTemplateManager } from "./FilterTemplateManager.svelte";
+export { default as FilterDialogFrame } from "./FilterDialogFrame.svelte";
 export { default as FilterTrigger } from "./FilterTrigger.svelte";

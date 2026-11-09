@@ -3,7 +3,7 @@
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use orbis_app::services::finance_service::{
     CreateSubAccountInput, DisbursementInput, PayrollItemInput, PostPayrollInput,
     SettleGatewayPayoutInput, StatementFilter,
@@ -447,11 +447,24 @@ pub struct CurrencyDto {
     pub symbol: String,
     pub symbol_position: String,
     pub decimal_places: u32,
+    pub exchange_rate: Decimal,
     pub is_base: bool,
     pub is_active: bool,
 }
 
 // ── Request Inputs ───────────────────────────────────────────────
+
+#[derive(Deserialize, Debug)]
+pub struct CurrencyInput {
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub symbol: String,
+    pub symbol_position: String,
+    pub decimal_places: u32,
+    pub exchange_rate: Decimal,
+    pub is_base: bool,
+}
 
 #[derive(Deserialize, Debug)]
 pub struct CreateAccountInput {
@@ -1232,24 +1245,173 @@ pub async fn finance_list_currencies(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<CurrencyDto>>, String> {
     let ctx = make_ctx(&state);
+    let organization = state
+        .org_repo
+        .find_by_id(ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "Organization not found".to_string())?;
+    let base_code = organization
+        .base_currency_code
+        .unwrap_or_else(|| "YER".to_string());
     let items = state
         .currency_repo
         .find_by_org(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(items
-        .into_iter()
-        .map(|c| CurrencyDto {
+    let mut currencies = Vec::with_capacity(items.len());
+    for c in items {
+        let exchange_rate = if c.is_base {
+            Decimal::ONE
+        } else {
+            state
+                .currency_repo
+                .get_exchange_rate(ctx.tenant_id, &base_code, &c.code)
+                .await
+                .map_err(|error| error.to_string())?
+                .map(|rate| rate.rate)
+                .unwrap_or(Decimal::ONE)
+        };
+        currencies.push(CurrencyDto {
             code: c.code,
             name: c.name,
             name_ar: c.name_ar,
             symbol: c.symbol,
             symbol_position: c.symbol_position,
             decimal_places: c.decimal_places,
+            exchange_rate,
             is_base: c.is_base,
             is_active: c.is_active,
+        });
+    }
+    Ok(ok(currencies))
+}
+
+async fn save_currency(
+    state: &AppState,
+    org_id: Uuid,
+    request: CurrencyInput,
+    updating: bool,
+) -> Result<(), String> {
+    let code = request.code.trim().to_ascii_uppercase();
+    if !(2..=3).contains(&code.len())
+        || !code.bytes().all(|byte| byte.is_ascii_alphabetic())
+        || request.name.trim().is_empty()
+        || request.symbol.trim().is_empty()
+        || !matches!(request.symbol_position.as_str(), "before" | "after")
+        || request.decimal_places > 4
+        || request.exchange_rate <= Decimal::ZERO
+    {
+        return Err("Invalid currency details".to_string());
+    }
+
+    let existing = state
+        .currency_repo
+        .find_by_code(org_id, &code)
+        .await
+        .map_err(|error| error.to_string())?;
+    if updating && existing.is_none() {
+        return Err(format!("Currency {code} not found"));
+    }
+    if !updating && existing.is_some() {
+        return Err(format!("Currency {code} already exists"));
+    }
+
+    let mut organization = state
+        .org_repo
+        .find_by_id(org_id)
+        .await
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "Organization not found".to_string())?;
+    if request.is_base {
+        organization.base_currency_code = Some(code.clone());
+    } else if organization
+        .base_currency_code
+        .as_deref()
+        .map_or(true, |base_code| base_code.eq_ignore_ascii_case(&code))
+    {
+        return Err("Choose a different base currency before changing this currency".to_string());
+    }
+
+    state
+        .currency_repo
+        .save(&orbis_domain::entities::currency::Currency {
+            code: code.clone(),
+            org_id,
+            name: request.name.trim().to_string(),
+            name_ar: request
+                .name_ar
+                .as_deref()
+                .map(str::trim)
+                .filter(|name| !name.is_empty())
+                .map(str::to_string),
+            symbol: request.symbol.trim().to_string(),
+            symbol_position: request.symbol_position,
+            decimal_places: request.decimal_places,
+            is_base: request.is_base,
+            is_active: true,
+            updated_at: Utc::now(),
         })
-        .collect()))
+        .await
+        .map_err(|error| error.to_string())?;
+
+    if request.is_base {
+        state
+            .org_repo
+            .save(&organization)
+            .await
+            .map_err(|error| error.to_string())?;
+    } else {
+        let base_code = organization
+            .base_currency_code
+            .as_deref()
+            .ok_or_else(|| "A base currency is required".to_string())?;
+        let existing_rate = state
+            .currency_repo
+            .get_exchange_rate(org_id, base_code, &code)
+            .await
+            .map_err(|error| error.to_string())?;
+        let now = Utc::now();
+        state
+            .currency_repo
+            .save_rate(&orbis_domain::entities::exchange_rate::ExchangeRate {
+                id: existing_rate
+                    .as_ref()
+                    .map(|rate| rate.id)
+                    .unwrap_or_else(Uuid::new_v4),
+                org_id,
+                from_currency: base_code.to_string(),
+                to_currency: code,
+                rate: request.exchange_rate,
+                effective_date: now,
+                created_at: existing_rate.map(|rate| rate.created_at).unwrap_or(now),
+            })
+            .await
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn finance_create_currency(
+    state: State<'_, AppState>,
+    request: CurrencyInput,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    save_currency(&state, ctx.tenant_id, request, false).await?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
+pub async fn finance_update_currency(
+    state: State<'_, AppState>,
+    code: String,
+    mut request: CurrencyInput,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = make_ctx(&state);
+    request.code = code;
+    save_currency(&state, ctx.tenant_id, request, true).await?;
+    Ok(ok(()))
 }
 
 #[tauri::command]

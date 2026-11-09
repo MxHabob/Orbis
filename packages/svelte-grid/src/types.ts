@@ -143,6 +143,8 @@ export interface GridActionEvent {
   rowIndex: number;
   prop: string;
   originalEvent: MouseEvent | KeyboardEvent | PointerEvent;
+  selected?: boolean;
+  selectedIds?: string[];
 }
 
 export interface ActionItem {
@@ -200,7 +202,16 @@ export interface BulkResult<T = GridRow> {
 export interface GridRowsChangeEvent {
   rows: GridRow[];
   changedRows: GridRow[];
-  action: "edit" | "paste" | "cut" | "delete" | "fill-down" | "fill-right" | "duplicate";
+  action:
+    | "edit"
+    | "paste"
+    | "cut"
+    | "delete"
+    | "delete-rows"
+    | "fill-down"
+    | "fill-right"
+    | "insert"
+    | "duplicate";
 }
 
 export interface VirtualWindow {

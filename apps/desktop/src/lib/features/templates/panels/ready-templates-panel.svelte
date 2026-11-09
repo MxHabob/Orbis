@@ -1,100 +1,100 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import * as m from "$lib/paraglide/messages";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Badge } from "@orbis/ui/badge";
-  import { toast } from "@orbis/ui";
-  import { l } from "$lib/core/i18n";
-  import {
-    createTemplateFromCatalog,
-    isNetworkUnavailable,
-    listReadyTemplates,
-    type ReadyTemplate,
-  } from "../marketplace-client";
+import { onMount } from "svelte";
+import { goto } from "$app/navigation";
+import * as m from "$lib/paraglide/messages";
+import { api, extractErrorMessage } from "$lib/api";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Badge } from "@orbis/ui/badge";
+import { toast } from "@orbis/ui";
+import { l } from "$lib/core/i18n";
+import {
+  createTemplateFromCatalog,
+  isNetworkUnavailable,
+  listReadyTemplates,
+  type ReadyTemplate,
+} from "../marketplace-client";
 
-  let { orgId }: { orgId: string } = $props();
+let { orgId }: { orgId: string } = $props();
 
-  let templates = $state<ReadyTemplate[]>([]);
-  let search = $state("");
-  let isLoading = $state(true);
-  let importingId = $state<string | null>(null);
-  let errorMessage = $state("");
-  let networkUnavailable = $state(false);
-  let retryOfflineAction = $state<(() => void) | null>(null);
+let templates = $state<ReadyTemplate[]>([]);
+let search = $state("");
+let isLoading = $state(true);
+let importingId = $state<string | null>(null);
+let errorMessage = $state("");
+let networkUnavailable = $state(false);
+let retryOfflineAction = $state<(() => void) | null>(null);
 
-  const filteredTemplates = $derived.by(() => {
-    const query = search.trim().toLocaleLowerCase();
-    if (!query) return templates;
+const filteredTemplates = $derived.by(() => {
+  const query = search.trim().toLocaleLowerCase();
+  if (!query) return templates;
 
-    return templates.filter((template) =>
-      [
-        template.name,
-        template.name_ar,
-        template.description,
-        template.description_ar,
-        template.document_type,
-        template.entity_type,
-      ].some((value) => value?.toLocaleLowerCase().includes(query)),
-    );
-  });
+  return templates.filter((template) =>
+    [
+      template.name,
+      template.name_ar,
+      template.description,
+      template.description_ar,
+      template.document_type,
+      template.entity_type,
+    ].some((value) => value?.toLocaleLowerCase().includes(query)),
+  );
+});
 
-  onMount(() => {
-    void loadTemplates();
-  });
+onMount(() => {
+  void loadTemplates();
+});
 
-  async function loadTemplates() {
-    isLoading = true;
-    errorMessage = "";
-    networkUnavailable = false;
-    retryOfflineAction = null;
-    try {
-      templates = await listReadyTemplates();
-    } catch (error) {
-      if (isNetworkUnavailable(error)) {
-        networkUnavailable = true;
-      } else {
-        errorMessage = extractErrorMessage(error);
-      }
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  function retry() {
-    if (retryOfflineAction) {
-      retryOfflineAction();
+async function loadTemplates() {
+  isLoading = true;
+  errorMessage = "";
+  networkUnavailable = false;
+  retryOfflineAction = null;
+  try {
+    templates = await listReadyTemplates();
+  } catch (error) {
+    if (isNetworkUnavailable(error)) {
+      networkUnavailable = true;
     } else {
-      void loadTemplates();
+      errorMessage = extractErrorMessage(error);
     }
+  } finally {
+    isLoading = false;
   }
+}
 
-  async function useTemplate(template: ReadyTemplate) {
-    importingId = template.id;
-    errorMessage = "";
-    networkUnavailable = false;
-    retryOfflineAction = null;
-    try {
-      const created = await api.createTemplate(
-        await createTemplateFromCatalog(template),
-      );
-      toast.success(m.settings_template_marketplace_import_success());
-      await goto(`/${orgId}/templates/${created.id}`);
-    } catch (error) {
-      if (isNetworkUnavailable(error)) {
-        networkUnavailable = true;
-        retryOfflineAction = () => {
-          void useTemplate(template);
-        };
-      } else {
-        errorMessage = extractErrorMessage(error);
-      }
-    } finally {
-      importingId = null;
-    }
+function retry() {
+  if (retryOfflineAction) {
+    retryOfflineAction();
+  } else {
+    void loadTemplates();
   }
+}
+
+async function useTemplate(template: ReadyTemplate) {
+  importingId = template.id;
+  errorMessage = "";
+  networkUnavailable = false;
+  retryOfflineAction = null;
+  try {
+    const created = await api.createTemplate(
+      await createTemplateFromCatalog(template),
+    );
+    toast.success(m.settings_template_marketplace_import_success());
+    await goto(`/${orgId}/templates/${created.id}`);
+  } catch (error) {
+    if (isNetworkUnavailable(error)) {
+      networkUnavailable = true;
+      retryOfflineAction = () => {
+        void useTemplate(template);
+      };
+    } else {
+      errorMessage = extractErrorMessage(error);
+    }
+  } finally {
+    importingId = null;
+  }
+}
 </script>
 
 <div class="flex h-full min-h-0 flex-col">

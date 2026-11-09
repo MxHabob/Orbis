@@ -11,6 +11,18 @@ use crate::models::integration::{integration_config, integration_secret};
 
 pub struct IntegrationRepoImpl {
     pub db: DatabaseConnection,
+    secret_cipher: crate::security::integration_secret::IntegrationSecretCipher,
+}
+
+impl IntegrationRepoImpl {
+    pub fn new(db: DatabaseConnection, master_key: &str) -> Self {
+        Self {
+            db,
+            secret_cipher: crate::security::integration_secret::IntegrationSecretCipher::new(
+                master_key,
+            ),
+        }
+    }
 }
 
 #[async_trait]
@@ -51,17 +63,28 @@ impl IntegrationRepository for IntegrationRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models
-            .into_iter()
-            .map(|m| DomainIntegrationSecret {
-                id: m.id,
-                config_id: m.config_id,
-                secret_key: m.secret_key,
-                key_name: m.key_name,
-                created_at: m.created_at.into(),
-                updated_at: m.updated_at.into(),
-            })
-            .collect())
+        let mut secrets = Vec::with_capacity(models.len());
+        for model in models {
+            let plaintext = self.secret_cipher.decrypt(&model.secret_key)?;
+            if !model.secret_key.starts_with("v1:") {
+                let mut active: integration_secret::ActiveModel = model.clone().into();
+                active.secret_key = Set(self.secret_cipher.encrypt(&plaintext)?);
+                active.updated_at = Set(chrono::Utc::now().into());
+                active
+                    .update(&self.db)
+                    .await
+                    .map_err(|error| DomainError::Internal(error.to_string()))?;
+            }
+            secrets.push(DomainIntegrationSecret {
+                id: model.id,
+                config_id: model.config_id,
+                secret_key: plaintext,
+                key_name: model.key_name,
+                created_at: model.created_at.into(),
+                updated_at: model.updated_at.into(),
+            });
+        }
+        Ok(secrets)
     }
 
     async fn save_config(&self, config: &DomainIntegrationConfig) -> Result<(), DomainError> {
@@ -109,7 +132,7 @@ impl IntegrationRepository for IntegrationRepoImpl {
         let active = integration_secret::ActiveModel {
             id: Set(sid),
             config_id: Set(secret.config_id),
-            secret_key: Set(secret.secret_key.clone()),
+            secret_key: Set(self.secret_cipher.encrypt(&secret.secret_key)?),
             key_name: Set(secret.key_name.clone()),
             created_at: Set(existing
                 .as_ref()

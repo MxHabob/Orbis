@@ -1,9 +1,6 @@
-import React from 'react';
-import Svg, {
-  Path,
-  type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+import React from "react";
+import Svg, { Path, type SvgProps } from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface ClipboardCheckProps extends SvgProps {
   size?: number;
@@ -14,7 +11,7 @@ export interface ClipboardCheckProps extends SvgProps {
 
 export function ClipboardCheck({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -31,7 +28,8 @@ export function ClipboardCheck({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
         strokeLinecap="round"
         strokeLinejoin="round"

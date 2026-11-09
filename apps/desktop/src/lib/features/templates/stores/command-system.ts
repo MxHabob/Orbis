@@ -51,8 +51,12 @@ export class UpdatePropsCommand implements EditorCommand {
     private props: Record<string, unknown>,
     nodeName?: string,
   ) {
-    this.description = m.shared_ui_update_element({ element: nodeName || nodeId });
-    this.descriptionAr = m.shared_ui_update_element({ element: nodeName || nodeId });
+    this.description = m.shared_ui_update_element({
+      element: nodeName || nodeId,
+    });
+    this.descriptionAr = m.shared_ui_update_element({
+      element: nodeName || nodeId,
+    });
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -60,15 +64,27 @@ export class UpdatePropsCommand implements EditorCommand {
     const node = findNode(doc, this.nodeId);
     if (node) {
       const rootKeys = new Set([
-        "id", "type", "name", "locked", "visible", "opacity", "rotation",
-        "zIndex", "groupId", "styleRef", "position", "positionMode",
+        "id",
+        "type",
+        "name",
+        "locked",
+        "visible",
+        "opacity",
+        "rotation",
+        "zIndex",
+        "groupId",
+        "styleRef",
+        "position",
+        "positionMode",
       ]);
       this.prevProps = {};
       for (const key of Object.keys(this.props)) {
         if (key === "props" && "props" in node && node.props) {
           this.prevProps[key] = { ...node.props };
         } else if (rootKeys.has(key)) {
-          this.prevProps[key] = (node as unknown as Record<string, unknown>)[key];
+          this.prevProps[key] = (node as unknown as Record<string, unknown>)[
+            key
+          ];
         } else if ("props" in node && node.props) {
           this.prevProps[key] = (node.props as Record<string, unknown>)[key];
         }
@@ -89,7 +105,9 @@ export class UpdatePropsCommand implements EditorCommand {
       "props" in node &&
       node.props
     ) {
-      const restoredProps = { ...(previousNodeProps as Record<string, unknown>) };
+      const restoredProps = {
+        ...(previousNodeProps as Record<string, unknown>),
+      };
       for (const key of Object.keys(node.props)) {
         if (!(key in restoredProps)) restoredProps[key] = undefined;
       }

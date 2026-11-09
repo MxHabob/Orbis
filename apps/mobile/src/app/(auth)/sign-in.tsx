@@ -5,13 +5,7 @@
  */
 
 import React, { useState } from "react";
-import {
-  ImageBackground,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -48,12 +42,8 @@ export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, locale, setLocale, isArabic } = useI18n();
-  const {
-    login,
-    loginWithGoogle,
-    selectedInstitution,
-    institutions,
-  } = useAuth();
+  const { login, loginWithGoogle, selectedInstitution, institutions } =
+    useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -85,7 +75,9 @@ export default function SignInScreen() {
       }
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : t("auth_error_invalid_credentials");
+        err instanceof Error
+          ? err.message
+          : t("auth_error_invalid_credentials");
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
@@ -98,7 +90,8 @@ export default function SignInScreen() {
     try {
       await loginWithGoogle("google-token");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("auth_error_google");
+      const message =
+        err instanceof Error ? err.message : t("auth_error_google");
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
@@ -110,12 +103,17 @@ export default function SignInScreen() {
   };
 
   return (
-    <View className="flex-1 bg-primary-dark">
-      <ImageBackground
-        source={require("../../../assets/Dreamy Arrival at the Historic Campus.png")}
-        resizeMode="cover"
-        className="flex-1"
-      >
+    <View
+      className="flex-1 bg-primary-dark"
+      style={{ direction: isArabic ? "rtl" : "ltr" }}
+    >
+      <View className="flex-1">
+        <Image
+          pointerEvents="none"
+          source={require("../../../assets/Dreamy Arrival at the Historic Campus.png")}
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+        />
         <LinearGradient
           pointerEvents="none"
           colors={[
@@ -127,7 +125,7 @@ export default function SignInScreen() {
           locations={[0, 0.28, 0.58, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ThemedStatusBar backgroundColor="transparent" style="light" />
+        <ThemedStatusBar style="light" />
         <KeyboardAwareView
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
@@ -135,7 +133,7 @@ export default function SignInScreen() {
           <View
             className="flex-1 px-5"
             style={{
-              paddingTop: insets.top + 8,
+              paddingTop: 8,
               paddingBottom: Math.max(insets.bottom, 12) + 4,
             }}
           >
@@ -286,7 +284,7 @@ export default function SignInScreen() {
             </View>
           </View>
         </KeyboardAwareView>
-      </ImageBackground>
+      </View>
     </View>
   );
 }

@@ -121,3 +121,54 @@ export class ApiRequestError extends Error {
     this.name = "ApiRequestError";
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATION TYPES
+// ═══════════════════════════════════════════════════════════════
+
+export interface NotificationDto {
+  id: string;
+  category: string;
+  priority: string;
+  title: string;
+  title_ar: string | null;
+  body: string;
+  body_ar: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  action_route: string | null;
+  source_event: string;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface UnreadCountDto {
+  count: number;
+}
+
+export interface MarkAllReadDto {
+  updated: number;
+}
+
+export interface NotificationPreferenceResponseDto {
+  id: string;
+  category: string;
+  in_app_enabled: boolean;
+  email_enabled: boolean;
+  push_enabled: boolean;
+}
+
+export interface NotificationPreferenceInput {
+  category: string;
+  in_app_enabled: boolean;
+  email_enabled: boolean;
+  push_enabled: boolean;
+}
+
+export interface ListNotificationsParams {
+  category?: string;
+  is_read?: boolean;
+  limit?: number;
+  offset?: number;
+}

@@ -1,214 +1,386 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { createMutation, createQuery } from "@tanstack/svelte-query";
-  import { api, queryClient, queryKeys } from "$lib/api";
-  import type { MulverseDeploymentDto, MulverseEndpointDto } from "$lib/api";
-  import { toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Card } from "@orbis/ui/card";
-  import { Input } from "@orbis/ui/input";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
-  import { ArchiveBox, Cloud, Database, Merge, Sparkles } from "@orbis/icons";
-  import { resolve } from "$app/paths";
-  import { localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { createMutation, createQuery } from "@tanstack/svelte-query";
+import { api, queryClient, queryKeys } from "$lib/api";
+import type { MulverseDeploymentDto, MulverseEndpointDto } from "$lib/api";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Card } from "@orbis/ui/card";
+import { Input } from "@orbis/ui/input";
+import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { ArchiveBox, Cloud, Database, Merge, Sparkles } from "@orbis/icons";
+import { resolve } from "$app/paths";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { invoke } from "@tauri-apps/api/core";
+import { isDesktopApp } from "$lib/api";
 
-  function showMutationError(error: unknown) {
-    toast.error(error instanceof Error ? error.message : String(error));
+type ApiArtifact = {
+  name: string;
+  platform:
+    | "linux-x86_64"
+    | "linux-aarch64"
+    | "windows-x86_64"
+    | "macos-aarch64"
+    | "docker-bundle";
+  sha256: string;
+  url: string;
+};
+
+type ApiReleaseManifest = {
+  schema_version: number;
+  version: string;
+  tag: string;
+  artifacts: ApiArtifact[];
+  docker_image: string;
+  docker_digest: string;
+};
+
+type GitHubRelease = {
+  tag_name: string;
+  assets: { name: string }[];
+};
+
+const apiReleaseRepository = "MxHabob/Orbis";
+function defaultApiPlatform(): ApiArtifact["platform"] {
+  const platform =
+    typeof navigator === "undefined" ? "" : navigator.userAgent.toLowerCase();
+  if (platform.includes("windows")) return "windows-x86_64";
+  if (platform.includes("macintosh") || platform.includes("mac os")) {
+    return "macos-aarch64";
   }
+  return "linux-x86_64";
+}
 
-  let { data }: { data: { orgId: string } } = $props();
-  let apiKey = $state("");
-  let deploymentName = $state("");
-  let deploymentEnvironment = $state("production");
-  let editingDeploymentName = $state("");
-  let editingDeploymentEnvironment = $state("");
-  let selectedDeploymentId = $state<string | null>(null);
-  let editingDeploymentId = $state<string | null>(null);
-  let editingEndpointId = $state<string | null>(null);
-  let endpointUrl = $state("");
-  let endpointScope = $state<"public" | "local_network">("public");
-  let newEndpointUrl = $state("");
+const apiArtifactLabels: Record<ApiArtifact["platform"], () => string> = {
+  "linux-x86_64": () => m.settings_orbis_mobile_api_linux_x64(),
+  "linux-aarch64": () => m.settings_orbis_mobile_api_linux_arm64(),
+  "windows-x86_64": () => m.settings_orbis_mobile_api_windows_x64(),
+  "macos-aarch64": () => m.settings_orbis_mobile_api_macos_arm64(),
+  "docker-bundle": () => m.settings_orbis_mobile_api_docker_bundle(),
+};
 
-  const connection = createQuery(() => ({
-    queryKey: ["mulverseConnection", data.orgId],
-    queryFn: () => api.getMulverseConnection(),
-    retry: false,
-  }));
+function showMutationError(error: unknown) {
+  toast.error(error instanceof Error ? error.message : String(error));
+}
 
-  const integrations = createQuery(() => ({
-    queryKey: queryKeys.integration.list(data.orgId),
-    queryFn: () => api.listIntegrations(),
-    retry: false,
-  }));
+let { data }: { data: { orgId: string } } = $props();
+let apiKey = $state("");
+let deploymentName = $state("");
+let deploymentEnvironment = $state("production");
+let editingDeploymentName = $state("");
+let editingDeploymentEnvironment = $state("");
+let selectedDeploymentId = $state<string | null>(null);
+let editingDeploymentId = $state<string | null>(null);
+let editingEndpointId = $state<string | null>(null);
+let endpointUrl = $state("");
+let endpointScope = $state<"public" | "local_network">("public");
+let newEndpointUrl = $state("");
+let apiRelease = $state<ApiReleaseManifest | null>(null);
+let selectedApiPlatform = $state<ApiArtifact["platform"]>(defaultApiPlatform());
+let apiReleaseLoading = $state(false);
+let apiDownloadOpening = $state(false);
+let apiReleaseError = $state("");
 
-  function isIntegrationEnabled(...providerNames: string[]): boolean {
-    const normalizedNames = providerNames.map((name) => name.toLowerCase().replaceAll("_", "-"));
-    return integrations.data?.some(
+const connection = createQuery(() => ({
+  queryKey: ["mulverseConnection", data.orgId],
+  queryFn: () => api.getMulverseConnection(),
+  retry: false,
+}));
+
+const integrations = createQuery(() => ({
+  queryKey: queryKeys.integration.list(data.orgId),
+  queryFn: () => api.listIntegrations(),
+  retry: false,
+}));
+
+function isIntegrationEnabled(...providerNames: string[]): boolean {
+  const normalizedNames = providerNames.map((name) =>
+    name.toLowerCase().replaceAll("_", "-"),
+  );
+  return (
+    integrations.data?.some(
       (integration) =>
         integration.is_enabled &&
-        normalizedNames.includes(integration.provider_name.toLowerCase().replaceAll("_", "-")),
-    ) ?? false;
-  }
-
-  const orbisAiEnabled = $derived(isIntegrationEnabled("orbis-ai"));
-  const orbisMobileEnabled = $derived(
-    isIntegrationEnabled("orbis-mobile") || connection.data?.connected === true,
+        normalizedNames.includes(
+          integration.provider_name.toLowerCase().replaceAll("_", "-"),
+        ),
+    ) ?? false
   );
-  const mulverseCloudEnabled = $derived(isIntegrationEnabled("mulverse-cloud"));
+}
 
-  const deployments = createQuery(() => ({
-    queryKey: ["mulverseDeployments", data.orgId],
-    queryFn: () => api.listMulverseDeployments(),
-    enabled: connection.data?.connected === true,
-  }));
+const orbisAiEnabled = $derived(isIntegrationEnabled("orbis-ai"));
+const orbisMobileEnabled = $derived(
+  isIntegrationEnabled("orbis-mobile") || connection.data?.connected === true,
+);
+const mulverseCloudEnabled = $derived(isIntegrationEnabled("mulverse-cloud"));
 
-  const endpoints = createQuery(() => ({
-    queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
-    queryFn: () => api.listMulverseEndpoints(selectedDeploymentId!),
-    enabled: !!selectedDeploymentId,
-  }));
+const deployments = createQuery(() => ({
+  queryKey: ["mulverseDeployments", data.orgId],
+  queryFn: () => api.listMulverseDeployments(),
+  enabled: connection.data?.connected === true,
+}));
 
-  const connectMutation = createMutation(() => ({
-    mutationFn: () => api.connectMulverse(apiKey.trim()),
-    onSuccess: async () => {
-      apiKey = "";
-      await queryClient.invalidateQueries({ queryKey: ["mulverseConnection", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_connected());
-    },
-    onError: showMutationError,
-  }));
+const endpoints = createQuery(() => ({
+  queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
+  queryFn: () => api.listMulverseEndpoints(selectedDeploymentId!),
+  enabled: !!selectedDeploymentId,
+}));
 
-  const disconnectMutation = createMutation(() => ({
-    mutationFn: () => api.disconnectMulverse(),
-    onSuccess: async () => {
-      selectedDeploymentId = null;
-      await queryClient.invalidateQueries({ queryKey: ["mulverseConnection", data.orgId] });
-      await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_disconnected());
-    },
-    onError: showMutationError,
-  }));
+const connectMutation = createMutation(() => ({
+  mutationFn: () => api.connectMulverse(apiKey.trim()),
+  onSuccess: async () => {
+    apiKey = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseConnection", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_connected());
+  },
+  onError: showMutationError,
+}));
 
-  const createDeploymentMutation = createMutation(() => ({
-    mutationFn: () =>
-      api.createMulverseDeployment({
-        name: deploymentName.trim(),
-        environment: deploymentEnvironment.trim(),
-      }),
-    onSuccess: async () => {
-      deploymentName = "";
-      await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_deployment_created());
-    },
-    onError: showMutationError,
-  }));
+const disconnectMutation = createMutation(() => ({
+  mutationFn: () => api.disconnectMulverse(),
+  onSuccess: async () => {
+    selectedDeploymentId = null;
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseConnection", data.orgId],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseDeployments", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_disconnected());
+  },
+  onError: showMutationError,
+}));
 
-  const updateDeploymentMutation = createMutation(() => ({
-    mutationFn: (deployment: MulverseDeploymentDto) =>
-      api.updateMulverseDeployment(deployment.id, {
-        name: editingDeploymentName.trim(),
-        environment: editingDeploymentEnvironment.trim(),
-      }),
-    onSuccess: async () => {
-      editingDeploymentId = null;
-      await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_deployment_updated());
-    },
-    onError: showMutationError,
-  }));
+const createDeploymentMutation = createMutation(() => ({
+  mutationFn: () =>
+    api.createMulverseDeployment({
+      name: deploymentName.trim(),
+      environment: deploymentEnvironment.trim(),
+    }),
+  onSuccess: async () => {
+    deploymentName = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseDeployments", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_deployment_created());
+  },
+  onError: showMutationError,
+}));
 
-  const createEndpointMutation = createMutation(() => ({
-    mutationFn: () =>
-      api.createMulverseEndpoint(selectedDeploymentId!, {
-        url: newEndpointUrl.trim(),
-        network_scope: endpointScope,
-      }),
-    onSuccess: async () => {
-      newEndpointUrl = "";
-      await queryClient.invalidateQueries({
-        queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
-      });
-      toast.success(m.settings_orbis_mobile_toast_endpoint_added());
-    },
-    onError: showMutationError,
-  }));
+const updateDeploymentMutation = createMutation(() => ({
+  mutationFn: (deployment: MulverseDeploymentDto) =>
+    api.updateMulverseDeployment(deployment.id, {
+      name: editingDeploymentName.trim(),
+      environment: editingDeploymentEnvironment.trim(),
+    }),
+  onSuccess: async () => {
+    editingDeploymentId = null;
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseDeployments", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_deployment_updated());
+  },
+  onError: showMutationError,
+}));
 
-  const updateEndpointMutation = createMutation(() => ({
-    mutationFn: ({ endpoint, status, url }: {
-      endpoint: MulverseEndpointDto;
-      status?: "active" | "disabled";
-      url?: string;
-    }) =>
-      api.updateMulverseEndpoint(endpoint.id, {
-        url,
-        status,
-      }),
-    onSuccess: async (_result, variables) => {
-      editingEndpointId = null;
-      endpointUrl = "";
-      await queryClient.invalidateQueries({
-        queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
-      });
-      if (variables.status === "active") {
-        toast.success(m.settings_orbis_mobile_toast_endpoint_activated());
-      } else if (variables.status === "disabled") {
-        toast.success(m.settings_orbis_mobile_toast_endpoint_disabled());
-      } else {
-        toast.success(m.settings_orbis_mobile_toast_endpoint_updated());
-      }
-    },
-    onError: showMutationError,
-  }));
+const createEndpointMutation = createMutation(() => ({
+  mutationFn: () =>
+    api.createMulverseEndpoint(selectedDeploymentId!, {
+      url: newEndpointUrl.trim(),
+      network_scope: endpointScope,
+    }),
+  onSuccess: async () => {
+    newEndpointUrl = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_endpoint_added());
+  },
+  onError: showMutationError,
+}));
 
-  function submitConnect(event: SubmitEvent) {
-    event.preventDefault();
-    connectMutation.mutate();
-  }
-
-  function submitDeployment(event: SubmitEvent) {
-    event.preventDefault();
-    createDeploymentMutation.mutate();
-  }
-
-  function submitEndpoint(event: SubmitEvent) {
-    event.preventDefault();
-    createEndpointMutation.mutate();
-  }
-
-  function saveDeployment(event: SubmitEvent, deployment: MulverseDeploymentDto) {
-    event.preventDefault();
-    updateDeploymentMutation.mutate(deployment);
-  }
-
-  function saveEndpoint(event: SubmitEvent, endpoint: MulverseEndpointDto) {
-    event.preventDefault();
-    const nextUrl = endpointUrl.trim();
-    if (nextUrl && nextUrl !== endpoint.url) {
-      updateEndpointMutation.mutate({ endpoint, url: nextUrl });
+const updateEndpointMutation = createMutation(() => ({
+  mutationFn: ({
+    endpoint,
+    status,
+    url,
+  }: {
+    endpoint: MulverseEndpointDto;
+    status?: "active" | "disabled";
+    url?: string;
+  }) =>
+    api.updateMulverseEndpoint(endpoint.id, {
+      url,
+      status,
+    }),
+  onSuccess: async (_result, variables) => {
+    editingEndpointId = null;
+    endpointUrl = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
+    });
+    if (variables.status === "active") {
+      toast.success(m.settings_orbis_mobile_toast_endpoint_activated());
+    } else if (variables.status === "disabled") {
+      toast.success(m.settings_orbis_mobile_toast_endpoint_disabled());
     } else {
-      editingEndpointId = null;
-      endpointUrl = "";
+      toast.success(m.settings_orbis_mobile_toast_endpoint_updated());
     }
+  },
+  onError: showMutationError,
+}));
+
+function submitConnect(event: SubmitEvent) {
+  event.preventDefault();
+  connectMutation.mutate();
+}
+
+function submitDeployment(event: SubmitEvent) {
+  event.preventDefault();
+  createDeploymentMutation.mutate();
+}
+
+function submitEndpoint(event: SubmitEvent) {
+  event.preventDefault();
+  createEndpointMutation.mutate();
+}
+
+function saveDeployment(event: SubmitEvent, deployment: MulverseDeploymentDto) {
+  event.preventDefault();
+  updateDeploymentMutation.mutate(deployment);
+}
+
+function saveEndpoint(event: SubmitEvent, endpoint: MulverseEndpointDto) {
+  event.preventDefault();
+  const nextUrl = endpointUrl.trim();
+  if (nextUrl && nextUrl !== endpoint.url) {
+    updateEndpointMutation.mutate({ endpoint, url: nextUrl });
+  } else {
+    editingEndpointId = null;
+    endpointUrl = "";
+  }
+}
+
+async function loadApiRelease() {
+  apiReleaseLoading = true;
+  apiReleaseError = "";
+  apiRelease = null;
+  try {
+    const releaseResponse = await fetch(
+      `https://api.github.com/repos/${apiReleaseRepository}/releases/latest`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (!releaseResponse.ok) {
+      throw new Error(
+        m.settings_orbis_mobile_api_release_fetch_failed({
+          status: releaseResponse.status,
+        }),
+      );
+    }
+
+    const release = (await releaseResponse.json()) as GitHubRelease;
+    if (!/^v\d+\.\d+\.\d+$/.test(release.tag_name)) {
+      throw new Error(m.settings_orbis_mobile_api_release_invalid());
+    }
+
+    const assetNames = new Set(release.assets.map((asset) => asset.name));
+    const manifestName = "orbis-api-manifest.json";
+    const signatureName = `${manifestName}.sig`;
+    if (!assetNames.has(manifestName) || !assetNames.has(signatureName)) {
+      throw new Error(m.settings_orbis_mobile_api_release_manifest_missing());
+    }
+
+    const releaseAssetUrl = (name: string) =>
+      `https://github.com/${apiReleaseRepository}/releases/download/${encodeURIComponent(release.tag_name)}/${encodeURIComponent(name)}`;
+    const [manifestResponse, signatureResponse] = await Promise.all([
+      fetch(releaseAssetUrl(manifestName)),
+      fetch(releaseAssetUrl(signatureName)),
+    ]);
+    if (!manifestResponse.ok || !signatureResponse.ok) {
+      throw new Error(
+        m.settings_orbis_mobile_api_release_manifest_fetch_failed(),
+      );
+    }
+
+    const [manifestText, signature] = await Promise.all([
+      manifestResponse.text(),
+      signatureResponse.text(),
+    ]);
+    const verifiedManifest = await invoke<ApiReleaseManifest>(
+      "api_distribution_verify_manifest",
+      { manifest: manifestText, signature },
+    );
+    if (verifiedManifest.tag !== release.tag_name) {
+      throw new Error(m.settings_orbis_mobile_api_release_tag_mismatch());
+    }
+
+    apiRelease = verifiedManifest;
+    if (
+      !verifiedManifest.artifacts.some(
+        (artifact) => artifact.platform === selectedApiPlatform,
+      )
+    ) {
+      const firstArtifact = verifiedManifest.artifacts[0];
+      if (!firstArtifact) {
+        throw new Error(m.settings_orbis_mobile_api_artifact_missing());
+      }
+      selectedApiPlatform = firstArtifact.platform;
+    }
+  } catch (error) {
+    apiReleaseError = error instanceof Error ? error.message : String(error);
+  } finally {
+    apiReleaseLoading = false;
+  }
+}
+
+async function openApiArtifact() {
+  if (!apiRelease || apiDownloadOpening) return;
+  const artifact = apiRelease.artifacts.find(
+    (candidate) => candidate.platform === selectedApiPlatform,
+  );
+  if (!artifact) {
+    apiReleaseError = m.settings_orbis_mobile_api_artifact_missing();
+    return;
   }
 
-  function statusMessage(status: string): string {
-    switch (status) {
-      case "active":
-        return m.settings_orbis_mobile_status_active();
-      case "disabled":
-        return m.settings_orbis_mobile_status_disabled();
-      case "revoked":
-        return m.settings_orbis_mobile_status_revoked();
-      case "pending":
-        return m.settings_orbis_mobile_status_pending();
-      case "suspended":
-        return m.settings_orbis_mobile_status_suspended();
-      default:
-        return status;
-    }
+  apiDownloadOpening = true;
+  apiReleaseError = "";
+  try {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(artifact.url);
+    toast.success(m.settings_orbis_mobile_api_browser_opened());
+  } catch (error) {
+    apiReleaseError = m.settings_orbis_mobile_api_browser_open_failed();
+  } finally {
+    apiDownloadOpening = false;
   }
+}
+
+function statusMessage(status: string): string {
+  switch (status) {
+    case "active":
+      return m.settings_orbis_mobile_status_active();
+    case "disabled":
+      return m.settings_orbis_mobile_status_disabled();
+    case "revoked":
+      return m.settings_orbis_mobile_status_revoked();
+    case "pending":
+      return m.settings_orbis_mobile_status_pending();
+    case "suspended":
+      return m.settings_orbis_mobile_status_suspended();
+    default:
+      return status;
+  }
+}
 </script>
 
 <svelte:head>
@@ -252,7 +424,7 @@
       {:else if orbisAiEnabled || orbisMobileEnabled || mulverseCloudEnabled}
         <div class="grid gap-4 md:grid-cols-3">
           {#if orbisAiEnabled}
-            <a href={resolve(localizeHref(`/${data.orgId}/ai-center/integrations`))} class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <a href={resolve("/(app)/[orgId]/ai-center/integrations", { orgId: data.orgId })} class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Card class="h-full gap-3 border-border/50 bg-card/60 p-5 shadow-xs transition-colors hover:border-primary/40">
                 <div class="flex items-center gap-3">
                   <Sparkles size={18} class="shrink-0 text-primary" />
@@ -274,7 +446,7 @@
             </a>
           {/if}
           {#if mulverseCloudEnabled}
-            <a href={resolve(localizeHref(`/${data.orgId}/ai-center/integrations`))} class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <a href={resolve("/(app)/[orgId]/ai-center/integrations", { orgId: data.orgId })} class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Card class="h-full gap-3 border-border/50 bg-card/60 p-5 shadow-xs transition-colors hover:border-primary/40">
                 <div class="flex items-center gap-3">
                   <Cloud size={18} class="shrink-0 text-primary" />
@@ -448,7 +620,7 @@
               <div class="flex min-w-0 items-center gap-3">
                 <div class="min-w-0">
                   <p class="mt-1 truncate font-mono text-xs text-muted-foreground" dir="ltr">
-                    {connection.data.organization_id}
+                    {connection.data.customer_id}
                   </p>
                 </div>
               </div>
@@ -626,6 +798,59 @@
                     </article>
                   {/each}
                 </div>
+              {/if}
+            </Card>
+          {/if}
+          {#if isDesktopApp}
+            <Card class="gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+              <div>
+                <h2 class="text-base font-semibold text-foreground">
+                  {m.settings_orbis_mobile_api_download_title()}
+                </h2>
+                <p class="mt-2 text-sm leading-6 text-muted-foreground">
+                  {m.settings_orbis_mobile_api_download_description()}
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  disabled={apiReleaseLoading || apiDownloadOpening}
+                  onclick={loadApiRelease}
+                >
+                  {apiReleaseLoading
+                    ? m.common_loading()
+                    : m.settings_orbis_mobile_api_check_releases()}
+                </Button>
+                {#if apiRelease}
+                  <Select type="single" bind:value={selectedApiPlatform}>
+                    <SelectTrigger class="min-w-52 flex-1 border-border bg-background text-sm">
+                      {apiArtifactLabels[selectedApiPlatform]()}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {#each apiRelease.artifacts as artifact (artifact.platform)}
+                        <SelectItem value={artifact.platform}>
+                          {apiArtifactLabels[artifact.platform]()}
+                        </SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    disabled={apiDownloadOpening}
+                    onclick={openApiArtifact}
+                  >
+                    {apiDownloadOpening
+                      ? m.settings_orbis_mobile_api_opening_browser()
+                      : m.settings_orbis_mobile_api_download()}
+                  </Button>
+                {/if}
+              </div>
+              {#if apiReleaseError}
+                <p class="text-sm text-destructive" role="alert">{apiReleaseError}</p>
+              {/if}
+              {#if apiRelease}
+                <p class="text-xs text-muted-foreground" dir="ltr">
+                  {m.settings_orbis_mobile_api_release_version({ version: apiRelease.version })}
+                </p>
               {/if}
             </Card>
           {/if}

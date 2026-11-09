@@ -85,6 +85,7 @@ pub struct GradeDto {
     pub is_final: bool,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub is_absent: bool,
     pub change_reason: Option<String>,
     pub recorded_by: Option<String>,
     pub updated_by: Option<String>,
@@ -122,6 +123,8 @@ pub struct RecordGradeItemInput {
     pub is_excused: bool,
     #[serde(default)]
     pub is_exempt: bool,
+    #[serde(default)]
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -305,6 +308,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         is_final: g.is_final,
         is_excused: g.is_excused,
         is_exempt: g.is_exempt,
+        is_absent: g.is_absent,
         change_reason: g.change_reason,
         recorded_by: g.recorded_by.map(|u| u.to_string()),
         updated_by: g.updated_by.map(|u| u.to_string()),
@@ -524,6 +528,7 @@ pub async fn assessment_batch_record_grades(
             max_score: item.max_score,
             is_excused: item.is_excused,
             is_exempt: item.is_exempt,
+            is_absent: item.is_absent,
             notes: item.notes,
         });
     }

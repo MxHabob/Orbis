@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "releases": [
+    {
+      "version": "1.1.0",
+      "releaseDate": "2026-11-06",
+      "title": "A better Orbis experience",
+      "subtitle": "Discover what's new in this release.",
+      "sections": [
+        {
+          "type": "feature",
+          "title": "New Features",
+          "items": [
+            {
+              "title": "Release Notes Center",
+              "description": "A dedicated release notes experience now renders structured updates with a cleaner, more consistent desktop presentation."
+            },
+            {
+              "title": "Improved Update Lifecycle",
+              "description": "The app now keeps a clear distinction between the updater engine and the presentation layer for release notes."
+            }
+          ]
+        },
+        {
+          "type": "improvement",
+          "title": "Improvements",
+          "items": [
+            {
+              "title": "Version Safety",
+              "description": "Release notes are filtered by the installed app version and only show relevant unseen entries."
+            },
+            {
+              "title": "State Handling",
+              "description": "Release acknowledgements are stored centrally and validated safely on startup."
+            }
+          ]
+        },
+        {
+          "type": "fix",
+          "title": "Bug Fixes",
+          "items": [
+            {
+              "title": "Changelog Cleanup",
+              "description": "Removed the brittle GitHub-only changelog flow in favor of a structured local release catalog."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

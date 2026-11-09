@@ -35,21 +35,26 @@ let {
   onCancel: () => void;
 } = $props();
 
-const form = untrack(() => new FormController({
-  initialValues: {
-    name: template?.name ?? "",
-    code: template?.code ?? "",
-    item_type: template?.item_type ?? "manual",
-    calculation_method: template?.calculation_method ?? "percentage",
-    value: Number(template?.value ?? 0),
-    priority: template?.priority ?? null as number | null,
-    requires_approval: template ? Number(template.requires_approval ?? 0) : 0,
-    is_auto_apply: template ? Number(template.is_auto_apply ?? 0) : 0,
-    is_stackable: template ? Number(template.is_stackable ?? 0) : 0,
-    is_active: template ? Number(template.is_active ?? 1) : 1,
-  },
-  schema: discountTemplateInputSchema,
-}));
+const form = untrack(
+  () =>
+    new FormController({
+      initialValues: {
+        name: template?.name ?? "",
+        code: template?.code ?? "",
+        item_type: template?.item_type ?? "manual",
+        calculation_method: template?.calculation_method ?? "percentage",
+        value: Number(template?.value ?? 0),
+        priority: template?.priority ?? (null as number | null),
+        requires_approval: template
+          ? Number(template.requires_approval ?? 0)
+          : 0,
+        is_auto_apply: template ? Number(template.is_auto_apply ?? 0) : 0,
+        is_stackable: template ? Number(template.is_stackable ?? 0) : 0,
+        is_active: template ? Number(template.is_active ?? 1) : 1,
+      },
+      schema: discountTemplateInputSchema,
+    }),
+);
 
 const isSubmitting = $derived(form.isSubmitting);
 
@@ -66,11 +71,13 @@ const calculationMethods = [
 ];
 
 const selectedItemTypeLabel = $derived(
-  itemTypes.find((t) => t.value === form.values.item_type)?.label ?? form.values.item_type
+  itemTypes.find((t) => t.value === form.values.item_type)?.label ??
+    form.values.item_type,
 );
 
 const selectedCalculationMethodLabel = $derived(
-  calculationMethods.find((cm) => cm.value === form.values.calculation_method)?.label ?? form.values.calculation_method
+  calculationMethods.find((cm) => cm.value === form.values.calculation_method)
+    ?.label ?? form.values.calculation_method,
 );
 
 async function handleSubmit(e: SubmitEvent) {

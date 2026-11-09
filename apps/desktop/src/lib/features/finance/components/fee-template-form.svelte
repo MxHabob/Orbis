@@ -41,18 +41,27 @@ let {
   onCancel: () => void;
 } = $props();
 
-function parseInitialApplicableLevels(raw: any): { levels: string[]; applyToAll: boolean } {
+function parseInitialApplicableLevels(raw: any): {
+  levels: string[];
+  applyToAll: boolean;
+} {
   if (!raw) return { levels: [], applyToAll: true };
   try {
     let levels: string[] = [];
     if (typeof raw === "string") {
       const parsed = JSON.parse(raw);
-      levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
+      levels = Array.isArray(parsed)
+        ? parsed
+        : parsed.levels || (parsed.level ? [parsed.level] : []);
     } else if (Array.isArray(raw)) {
       levels = raw;
     } else if (typeof raw === "object") {
       const obj = raw as any;
-      levels = Array.isArray(obj.levels) ? obj.levels : (obj.level ? [obj.level] : []);
+      levels = Array.isArray(obj.levels)
+        ? obj.levels
+        : obj.level
+          ? [obj.level]
+          : [];
     }
     if (levels.length > 0) {
       return { levels, applyToAll: false };
@@ -64,26 +73,37 @@ function parseInitialApplicableLevels(raw: any): { levels: string[]; applyToAll:
 }
 
 const initialTemplate = untrack(() => template);
-const initialLevelsData = parseInitialApplicableLevels(initialTemplate?.applicable_levels);
+const initialLevelsData = parseInitialApplicableLevels(
+  initialTemplate?.applicable_levels,
+);
 let applyToAllGrades = $state(initialLevelsData.applyToAll);
 let selectedLevels = $state<string[]>(initialLevelsData.levels);
 
 // Form state initialized directly from template or defaults
-const form = untrack(() => new FormController({
-  initialValues: {
-    name: initialTemplate?.name || "",
-    name_ar: initialTemplate?.name_ar || null,
-    code: initialTemplate?.code || null,
-    category: initialTemplate?.category || "tuition",
-    default_amount: initialTemplate?.default_amount || 0,
-    revenue_account_id: initialTemplate?.revenue_account_id || null,
-    receivable_account_id: initialTemplate?.receivable_account_id || null,
-    applicable_levels: initialTemplate?.applicable_levels || null,
-    frequency: initialTemplate?.frequency === "annual" ? "yearly" : (initialTemplate?.frequency || "yearly"),
-    is_mandatory: initialTemplate ? (initialTemplate.is_mandatory === 1 || initialTemplate.is_mandatory === true) : true,
-  },
-  schema: feeTemplateInputSchema,
-}));
+const form = untrack(
+  () =>
+    new FormController({
+      initialValues: {
+        name: initialTemplate?.name || "",
+        name_ar: initialTemplate?.name_ar || null,
+        code: initialTemplate?.code || null,
+        category: initialTemplate?.category || "tuition",
+        default_amount: initialTemplate?.default_amount || 0,
+        revenue_account_id: initialTemplate?.revenue_account_id || null,
+        receivable_account_id: initialTemplate?.receivable_account_id || null,
+        applicable_levels: initialTemplate?.applicable_levels || null,
+        frequency:
+          initialTemplate?.frequency === "annual"
+            ? "yearly"
+            : initialTemplate?.frequency || "yearly",
+        is_mandatory: initialTemplate
+          ? initialTemplate.is_mandatory === 1 ||
+            initialTemplate.is_mandatory === true
+          : true,
+      },
+      schema: feeTemplateInputSchema,
+    }),
+);
 
 const queryClient = useQueryClient();
 

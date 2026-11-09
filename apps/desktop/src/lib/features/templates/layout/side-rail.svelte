@@ -12,7 +12,16 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import * as m from "$lib/paraglide/messages";
-import { Bold, Component, DocumentPage, Grid, H1, Photo, SettingsAlt, Wrench } from "@orbis/icons";
+import {
+  Bold,
+  Component,
+  DocumentPage,
+  Grid,
+  H1,
+  Photo,
+  SettingsAlt,
+  Wrench,
+} from "@orbis/icons";
 
 let {
   store,

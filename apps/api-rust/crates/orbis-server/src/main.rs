@@ -1,4 +1,5 @@
 use axum::serve;
+use mdns_sd::{ServiceDaemon, ServiceInfo};
 use orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker;
 use orbis_infra::event_bus::MemoryEventBus;
 use orbis_infra::repositories::{
@@ -9,13 +10,93 @@ use orbis_infra::security::{bcrypt::BcryptHasher, jwt::JwtTokenService};
 use orbis_server::app_router;
 use orbis_server::state::AppState;
 use sea_orm::Database;
+use std::net::IpAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tracing_subscriber::EnvFilter;
+
+fn start_lan_discovery(
+    bind_host: &str,
+    port: u16,
+    organization: Option<&orbis_domain::entities::organization::Organization>,
+) -> Option<ServiceDaemon> {
+    if bind_host.eq_ignore_ascii_case("localhost")
+        || bind_host
+            .parse::<IpAddr>()
+            .map(|address| address.is_loopback())
+            .unwrap_or(false)
+    {
+        return None;
+    }
+
+    let machine_name = std::env::var("HOSTNAME")
+        .or_else(|_| std::env::var("COMPUTERNAME"))
+        .unwrap_or_else(|_| "server".to_string());
+    let machine_label: String = machine_name
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || *character == '-')
+        .take(40)
+        .collect();
+    let machine_label = if machine_label.is_empty() {
+        "server"
+    } else {
+        &machine_label
+    };
+    let service_name = format!("Orbis-{machine_label}");
+    let host_name = format!("orbis-{machine_label}.local.");
+
+    let mut properties = vec![("app", "orbis".to_string())];
+    if let Some(organization) = organization {
+        properties.push(("organization_id", organization.id.to_string()));
+        properties.push(("name", organization.name.clone()));
+        if let Some(name_ar) = &organization.name_ar {
+            properties.push(("name_ar", name_ar.clone()));
+        }
+    }
+
+    let service = match ServiceInfo::new(
+        "_orbis-api._tcp.local.",
+        &service_name,
+        &host_name,
+        "",
+        port,
+        &properties[..],
+    ) {
+        Ok(service) => service.enable_addr_auto(),
+        Err(error) => {
+            tracing::warn!(%error, "Could not prepare Orbis LAN discovery.");
+            return None;
+        }
+    };
+
+    let daemon = match ServiceDaemon::new() {
+        Ok(daemon) => daemon,
+        Err(error) => {
+            tracing::warn!(%error, "Could not start Orbis LAN discovery.");
+            return None;
+        }
+    };
+    if let Err(error) = daemon.register(service) {
+        tracing::warn!(%error, "Could not advertise the Orbis API on the local network.");
+        let _ = daemon.shutdown();
+        return None;
+    }
+
+    tracing::info!(
+        service = %service_name,
+        port,
+        "Advertising Orbis API for local network discovery."
+    );
+    Some(daemon)
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing
-    tracing_subscriber::fmt::init();
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(true)
+        .init();
 
     // The API server owns its database configuration. Never discover a Desktop
     // user's local database or log credentials embedded in a database URL.
@@ -99,8 +180,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let folder_repo = Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl::new(
         db.clone(),
     ));
-    let integration_repo = Arc::new(
-        orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() },
+    let notification_repo = Arc::new(
+        orbis_infra::repositories::notification_repos::NotificationRepoImpl { db: db.clone() },
+    );
+    let notification_pref_repo = Arc::new(
+        orbis_infra::repositories::notification_repos::NotificationPreferenceRepoImpl {
+            db: db.clone(),
+        },
     );
     let workflow_repo =
         Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
@@ -120,9 +206,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dashboard_repo =
         Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
 
-    let event_bus = Arc::new(MemoryEventBus {
-        workflow_engine: None,
-    });
+    let event_bus = Arc::new(MemoryEventBus::new());
     let jwt_secret = std::env::var("JWT_SECRET")
         .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
     let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
@@ -138,6 +222,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => return Err("MFA_ENCRYPTION_KEY is required in production".into()),
     };
+    let integration_repo = Arc::new(
+        orbis_infra::repositories::integration_repos::IntegrationRepoImpl::new(
+            db.clone(),
+            &mfa_encryption_key,
+        ),
+    );
     let token_service = Arc::new(JwtTokenService::new(jwt_secret));
     let password_hasher = Arc::new(BcryptHasher);
 
@@ -221,6 +311,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             student_repo.clone(),
             person_repo.clone(),
             student_repo.clone(),
+            org_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
             student_repo.clone(),
             settings_repo.clone(),
             sequence_repo.clone(),
@@ -287,7 +380,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(calendar_repo.clone()),
             Some(student_repo.clone()),
             Some(settings_repo.clone()),
-        ),
+        )
+        .with_attendance_scope_repos(employee_repo.clone(), scheduling_repo.clone()),
     );
 
     let auth_service = Arc::new(
@@ -383,6 +477,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         permission_checker.clone(),
     ));
 
+    let (notif_tx, _notif_rx) = tokio::sync::broadcast::channel(256);
+    let notification_service = Arc::new(
+        orbis_app::services::NotificationService::new(
+            notification_repo.clone(),
+            notification_pref_repo.clone(),
+            permission_checker.clone(),
+        )
+        .with_broadcaster(notif_tx),
+    );
+    event_bus.set_notification_service(notification_service.clone());
+
     let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
         override_repo.clone(),
         workflow_repo.clone(),
@@ -409,6 +514,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_service.clone(),
         workflow_service.clone(),
     ));
+    event_bus.set_workflow_engine(autopilot_engine.clone());
 
     let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
         policy_repo.clone(),
@@ -601,6 +707,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         storage_resolver,
         integration_service,
         notification_adapter,
+        notification_service: notification_service.clone(),
         workflow_service,
         report_service: report_service.clone(),
         ai_service,
@@ -653,17 +760,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Build Axum Router
-    let app = app_router(state);
+    // Spawn Notification cleanup background task (every 6 hours)
+    let notification_cleanup = notification_service.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(6 * 60 * 60));
+        loop {
+            interval.tick().await;
+            match notification_cleanup.cleanup_expired().await {
+                Ok(removed) if removed > 0 => {
+                    tracing::info!(removed, "Expired notifications cleaned up");
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    tracing::error!(error = %error, "Expired notification cleanup failed");
+                }
+            }
+        }
+    });
+    let organization = match state.org_repo.find_first().await {
+        Ok(organization) => organization,
+        Err(error) => {
+            tracing::warn!(%error, "Could not load institution details for LAN discovery.");
+            None
+        }
+    };
 
     // Start Server
     let bind_host = std::env::var("BIND_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let port_number = port.parse::<u16>()?;
     let addr = format!("{}:{}", bind_host, port);
     let listener = TcpListener::bind(&addr).await?;
     println!("Server running on http://{}", addr);
 
-    serve(listener, app).await?;
+    // Build Axum Router
+    let app = app_router(state);
+    let mdns_daemon = start_lan_discovery(&bind_host, port_number, organization.as_ref());
+
+    let serve_result = serve(listener, app).await;
+    if let Some(daemon) = mdns_daemon {
+        if let Err(error) = daemon.shutdown() {
+            tracing::warn!(%error, "Could not stop the Orbis LAN discovery service cleanly.");
+        }
+    }
+    serve_result?;
 
     Ok(())
 }

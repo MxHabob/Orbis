@@ -33,11 +33,11 @@ function parsePublicUrl(value: string, baseUrl?: string): URL {
 
 function getCatalogUrl(): string {
   const url = import.meta.env.VITE_ORBIS_TEMPLATE_CATALOG_URL?.trim();
-  if (!url) {
-    throw new Error("The ready-template catalog URL is not configured.");
-  }
+  const fallbackUrl = "/ready-templates/catalog.json";
 
-  return parsePublicUrl(url).href;
+  if (url) return parsePublicUrl(url, window.location.origin).href;
+
+  return new URL(fallbackUrl, window.location.href).href;
 }
 
 export function isNetworkUnavailable(error: unknown): boolean {

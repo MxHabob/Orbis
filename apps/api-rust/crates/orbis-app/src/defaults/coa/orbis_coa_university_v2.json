@@ -12,16 +12,8 @@
     "levels": 4,
     "account_count": 483,
     "leaf_account_count": 371,
-    "sector_models": [
-      "PRIVATE",
-      "PUBLIC",
-      "NONPROFIT"
-    ],
-    "accounting_basis_options": [
-      "IFRS",
-      "IPSAS",
-      "AICPA_NFP"
-    ],
+    "sector_models": ["PRIVATE", "PUBLIC", "NONPROFIT"],
+    "accounting_basis_options": ["IFRS", "IPSAS", "AICPA_NFP"],
     "design_notes": [
       "This blueprint is a starting institutional COA, not a replacement for the organization's statutory accounting policy.",
       "Grades, classes, faculties, departments, campuses, branches and programs should be modeled as dimensions/cost centers/org units where supported, not by duplicating the account tree.",

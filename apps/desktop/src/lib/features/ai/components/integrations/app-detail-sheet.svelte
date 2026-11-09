@@ -1,181 +1,211 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-  import type { OrbisApp } from "@orbis/app-store";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { l } from "$lib/core/i18n";
-  import { renderReleaseMarkdown } from "$lib/utils/release-markdown";
-  import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@orbis/ui/accordion";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-  import { toast } from "@orbis/ui/sonner";
-  import AppConnectSheet from "./app-connect-sheet.svelte";
-  import AppIcon from "./app-icon.svelte";
-  import { getCategoryName, getCategoryNameAr } from "@orbis/app-store";
+import { goto } from "$app/navigation";
+import * as m from "$lib/paraglide/messages";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import type { OrbisApp } from "@orbis/app-store";
+import { api, extractErrorMessage } from "$lib/api";
+import { l } from "$lib/core/i18n";
+import { renderReleaseMarkdown } from "$lib/utils/release-markdown";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui/accordion";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import { toast } from "@orbis/ui/sonner";
+import AppConnectSheet from "./app-connect-sheet.svelte";
+import AppIcon from "./app-icon.svelte";
+import { getCategoryName, getCategoryNameAr } from "@orbis/app-store";
 
-  let {
-    open = $bindable(false),
-    orgId,
-    app,
-    onclose,
-    onChange,
-  }: {
-    open: boolean;
-    orgId: string;
-    app: OrbisApp;
-    onclose?: () => void;
-    onChange?: () => void;
-  } = $props();
+let {
+  open = $bindable(false),
+  orgId,
+  app,
+  onclose,
+  onChange,
+}: {
+  open: boolean;
+  orgId: string;
+  app: OrbisApp;
+  onclose?: () => void;
+  onChange?: () => void;
+} = $props();
 
-  const queryClient = useQueryClient();
-  const providerName = $derived(
-    app.category === "storage" ? app.id : (app.adapter_name ?? app.id),
-  );
-  const legacyProviderName = $derived(
-    app.legacy_provider_name ??
-      (app.category !== "storage" &&
-      app.adapter_name &&
-      app.adapter_name !== providerName
-        ? app.adapter_name
-        : null),
-  );
-  let isConnecting = $state(false);
-  let isDisconnecting = $state(false);
-  let connectSheetOpen = $state(false);
-  let connectError = $state<string | null>(null);
+const queryClient = useQueryClient();
+const providerName = $derived(
+  app.category === "storage" ? app.id : (app.adapter_name ?? app.id),
+);
+const legacyProviderName = $derived(
+  app.legacy_provider_name ??
+    (app.category !== "storage" &&
+    app.adapter_name &&
+    app.adapter_name !== providerName
+      ? app.adapter_name
+      : null),
+);
+let isConnecting = $state(false);
+let isDisconnecting = $state(false);
+let connectSheetOpen = $state(false);
+let connectError = $state<string | null>(null);
+let openAccordionItems = $state(["description", "features"]);
 
-  const statusQuery = createQuery(() => ({
-    queryKey: ["integration-status", orgId, providerName],
-    queryFn: async () => {
-      const status = await api.getIntegrationStatus(providerName);
-      if (!status?.connected && legacyProviderName) {
-        return api.getIntegrationStatus(legacyProviderName);
-      }
-      return status;
-    },
-    enabled: !!providerName,
-    staleTime: 30 * 1000,
-  }));
+function handleOpenChange(value: boolean) {
+  open = value;
+  if (value) {
+    openAccordionItems = ["description", "features"];
+  } else {
+    onclose?.();
+  }
+}
 
-  const isConnected = $derived(statusQuery.data?.connected ?? false);
-  const connectedProviderName = $derived(
-    statusQuery.data?.config?.provider_name ?? providerName,
-  );
-  const activeFeatures = $derived(
-    typeof document !== "undefined" &&
-      document.documentElement.dir === "rtl" &&
-      app.features_ar
-      ? app.features_ar
-      : app.features,
-  );
+const statusQuery = createQuery(() => ({
+  queryKey: ["integration-status", orgId, providerName],
+  queryFn: async () => {
+    const status = await api.getIntegrationStatus(providerName);
+    if (!status?.connected && legacyProviderName) {
+      return api.getIntegrationStatus(legacyProviderName);
+    }
+    return status;
+  },
+  enabled: !!providerName,
+  staleTime: 30 * 1000,
+}));
 
-  async function handleConnect(values: Record<string, unknown>) {
-    isConnecting = true;
-    connectError = null;
-    try {
-      const secrets: Record<string, string> = {};
-      const settings: Record<string, unknown> = {};
+const isConnected = $derived(statusQuery.data?.connected ?? false);
+const connectedProviderName = $derived(
+  statusQuery.data?.config?.provider_name ?? providerName,
+);
+const activeFeatures = $derived(
+  typeof document !== "undefined" &&
+    document.documentElement.dir === "rtl" &&
+    app.features_ar
+    ? app.features_ar
+    : app.features,
+);
+const appName = $derived(l(app.name_ar, app.name) ?? app.name);
 
-      for (const setting of app.settings) {
-        const value = values[setting.id];
-        if (value === undefined || value === null || value === "") continue;
-        if (
-          setting.type === "password" ||
-          setting.id.includes("secret") ||
-          setting.id.includes("key") ||
-          setting.id.includes("token")
-        ) {
-          secrets[setting.id] = String(value);
-        } else {
-          settings[setting.id] = value;
-        }
-      }
+async function handleConnect(values: Record<string, unknown>) {
+  isConnecting = true;
+  connectError = null;
+  try {
+    const secrets: Record<string, string> = {};
+    const settings: Record<string, unknown> = {};
 
-      for (const [key, value] of Object.entries(values)) {
-        if (key in secrets || key in settings) continue;
-        if (
-          key.includes("secret") ||
-          key.includes("key") ||
-          key.includes("token") ||
-          key.includes("password")
-        ) {
-          secrets[key] = String(value);
-        } else {
-          settings[key] = value;
-        }
-      }
+    for (const setting of app.settings) {
+      const value = values[setting.id];
+      if (setting.id === "use_authentication") continue;
+      if (value === undefined || value === null || value === "") continue;
       if (
-        app.provider_trait === "NotificationProvider" &&
-        app.notification_channels?.length
+        setting.type === "password" ||
+        setting.id.includes("secret") ||
+        setting.id.includes("key") ||
+        setting.id.includes("token")
       ) {
-        settings.__notification_channels = app.notification_channels;
+        secrets[setting.id] = String(value);
+      } else {
+        settings[setting.id] = value;
       }
- 
-      await api.connectApp({
-        provider_name: providerName,
-        category: app.category || "ai-provider",
-        env: "production",
-        secrets,
-        settings,
-      });
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["integration-status", orgId, providerName],
-        }),
-        ...(legacyProviderName
-          ? [
-              queryClient.invalidateQueries({
-                queryKey: ["integration-status", orgId, legacyProviderName],
-              }),
-            ]
-          : []),
-        queryClient.invalidateQueries({ queryKey: ["integration"] }),
-      ]);
-      toast.success(m.ui_integration_connected({ name: app.name }));
-      connectSheetOpen = false;
-      onChange?.();
-    } catch (error) {
-      connectError = extractErrorMessage(error);
-      toast.error(connectError);
-    } finally {
-      isConnecting = false;
     }
-  }
 
-  async function handleDisconnect() {
-    if (isDisconnecting) return;
-    isDisconnecting = true;
-    try {
-      await api.disconnectApp(connectedProviderName);
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["integration-status", orgId, providerName],
-        }),
-        ...(legacyProviderName
-          ? [
-              queryClient.invalidateQueries({
-                queryKey: ["integration-status", orgId, legacyProviderName],
-              }),
-            ]
-          : []),
-        queryClient.invalidateQueries({ queryKey: ["integration"] }),
-      ]);
-      toast.success(m.ui_integration_disconnected({ name: app.name }));
-      onChange?.();
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isDisconnecting = false;
+    for (const [key, value] of Object.entries(values)) {
+      if (key in secrets || key in settings) continue;
+      if (
+        key.includes("secret") ||
+        key.includes("key") ||
+        key.includes("token") ||
+        key.includes("password")
+      ) {
+        secrets[key] = String(value);
+      } else {
+        settings[key] = value;
+      }
     }
+    if (
+      app.provider_trait === "NotificationProvider" &&
+      app.notification_channels?.length
+    ) {
+      settings.__notification_channels = app.notification_channels;
+    }
+
+    await api.connectApp({
+      provider_name: providerName,
+      category: app.category || "ai-provider",
+      env: "production",
+      secrets,
+      settings,
+    });
+
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["integration-status", orgId, providerName],
+      }),
+      ...(legacyProviderName
+        ? [
+            queryClient.invalidateQueries({
+              queryKey: ["integration-status", orgId, legacyProviderName],
+            }),
+          ]
+        : []),
+      queryClient.invalidateQueries({ queryKey: ["integration"] }),
+    ]);
+    toast.success(m.ui_integration_connected({ name: app.name }));
+    connectSheetOpen = false;
+    onChange?.();
+    if (app.id === "orbis_mobile") {
+      await goto(localizeHref(`/${orgId}/settings/mulverse`));
+    }
+  } catch (error) {
+    connectError = extractErrorMessage(error);
+    toast.error(connectError);
+  } finally {
+    isConnecting = false;
   }
+}
+
+async function handleDisconnect() {
+  if (isDisconnecting) return;
+  isDisconnecting = true;
+  try {
+    await api.disconnectApp(connectedProviderName);
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["integration-status", orgId, providerName],
+      }),
+      ...(legacyProviderName
+        ? [
+            queryClient.invalidateQueries({
+              queryKey: ["integration-status", orgId, legacyProviderName],
+            }),
+          ]
+        : []),
+      queryClient.invalidateQueries({ queryKey: ["integration"] }),
+    ]);
+    toast.success(m.ui_integration_disconnected({ name: app.name }));
+    onChange?.();
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isDisconnecting = false;
+  }
+}
+
+function settingsRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return {};
+  }
+  const settings: Record<string, unknown> = {};
+  for (const [key, setting] of Object.entries(value)) {
+    settings[key] = setting;
+  }
+  return settings;
+}
 </script>
 
-<Sheet bind:open onOpenChange={(value) => {
-  open = value;
-  if (!value) onclose?.();
-}}>
+<Sheet bind:open onOpenChange={handleOpenChange}>
   <SheetContent
     side="end"
     contentClass="data-[side=end]:w-[min(32rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100vw-1rem))]"
@@ -199,7 +229,7 @@
         <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
             <SheetTitle class="truncate text-lg leading-normal">
-              {l(app.name_ar, app.name)}
+              {appName}
             </SheetTitle>
             <p class="mt-2 text-xs text-muted-foreground">
               {l(getCategoryNameAr(app.category), getCategoryName(app.category))}
@@ -230,6 +260,18 @@
         </div>
         <div class="flex gap-2 pt-3">
           {#if isConnected}
+            {#if app.category === "surveillance"}
+              <Button
+                variant="outline"
+                size="sm"
+                onclick={() => {
+                  connectError = null;
+                  connectSheetOpen = true;
+                }}
+              >
+                {m.ui_copy_configuration_9ecff7d2()}
+              </Button>
+            {/if}
             <Button variant="outline" size="sm" disabled={isDisconnecting} onclick={handleDisconnect}>
               {m.ui_copy_disconnect_c584faa5()}
             </Button>
@@ -243,7 +285,7 @@
               }}
             >
               {app.active
-                ? m.ui_integration_connect({ name: l(app.name_ar, app.name) })
+                ? m.ui_integration_connect({ name: appName })
                 : m.ai_center_integrations_status_coming_soon()}
             </Button>
           {/if}
@@ -263,8 +305,12 @@
         </div>
       {/if}
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-        <Accordion type="multiple" defaultValue={["description", "features"]} class="mt-3">
+      <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide px-6 pb-6">
+        <Accordion
+          type="multiple"
+          bind:value={openAccordionItems}
+          class="mt-3"
+        >
           {#if app.description || app.short_description}
             <AccordionItem value="description" class="border-b-0">
               <AccordionTrigger>{m.ai_ui_integration_how_it_works()}</AccordionTrigger>
@@ -306,6 +352,7 @@
   <AppConnectSheet
     bind:open={connectSheetOpen}
     {app}
+    initialValues={settingsRecord(statusQuery.data?.config?.settings)}
     submitting={isConnecting}
     error={connectError}
     onsubmit={handleConnect}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.orbis.api</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Library/Orbis/bin/orbis-server</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Library/Orbis</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ORBIS_SERVER_CONFIG_FILE</key>
+    <string>/Library/Application Support/Orbis/server.json</string>
+    <key>ORBIS_LICENSE_DATA_DIR</key>
+    <string>/Library/Application Support/Orbis/license</string>
+    <key>PORT</key>
+    <string>3000</string>
+  </dict>
+  <key>UserName</key>
+  <string>nobody</string>
+  <key>GroupName</key>
+  <string>nobody</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>/Library/Logs/Orbis/api.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Library/Logs/Orbis/api-error.log</string>
+</dict>
+</plist>

@@ -20,9 +20,16 @@ export async function exportCorrectedDataset(
   options: ExportDatasetOptions,
 ): Promise<RevealDownloadedLocation | null> {
   const XLSX = await import("xlsx");
-  const { profile, rows, filenamePrefix = "Orbis_Corrected_Data", format = "xlsx" } = options;
+  const {
+    profile,
+    rows,
+    filenamePrefix = "Orbis_Corrected_Data",
+    format = "xlsx",
+  } = options;
 
-  const headers = profile.columnMetadata.map((col) => getBulkEntryColumnHeader(profile.id, col.id, col.headerAr));
+  const headers = profile.columnMetadata.map((col) =>
+    getBulkEntryColumnHeader(profile.id, col.id, col.headerAr),
+  );
   headers.push(m.bulk_entry_export_validation_status());
 
   const aoaData: unknown[][] = [headers];
@@ -59,7 +66,15 @@ export async function exportCorrectedDataset(
   try {
     const savePath = await save({
       defaultPath: defaultFilename,
-      filters: [{ name: format === "xlsx" ? m.bulk_entry_file_filter_excel() : m.bulk_entry_file_filter_csv(), extensions: [format] }],
+      filters: [
+        {
+          name:
+            format === "xlsx"
+              ? m.bulk_entry_file_filter_excel()
+              : m.bulk_entry_file_filter_csv(),
+          extensions: [format],
+        },
+      ],
     });
 
     if (savePath) {

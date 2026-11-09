@@ -1,9 +1,6 @@
 import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
 import type { BulkImportProfile, BulkProfileId } from "./types";
-
-const localizedHeader = (ar: string, en: string) => () => (getLocale() === "ar" ? ar : en);
 
 const profileNames: Record<BulkProfileId, () => string> = {
   students: m.bulk_entry_profile_students,
@@ -60,10 +57,11 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     weekly_hours: m.bulk_entry_localized_weekly_hours,
   },
   grades: {
-    student_number: m.bulk_entry_grade_header_student_number,
+    student_id: m.bulk_entry_grade_header_student_id,
     student_name: m.bulk_entry_grade_header_student_name,
-    subject_name: m.bulk_entry_grade_header_subject_name,
-    assessment_type: m.bulk_entry_grade_header_assessment_type,
+    period_id: m.bulk_entry_grade_header_period_id,
+    section_subject_id: m.bulk_entry_grade_header_section_subject_id,
+    component_id: m.bulk_entry_grade_header_component_id,
     score: m.bulk_entry_grade_header_score,
     max_score: m.bulk_entry_grade_header_max_score,
     is_excused: m.bulk_entry_grade_header_is_excused,
@@ -102,22 +100,36 @@ export function getBulkEntryGridColumns<T>(
 ): BulkImportProfile<T, any>["gridColumns"] {
   return profile.gridColumns
     .filter((column) => {
-      if (profile.id !== "students" || !column.id || !registrationFields) return true;
-      if (column.id === "full_name_ar" || column.id === "class_name") return true;
-      return registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
+      if (profile.id !== "students" || !column.id || !registrationFields)
+        return true;
+      if (column.id === "full_name_ar" || column.id === "class_name")
+        return true;
+      return (
+        registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !==
+        false
+      );
     })
     .map((column) => {
-    const policy = column.id ? registrationFields?.[normalizeRegistrationFieldKey(column.id)] : undefined;
-    const header =
-      (column.id
-        ? getBulkEntryColumnHeader(profile.id, column.id, column.header ?? "", policy?.required)
-        : undefined) ??
-      (column.id ? gridHeaders[column.id]?.() : undefined) ??
-      column.header;
-    const options = column.options?.map((option) => ({
-      ...option,
-      label: gridEnumLabels[`${column.id}:${String(option.value)}`]?.() ?? option.label,
-    }));
-    return { ...column, header, ...(options ? { options } : {}) };
-  });
+      const policy = column.id
+        ? registrationFields?.[normalizeRegistrationFieldKey(column.id)]
+        : undefined;
+      const header =
+        (column.id
+          ? getBulkEntryColumnHeader(
+              profile.id,
+              column.id,
+              column.header ?? "",
+              policy?.required,
+            )
+          : undefined) ??
+        (column.id ? gridHeaders[column.id]?.() : undefined) ??
+        column.header;
+      const options = column.options?.map((option) => ({
+        ...option,
+        label:
+          gridEnumLabels[`${column.id}:${String(option.value)}`]?.() ??
+          option.label,
+      }));
+      return { ...column, header, ...(options ? { options } : {}) };
+    });
 }

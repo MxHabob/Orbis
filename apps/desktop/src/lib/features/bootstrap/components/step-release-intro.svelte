@@ -1,48 +1,47 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { onMount } from "svelte";
-  import { api } from "$lib/api/client";
-  import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
-  import { Badge } from "@orbis/ui/badge";
-  import { Card, CardContent } from "@orbis/ui/card";
-  import { Calendar, Sparkles } from "@orbis/icons";
-  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
-  import EmptyState from "$lib/shared/components/empty-state.svelte";
-  import { formatDate as formatOrgDate } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { api } from "$lib/api/client";
+import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
+import { Badge } from "@orbis/ui/badge";
+import { Card, CardContent } from "@orbis/ui/card";
+import { Calendar, Sparkles } from "@orbis/icons";
+import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
-  let appInfo = $state<AppInfo | null>(null);
-  let latestRelease = $state<ReleaseChangelogItem | null>(null);
-  let isLoading = $state(true);
+let appInfo = $state<AppInfo | null>(null);
+let latestRelease = $state<ReleaseChangelogItem | null>(null);
+let isLoading = $state(true);
 
-  function formatDate(value?: string) {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? null
-      : formatOrgDate(date, "date");
+function formatDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : formatOrgDate(date, "date");
+}
+
+onMount(async () => {
+  try {
+    const [info, releases] = await Promise.all([
+      api.systemGetAppInfo().catch((err) => {
+        console.warn("App info load failed:", err);
+        return null;
+      }),
+      api.systemGetChangelog().catch((err) => {
+        console.warn("Changelog load failed, treating as empty:", err);
+        return [] as ReleaseChangelogItem[];
+      }),
+    ]);
+    appInfo = info;
+    latestRelease =
+      releases.find((release) => release.is_latest) ?? releases[0] ?? null;
+  } catch (error) {
+    console.warn("Failed to load application release information:", error);
+    latestRelease = null;
+  } finally {
+    isLoading = false;
   }
-
-  onMount(async () => {
-    try {
-      const [info, releases] = await Promise.all([
-        api.systemGetAppInfo().catch((err) => {
-          console.warn("App info load failed:", err);
-          return null;
-        }),
-        api.systemGetChangelog().catch((err) => {
-          console.warn("Changelog load failed, treating as empty:", err);
-          return [] as ReleaseChangelogItem[];
-        }),
-      ]);
-      appInfo = info;
-      latestRelease = releases.find((release) => release.is_latest) ?? releases[0] ?? null;
-    } catch (error) {
-      console.warn("Failed to load application release information:", error);
-      latestRelease = null;
-    } finally {
-      isLoading = false;
-    }
-  });
+});
 </script>
 
 <section class="mx-auto w-full max-w-5xl space-y-6 py-2">
@@ -92,25 +91,6 @@
           </a>
         </div>
 
-        {#if latestRelease.images.length > 0}
-          <section class="space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
-              {m.ui_onboarding_intro_release_images()}
-            </h3>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {#each latestRelease.images as image (image)}
-                <img
-                  src={image}
-                  alt={latestRelease.title}
-                  loading="lazy"
-                  referrerpolicy="no-referrer"
-                  class="max-h-72 w-full rounded-xl border border-border/60 bg-muted/20 object-contain"
-                />
-              {/each}
-            </div>
-          </section>
-        {/if}
-
         {#if latestRelease.body?.trim()}
           <section class="space-y-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -126,28 +106,6 @@
           </p>
         {/if}
 
-        {#if latestRelease.resources.length > 0}
-          <section class="space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">
-              {m.ui_changelog_release_resources()}
-            </h3>
-            <ul class="space-y-2">
-              {#each latestRelease.resources as resource (resource.url)}
-                <li>
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm text-primary underline underline-offset-4"
-                  >
-                    <span class="min-w-0 truncate">{resource.name}</span>
-                    <span class="shrink-0 font-mono text-xs text-muted-foreground">{(resource.size / 1024).toFixed(0)} KB</span>
-                  </a>
-                </li>
-              {/each}
-            </ul>
-          </section>
-        {/if}
       {:else}
         <EmptyState
           icon={Sparkles}

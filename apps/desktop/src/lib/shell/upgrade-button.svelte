@@ -6,9 +6,9 @@ import { Bolt } from "@orbis/icons";
 import { uiStore, licenseStore } from "$lib/stores";
 
 const dotColor = $derived.by(() => {
-	if (licenseStore.isExpired || licenseStore.isRevoked) return "bg-destructive";
-	if (licenseStore.isTrial || licenseStore.isExpiring) return "bg-amber-500";
-	return "bg-primary";
+  if (licenseStore.isExpired || licenseStore.isRevoked) return "bg-destructive";
+  if (licenseStore.isTrial || licenseStore.isExpiring) return "bg-amber-500";
+  return "bg-primary";
 });
 </script>
 

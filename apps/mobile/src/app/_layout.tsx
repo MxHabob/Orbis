@@ -6,18 +6,15 @@
  * and declares root Stack navigation with synchronized StatusBar background and SystemUI window color.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../global.css";
 import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
-import { useColorScheme } from "react-native";
-import { useIsRestoring } from "@tanstack/react-query";
+import { Pressable, Text, View, useColorScheme } from "react-native";
 
 import { useTheme } from "@/hooks/use-theme";
-import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { useEffectiveContext } from "@/providers/effective-context";
 import { AppProviders } from "@/providers/app-providers";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import {
@@ -25,7 +22,10 @@ import {
   loadThemePreference,
 } from "@/lib/theme-preference";
 import { ToastProvider } from "@/components/ui/toast";
-import { AppErrorBoundary } from "@/components/ui/error-boundary";
+import {
+  AppErrorBoundary,
+  type ErrorFallbackProps,
+} from "@/components/ui/error-boundary";
 import { OfflineStatusBanner } from "@/components/ui/offline-status-banner";
 
 void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
@@ -36,23 +36,73 @@ void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
 });
 
 export default function RootLayout() {
+  useEffect(() => {
+    void SplashScreen.hideAsync().catch((error: unknown) => {
+      console.error(
+        "[Orbis Mobile Startup] Failed to hide the native splash screen.",
+        error,
+      );
+    });
+  }, []);
+
   return (
-    <AppProviders>
-      <RootLayoutContent />
-    </AppProviders>
+    <AppErrorBoundary fallback={StartupErrorFallback}>
+      <AppProviders>
+        <RootLayoutContent />
+      </AppProviders>
+    </AppErrorBoundary>
+  );
+}
+
+function StartupErrorFallback({
+  error,
+  resetErrorBoundary,
+}: ErrorFallbackProps) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#1f1f1f",
+        padding: 24,
+      }}
+    >
+      <Text style={{ color: "#ffffff", fontSize: 20, fontWeight: "600" }}>
+        Orbis could not start
+      </Text>
+      <Text style={{ marginTop: 12, color: "#d1d5db", textAlign: "center" }}>
+        Please try again. If the problem continues, reinstall the app.
+      </Text>
+      {__DEV__ && (
+        <Text style={{ marginTop: 12, color: "#d1d5db", textAlign: "center" }}>
+          {error.message}
+        </Text>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        onPress={resetErrorBoundary}
+        style={{
+          marginTop: 24,
+          borderRadius: 8,
+          backgroundColor: "#7c3aed",
+          paddingHorizontal: 20,
+          paddingVertical: 12,
+        }}
+      >
+        <Text style={{ color: "#ffffff", fontWeight: "600" }}>Try again</Text>
+      </Pressable>
+    </View>
   );
 }
 
 function RootLayoutContent() {
-  const { isInitializing } = useAuth();
-  const { isReady: isI18nReady } = useI18n();
-  const { isReady: isContextReady } = useEffectiveContext();
-  const isQueryCacheRestoring = useIsRestoring();
   const [isThemeReady, setIsThemeReady] = useState(false);
-  const hasHiddenSplash = useRef(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const systemBackgroundColor = isDark ? "#1f1f1f" : "#fcfcfc";
   const currentColors = useTheme();
+  const { isArabic } = useI18n();
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -80,7 +130,10 @@ function RootLayoutContent() {
     loadThemePreference()
       .then(applyThemePreference)
       .catch((error: unknown) => {
-        console.error("[Orbis Mobile Theme] Failed to load saved theme.", error);
+        console.error(
+          "[Orbis Mobile Theme] Failed to load saved theme.",
+          error,
+        );
       })
       .finally(() => {
         setIsThemeReady(true);
@@ -88,36 +141,9 @@ function RootLayoutContent() {
   }, []);
 
   useEffect(() => {
-    if (
-      isInitializing ||
-      isQueryCacheRestoring ||
-      !isContextReady ||
-      !isI18nReady ||
-      !isThemeReady ||
-      hasHiddenSplash.current
-    ) {
-      return;
-    }
-
-    hasHiddenSplash.current = true;
-    void SplashScreen.hideAsync().catch((error: unknown) => {
-      console.error(
-        "[Orbis Mobile Startup] Failed to hide the native splash screen.",
-        error,
-      );
-    });
-  }, [
-    isContextReady,
-    isI18nReady,
-    isInitializing,
-    isQueryCacheRestoring,
-    isThemeReady,
-  ]);
-
-  useEffect(() => {
     if (!isThemeReady) return;
 
-    SystemUI.setBackgroundColorAsync(currentColors.background).catch(
+    SystemUI.setBackgroundColorAsync(systemBackgroundColor).catch(
       (error: unknown) => {
         console.error(
           "[Orbis Mobile Theme] Failed to synchronize the system background.",
@@ -125,13 +151,16 @@ function RootLayoutContent() {
         );
       },
     );
-  }, [currentColors.background, isThemeReady]);
+  }, [isThemeReady, systemBackgroundColor]);
 
   return (
     <ThemeProvider value={navigationTheme}>
       <ToastProvider>
-        <AppErrorBoundary>
-          <ThemedStatusBar backgroundColor={currentColors.background} />
+        <ThemedStatusBar />
+        <View
+          className="flex-1"
+          style={{ direction: isArabic ? "rtl" : "ltr" }}
+        >
           <OfflineStatusBanner />
           <Stack
             screenOptions={{
@@ -139,12 +168,16 @@ function RootLayoutContent() {
               animation: "slide_from_right",
               contentStyle: {
                 backgroundColor: currentColors.background,
+                direction: isArabic ? "rtl" : "ltr",
               },
             }}
           >
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(app)" options={{ headerShown: false }} />
-            <Stack.Screen name="institution-select" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="institution-select"
+              options={{ headerShown: false }}
+            />
             <Stack.Screen
               name="institution-scan"
               options={{
@@ -159,7 +192,7 @@ function RootLayoutContent() {
               options={{ title: "Oops!", headerShown: true }}
             />
           </Stack>
-        </AppErrorBoundary>
+        </View>
       </ToastProvider>
     </ThemeProvider>
   );

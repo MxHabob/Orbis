@@ -8,7 +8,7 @@ use crate::error::DocforgeError;
 use crate::layout::expr_eval::{evaluate_node_tree, EvaluatedNode, EvaluatedTable};
 use crate::model::document::{Orientation, PageSetup, PageSize, TemplateDocument};
 use crate::model::nodes::TextProps;
-use crate::render::font_cache::FontCache;
+use crate::render::font_cache::{create_font_system_for_font, FontCache};
 use crate::render::types::*;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -142,7 +142,7 @@ impl<'a> LayoutEngine<'a> {
                             };
                             let font_size = text_props.font_size as f32;
                             let line_height =
-                                text_props.line_height.unwrap_or(text_props.font_size * 1.2) as f32;
+                                resolve_text_line_height(font_size, text_props.line_height);
 
                             let (measured_w, height) = measure_text_size(
                                 &text_props.content,
@@ -353,7 +353,10 @@ fn layout_absolute_node(
                 color: col,
                 text_align: align,
                 direction: dir,
-                line_height: n.props.line_height.unwrap_or(n.props.font_size * 1.2) as f32,
+                line_height: resolve_text_line_height(
+                    n.props.font_size as f32,
+                    n.props.line_height,
+                ),
             })])
         }
         EvaluatedNode::Image(n) => {
@@ -567,10 +570,8 @@ pub fn layout_table_elements(
 
     // 4. Styles
     let style = table.props.style.as_ref();
-    let header_bg_col = style
-        .and_then(|s| s.header_bg_color.as_deref())
-        .and_then(Color::from_hex)
-        .or_else(|| Some(Color::new(241, 245, 249))); // subtle slate #f1f5f9
+    let header_bg_col =
+        resolve_header_background_color(style.and_then(|s| s.header_bg_color.as_deref()));
     let header_text_col = style
         .and_then(|s| s.header_text_color.as_deref())
         .and_then(Color::from_hex)
@@ -1027,19 +1028,17 @@ fn measure_text_height(
     max_width: f32,
     fonts: &FontCache,
 ) -> f32 {
-    let mut font_system = cosmic_text::FontSystem::new();
-    // Load font data if cached
-    if let Some(cached_font) = fonts.get_font(
+    let (mut font_system, shaping_family) = if let Some(cached_font) = fonts.get_font(
         family,
         400,
         crate::render::font_cache::FontStyleKind::Normal,
     ) {
-        font_system
-            .db_mut()
-            .load_font_data(cached_font.data.as_ref().clone());
-    }
+        create_font_system_for_font(cached_font)
+    } else {
+        (cosmic_text::FontSystem::new(), family.to_string())
+    };
 
-    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
+    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(&shaping_family));
     let metrics = cosmic_text::Metrics::new(font_size, line_height);
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
 
@@ -1072,18 +1071,17 @@ fn measure_text_size(
     max_width: f32,
     fonts: &FontCache,
 ) -> (f32, f32) {
-    let mut font_system = cosmic_text::FontSystem::new();
-    if let Some(cached_font) = fonts.get_font(
+    let (mut font_system, shaping_family) = if let Some(cached_font) = fonts.get_font(
         family,
         400,
         crate::render::font_cache::FontStyleKind::Normal,
     ) {
-        font_system
-            .db_mut()
-            .load_font_data(cached_font.data.as_ref().clone());
-    }
+        create_font_system_for_font(cached_font)
+    } else {
+        (cosmic_text::FontSystem::new(), family.to_string())
+    };
 
-    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
+    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(&shaping_family));
     let metrics = cosmic_text::Metrics::new(font_size, line_height);
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
 
@@ -1115,6 +1113,20 @@ fn measure_text_size(
 
     let final_height = if height == 0.0 { line_height } else { height };
     (max_run_width, final_height)
+}
+
+fn resolve_text_line_height(font_size: f32, line_height: Option<f64>) -> f32 {
+    let value = line_height
+        .map(|value| value as f32)
+        .filter(|value| value.is_finite() && *value > 0.0)
+        .unwrap_or(1.2);
+
+    // The editor stores CSS ratios; retain support for older documents storing point values.
+    if value <= 3.0 {
+        font_size * value
+    } else {
+        value
+    }
 }
 
 // ── Extract Positioned Elements ────────────────────────────────
@@ -1157,7 +1169,10 @@ fn extract_positioned_elements(
                 color: col,
                 text_align: align,
                 direction: dir,
-                line_height: n.props.line_height.unwrap_or(n.props.font_size * 1.2) as f32,
+                line_height: resolve_text_line_height(
+                    n.props.font_size as f32,
+                    n.props.line_height,
+                ),
             }));
         }
         EvaluatedNode::Separator(n) => {
@@ -1222,27 +1237,30 @@ fn extract_positioned_elements(
 // ── Page Size Resolution Helpers ──────────────────────────────
 
 fn get_page_dimensions(setup: &PageSetup) -> (f32, f32) {
+    let (w_mm, h_mm) = if let PageSize::Custom = setup.size {
+        let (default_width, default_height) = setup.size.dimensions();
+        (
+            setup.width.unwrap_or(default_width),
+            setup.height.unwrap_or(default_height),
+        )
+    } else {
+        setup.size.dimensions()
+    };
+
     let (w_mm, h_mm) = match setup.orientation {
-        Orientation::Portrait => setup.size.dimensions(),
-        Orientation::Landscape => {
-            let (w, h) = setup.size.dimensions();
-            (h, w)
-        }
+        Orientation::Portrait => (w_mm, h_mm),
+        Orientation::Landscape => (h_mm, w_mm),
     };
 
-    // Check custom size dimensions if preset is Custom
-    let w_mm_final = if let PageSize::Custom = setup.size {
-        setup.width.unwrap_or(w_mm)
-    } else {
-        w_mm
-    };
-    let h_mm_final = if let PageSize::Custom = setup.size {
-        setup.height.unwrap_or(h_mm)
-    } else {
-        h_mm
-    };
+    (mm_to_pt(w_mm), mm_to_pt(h_mm))
+}
 
-    (mm_to_pt(w_mm_final), mm_to_pt(h_mm_final))
+fn resolve_header_background_color(color: Option<&str>) -> Option<Color> {
+    match color {
+        Some(color) if color.eq_ignore_ascii_case("transparent") => None,
+        Some(color) => Color::from_hex(color),
+        None => Some(Color::new(241, 245, 249)),
+    }
 }
 
 #[cfg(test)]
@@ -1251,6 +1269,60 @@ mod tests {
     use crate::model::document::*;
     use crate::model::nodes::*;
     use serde_json::json;
+
+    #[test]
+    fn table_header_background_can_be_explicitly_transparent() {
+        assert!(resolve_header_background_color(Some("transparent")).is_none());
+        let default = resolve_header_background_color(None).expect("default color");
+        assert_eq!((default.r, default.g, default.b), (241, 245, 249));
+        let white = resolve_header_background_color(Some("#ffffff")).expect("parsed hex color");
+        assert_eq!((white.r, white.g, white.b), (255, 255, 255));
+    }
+
+    #[test]
+    fn test_text_line_height_converts_editor_ratio_to_points() {
+        assert!((resolve_text_line_height(14.0, Some(1.5)) - 21.0).abs() < 0.01);
+        assert!((resolve_text_line_height(12.0, Some(15.0)) - 15.0).abs() < 0.01);
+        assert!((resolve_text_line_height(14.0, None) - 16.8).abs() < 0.01);
+        assert!((resolve_text_line_height(14.0, Some(f64::NAN)) - 16.8).abs() < 0.01);
+    }
+
+    #[test]
+    fn page_dimensions_follow_orientation_for_presets_and_custom_sizes() {
+        let landscape_a4 = PageSetup {
+            size: PageSize::A4,
+            width: None,
+            height: None,
+            orientation: Orientation::Landscape,
+            margins: Spacing {
+                top: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+                right: 0.0,
+            },
+            unit: "mm".to_string(),
+        };
+        let (width, height) = get_page_dimensions(&landscape_a4);
+        assert!((width - mm_to_pt(297.0)).abs() < 0.01);
+        assert!((height - mm_to_pt(210.0)).abs() < 0.01);
+
+        let landscape_custom = PageSetup {
+            size: PageSize::Custom,
+            width: Some(100.0),
+            height: Some(200.0),
+            orientation: Orientation::Landscape,
+            margins: Spacing {
+                top: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+                right: 0.0,
+            },
+            unit: "mm".to_string(),
+        };
+        let (width, height) = get_page_dimensions(&landscape_custom);
+        assert!((width - mm_to_pt(200.0)).abs() < 0.01);
+        assert!((height - mm_to_pt(100.0)).abs() < 0.01);
+    }
 
     #[test]
     fn test_layout_simple_flex() {
@@ -1272,6 +1344,7 @@ mod tests {
         let frame_node = TemplateNode::Frame(FrameNode {
             id: "frame-1".to_string(),
             name: None,
+            position: None,
             props: FrameProps {
                 position: None,
                 layout: "flex".to_string(),
@@ -1282,6 +1355,7 @@ mod tests {
                 TemplateNode::Text(TextNode {
                     id: "text-1".to_string(),
                     name: None,
+                    position: None,
                     props: TextProps {
                         content: "Hello {{name}}".to_string(),
                         position: None,
@@ -1297,6 +1371,7 @@ mod tests {
                 TemplateNode::Text(TextNode {
                     id: "text-2".to_string(),
                     name: None,
+                    position: None,
                     props: TextProps {
                         content: "Orbis TMS".to_string(),
                         position: None,
@@ -1406,6 +1481,7 @@ mod tests {
         let frame_node = TemplateNode::Frame(FrameNode {
             id: "flex-container".to_string(),
             name: None,
+            position: None,
             props: FrameProps {
                 position: None,
                 layout: "flex".to_string(),
@@ -1417,6 +1493,7 @@ mod tests {
                 TemplateNode::Text(TextNode {
                     id: "txt-1".to_string(),
                     name: None,
+                    position: None,
                     props: TextProps {
                         content: "مرحبا بك يا {{name}} في نظام Orbis TMS v3 الجديد".to_string(),
                         position: None,
@@ -1441,6 +1518,7 @@ mod tests {
                 TemplateNode::Separator(SeparatorNode {
                     id: "sep-1".to_string(),
                     name: None,
+                    position: None,
                     props: SeparatorProps {
                         direction: "horizontal".to_string(),
                         color: Some("#0066cc".to_string()),
@@ -1452,6 +1530,7 @@ mod tests {
                 TemplateNode::Barcode(BarcodeNode {
                     id: "barcode-1".to_string(),
                     name: None,
+                    position: None,
                     props: BarcodeProps {
                         data: "ORBIS-{{std_id}}".to_string(),
                         format: "Code128".to_string(),
@@ -1465,6 +1544,7 @@ mod tests {
                 TemplateNode::QRCode(QRCodeNode {
                     id: "qr-1".to_string(),
                     name: None,
+                    position: None,
                     props: QRCodeProps {
                         data: "https://orbis.edu/student/{{std_id}}".to_string(),
                         position: None,

@@ -1,7 +1,15 @@
 <script lang="ts">
 import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
-import { Check, CheckCircle, ChevronDown, Lock, Sparkles, UserBadgeCheck, XMark } from "@orbis/icons";
+import {
+  Check,
+  CheckCircle,
+  ChevronDown,
+  Lock,
+  Sparkles,
+  UserBadgeCheck,
+  XMark,
+} from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -46,9 +54,7 @@ async function loadData() {
     const [registered, logs] = await Promise.all([
       (api as any).aiCenter?.listRegisteredActions?.().catch(() => []) ??
         Promise.resolve([]),
-      (api as any).aiCenter
-        ?.listActionLogs?.(orgId)
-        .catch(() => []) ??
+      (api as any).aiCenter?.listActionLogs?.(orgId).catch(() => []) ??
         api?.listAuditLogs?.().catch(() => []) ??
         Promise.resolve([]),
     ]);

@@ -35,4 +35,3 @@ export const createYearInputSchema = z
 
 export type CreateYearInput = z.infer<typeof createYearInputSchema>;
 export type CreatePeriodInput = z.infer<typeof createPeriodInputSchema>;
-

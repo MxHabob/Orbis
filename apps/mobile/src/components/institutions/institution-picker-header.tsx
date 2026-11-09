@@ -16,7 +16,7 @@ export function InstitutionPickerHeader({
   const theme = useTheme();
 
   return (
-    <View className="mb-5 h-11 flex-row items-center justify-between px-5">
+    <View className="h-11 flex-row items-center justify-between px-5">
       <View className="flex-row items-center gap-2">
         <Logo size={25} color={theme.primary} dotColor={theme.brandPink} />
         <Text className="text-lg font-bold tracking-tight text-foreground">

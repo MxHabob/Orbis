@@ -2,10 +2,12 @@
 
 pub mod academic_cmds;
 pub mod ai_cmds;
+pub mod api_distribution_cmds;
 pub mod assessment_cmds;
 pub mod autopilot_cmds;
 pub mod bootstrap_cmds;
 pub mod calendar_cmds;
+pub mod camera_stream_cmds;
 pub mod connection_cmds;
 pub mod database_cmds;
 pub mod document_cmds;
@@ -18,6 +20,7 @@ pub mod iam_cmds;
 pub mod integration_cmds;
 pub mod license_cmds;
 pub mod mulverse_cmds;
+pub mod notification_cmds;
 pub mod onboarding_cmds;
 pub mod org_cmds;
 pub mod progression_cmds;
@@ -94,7 +97,6 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
             command,
             "license_get_state"
                 | "license_activate_key"
-                | "license_redeem_key"
                 | "license_start_trial"
                 | "license_deactivate"
                 | "license_refresh"
@@ -106,6 +108,9 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_get_entitlement"
                 | "system_get_app_info"
                 | "system_get_changelog"
+                | "system_get_release_notes_state"
+                | "system_acknowledge_release_notes"
+                | "api_distribution_verify_manifest"
                 | "system_check_for_updates"
                 | "system_download_update"
                 | "system_install_update"
@@ -118,6 +123,9 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
 
 fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     generate_handler![
+        api_distribution_cmds::api_distribution_verify_manifest,
+        camera_stream_cmds::camera_stream_start,
+        camera_stream_cmds::camera_stream_stop,
         // ── Auth & IAM ──────────────────────────────────────────
         iam_cmds::auth_login,
         iam_cmds::auth_get_session,
@@ -247,6 +255,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         scheduling_cmds::scheduling_update_time_slot,
         scheduling_cmds::scheduling_delete_time_slot,
         scheduling_cmds::scheduling_schedule_lesson,
+        scheduling_cmds::scheduling_update_scheduled_lesson,
         scheduling_cmds::scheduling_bulk_schedule_lessons,
         scheduling_cmds::scheduling_list_lessons,
         scheduling_cmds::scheduling_delete_scheduled_lesson,
@@ -326,6 +335,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         finance_cmds::finance_list_payments_paginated,
         finance_cmds::finance_delete_payment,
         finance_cmds::finance_list_currencies,
+        finance_cmds::finance_create_currency,
+        finance_cmds::finance_update_currency,
         finance_cmds::finance_list_journal_entries,
         finance_cmds::finance_get_journal_entry,
         finance_cmds::finance_create_journal_entry,
@@ -408,6 +419,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         report_cmds::download_report_file,
         report_cmds::batch_print,
         report_cmds::audit_list_logs,
+        report_cmds::get_entity_audit,
         // ── Template Management ─────────────────────────────────
         template_cmds::template_create,
         template_cmds::template_get,
@@ -462,13 +474,14 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         system_cmds::system_get_entitlement,
         system_cmds::system_get_app_info,
         system_cmds::system_get_changelog,
+        system_cmds::system_get_release_notes_state,
+        system_cmds::system_acknowledge_release_notes,
         system_cmds::system_check_for_updates,
         system_cmds::system_download_update,
         system_cmds::system_install_update,
         // ── License & Activation ────────────────────────────────
         license_cmds::license_get_state,
         license_cmds::license_activate_key,
-        license_cmds::license_redeem_key,
         license_cmds::license_start_trial,
         license_cmds::license_deactivate,
         license_cmds::license_refresh,
@@ -499,6 +512,14 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         // ── Onboarding ──────────────────────────────────────────
         onboarding_cmds::onboarding_get_state,
         onboarding_cmds::onboarding_provision_defaults,
+        // ── Notifications ───────────────────────────────────────
+        notification_cmds::notification_list,
+        notification_cmds::notification_unread_count,
+        notification_cmds::notification_mark_read,
+        notification_cmds::notification_mark_all_read,
+        notification_cmds::notification_dismiss,
+        notification_cmds::notification_get_preferences,
+        notification_cmds::notification_update_preferences,
     ]
 }
 
@@ -510,6 +531,7 @@ fn is_allowed_before_backend_initialization(command: &str) -> bool {
             command,
             "system_check_for_updates" | "system_download_update" | "system_install_update"
         )
+        || command == "api_distribution_verify_manifest"
 }
 
 fn required_feature(command: &str) -> Option<&'static str> {

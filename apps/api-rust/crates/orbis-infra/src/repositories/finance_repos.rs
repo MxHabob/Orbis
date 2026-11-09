@@ -950,6 +950,19 @@ impl CurrencyRepository for FinanceRepoImpl {
         _org_id: Uuid,
         code: &str,
     ) -> Result<Option<DomainCurrency>, DomainError> {
+        let base_currency_row = self
+            .db
+            .query_one(sea_orm::Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT base_currency_code FROM organizations WHERE id = $1 LIMIT 1",
+                vec![_org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let base_code = base_currency_row
+            .and_then(|row| row.try_get("", "base_currency_code").ok())
+            .unwrap_or_else(|| "YER".to_string());
+
         let model = CurrencyEntity::find_by_id(code.to_string())
             .one(&self.db)
             .await
@@ -960,9 +973,9 @@ impl CurrencyRepository for FinanceRepoImpl {
             name: m.name,
             name_ar: m.name_ar,
             symbol: m.symbol,
-            symbol_position: "before".into(),
+            symbol_position: m.symbol_position,
             decimal_places: m.decimal_places as u32,
-            is_base: m.id == "SAR",
+            is_base: m.id.eq_ignore_ascii_case(&base_code),
             is_active: m.is_active,
             updated_at: m.created_at,
         }))
@@ -998,7 +1011,7 @@ impl CurrencyRepository for FinanceRepoImpl {
                     name: m.name,
                     name_ar: m.name_ar,
                     symbol: m.symbol,
-                    symbol_position: "after".into(),
+                    symbol_position: m.symbol_position,
                     decimal_places: m.decimal_places as u32,
                     is_base,
                     is_active: is_base || m.is_active,
@@ -1014,6 +1027,7 @@ impl CurrencyRepository for FinanceRepoImpl {
             name: Set(c.name.clone()),
             name_ar: Set(c.name_ar.clone()),
             symbol: Set(c.symbol.clone()),
+            symbol_position: Set(c.symbol_position.clone()),
             decimal_places: Set(c.decimal_places as i32),
             is_active: Set(c.is_active),
             created_at: Set(c.updated_at),

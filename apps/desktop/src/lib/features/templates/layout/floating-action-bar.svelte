@@ -14,7 +14,14 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { AdjustmentsHorizontal, BarsArrowUp, Clipboard, EllipsisHorizontal, Lock, Trash } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  BarsArrowUp,
+  Clipboard,
+  EllipsisHorizontal,
+  Lock,
+  Trash,
+} from "@orbis/icons";
 
 let {
   store,
@@ -39,23 +46,26 @@ const vp = $derived(store.viewport);
 // Calculate position in screen px based on element bounds
 const pos = $derived.by(() => {
   if (!node) return null;
-  const p = (
-    "props" in node ? (node.props as { position?: Position }).position : undefined
-  ) ?? (node as { position?: Position }).position;
+  const p =
+    ("props" in node
+      ? (node.props as { position?: Position }).position
+      : undefined) ?? (node as { position?: Position }).position;
   if (!p) return null;
 
   const pageOriginX = offsetX + (rulersVisible ? 24 : 0);
   const pageOriginY = offsetY + (rulersVisible ? 24 : 0);
   const x = pageOriginX + mmToPx(p.x ?? 0, vp.dpi, vp.zoom);
   const y = pageOriginY + mmToPx(p.y ?? 0, vp.dpi, vp.zoom);
-  const w = typeof p.width === "string" && p.width.endsWith("%")
-    ? (Number.parseFloat(p.width) / 100) * pageSizePx.width
-    : mmToPx(Number(p.width) || 50, vp.dpi, vp.zoom);
-  const h = p.height == null
-    ? mmToPx(20, vp.dpi, vp.zoom)
-    : typeof p.height === "string" && p.height.endsWith("%")
-      ? (Number.parseFloat(p.height) / 100) * pageSizePx.height
-      : mmToPx(Number(p.height) || 20, vp.dpi, vp.zoom);
+  const w =
+    typeof p.width === "string" && p.width.endsWith("%")
+      ? (Number.parseFloat(p.width) / 100) * pageSizePx.width
+      : mmToPx(Number(p.width) || 50, vp.dpi, vp.zoom);
+  const h =
+    p.height == null
+      ? mmToPx(20, vp.dpi, vp.zoom)
+      : typeof p.height === "string" && p.height.endsWith("%")
+        ? (Number.parseFloat(p.height) / 100) * pageSizePx.height
+        : mmToPx(Number(p.height) || 20, vp.dpi, vp.zoom);
   const halfBarWidth = 92;
   const localX = x + w / 2;
   const clampedX = Math.max(
@@ -63,9 +73,7 @@ const pos = $derived.by(() => {
     Math.min(containerSize.width - halfBarWidth, localX),
   );
   const aboveY = y - 40;
-  const localY = aboveY >= (rulersVisible ? 24 : 0)
-    ? aboveY
-    : y + h + 8;
+  const localY = aboveY >= (rulersVisible ? 24 : 0) ? aboveY : y + h + 8;
 
   return {
     x: clampedX,

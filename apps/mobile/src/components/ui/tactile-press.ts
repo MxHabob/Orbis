@@ -19,13 +19,14 @@ export function useTactilePress(
 
   const animateTo = useCallback(
     (toValue: number) => {
-      progress.value =
+      progress.set(
         toValue === 1
           ? withTiming(1, {
               duration: 90,
               easing: Easing.out(Easing.quad),
             })
-          : withSpring(0, { damping: 18, stiffness: 240, mass: 0.7 });
+          : withSpring(0, { damping: 18, stiffness: 240, mass: 0.7 }),
+      );
     },
     [progress],
   );
@@ -35,21 +36,18 @@ export function useTactilePress(
   }, [animateTo, disabled, enabled]);
 
   const onPressOut = useCallback(() => animateTo(0), [animateTo]);
-  const style = useAnimatedStyle(
-    () => ({
-      transform: [{ translateY: enabled ? progress.value * 2 : 0 }],
-      shadowColor,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: enabled ? 0.14 * (1 - progress.value) : 0,
-      shadowRadius: enabled ? 3 * (1 - progress.value) : 0,
-      elevation: enabled ? 3 * (1 - progress.value) : 0,
-    }),
-    [enabled, shadowColor],
-  );
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: enabled ? progress.value * 2 : 0 }],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: enabled ? 0.14 * (1 - progress.value) : 0,
+    shadowRadius: enabled ? 3 * (1 - progress.value) : 0,
+    elevation: enabled ? 3 * (1 - progress.value) : 0,
+  }));
 
   return {
     onPressIn,
     onPressOut,
+    shadowStyle: { shadowColor },
     style,
   };
 }

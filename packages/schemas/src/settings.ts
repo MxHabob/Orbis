@@ -30,8 +30,7 @@ export function createAppSettingsSchema(settings: AppSettingDefinition[]) {
     else if (setting.type === "number") field = z.coerce.number().finite();
     else if (setting.type === "email")
       field = z.string().trim().email().or(z.literal(""));
-    else if (setting.type === "url")
-      field = z.string().url().or(z.literal(""));
+    else if (setting.type === "url") field = z.string().url().or(z.literal(""));
     else if (setting.type === "select") {
       const options = (setting.options ?? []).map((option) => option.value);
       field =

@@ -23,7 +23,9 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
+use orbis_domain::entities::academic_policy::{
+    PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstitutionBlueprintConfig {
@@ -217,6 +219,40 @@ impl InstitutionBlueprintConfig {
             honors_at_or_above: Some(self.honors_threshold_percentage),
             grade_bands: self.grade_bands.clone(),
         });
+        // Populate the richer PolicyGradeBand for AcademicPolicy.evaluate_percentage().
+        // GradeBand from CalcEngine has `code` + `label` (combined ar+en) + `minimum_score`.
+        // PolicyGradeBand splits label/label_ar and adds grade_points.
+        settings.academic.grade_bands = self
+            .grade_bands
+            .iter()
+            .map(|b| {
+                // bootstrap_service formats label as "Arabic - English" in from_institution_type_and_profile
+                let (label_ar, label) = if let Some(idx) = b.label.find(" - ") {
+                    (b.label[..idx].to_string(), b.label[idx + 3..].to_string())
+                } else {
+                    (b.label.clone(), b.label.clone())
+                };
+                // Derive grade_points from code convention
+                let grade_points = match b.code.as_str() {
+                    "A+" => Decimal::from_str_exact("4.0").unwrap_or(Decimal::from(4)),
+                    "A" => Decimal::from(4),
+                    "B+" => Decimal::from_str_exact("3.5").unwrap_or(Decimal::from(3)),
+                    "B" => Decimal::from(3),
+                    "C+" => Decimal::from_str_exact("2.5").unwrap_or(Decimal::from(2)),
+                    "C" => Decimal::from(2),
+                    "D+" => Decimal::from_str_exact("1.5").unwrap_or(Decimal::ONE),
+                    "D" => Decimal::ONE,
+                    _ => Decimal::ZERO,
+                };
+                PolicyGradeBand {
+                    code: b.code.clone(),
+                    label,
+                    label_ar,
+                    minimum_score: b.minimum_score,
+                    grade_points,
+                }
+            })
+            .collect();
         settings.academic.ranking_enabled = true;
         settings.academic.max_displayed_rank = None;
         settings.enrollment.max_class_size_default = self.max_class_size_default;

@@ -12,7 +12,7 @@ export type AsyncFormValidator<Values> = (
 export interface FormControllerOptions<Values, Payload = Values> {
   initialValues: Values;
   schema: z.ZodType<Payload>;
-  normalize?: (values: Values) => unknown;
+  normalize?: (values: Values) => Payload;
   validateAsync?: AsyncFormValidator<Values>;
 }
 
@@ -121,6 +121,16 @@ export class FormController<Values, Payload = Values> {
     this.validate([field]);
   }
 
+  clearError(field?: string): void {
+    if (field) {
+      const { [field]: _cleared, ...remainingErrors } = this.errors;
+      this.errors = remainingErrors;
+    } else {
+      this.errors = {};
+    }
+    this.formError = undefined;
+  }
+
   get isValid(): boolean {
     const candidate = this.options.normalize
       ? this.options.normalize(this.values)
@@ -158,9 +168,6 @@ export class FormController<Values, Payload = Values> {
           ),
         )
       : nextErrors;
-    if (!result.success) {
-      this.formError = result.error.issues[0]?.message;
-    }
     return Object.keys(this.errors).length === 0;
   }
 

@@ -1,21 +1,26 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { ArrowUturnLeft } from "@orbis/icons";
-  import type { SearchItemGroup } from "./search-modal.types";
+import * as m from "$lib/paraglide/messages";
+import { ArrowUturnLeft, Sparkles } from "@orbis/icons";
+import { Button } from "@orbis/ui/button";
+import type { SearchItemGroup } from "./search-modal.types";
 
-  let {
-    groups,
-    selectedItemId,
-    isLoading,
-    error,
-    onSelect,
-  }: {
-    groups: SearchItemGroup[];
-    selectedItemId: string | null;
-    isLoading: boolean;
-    error: string;
-    onSelect: (item: SearchItemGroup["items"][number]) => void;
-  } = $props();
+let {
+  groups,
+  selectedItemId,
+  isLoading,
+  error,
+  showAskOrbis,
+  onAskOrbis,
+  onSelect,
+}: {
+  groups: SearchItemGroup[];
+  selectedItemId: string | null;
+  isLoading: boolean;
+  error: string;
+  showAskOrbis: boolean;
+  onAskOrbis: () => void;
+  onSelect: (item: SearchItemGroup["items"][number]) => void;
+} = $props();
 </script>
 
 <div class="flex-1 overflow-y-auto p-2 scrollbar-hide">
@@ -41,8 +46,22 @@
         {m.common_search_no_results_partial()}
       </div>
     {:else}
-      <div class="py-6 text-center text-sm text-muted-foreground select-none">
-        {m.common_search_no_results()}
+      <div class="flex flex-col items-center gap-3 py-6 text-center select-none">
+        <p class="text-sm text-muted-foreground">
+          {m.common_search_no_results()}
+        </p>
+        {#if showAskOrbis}
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={onAskOrbis}
+            class="gap-1.5 border-primary/20 bg-primary/5 font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10 hover:text-primary"
+            aria-label={m.common_search_ask_orbis_hint()}
+          >
+            <Sparkles class="size-3.5" />
+            <span>{m.shared_ui_ask_orbis()}</span>
+          </Button>
+        {/if}
       </div>
     {/if}
   {:else}

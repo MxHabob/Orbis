@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface VoiceProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface VoiceProps extends SvgProps {
 
 export function Voice({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,16 +45,17 @@ export function Voice({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
-      <Path d="M12 4L12 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
-		d="M8 9L8 15"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path><Path d="M20 10L20 14" strokeLinecap="round" strokeLinejoin="round"></Path><Path
-		d="M4 10L4 14"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path><Path d="M16 7L16 17" strokeLinecap="round" strokeLinejoin="round"></Path>
+      {...props}
+    >
+      <Path d="M12 4L12 20" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path d="M8 9L8 15" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path
+        d="M20 10L20 14"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></Path>
+      <Path d="M4 10L4 14" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path d="M16 7L16 17" strokeLinecap="round" strokeLinejoin="round"></Path>
     </Svg>
   );
 }

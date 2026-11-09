@@ -21,7 +21,10 @@ export function createPendingApprovalsQuery(
   approverRole?: () => string,
 ) {
   return createQuery<OverrideRequestDto[]>(() => ({
-    queryKey: queryKeys.workflow.overrides(orgId(), approverRole?.() || "pending"),
+    queryKey: queryKeys.workflow.overrides(
+      orgId(),
+      approverRole?.() || "pending",
+    ),
     queryFn: async () => {
       const overrides = await api.listOverrides("pending");
       const role = approverRole?.();
@@ -94,4 +97,3 @@ export function createRejectOverrideMutation() {
     },
   }));
 }
-

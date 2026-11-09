@@ -1,9 +1,6 @@
-import React from 'react';
-import Svg, {
-  Path,
-  type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+import React from "react";
+import Svg, { Path, type SvgProps } from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface CheckSquareProps extends SvgProps {
   size?: number;
@@ -14,7 +11,7 @@ export interface CheckSquareProps extends SvgProps {
 
 export function CheckSquare({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -31,17 +28,18 @@ export function CheckSquare({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		d="M3 20.4V3.6C3 3.26863 3.26863 3 3.6 3H20.4C20.7314 3 21 3.26863 21 3.6V20.4C21 20.7314 20.7314 21 20.4 21H3.6C3.26863 21 3 20.7314 3 20.4Z"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	 />
+        d="M3 20.4V3.6C3 3.26863 3.26863 3 3.6 3H20.4C20.7314 3 21 3.26863 21 3.6V20.4C21 20.7314 20.7314 21 20.4 21H3.6C3.26863 21 3 20.7314 3 20.4Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <Path
-		d="M7 12.5L10 15.5L17 8.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	 />
+        d="M7 12.5L10 15.5L17 8.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

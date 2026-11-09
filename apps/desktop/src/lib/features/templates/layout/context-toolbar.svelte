@@ -11,24 +11,42 @@ import { untrack } from "svelte";
  *  - Shape → fill, stroke, border-radius
  *  - Multi-select → align, distribute
  */
-import { AdjustmentsHorizontal, AlignHorizontal, AlignVertical, ArrowForward, ArrowLeft, Bold, Component, Eye, FloppyDisk, Grid, Italic, Knobs, Minus, Plus, Underline, UndoAction } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  AlignHorizontal,
+  AlignVertical,
+  ArrowForward,
+  ArrowLeft,
+  Bold,
+  Component,
+  Eye,
+  FloppyDisk,
+  Grid,
+  Italic,
+  Knobs,
+  Minus,
+  Plus,
+  Underline,
+  UndoAction,
+} from "@orbis/icons";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Input } from "@orbis/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
 } from "@orbis/ui/select";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@orbis/ui/tooltip";
+import ColorPicker from "../shared/color-picker.svelte";
 import type { EditorStore } from "../stores/editor-store.svelte";
 
 let {
@@ -82,6 +100,13 @@ const nodeType = $derived(isMultiSelect ? commonType : (node?.type ?? null));
 
 function updateProp(key: string, value: unknown) {
   store.updateSelectedProps({ props: { ...nodeProps, [key]: value } } as any);
+}
+
+function updateShapePaint(property: "fill" | "stroke", value: string) {
+  const alias = property === "fill" ? "fillColor" : "strokeColor";
+  store.updateSelectedProps({
+    props: { ...nodeProps, [property]: value, [alias]: undefined },
+  } as any);
 }
 
 // Keep track of local name value to prevent cursor jump during typing
@@ -287,18 +312,18 @@ function handleAlign(
       <!-- ═══ SHAPE TOOLBAR ═══ -->
       <div class="ctx-group">
         <span class="ctx-label">{m.template_prop_fill()}</span>
-        <input
-          type="color"
-          value={nodeProps.fillColor || "#e2e8f0"}
-          oninput={(e) => updateProp("fillColor", e.currentTarget.value)}
-          class="ctx-color-swatch"
+        <ColorPicker
+          size="sm"
+          value={nodeProps.fill || nodeProps.fillColor || "#e2e8f0"}
+          allowNone
+          onchange={(value) => updateShapePaint("fill", value)}
         />
         <span class="ctx-label">{m.template_prop_border()}</span>
-        <input
-          type="color"
-          value={nodeProps.strokeColor || "#94a3b8"}
-          oninput={(e) => updateProp("strokeColor", e.currentTarget.value)}
-          class="ctx-color-swatch"
+        <ColorPicker
+          size="sm"
+          value={nodeProps.stroke || nodeProps.strokeColor || "#94a3b8"}
+          allowNone
+          onchange={(value) => updateShapePaint("stroke", value)}
         />
         <Input
           type="number"

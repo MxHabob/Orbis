@@ -164,4 +164,14 @@ export const queryKeys = {
     jobStatus: (jobId: string) =>
       [...queryKeys.report.all, "jobStatus", jobId] as const,
   },
+
+  // ?? Notifications
+  notifications: {
+    all: ["notifications"] as const,
+    list: (filter?: { category?: string; is_read?: boolean }) =>
+      [...queryKeys.notifications.all, "list", filter ?? {}] as const,
+    unreadCount: () =>
+      [...queryKeys.notifications.all, "unread-count"] as const,
+    preferences: () => [...queryKeys.notifications.all, "preferences"] as const,
+  },
 };

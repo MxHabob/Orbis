@@ -6,7 +6,12 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import { createQuery } from "@tanstack/svelte-query";
-import { api, extractErrorMessage, type SectionSubjectDto, type SubjectDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type SectionSubjectDto,
+  type SubjectDto,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -19,7 +24,11 @@ import {
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 import { BookOpen, Plus, Refresh } from "@orbis/icons";
 import SectionSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
@@ -50,12 +59,16 @@ const subjectsQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
-const subjects = $derived((subjectsQuery.data || []) as EnrichedSectionSubject[]);
+const subjects = $derived(
+  (subjectsQuery.data || []) as EnrichedSectionSubject[],
+);
 const isLoading = $derived(subjectsQuery.isLoading);
 const error = $derived(subjectsQuery.error);
 
 function subjectName(subject: EnrichedSectionSubject): string {
-  return subject.catalog?.name_ar || subject.catalog?.name || subject.subject_id;
+  return (
+    subject.catalog?.name_ar || subject.catalog?.name || subject.subject_id
+  );
 }
 
 const columns: OrbisColumnDef[] = [
@@ -103,7 +116,7 @@ const gridSource = $derived(
   subjects.map((subject) => ({
     ...subject,
     subject_name: subjectName(subject),
-    teacher_display: subject.teacher_name || subject.primary_teacher_id || "-",
+    teacher_display: subject.teacher_name || subject.instructor_id || "-",
     weekly_hours: subject.weekly_hours || "-",
     status: subject.is_active === 0 ? "inactive" : "active",
   })),
@@ -177,7 +190,6 @@ function handleGridAction(event: GridActionEvent) {
             source={gridSource}
             loading={isLoading}
             height="100%"
-            rowSize={44}
             readonly
             onaction={handleGridAction}
             emptyTitle={m.common_empty_classes_desc()}
@@ -191,6 +203,7 @@ function handleGridAction(event: GridActionEvent) {
     bind:open={showSubjectSheet}
     {orgId}
     {classId}
+    periodId={periodId}
     onSuccess={() => subjectsQuery.refetch()}
   />
 </div>

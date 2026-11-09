@@ -18,7 +18,9 @@ let { orgId }: { orgId: string } = $props();
 const statsQuery = createDashboardStatsQuery(() => orgId);
 const stats = $derived(statsQuery.data ?? null);
 const isLoading = $derived(statsQuery.isLoading);
-const error = $derived(statsQuery.error ? extractErrorMessage(statsQuery.error) : null);
+const error = $derived(
+  statsQuery.error ? extractErrorMessage(statsQuery.error) : null,
+);
 </script>
 
 <div class="h-full min-h-0 flex-1 overflow-y-auto">

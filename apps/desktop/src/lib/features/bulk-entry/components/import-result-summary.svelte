@@ -1,37 +1,35 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import type { BulkCommitResult } from "../types";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import type { BulkCommitResult } from "../types";
 
-  interface Props {
-    result: BulkCommitResult;
-    onreset: () => void;
-    onretryfailed?: () => void;
-    onexportreport?: () => void;
-  }
+interface Props {
+  result: BulkCommitResult;
+  onreset: () => void;
+  onretryfailed?: () => void;
+  onexportreport?: () => void;
+}
 
-  let { result, onreset, onretryfailed, onexportreport }: Props = $props();
+let { result, onreset, onretryfailed, onexportreport }: Props = $props();
 
-  const licenseBlocked = $derived(result.licenseRejected);
-  const groupedErrors = $derived.by(() => {
-    const groups: Array<{ reason: string; count: number }> = [];
-    for (const error of result.errors) {
-      const reason = error.reason;
-      const existing = groups.find((group) => group.reason === reason);
-      if (existing) {
-        existing.count++;
-      } else {
-        groups.push({ reason, count: 1 });
-      }
+const licenseBlocked = $derived(result.licenseRejected);
+const groupedErrors = $derived.by(() => {
+  const groups: Array<{ reason: string; count: number }> = [];
+  for (const error of result.errors) {
+    const reason = error.reason;
+    const existing = groups.find((group) => group.reason === reason);
+    if (existing) {
+      existing.count++;
+    } else {
+      groups.push({ reason, count: 1 });
     }
-    return groups;
-  });
-  const remainingErrorCount = $derived(
-    result.errors.length -
-      groupedErrors
-        .slice(0, 4)
-        .reduce((total, group) => total + group.count, 0),
-  );
+  }
+  return groups;
+});
+const remainingErrorCount = $derived(
+  result.errors.length -
+    groupedErrors.slice(0, 4).reduce((total, group) => total + group.count, 0),
+);
 </script>
 
 <section class="mx-auto my-6 w-full max-w-2xl overflow-hidden rounded-xl border border-border/70 bg-background shadow-lg animate-in fade-in zoom-in-95 duration-200">

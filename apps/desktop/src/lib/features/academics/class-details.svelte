@@ -21,13 +21,11 @@ import {
   DocumentPage,
   GlobeAlt,
   InfoCircle,
-  Share,
   Users,
 } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
-
 
 import {
   createClassQuery,
@@ -42,8 +40,7 @@ import RelatedActions, {
 import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
 import SectionSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
 import ClassRecommendationsWidget from "$lib/shared/components/class-recommendations-widget.svelte";
-import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
-    import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
+import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
 
@@ -56,7 +53,7 @@ const studentsQuery = createClassStudentsQuery(() => classId);
 const attendanceQuery = createClassAttendanceQuery(
   () => classId,
   () => today,
-  );
+);
 
 const classData = $derived(classQuery.data);
 const students = $derived(studentsQuery.data ?? []);
@@ -110,95 +107,66 @@ function refetchAll() {
   attendanceQuery.refetch();
 }
 
-function handleShareLink() {
-  if (typeof window !== "undefined") {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success(m.common_copied_to_clipboard());
-  }
-}
-
 function handleNotifications() {
   toast.success(m.common_notifications_enabled());
 }
 
-const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
-  {
-    id: "academic_operations",
-    title: m.ui_copy_academic_operations_d82a1c76(),
-    icon: AcademicCap,
-    defaultExpanded: true,
-    subLinks: [
-      {
-        id: "class_roster",
-        label: m.ui_copy_class_roster_students_7c634c5e(),
-        icon: Users,
-        href: `/${orgId}/academics/sections/${classId}/students`,
-        badge: students.length,
-      },
-      {
-        id: "class_curriculum",
-        label: m.ui_copy_curriculum_subjects_70041ea1(),
-        icon: BookOpen,
-        href: `/${orgId}/academics/sections/${classId}/curriculum`,
-      },
-      {
-        id: "class_schedule",
-        label: m.ui_copy_weekly_schedule_e30b8a34(),
-        icon: Calendar,
-        href: `/${orgId}/academics/schedule?classId=${classId}`,
-      },
-    ],
-  },
-  {
-    id: "classroom_records",
-    title: m.ui_copy_classroom_records_grading_8d9c9224(),
-    icon: CheckSquare,
-    defaultExpanded: true,
-    subLinks: [
-      {
-        id: "daily_attendance",
-        label: m.ui_copy_daily_attendance_cc39a674(),
-        icon: CheckSquare,
-        href: `/${orgId}/academics/attendance?classId=${classId}`,
-      },
-      {
-        id: "grades_exams",
-        label: m.ui_copy_grades_assessment_entry_53bbff49(),
-        icon: DocumentPage,
-        href: `/${orgId}/academics/exams?classId=${classId}`,
-      },
-    ],
-  },
-] : []);
-
+const relatedActionGroups = $derived<ActionGroup[]>(
+  classData
+    ? [
+        {
+          id: "academic_operations",
+          title: m.ui_copy_academic_operations_d82a1c76(),
+          icon: AcademicCap,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "class_roster",
+              label: m.ui_copy_class_roster_students_7c634c5e(),
+              icon: Users,
+              href: `/${orgId}/academics/sections/${classId}/students`,
+              badge: students.length,
+            },
+            {
+              id: "class_curriculum",
+              label: m.ui_copy_curriculum_subjects_70041ea1(),
+              icon: BookOpen,
+              href: `/${orgId}/academics/sections/${classId}/curriculum`,
+            },
+            {
+              id: "class_schedule",
+              label: m.ui_copy_weekly_schedule_e30b8a34(),
+              icon: Calendar,
+              href: `/${orgId}/academics/schedule?classId=${classId}`,
+            },
+          ],
+        },
+        {
+          id: "classroom_records",
+          title: m.ui_copy_classroom_records_grading_8d9c9224(),
+          icon: CheckSquare,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "daily_attendance",
+              label: m.ui_copy_daily_attendance_cc39a674(),
+              icon: CheckSquare,
+              href: `/${orgId}/academics/attendance?classId=${classId}`,
+            },
+            {
+              id: "grades_exams",
+              label: m.ui_copy_grades_assessment_entry_53bbff49(),
+              icon: DocumentPage,
+              href: `/${orgId}/academics/exams?classId=${classId}`,
+            },
+          ],
+        },
+      ]
+    : [],
+);
 </script>
 
 <div class="h-full w-full flex flex-col font-sans gap-4 pb-6 text-start">
-  <!-- Top Bar with Primary Query / Share Actions -->
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    {#if classData}
-      <AskOrbisButton
-        query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
-        label={m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName })}
-        variant="default"
-        size="sm"
-        class="h-9 px-3.5 text-xs font-bold gap-1.5 shadow-sm"
-      />
-    {/if}
-
-    <div class="flex items-center gap-1.5 ms-auto">
-      <Button
-        variant="outline"
-        size="sm"
-        class="h-8 px-2.5 text-xs font-semibold gap-1.5"
-        onclick={handleShareLink}
-      >
-        <Share size={12} />
-        {m.common_action_share()}
-      </Button>
-    </div>
-  </div>
-
   {#if isLoading}
     <div class="space-y-4" aria-busy="true">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">

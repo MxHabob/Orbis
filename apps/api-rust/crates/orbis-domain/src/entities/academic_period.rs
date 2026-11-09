@@ -10,6 +10,7 @@ use uuid::Uuid;
 /// The structural type of a period in the academic hierarchy.
 ///
 /// This determines where the period sits in the Year → Term → Period tree:
+/// - `Annual` — represents the full academic year (schools enroll students here)
 /// - `Semester` / `Trimester` / `Quarter` — top-level terms under a Year
 /// - `Month` — monthly sub-period within a term
 /// - `Module` / `Block` — university/institute sub-periods
@@ -17,6 +18,8 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum PeriodType {
+    /// Full academic year period — schools enroll students in this period
+    Annual,
     /// Two terms per year (e.g. Term 1, Term 2)
     Semester,
     /// Three terms per year
@@ -36,6 +39,7 @@ pub enum PeriodType {
 impl std::fmt::Display for PeriodType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            PeriodType::Annual => write!(f, "annual"),
             PeriodType::Semester => write!(f, "semester"),
             PeriodType::Trimester => write!(f, "trimester"),
             PeriodType::Quarter => write!(f, "quarter"),
@@ -50,6 +54,7 @@ impl std::fmt::Display for PeriodType {
 impl PeriodType {
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
+            "annual" | "year" | "full_year" => Self::Annual,
             "semester" => Self::Semester,
             "trimester" => Self::Trimester,
             "quarter" => Self::Quarter,
@@ -58,6 +63,11 @@ impl PeriodType {
             "block" => Self::Block,
             _ => Self::Custom,
         }
+    }
+
+    /// Whether this type represents the full academic year.
+    pub fn is_annual(&self) -> bool {
+        matches!(self, Self::Annual)
     }
 
     /// Whether this type represents a top-level term (direct child of Year).

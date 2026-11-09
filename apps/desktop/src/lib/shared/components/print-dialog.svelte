@@ -6,7 +6,7 @@ import * as m from "$lib/paraglide/messages";
  * Supports multiple documents per sheet with WYSIWYG preview.
  */
 import { page } from "$app/state";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -28,13 +28,23 @@ import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import { CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh, Printer } from "@orbis/icons";
+import {
+  CheckCircle,
+  DocumentPage,
+  Download,
+  Grid,
+  InfoCircle,
+  Label,
+  Refresh,
+  Printer,
+} from "@orbis/icons";
 
 import {
   computeMultiUpLayout,
   computeTotalSheets,
   suggestLayouts,
   createDefaultMultiUpConfig,
+  getPageDimensions,
   layoutLabel,
   layoutLabelAr,
 } from "@docforge/core";
@@ -42,6 +52,7 @@ import type { MultiUpConfig, MultiUpLayout } from "@docforge/core";
 
 import MultiUpPreview from "./multi-up-preview.svelte";
 import PrintConfigPanel from "./print-config-panel.svelte";
+import { resolveDocumentImageDataUri } from "$lib/features/documents/queries";
 
 // ── Props ────────────────────────────────────────────────────
 
@@ -68,6 +79,7 @@ let selectedTemplateId = $state<string>("");
 let loadingTemplates = $state(false);
 let generatingPdf = $state(false);
 let pdfUrl = $state<string | null>(null);
+let previewError = $state<string | null>(null);
 let activeTab = $state("preview");
 
 // Batch progress
@@ -140,7 +152,8 @@ async function loadTemplates() {
       selectedTemplateId = "";
     }
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_print_templates_load_failed();
+    const msg =
+      (e as any)?.message || m.shared_ui_print_templates_load_failed();
     console.error(msg);
   } finally {
     loadingTemplates = false;
@@ -148,7 +161,9 @@ async function loadTemplates() {
 }
 
 async function setSelectedTemplateDefault() {
-  const selected = templates.find((template) => template.id === selectedTemplateId);
+  const selected = templates.find(
+    (template) => template.id === selectedTemplateId,
+  );
   if (!selected || selected.is_default) return;
 
   try {
@@ -159,8 +174,7 @@ async function setSelectedTemplateDefault() {
     }));
     toast.success(m.settings_templates_set_default_success());
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
     console.error("Failed to set print template as default:", error);
     toast.error(message);
   }
@@ -173,22 +187,15 @@ function updateConfigFromTemplate(template: any) {
     const doc = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson;
     const pageSetup = doc?.meta?.pageSetup ?? doc?.meta?.page_setup;
     if (pageSetup) {
-      const dimensions: Record<string, [number, number]> = {
-        A4: [210, 297],
-        A3: [297, 420],
-        A5: [148, 210],
-        Letter: [216, 279],
-        Legal: [216, 356],
-        ID_CARD: [85.6, 53.98],
-        BADGE: [86, 54],
-      };
-      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [
-        90, 50,
-      ];
-      const w = pageSetup.width ?? pageSetup.width_mm ?? presetWidth;
-      const h = pageSetup.height ?? pageSetup.height_mm ?? presetHeight;
-      multiUpConfig = createDefaultMultiUpConfig(w, h);
-      multiUpConfig.sheetOrientation = pageSetup.orientation ?? "portrait";
+      const orientation = pageSetup.orientation ?? "portrait";
+      const { width, height } = getPageDimensions(
+        pageSetup.size ?? "A4",
+        orientation,
+        pageSetup.width ?? pageSetup.width_mm,
+        pageSetup.height ?? pageSetup.height_mm,
+      );
+      multiUpConfig = createDefaultMultiUpConfig(width, height);
+      multiUpConfig.sheetOrientation = orientation;
       // Set fill order based on locale
       multiUpConfig.fillOrder = isRtl ? "rtl-ttb" : "ltr-ttb";
     }
@@ -203,6 +210,7 @@ $effect(() => {
   if (open && entityType) {
     loadTemplates();
     pdfUrl = null;
+    previewError = null;
     batchProgress = 0;
     isBatchProcessing = false;
     batchJobId = null;
@@ -267,40 +275,86 @@ function serializeMultiUpConfig(config: MultiUpConfig): string {
 async function resolveContexts(): Promise<Record<string, unknown>[]> {
   if (suppliedContexts) return suppliedContexts;
   if (entityType === "student") {
-    const students = await Promise.all(entityIds.map((id) => api.getStudent(id)));
+    const students = await Promise.all(
+      entityIds.map((id) => api.getStudent(id)),
+    );
+    const enrollments = await Promise.all(
+      students.map(({ student }) =>
+        api.listEnrollments({ student_id: student.id, page_size: 100 }),
+      ),
+    );
+    const activeEnrollments = enrollments.map((studentEnrollments) => {
+      const latestWithStatus = (status: string) =>
+        studentEnrollments
+          .filter((item) => item.status === status)
+          .sort((left, right) =>
+            right.enrollment_date.localeCompare(left.enrollment_date),
+          )[0] ?? null;
+
+      return latestWithStatus("active") ?? latestWithStatus("pending_approval");
+    });
     const classIds = [
       ...new Set(
-        students
-          .map(({ enrollment }) => enrollment?.section_id)
+        activeEnrollments
+          .map((enrollment) => enrollment?.section_id)
           .filter((id): id is string => Boolean(id)),
       ),
     ];
     const classes = await Promise.all(classIds.map((id) => api.getSection(id)));
     const classesById = new Map(classes.map((item) => [item.id, item]));
 
-    return students.map(({ student, person, enrollment }, index) => {
-      const classInfo = enrollment?.section_id
-        ? classesById.get(enrollment.section_id)
-        : undefined;
-      return {
-        student: {
-          ...student,
-          name: person.full_name,
-          nameAr: person.full_name_ar ?? student.name_ar ?? student.full_name,
-          studentNumber: student.student_number,
-          nationalId: person.national_id ?? student.national_id,
-          avatarUrl: student.avatar_url,
-          classId: enrollment?.section_id,
-          className: classInfo?.name,
-          classNameAr: classInfo?.name_ar,
-          level: classInfo?.level,
-        },
-        person,
-        enrollment,
-        class: classInfo,
-        label: entityLabels[index],
-      };
-    });
+    return Promise.all(
+      students.map(async ({ student, person }, index) => {
+        const enrollment = activeEnrollments[index];
+        const classInfo = enrollment?.section_id
+          ? classesById.get(enrollment.section_id)
+          : undefined;
+        const avatarSource = person.avatar_url ?? student.avatar_url;
+        const avatarUrl = avatarSource
+          ? await resolveDocumentImageDataUri(
+              avatarSource,
+              "student",
+              student.id,
+            )
+          : undefined;
+        return {
+          student: {
+            ...student,
+            name: person.full_name,
+            nameAr: person.full_name_ar ?? student.name_ar ?? student.full_name,
+            studentNumber: student.student_number,
+            student_number: student.student_number,
+            nationalId:
+              person.national_id ??
+              student.national_id ??
+              person.passport_number ??
+              student.passport_number,
+            national_id:
+              person.national_id ??
+              student.national_id ??
+              person.passport_number ??
+              student.passport_number,
+            avatar_url: avatarUrl,
+            avatarUrl,
+            classId: enrollment?.section_id,
+            className: isRtl
+              ? (classInfo?.name_ar ?? classInfo?.name)
+              : classInfo?.name,
+            classNameAr: classInfo?.name_ar,
+            class_name: isRtl
+              ? (classInfo?.name_ar ?? classInfo?.name)
+              : classInfo?.name,
+            class_name_ar: classInfo?.name_ar,
+            class_code: classInfo?.code,
+            level: classInfo?.level,
+          },
+          person: { ...person, avatar_url: avatarUrl },
+          enrollment,
+          class: classInfo,
+          label: entityLabels[index],
+        };
+      }),
+    );
   }
   return entityIds.map((id, index) => ({
     entity: { id, label: entityLabels[index] },
@@ -311,6 +365,7 @@ async function generatePdf(): Promise<boolean> {
   if (!selectedTemplateId || entityIds.length === 0) return false;
   generatingPdf = true;
   pdfUrl = null;
+  previewError = null;
   try {
     const template = templates.find((t) => t.id === selectedTemplateId);
     if (!template) throw new Error(m.shared_ui_print_preview_failed());
@@ -331,8 +386,8 @@ async function generatePdf(): Promise<boolean> {
     activeTab = "pdf";
     return true;
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_print_preview_failed();
-    toast.error(msg);
+    previewError = extractErrorMessage(e) || m.shared_ui_print_preview_failed();
+    toast.error(previewError);
     return false;
   } finally {
     generatingPdf = false;
@@ -376,11 +431,13 @@ async function handlePrintAction() {
         batchConfig: JSON.parse(serializeMultiUpConfig(multiUpConfig)),
         locale: getLocale(),
       });
-      if (!pdfBytes.length) throw new Error(m.shared_ui_print_generation_failed());
+      if (!pdfBytes.length)
+        throw new Error(m.shared_ui_print_generation_failed());
       batchProgress = 80;
 
+      const pdfBuffer = new Uint8Array(pdfBytes).buffer;
       const blobUrl = URL.createObjectURL(
-        new Blob([pdfBytes], { type: "application/pdf" }),
+        new Blob([pdfBuffer], { type: "application/pdf" }),
       );
       printWin.addEventListener(
         "load",
@@ -401,8 +458,9 @@ async function handlePrintAction() {
       );
     } catch (e: unknown) {
       printWin.close();
-      const msg = (e as any)?.message || m.shared_ui_print_generation_failed();
-      toast.error(msg);
+      toast.error(
+        extractErrorMessage(e) || m.shared_ui_print_generation_failed(),
+      );
     } finally {
       isBatchProcessing = false;
     }
@@ -570,7 +628,9 @@ function applySuggestion(suggestion: MultiUpLayout) {
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
                   <DocumentPage size={28} />
-                  <p>{m.common_print_multi_up_preview_empty()}</p>
+                  <p class={previewError ? "text-destructive" : ""}>
+                    {previewError || m.common_print_multi_up_preview_empty()}
+                  </p>
                   <Button
                     variant="outline"
                     size="xs"

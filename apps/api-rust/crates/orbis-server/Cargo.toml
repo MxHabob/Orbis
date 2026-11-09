@@ -1,6 +1,6 @@
 [package]
 name = "orbis-server"
-version = "0.1.0"
+version = "1.1.2"
 edition = "2024"
 default-run = "orbis-server"
 
@@ -15,6 +15,7 @@ orbis-infra.workspace = true
 docforge-engine.workspace = true
 axum = { workspace = true, features = ["multipart"] }
 tokio.workspace = true
+tokio-stream = { version = "0.1", features = ["sync"] }
 chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -28,8 +29,8 @@ aes-gcm = "0.10"
 rust_decimal.workspace = true
 utoipa = { version = "4.2.3", features = ["axum_extras", "uuid", "chrono", "decimal"] }
 utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }
-jsonwebtoken.workspace = true
 tower-http = { workspace = true, features = ["cors"] }
+mdns-sd = "0.21.6"
 
 [[bin]]
 name = "export_openapi"

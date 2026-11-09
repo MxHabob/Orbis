@@ -12,7 +12,9 @@ function isOrganizationLicenseError(reason: string): boolean {
   const normalized = reason.toLocaleLowerCase();
   return (
     normalized.includes("license is not valid for the active organization") ||
-    normalized.includes("product key is not valid for the active organization") ||
+    normalized.includes(
+      "product key is not valid for the active organization",
+    ) ||
     normalized.startsWith("license required:")
   );
 }
@@ -34,7 +36,9 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
     throw new RangeError("chunkSize must be a positive safe integer");
   }
 
-  const validRows = rows.filter((r) => r.status === "valid" || r.status === "warning");
+  const validRows = rows.filter(
+    (r) => r.status === "valid" || r.status === "warning",
+  );
   const totalRows = validRows.length;
   const totalChunks = Math.ceil(totalRows / chunkSize);
   const batchId = `BATCH-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -108,7 +112,8 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
               ? m.bulk_entry_result_license_invalid()
               : rowError && isOrganizationLicenseError(rowError.reason)
                 ? m.bulk_entry_result_license_invalid()
-                : rowError?.reason ?? m.bulk_entry_commit_transaction_failed();
+                : (rowError?.reason ??
+                  m.bulk_entry_commit_transaction_failed());
             row.commitError = reason;
             row.data.status = m.bulk_entry_status_failed({ reason });
             failedCount++;

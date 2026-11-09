@@ -11,6 +11,11 @@ export enum FilterOperator {
   NotIn = "NotIn",
   IsNull = "IsNull",
   IsNotNull = "IsNotNull",
+  StartsWith = "starts_with",
+  EndsWith = "ends_with",
+  Between = "between",
+  BoolTrue = "bool_true",
+  BoolFalse = "bool_false",
 }
 
 export type FilterOperatorType =
@@ -50,13 +55,14 @@ export type FilterOperatorType =
   | "date_is_this_week"
   | "date_is_this_month"
   | "bool_true"
-  | "bool_false";
+  | "bool_false"
+  | (string & {});
 
 export type FilterValue =
   | string
   | number
   | boolean
-  | Array<string | number>
+  | Array<string | number | boolean>
   | undefined
   | null;
 
@@ -94,6 +100,36 @@ export interface FilterTranslations {
   removeCondition: string;
   clearAll: string;
   applyFilter: string;
+  selectField: string;
+  selectValue: string;
+  valuePlaceholder: string;
+  notApplicable: string;
+  operatorEqual: string;
+  operatorNotEqual: string;
+  operatorGreaterThan: string;
+  operatorGreaterThanOrEqual: string;
+  operatorLessThan: string;
+  operatorLessThanOrEqual: string;
+  operatorContains: string;
+  operatorNotContains: string;
+  operatorIn: string;
+  operatorNotIn: string;
+  operatorStartsWith: string;
+  operatorEndsWith: string;
+  operatorBetween: string;
+  operatorIs: string;
+  operatorIsEmpty: string;
+  operatorIsNotEmpty: string;
+  trueValue: string;
+  falseValue: string;
+}
+
+export interface FilterBuilderProps {
+  filter: UniversalFilter;
+  fields: FieldDefinition[];
+  isRoot?: boolean;
+  onRemove?: () => void;
+  translations?: FilterTranslations;
 }
 
 export const defaultFilterTranslations: FilterTranslations = {
@@ -110,4 +146,64 @@ export const defaultFilterTranslations: FilterTranslations = {
   removeCondition: "Remove Condition",
   clearAll: "Clear All",
   applyFilter: "Apply Filter",
+  selectField: "Select field",
+  selectValue: "Select value",
+  valuePlaceholder: "Value...",
+  notApplicable: "N/A",
+  operatorEqual: "=",
+  operatorNotEqual: "≠",
+  operatorGreaterThan: ">",
+  operatorGreaterThanOrEqual: "≥",
+  operatorLessThan: "<",
+  operatorLessThanOrEqual: "≤",
+  operatorContains: "Contains",
+  operatorNotContains: "Not contains",
+  operatorIn: "In",
+  operatorNotIn: "Not in",
+  operatorStartsWith: "Starts with",
+  operatorEndsWith: "Ends with",
+  operatorBetween: "Between",
+  operatorIs: "Is",
+  operatorIsEmpty: "Is empty",
+  operatorIsNotEmpty: "Is not empty",
+  trueValue: "True",
+  falseValue: "False",
+};
+
+export const arabicFilterTranslations: FilterTranslations = {
+  filter: "تصفية",
+  advancedFilter: "تصفية متقدمة",
+  matchAll: "مطابقة جميع الشروط التالية:",
+  matchAny: "مطابقة أي شرط من التالي:",
+  rule: "شرط",
+  group: "مجموعة",
+  removeGroup: "إزالة المجموعة",
+  noRules: "لا توجد شروط في هذه المجموعة.",
+  addRule: "إضافة شرط",
+  addSubGroup: "إضافة مجموعة فرعية",
+  removeCondition: "إزالة الشرط",
+  clearAll: "مسح عوامل التصفية",
+  applyFilter: "تطبيق التصفية",
+  selectField: "اختر الحقل",
+  selectValue: "اختر قيمة",
+  valuePlaceholder: "القيمة...",
+  notApplicable: "لا ينطبق",
+  operatorEqual: "يساوي",
+  operatorNotEqual: "لا يساوي",
+  operatorGreaterThan: "أكبر من",
+  operatorGreaterThanOrEqual: "أكبر من أو يساوي",
+  operatorLessThan: "أقل من",
+  operatorLessThanOrEqual: "أقل من أو يساوي",
+  operatorContains: "يحتوي على",
+  operatorNotContains: "لا يحتوي على",
+  operatorIn: "ضمن القيم",
+  operatorNotIn: "ليس ضمن القيم",
+  operatorStartsWith: "يبدأ بـ",
+  operatorEndsWith: "ينتهي بـ",
+  operatorBetween: "بين",
+  operatorIs: "هو",
+  operatorIsEmpty: "فارغ",
+  operatorIsNotEmpty: "غير فارغ",
+  trueValue: "نعم",
+  falseValue: "لا",
 };

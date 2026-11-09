@@ -4,132 +4,156 @@ Standard form for creating or editing an Academic Year.
 Uses FormController, BilingualNameFields, and shared UI components.
 -->
 <script lang="ts">
-  import { untrack } from "svelte";
-  import { api, extractErrorMessage } from "$lib/api";
-  import * as m from "$lib/paraglide/messages";
-  import { academicContext } from "$lib/stores";
-  import type { academicCalendarDto } from "@orbis/sdk";
-  import { toast } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { FormField } from "@orbis/ui";
-  import { SheetHeader, SheetTitle, SheetDescription } from "@orbis/ui/sheet";
-  import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
-  import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
-  import { Sparkles, Calendar } from "@orbis/icons";
+import { untrack } from "svelte";
+import { api, extractErrorMessage } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
+import { academicContext } from "$lib/stores";
+import type { academicCalendarDto } from "@orbis/sdk";
+import { toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { FormField } from "@orbis/ui";
+import { SheetHeader, SheetTitle, SheetDescription } from "@orbis/ui/sheet";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { Sparkles, Calendar } from "@orbis/icons";
 
-  let {
-    orgId,
-    year = null,
-    existingYears = [],
-    onSuccess,
-    onCancel,
-  }: {
-    orgId: string;
-    year?: academicCalendarDto | null;
-    existingYears?: academicCalendarDto[];
-    onSuccess: () => void;
-    onCancel: () => void;
-  } = $props();
+let {
+  orgId,
+  year = null,
+  existingYears = [],
+  onSuccess,
+  onCancel,
+}: {
+  orgId: string;
+  year?: academicCalendarDto | null;
+  existingYears?: academicCalendarDto[];
+  onSuccess: () => void;
+  onCancel: () => void;
+} = $props();
 
-  const isEdit = $derived(!!year);
+const isEdit = $derived(!!year);
 
-  // Preset next school year dates by default if new
-  const currentYearNum = new Date().getFullYear();
-  const defaultStartDate = `${currentYearNum}-09-01`;
-  const defaultEndDate = `${currentYearNum + 1}-06-30`;
+// Preset next school year dates by default if new
+const currentYearNum = new Date().getFullYear();
+const defaultStartDate = `${currentYearNum}-09-01`;
+const defaultEndDate = `${currentYearNum + 1}-06-30`;
 
-  const form = untrack(
-    () =>
-      new FormController({
-        initialValues: {
-          name: year?.name || `Academic Year ${currentYearNum}/${currentYearNum + 1}`,
-          name_ar: year?.name_ar || `العام الدراسي ${currentYearNum}/${currentYearNum + 1}`,
-          start_date: year?.start_date ? year.start_date.slice(0, 10) : defaultStartDate,
-          end_date: year?.end_date ? year.end_date.slice(0, 10) : defaultEndDate,
-          notes: year?.notes || "",
-        },
-      }),
+const form = untrack(
+  () =>
+    new FormController({
+      initialValues: {
+        name:
+          year?.name ||
+          m.year_sheet_academic_year_name(
+            { startYear: currentYearNum, endYear: currentYearNum + 1 },
+            { locale: "en" },
+          ),
+        name_ar:
+          year?.name_ar ||
+          m.year_sheet_academic_year_name(
+            { startYear: currentYearNum, endYear: currentYearNum + 1 },
+            { locale: "ar" },
+          ),
+        start_date: year?.start_date
+          ? year.start_date.slice(0, 10)
+          : defaultStartDate,
+        end_date: year?.end_date ? year.end_date.slice(0, 10) : defaultEndDate,
+        notes: year?.notes || "",
+      },
+    }),
+);
+
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
+}
+
+function applyHijriPreset() {
+  const currentYear = new Date().getFullYear();
+  const hijriEstimate = currentYear - 579;
+  form.values.name = m.year_sheet_hijri_year_name(
+    { startYear: hijriEstimate, endYear: hijriEstimate + 1 },
+    { locale: "en" },
   );
+  form.values.name_ar = m.year_sheet_hijri_year_name(
+    { startYear: hijriEstimate, endYear: hijriEstimate + 1 },
+    { locale: "ar" },
+  );
+  form.values.start_date = `${currentYear}-08-25`;
+  form.values.end_date = `${currentYear + 1}-06-15`;
+}
 
-  function fieldError(field: string): string | undefined {
-    return form.errors[field]?.[0];
+function applyGregorianPreset() {
+  const currentYear = new Date().getFullYear();
+  form.values.name = m.year_sheet_academic_year_name(
+    { startYear: currentYear, endYear: currentYear + 1 },
+    { locale: "en" },
+  );
+  form.values.name_ar = m.year_sheet_academic_year_name(
+    { startYear: currentYear, endYear: currentYear + 1 },
+    { locale: "ar" },
+  );
+  form.values.start_date = `${currentYear}-09-01`;
+  form.values.end_date = `${currentYear + 1}-06-30`;
+}
+
+function validateCustom(): string | null {
+  const s = new Date(form.values.start_date);
+  const e = new Date(form.values.end_date);
+  if (s >= e) {
+    return m.year_sheet_validation_order();
   }
-
-  function applyHijriPreset() {
-    const currentYear = new Date().getFullYear();
-    const hijriEstimate = currentYear - 579;
-    form.values.name = `${hijriEstimate}/${hijriEstimate + 1} AH`;
-    form.values.name_ar = `العام الدراسي ${hijriEstimate}/${hijriEstimate + 1} هـ`;
-    form.values.start_date = `${currentYear}-08-25`;
-    form.values.end_date = `${currentYear + 1}-06-15`;
-  }
-
-  function applyGregorianPreset() {
-    const currentYear = new Date().getFullYear();
-    form.values.name = `Academic Year ${currentYear}/${currentYear + 1}`;
-    form.values.name_ar = `العام الدراسي ${currentYear}/${currentYear + 1}`;
-    form.values.start_date = `${currentYear}-09-01`;
-    form.values.end_date = `${currentYear + 1}-06-30`;
-  }
-
-  function validateCustom(): string | null {
-    const s = new Date(form.values.start_date);
-    const e = new Date(form.values.end_date);
-    if (s >= e) {
-      return m.year_sheet_validation_order();
-    }
-    for (const y of existingYears) {
-      if (isEdit && y.id === year?.id) continue;
-      const ys = new Date(y.start_date);
-      const ye = new Date(y.end_date);
-      if (s < ye && e > ys) {
-        return m.year_sheet_validation_overlap();
-      }
-    }
-    return null;
-  }
-
-  async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    const customErr = validateCustom();
-    if (customErr) {
-      toast.error(customErr);
-      return;
-    }
-
-    const submitted = await form.submit(async (payload) => {
-      const name = payload.name || payload.name_ar;
-      if (!name) throw new Error(m.year_sheet_validation_name());
-
-      if (isEdit && year?.id) {
-        await api.updateacademicCalendar(year.id, {
-          name,
-          name_ar: payload.name_ar || undefined,
-          start_date: new Date(payload.start_date).toISOString(),
-          end_date: new Date(payload.end_date).toISOString(),
-          notes: payload.notes || undefined,
-        });
-        toast.success(m.year_sheet_updated_success());
-      } else {
-        await api.createacademicCalendar({
-          name,
-          name_ar: payload.name_ar || undefined,
-          start_date: new Date(payload.start_date).toISOString(),
-          end_date: new Date(payload.end_date).toISOString(),
-        });
-        toast.success(m.year_sheet_created_success());
-      }
-      await academicContext.resolveContext(orgId);
-    });
-
-    if (submitted) {
-      onSuccess();
-    } else if (form.formError) {
-      toast.error(form.formError);
+  for (const y of existingYears) {
+    if (isEdit && y.id === year?.id) continue;
+    const ys = new Date(y.start_date);
+    const ye = new Date(y.end_date);
+    if (s < ye && e > ys) {
+      return m.year_sheet_validation_overlap();
     }
   }
+  return null;
+}
+
+async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
+  const customErr = validateCustom();
+  if (customErr) {
+    toast.error(customErr);
+    return;
+  }
+
+  const submitted = await form.submit(async (payload) => {
+    const name = payload.name || payload.name_ar;
+    if (!name) throw new Error(m.year_sheet_validation_name());
+
+    if (isEdit && year?.id) {
+      await api.updateacademicCalendar(year.id, {
+        name,
+        name_ar: payload.name_ar || undefined,
+        start_date: new Date(payload.start_date).toISOString(),
+        end_date: new Date(payload.end_date).toISOString(),
+        notes: payload.notes || undefined,
+      });
+      toast.success(m.year_sheet_updated_success());
+    } else {
+      await api.createacademicCalendar({
+        name,
+        name_ar: payload.name_ar || undefined,
+        start_date: new Date(payload.start_date).toISOString(),
+        end_date: new Date(payload.end_date).toISOString(),
+      });
+      toast.success(m.year_sheet_created_success());
+    }
+    await academicContext.resolveContext(orgId);
+  });
+
+  if (submitted) {
+    onSuccess();
+  } else if (form.formError) {
+    toast.error(form.formError);
+  }
+}
 </script>
 
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0 font-sans">

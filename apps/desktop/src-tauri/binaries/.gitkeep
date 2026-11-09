@@ -1,0 +1,2 @@
+# Managed Solver binaries are downloaded into the user data directory on demand.
+# This directory remains empty; Solver executables are not Tauri external binaries.

@@ -5,10 +5,33 @@ import { fileURLToPath } from "node:url";
 
 export function normalizeUpdaterPublicKey(rawValue) {
   if (!rawValue?.trim()) {
-    throw new Error("TAURI_UPDATER_PUBLIC_KEY is required for release builds.");
+    throw new Error(
+      "TAURI_UPDATER_PUBLIC_KEY is required for production updater builds.",
+    );
   }
 
-  const publicKey = rawValue.trim().replace(/\r\n/g, "\n");
+  let publicKey = rawValue.trim().replace(/\r\n/g, "\n");
+  if (!publicKey.startsWith("untrusted comment:")) {
+    const encodedValue = rawValue.trim().replace(/\s+/g, "");
+    if (
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+        encodedValue,
+      )
+    ) {
+      throw new Error(
+        "TAURI_UPDATER_PUBLIC_KEY must be a minisign public key or its base64 encoding.",
+      );
+    }
+
+    const decodedValue = Buffer.from(encodedValue, "base64");
+    if (decodedValue.toString("base64") !== encodedValue) {
+      throw new Error(
+        "TAURI_UPDATER_PUBLIC_KEY is not valid canonical base64.",
+      );
+    }
+    publicKey = decodedValue.toString("utf8").replace(/\r\n/g, "\n").trim();
+  }
+
   const [comment, keyLine, ...extraLines] = publicKey.split("\n");
   const keyBytes = Buffer.from(keyLine ?? "", "base64");
   if (
@@ -18,7 +41,9 @@ export function normalizeUpdaterPublicKey(rawValue) {
     keyBytes.toString("base64") !== keyLine ||
     extraLines.length > 0
   ) {
-    throw new Error("TAURI_UPDATER_PUBLIC_KEY is not a valid minisign public key.");
+    throw new Error(
+      "TAURI_UPDATER_PUBLIC_KEY is not a valid minisign public key.",
+    );
   }
 
   return Buffer.from(publicKey, "utf8").toString("base64");
@@ -49,25 +74,31 @@ if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  const updaterPublicKey = process.env.TAURI_UPDATER_PUBLIC_KEY?.trim();
-  normalizeUpdaterPublicKey(updaterPublicKey);
+  const updaterPublicKey = normalizeUpdaterPublicKey(
+    process.env.TAURI_UPDATER_PUBLIC_KEY,
+  );
   const updaterEndpoint = normalizeHttpsUrl(
     process.env.TAURI_UPDATER_ENDPOINT,
     "TAURI_UPDATER_ENDPOINT",
   );
-  const componentPublicKey = process.env.ORBIS_COMPONENT_PUBLIC_KEY;
-  const encodedComponentPublicKey = normalizeUpdaterPublicKey(componentPublicKey);
+  const componentPublicKey = normalizeUpdaterPublicKey(
+    process.env.ORBIS_COMPONENT_PUBLIC_KEY,
+  );
   const solverManifestUrl = normalizeHttpsUrl(
     process.env.ORBIS_SOLVER_MANIFEST_URL,
     "ORBIS_SOLVER_MANIFEST_URL",
   );
+  const desktopRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+  );
   const configPath = path.resolve(
     process.env.TAURI_UPDATER_CONFIG_PATH ??
       path.join(
-        path.dirname(fileURLToPath(import.meta.url)),
-        "..",
+        desktopRoot,
         "src-tauri",
-        "tauri.updater.conf.json",
+        "target",
+        "tauri-updater-release.conf.json",
       ),
   );
 
@@ -93,8 +124,10 @@ if (
   if (process.env.GITHUB_ENV) {
     appendFileSync(
       process.env.GITHUB_ENV,
-      `ORBIS_SOLVER_PUBLIC_KEY_B64=${encodedComponentPublicKey}\nORBIS_SOLVER_MANIFEST_URL=${solverManifestUrl}\n`,
+      `ORBIS_SOLVER_PUBLIC_KEY_B64=${componentPublicKey}\nORBIS_SOLVER_MANIFEST_URL=${solverManifestUrl}\n`,
     );
   }
-  console.log("Validated and prepared signed desktop and solver runtime configuration.");
+  console.log(
+    "Validated and prepared signed desktop and solver runtime configuration.",
+  );
 }

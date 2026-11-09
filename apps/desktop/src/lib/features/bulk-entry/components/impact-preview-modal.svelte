@@ -1,23 +1,23 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-  } from "@orbis/ui/dialog";
-  import type { BulkPreviewSummary } from "../types";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
+import type { BulkPreviewSummary } from "../types";
 
-  interface Props {
-    open: boolean;
-    summary: BulkPreviewSummary<any> | null;
-    onclose: () => void;
-    onconfirm: () => void;
-  }
+interface Props {
+  open: boolean;
+  summary: BulkPreviewSummary<any> | null;
+  onclose: () => void;
+  onconfirm: () => void;
+}
 
-  let { open, summary, onclose, onconfirm }: Props = $props();
+let { open, summary, onclose, onconfirm }: Props = $props();
 </script>
 
 <Dialog

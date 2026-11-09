@@ -1,7 +1,10 @@
 <script lang="ts">
 import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
 import { cn } from "../../../utils.js";
-import { useDirectionAwareSide, type PositionSide } from "../../../utils/direction.svelte.js";
+import {
+  useDirectionAwareSide,
+  type PositionSide,
+} from "../../../utils/direction.svelte.js";
 
 let {
   ref = $bindable(null),

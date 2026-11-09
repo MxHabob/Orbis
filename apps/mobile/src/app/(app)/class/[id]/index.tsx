@@ -15,6 +15,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListItem } from "@/components/ui/list-item";
 import { useTeacherClassDataQuery } from "@/hooks/use-api-queries";
+import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import {
@@ -56,10 +57,7 @@ export default function ClassIndexScreen() {
       {classQuery.data ? (
         <>
           {/* 1. Class Metric Banner */}
-          <Card
-            variant="default"
-            padding="four"
-          >
+          <Card variant="default" padding="four">
             <View className="flex-row items-center justify-between">
               <View className="gap-half">
                 <Text className="text-xl font-extrabold text-foreground">
@@ -70,10 +68,14 @@ export default function ClassIndexScreen() {
                 </Text>
               </View>
 
-              <Badge variant="secondary" className="flex-row items-center gap-one px-three py-one">
+              <Badge
+                variant="secondary"
+                className="flex-row items-center gap-one px-three py-one"
+              >
                 <Users size={14} color={theme.primary} />
                 <Text className="text-xs font-bold text-primary">
-                  {formatNumber(roster.length)} {t("teacher_students_count_short") || "Students"}
+                  {formatNumber(roster.length)}{" "}
+                  {t("teacher_students_count_short") || "Students"}
                 </Text>
               </Badge>
             </View>
@@ -152,7 +154,8 @@ export default function ClassIndexScreen() {
                 {t("teacher_class_roster")}
               </Text>
               <Text className="text-xs font-semibold text-muted-foreground">
-                {formatNumber(roster.length)} {t("teacher_students_count_short") || "Enrolled"}
+                {formatNumber(roster.length)}{" "}
+                {t("teacher_students_count_short") || "Enrolled"}
               </Text>
             </View>
 
@@ -160,40 +163,45 @@ export default function ClassIndexScreen() {
               <EmptyState title={t("teacher_no_students")} />
             ) : (
               <Card variant="default" padding="one">
-                {roster.map(({ student, enrollment }, index) => {
-                  const studentName = isArabic
-                    ? student.name_ar || student.full_name
-                    : student.display_name || student.full_name;
+                {roster.map(
+                  (
+                    { student, enrollment }: TeacherRosterEntry,
+                    index: number,
+                  ) => {
+                    const studentName = isArabic
+                      ? student.name_ar || student.full_name
+                      : student.display_name || student.full_name;
 
-                  return (
-                    <View key={student.id}>
-                      {index > 0 ? (
-                        <View className="mx-three h-px bg-border" />
-                      ) : null}
-                      <ListItem
-                        title={studentName}
-                        subtitle={
-                          enrollment.student_number ||
-                          `ID: #${student.id.slice(0, 6)}`
-                        }
-                        left={
-                          <Avatar
-                            fallback={(studentName || "S").charAt(0)}
-                            size="sm"
-                            className="bg-primary/10"
-                          />
-                        }
-                        chevron
-                        onPress={() =>
-                          router.push({
-                            pathname: "/(app)/student/[id]",
-                            params: { id: student.id },
-                          })
-                        }
-                      />
-                    </View>
-                  );
-                })}
+                    return (
+                      <View key={student.id}>
+                        {index > 0 ? (
+                          <View className="mx-three h-px bg-border" />
+                        ) : null}
+                        <ListItem
+                          title={studentName}
+                          subtitle={
+                            enrollment.student_number ||
+                            `ID: #${student.id.slice(0, 6)}`
+                          }
+                          left={
+                            <Avatar
+                              fallback={(studentName || "S").charAt(0)}
+                              size="sm"
+                              className="bg-primary/10"
+                            />
+                          }
+                          chevron
+                          onPress={() =>
+                            router.push({
+                              pathname: "/(app)/student/[id]",
+                              params: { id: student.id },
+                            })
+                          }
+                        />
+                      </View>
+                    );
+                  },
+                )}
               </Card>
             )}
           </View>

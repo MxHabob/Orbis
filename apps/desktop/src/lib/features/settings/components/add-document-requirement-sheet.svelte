@@ -24,7 +24,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { DocumentCheck, Plus, Lock, Sparkles, BuildingOffice } from "@orbis/icons";
+import {
+  DocumentCheck,
+  Plus,
+  Lock,
+  Sparkles,
+  BuildingOffice,
+} from "@orbis/icons";
 import { toast } from "@orbis/ui";
 
 import { api, type ClassDto, type DocumentRequirementDto } from "$lib/api";
@@ -65,11 +71,12 @@ function resetForm() {
 // Auto-generate code from English or Arabic name
 function autoGenerateCode() {
   if (!code && (nameEn || nameAr)) {
-    code = (nameEn || nameAr)
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "") || `doc_${Date.now()}`;
+    code =
+      (nameEn || nameAr)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "") || `doc_${Date.now()}`;
   }
 }
 
@@ -80,10 +87,11 @@ async function handleSubmit(e?: Event) {
     return;
   }
 
-  const generatedCode = (code.trim() || nameEn.trim() || nameAr.trim())
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "") || `doc_${Date.now()}`;
+  const generatedCode =
+    (code.trim() || nameEn.trim() || nameAr.trim())
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "") || `doc_${Date.now()}`;
 
   isSubmitting = true;
   try {
@@ -98,7 +106,9 @@ async function handleSubmit(e?: Event) {
       condition,
     });
 
-    toast.success(m.ui_copy_document_requirement_created_successfully_07533818());
+    toast.success(
+      m.ui_copy_document_requirement_created_successfully_07533818(),
+    );
     oncreated?.(created);
     open = false;
   } catch (err: any) {

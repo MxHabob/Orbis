@@ -17,7 +17,11 @@ import {
 } from "@orbis/ui/sheet";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
-import type { AcademicPeriodDto, ClassDto, ReportDefinitionDto } from "$lib/api";
+import type {
+  AcademicPeriodDto,
+  ClassDto,
+  ReportDefinitionDto,
+} from "$lib/api";
 
 interface Props {
   open: boolean;

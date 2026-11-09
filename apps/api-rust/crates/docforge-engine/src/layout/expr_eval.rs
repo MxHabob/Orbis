@@ -143,6 +143,8 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             })]
         }
         TemplateNode::Frame(n) => {
+            let mut props = n.props.clone();
+            props.position = n.position.clone().or(props.position);
             let mut children = Vec::new();
             for child in &n.children {
                 children.extend(evaluate_node_tree(child, context));
@@ -150,7 +152,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             vec![EvaluatedNode::Frame(EvaluatedFrame {
                 id: n.id.clone(),
                 name: n.name.clone(),
-                props: n.props.clone(),
+                props,
                 children,
             })]
         }
@@ -168,6 +170,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         }
         TemplateNode::Text(n) => {
             let mut props = n.props.clone();
+            props.position = n.position.clone().or(props.position);
             props.content = evaluate_expression(&props.content, context);
             vec![EvaluatedNode::Text(EvaluatedText {
                 id: n.id.clone(),
@@ -177,7 +180,14 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         }
         TemplateNode::Image(n) => {
             let mut props = n.props.clone();
-            if let Some(ref src) = props.src {
+            props.position = n.position.clone().or(props.position);
+            if let Some(expression) = props
+                .expression
+                .as_deref()
+                .filter(|expression| !expression.trim().is_empty())
+            {
+                props.src = Some(evaluate_expression(expression, context));
+            } else if let Some(ref src) = props.src {
                 props.src = Some(evaluate_expression(src, context));
             }
             vec![EvaluatedNode::Image(EvaluatedImage {
@@ -187,10 +197,12 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             })]
         }
         TemplateNode::Shape(n) => {
+            let mut props = n.props.clone();
+            props.position = n.position.clone().or(props.position);
             vec![EvaluatedNode::Shape(EvaluatedShape {
                 id: n.id.clone(),
                 name: n.name.clone(),
-                props: n.props.clone(),
+                props,
             })]
         }
         TemplateNode::Table(n) => {
@@ -215,6 +227,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         }
         TemplateNode::Barcode(n) => {
             let mut props = n.props.clone();
+            props.position = n.position.clone().or(props.position);
             props.data = evaluate_expression(&props.data, context);
             vec![EvaluatedNode::Barcode(EvaluatedBarcode {
                 id: n.id.clone(),
@@ -224,6 +237,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         }
         TemplateNode::QRCode(n) => {
             let mut props = n.props.clone();
+            props.position = n.position.clone().or(props.position);
             props.data = evaluate_expression(&props.data, context);
             vec![EvaluatedNode::QRCode(EvaluatedQRCode {
                 id: n.id.clone(),
@@ -232,10 +246,12 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             })]
         }
         TemplateNode::Separator(n) => {
+            let mut props = n.props.clone();
+            props.position = n.position.clone().or(props.position);
             vec![EvaluatedNode::Separator(EvaluatedSeparator {
                 id: n.id.clone(),
                 name: n.name.clone(),
-                props: n.props.clone(),
+                props,
             })]
         }
         TemplateNode::Spacer(n) => {
@@ -299,6 +315,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
                 Vec::new()
             }
         }
+
         TemplateNode::Repeater(n) => {
             let mut results = Vec::new();
             let data_val = resolve_path(context, &n.props.data_source).unwrap_or(Value::Null);
@@ -320,6 +337,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
                     }
                 }
             }
+
             results
         }
         TemplateNode::ComponentRef(n) => {
@@ -331,5 +349,38 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             );
             Vec::new()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn image_source_expression_resolves_from_context() {
+        let image: TemplateNode = serde_json::from_value(json!({
+            "type": "Image",
+            "id": "student-photo",
+            "props": {
+                "expression": "{{student.avatar_url}}",
+                "src": "data:image/png;base64,ZmFsbGJhY2s="
+            }
+        }))
+        .unwrap();
+        let context = json!({
+            "student": {
+                "avatar_url": "data:image/png;base64,cGhvdG8="
+            }
+        });
+
+        let evaluated = evaluate_node_tree(&image, &context);
+        let EvaluatedNode::Image(image) = &evaluated[0] else {
+            panic!("expected evaluated image node");
+        };
+        assert_eq!(
+            image.props.src.as_deref(),
+            Some("data:image/png;base64,cGhvdG8=")
+        );
     }
 }

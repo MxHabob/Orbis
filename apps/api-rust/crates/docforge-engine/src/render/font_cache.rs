@@ -49,11 +49,39 @@ pub struct FontCache {
 impl FontCache {
     /// Create a new empty font cache
     pub fn new(default_family: &str) -> Self {
-        FontCache {
+        let mut cache = FontCache {
             fonts: HashMap::new(),
             search_dirs: Vec::new(),
             default_family: default_family.to_string(),
+        };
+
+        let candidate_paths = [
+            ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
+            ("Arial", "C:\\Windows\\Fonts\\arial.ttf"),
+            ("Segoe UI", "C:\\Windows\\Fonts\\segoeui.ttf"),
+            (
+                "DejaVu Sans",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ),
+            (
+                "Noto Sans Arabic",
+                "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+            ),
+            ("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"),
+            ("Geeza Pro", "/System/Library/Fonts/GeezaPro.ttc"),
+        ];
+
+        for (family, path) in candidate_paths {
+            if !Path::new(path).exists() {
+                continue;
+            }
+            let _ = cache.load_font_file(family, 400, FontStyleKind::Normal, path);
+            if family == "Tahoma" || family == "DejaVu Sans" || family == "Arial" {
+                let _ = cache.load_font_file(family, 700, FontStyleKind::Normal, path);
+            }
         }
+
+        cache
     }
 
     /// Create a font cache pre-loaded with standard OS Arabic and Latin fonts
@@ -295,4 +323,22 @@ impl FontCache {
     pub fn is_empty(&self) -> bool {
         self.fonts.is_empty()
     }
+}
+
+/// Create a shaping system containing only the font that will be embedded in the PDF.
+/// The returned family is read from the font itself so shaping cannot select a
+/// different system-installed font with the same requested template family.
+pub fn create_font_system_for_font(cached_font: &CachedFont) -> (cosmic_text::FontSystem, String) {
+    let mut font_db = cosmic_text::fontdb::Database::new();
+    font_db.load_font_data(cached_font.data.as_ref().clone());
+    let font_system = cosmic_text::FontSystem::new_with_locale_and_db("en-US".to_string(), font_db);
+    let family = font_system
+        .db()
+        .faces()
+        .next()
+        .and_then(|face| face.families.first())
+        .map(|(family, _)| family.clone())
+        .unwrap_or_else(|| cached_font.family.clone());
+
+    (font_system, family)
 }

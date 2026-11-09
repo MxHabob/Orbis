@@ -14,7 +14,9 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::academic_calculation::{CalculationPlan, OutcomePolicy};
-use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
+use orbis_domain::entities::academic_policy::{
+    PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
+};
 use orbis_domain::entities::settings::OrganizationSettings;
 use rust_decimal::Decimal;
 
@@ -350,7 +352,15 @@ pub struct OrganizationSettingsDto {
     #[serde(default)]
     pub notifications: NotificationSettingsDto,
     #[serde(default)]
+    pub ai: AiSettingsDto,
+    #[serde(default)]
     pub autopilot: AutopilotSettingsDto,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+#[serde(default)]
+pub struct AiSettingsDto {
+    pub mobile_chat_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -380,6 +390,8 @@ pub struct AcademicSettingsDto {
     pub grade_edit_approval: bool,
     pub auto_graduate_final_level: bool,
     pub exclude_withdrawn: bool,
+    #[serde(default)]
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 impl Default for AcademicSettingsDto {
@@ -409,6 +421,7 @@ impl Default for AcademicSettingsDto {
             grade_edit_approval: true,
             auto_graduate_final_level: false,
             exclude_withdrawn: true,
+            grade_bands: Vec::new(),
         }
     }
 }
@@ -554,6 +567,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 grade_edit_approval: s.academic.grade_edit_approval,
                 auto_graduate_final_level: s.academic.auto_graduate_final_level,
                 exclude_withdrawn: s.academic.exclude_withdrawn,
+                grade_bands: s.academic.grade_bands,
             },
             enrollment: EnrollmentSettingsDto {
                 registration_enabled: s.enrollment.registration_enabled,
@@ -619,6 +633,9 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 notify_parents_on_grade_publish: s.notifications.notify_parents_on_grade_publish,
                 finance_reminder_days: s.notifications.finance_reminder_days,
             },
+            ai: AiSettingsDto {
+                mobile_chat_enabled: s.ai.mobile_chat_enabled,
+            },
             autopilot: AutopilotSettingsDto {
                 enabled: s.autopilot.enabled,
                 mode: s.autopilot.mode,
@@ -673,6 +690,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 grade_edit_approval: s.academic.grade_edit_approval,
                 auto_graduate_final_level: s.academic.auto_graduate_final_level,
                 exclude_withdrawn: s.academic.exclude_withdrawn,
+                grade_bands: s.academic.grade_bands,
             },
             enrollment: orbis_domain::entities::settings::EnrollmentSettings {
                 registration_enabled: s.enrollment.registration_enabled,
@@ -737,6 +755,9 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 notify_parents_on_absence: s.notifications.notify_parents_on_absence,
                 notify_parents_on_grade_publish: s.notifications.notify_parents_on_grade_publish,
                 finance_reminder_days: s.notifications.finance_reminder_days,
+            },
+            ai: orbis_domain::entities::settings::AiSettings {
+                mobile_chat_enabled: s.ai.mobile_chat_enabled,
             },
             autopilot: orbis_domain::entities::settings::AutopilotSettings {
                 enabled: s.autopilot.enabled,

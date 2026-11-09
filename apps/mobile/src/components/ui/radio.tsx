@@ -5,12 +5,7 @@
  */
 
 import React from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  type ViewStyle,
-} from "react-native";
+import { View, Text, Pressable, type ViewStyle } from "react-native";
 
 export interface RadioProps {
   selected: boolean;
@@ -45,9 +40,7 @@ export function Radio({
       <View
         className={`mt-px h-[22px] w-[22px] items-center justify-center rounded-full border-2 ${selected ? "border-primary bg-accent-light" : "border-border bg-transparent"}`}
       >
-        {selected && (
-          <View className="h-2.5 w-2.5 rounded-full bg-primary" />
-        )}
+        {selected && <View className="h-2.5 w-2.5 rounded-full bg-primary" />}
       </View>
 
       {(label || description) && (

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { page } from "$app/state";
-  import ReportingWorkspace from "$lib/features/reporting/reporting-workspace.svelte";
+import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import ReportingWorkspace from "$lib/features/reporting/reporting-workspace.svelte";
 
-  let { data }: { data: { orgId: string } } = $props();
-  const orgId = $derived(data?.orgId || page.params.orgId || "");
+let { data }: { data: { orgId: string } } = $props();
+const orgId = $derived(data?.orgId || page.params.orgId || "");
 </script>
 
 <svelte:head>

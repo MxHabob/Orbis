@@ -2,23 +2,20 @@
   "expo": {
     "name": "Orbis",
     "slug": "Orbis",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "1.1.2",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "orbis",
     "userInterfaceStyle": "automatic",
-    "androidStatusBar": {
-      "backgroundColor": "#00000000",
-      "translucent": true,
-      "barStyle": "light-content"
-    },
     "android": {
-      "versionCode": 1,
+      "versionCode": 5,
+      "permissions": [
+        "android.permission.ACCESS_LOCAL_NETWORK"
+      ],
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#F5F3FF",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -27,6 +24,9 @@
     "ios": {
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Orbis connects to your school server on the local network.",
+        "NSBonjourServices": [
+          "_orbis-api._tcp"
+        ],
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -36,14 +36,28 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER"
+    },
     "plugins": [
       "expo-router",
       [
+        "expo-status-bar",
+        {
+          "style": "dark"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#7C3AED",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/splash-icon-light.png",
+          "imageWidth": 120,
+          "dark": {
+            "backgroundColor": "#000000",
+            "image": "./assets/images/android-icon-foreground.png"
+          }
         }
       ],
       [
@@ -74,7 +88,26 @@
         }
       ],
       "expo-web-browser",
-      "expo-updates"
+      "expo-updates",
+      "./plugins/with-android-cleartext-traffic.cjs",
+      "./plugins/with-android-window-layout.cjs",
+      "./plugins/with-android-release-signing.cjs",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "enablePngCrunchInReleaseBuilds": true
+          }
+        }
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

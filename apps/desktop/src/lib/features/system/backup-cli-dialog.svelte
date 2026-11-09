@@ -48,7 +48,11 @@ async function unlock() {
   if (!password.trim() || sessionState === "connecting") return;
 
   sessionState = "connecting";
-  output = [...output, "super@MxHabob:~$ ********", m.shared_ui_authenticating()];
+  output = [
+    ...output,
+    "super@MxHabob:~$ ********",
+    m.shared_ui_authenticating(),
+  ];
 
   try {
     if (!onunlock) {
@@ -58,13 +62,20 @@ async function unlock() {
     const response = await onunlock(password);
     password = "";
     sessionState = "ready";
-    output = [...output, response || m.shared_ui_authenticated(), "", "orbis> _"];
+    output = [
+      ...output,
+      response || m.shared_ui_authenticated(),
+      "",
+      "orbis> _",
+    ];
   } catch (error) {
     password = "";
     sessionState = "error";
     output = [
       ...output,
-      error instanceof Error ? error.message : m.shared_ui_authentication_failed(),
+      error instanceof Error
+        ? error.message
+        : m.shared_ui_authentication_failed(),
       m.shared_ui_enter_password_to_retry(),
     ];
   }

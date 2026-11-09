@@ -77,7 +77,8 @@ const activeAccountId = $derived(formAccountId || cashAccounts[0]?.id || "");
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
 const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
 const selectedPaymentMethodObj = $derived(
-  availablePaymentMethods.find((m) => m.id === formMethod) || availablePaymentMethods[0]
+  availablePaymentMethods.find((m) => m.id === formMethod) ||
+    availablePaymentMethods[0],
 );
 
 const studentFeesQuery = createStudentFeesQuery(
@@ -86,7 +87,9 @@ const studentFeesQuery = createStudentFeesQuery(
   () => Boolean(selectedStudent?.id),
 );
 const activeStudentFees = $derived(
-  (studentFeesQuery.data ?? []).filter((f) => f.status !== "paid" && f.status !== "cancelled"),
+  (studentFeesQuery.data ?? []).filter(
+    (f) => f.status !== "paid" && f.status !== "cancelled",
+  ),
 );
 
 const recentPaymentsQuery = createPaymentsQuery(
@@ -179,7 +182,9 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       method: formMethod,
       reference: referenceNumber.trim() || undefined,
       source: sourceToken.trim() || undefined,
-      payer_name: `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() || undefined,
+      payer_name:
+        `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() ||
+        undefined,
     });
 
     toast.success(m.common_payment_toast_success());
@@ -207,27 +212,35 @@ async function handlePaymentSubmit(e: SubmitEvent) {
 
 function handlePrintReceipt(payment: PaymentDto, description = notes) {
   printReceiptPayment = payment;
-  printReceiptContext = [{
-    receipt: {
-      number: payment.receipt_number || payment.id.slice(0, 8),
-      date: payment.paid_at || payment.created_at,
-      payerName: payment.payer_name || (selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : ""),
-      studentName: selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : "",
-      amount: Number(payment.amount),
-      amountWords: "",
-      description,
-      paymentMethod: payment.method,
-      referenceNumber: payment.reference || "",
-      cashierName: "",
+  printReceiptContext = [
+    {
+      receipt: {
+        number: payment.receipt_number || payment.id.slice(0, 8),
+        date: payment.paid_at || payment.created_at,
+        payerName:
+          payment.payer_name ||
+          (selectedStudent
+            ? `${selectedStudent.first_name} ${selectedStudent.last_name}`
+            : ""),
+        studentName: selectedStudent
+          ? `${selectedStudent.first_name} ${selectedStudent.last_name}`
+          : "",
+        amount: Number(payment.amount),
+        amountWords: "",
+        description,
+        paymentMethod: payment.method,
+        referenceNumber: payment.reference || "",
+        cashierName: "",
+      },
+      $org: {
+        name: orgContext.name,
+        name_ar: orgContext.nameAr,
+        currency: payment.currency_code || orgContext.baseCurrency,
+        logo_url: orgContext.logo,
+        primary_color: orgContext.primaryColor,
+      },
     },
-    $org: {
-      name: orgContext.name,
-      name_ar: orgContext.nameAr,
-      currency: payment.currency_code || orgContext.baseCurrency,
-      logo_url: orgContext.logo,
-      primary_color: orgContext.primaryColor,
-    },
-  }];
+  ];
   printReceiptOpen = true;
 }
 
@@ -255,7 +268,9 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
       highlightedIndex = (highlightedIndex + 1) % searchedStudents.length;
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      highlightedIndex = (highlightedIndex - 1 + searchedStudents.length) % searchedStudents.length;
+      highlightedIndex =
+        (highlightedIndex - 1 + searchedStudents.length) %
+        searchedStudents.length;
     } else if (e.key === "Enter" && highlightedIndex >= 0) {
       e.preventDefault();
       selectStudent(searchedStudents[highlightedIndex]);

@@ -6,12 +6,7 @@
  */
 
 import React from "react";
-import {
-  View,
-  Text,
-  type ViewStyle,
-  type TextStyle,
-} from "react-native";
+import { View, Text, type ViewStyle, type TextStyle } from "react-native";
 
 export type BadgeVariant =
   | "default"
@@ -39,24 +34,72 @@ export interface BadgeProps {
   children?: React.ReactNode;
 }
 
-const badgeVariantClasses: Record<BadgeVariant, { container: string; text: string }> = {
-  default: { container: "border-primary/20 bg-primary/10", text: "text-primary" },
-  primary: { container: "border-primary/20 bg-primary/10", text: "text-primary" },
-  secondary: { container: "border-border bg-secondary", text: "text-secondary-foreground" },
-  outline: { container: "border-border bg-transparent", text: "text-foreground" },
-  destructive: { container: "border-destructive/20 bg-destructive/10", text: "text-destructive" },
-  error: { container: "border-destructive/20 bg-destructive/10", text: "text-destructive" },
-  warning: { container: "border-warning/30 bg-warning-light", text: "text-warning" },
-  success: { container: "border-success/30 bg-success-light", text: "text-success" },
+const badgeVariantClasses: Record<
+  BadgeVariant,
+  { container: string; text: string }
+> = {
+  default: {
+    container: "border-primary/20 bg-primary/10",
+    text: "text-primary",
+  },
+  primary: {
+    container: "border-primary/20 bg-primary/10",
+    text: "text-primary",
+  },
+  secondary: {
+    container: "border-border bg-secondary",
+    text: "text-secondary-foreground",
+  },
+  outline: {
+    container: "border-border bg-transparent",
+    text: "text-foreground",
+  },
+  destructive: {
+    container: "border-destructive/20 bg-destructive/10",
+    text: "text-destructive",
+  },
+  error: {
+    container: "border-destructive/20 bg-destructive/10",
+    text: "text-destructive",
+  },
+  warning: {
+    container: "border-warning/30 bg-warning-light",
+    text: "text-warning",
+  },
+  success: {
+    container: "border-success/30 bg-success-light",
+    text: "text-success",
+  },
   info: { container: "border-info/30 bg-info-light", text: "text-info" },
-  lime: { container: "border-brand-lime/30 bg-brand-lime/15", text: "text-brand-lime-dark" },
-  pink: { container: "border-brand-pink/20 bg-brand-pink/10", text: "text-brand-pink" },
-  purple: { container: "border-primary/20 bg-primary/10", text: "text-primary" },
-  neutral: { container: "border-border bg-secondary", text: "text-secondary-foreground" },
+  lime: {
+    container: "border-brand-lime/30 bg-brand-lime/15",
+    text: "text-brand-lime-dark",
+  },
+  pink: {
+    container: "border-brand-pink/20 bg-brand-pink/10",
+    text: "text-brand-pink",
+  },
+  purple: {
+    container: "border-primary/20 bg-primary/10",
+    text: "text-primary",
+  },
+  neutral: {
+    container: "border-border bg-secondary",
+    text: "text-secondary-foreground",
+  },
 };
 
 export const Badge = React.memo<BadgeProps>(
-  ({ label, variant = "default", size = "md", icon, style, textStyle, className, children }) => {
+  ({
+    label,
+    variant = "default",
+    size = "md",
+    icon,
+    style,
+    textStyle,
+    className,
+    children,
+  }) => {
     const isSm = size === "sm";
     const variantClasses = badgeVariantClasses[variant];
 

@@ -23,8 +23,8 @@ const SECRET_NAME: &str = "orbis_api_key";
 #[derive(Serialize, ToSchema)]
 pub struct MulverseConnectionDto {
     pub connected: bool,
-    pub organization_id: Option<String>,
-    pub product_organization_id: Option<String>,
+    pub customer_id: Option<String>,
+    pub application_customer_id: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -112,8 +112,8 @@ pub async fn get_status(
     let Some((config, key)) = get_connection(&state, ctx.tenant_id).await? else {
         return Ok(ApiResponse::ok(MulverseConnectionDto {
             connected: false,
-            organization_id: None,
-            product_organization_id: None,
+            customer_id: None,
+            application_customer_id: None,
         }));
     };
     let verified = state
@@ -122,18 +122,20 @@ pub async fn get_status(
         .await
         .map_err(map_mulverse_error)?;
     let settings = config.settings.unwrap_or_default();
-    let organization_id = settings
-        .get("organization_id")
+    let customer_id = settings
+        .get("customer_id")
+        .or_else(|| settings.get("organization_id"))
         .and_then(serde_json::Value::as_str)
         .map(str::to_owned);
-    let product_organization_id = settings
-        .get("product_organization_id")
+    let application_customer_id = settings
+        .get("application_customer_id")
+        .or_else(|| settings.get("product_organization_id"))
         .and_then(serde_json::Value::as_str)
         .map(str::to_owned);
     Ok(ApiResponse::ok(MulverseConnectionDto {
         connected: verified.connected,
-        organization_id,
-        product_organization_id,
+        customer_id,
+        application_customer_id,
     }))
 }
 
@@ -174,8 +176,8 @@ pub async fn connect(
             "platform".to_owned(),
             "production".to_owned(),
             serde_json::json!({
-                "organization_id": verified.organization_id,
-                "product_organization_id": verified.product_organization_id
+                "customer_id": verified.customer_id,
+                "application_customer_id": verified.application_customer_id
             }),
             secrets,
         )
@@ -183,8 +185,8 @@ pub async fn connect(
         .map_err(ApiError::from)?;
     Ok(ApiResponse::ok(MulverseConnectionDto {
         connected: true,
-        organization_id: Some(verified.organization_id),
-        product_organization_id: Some(verified.product_organization_id),
+        customer_id: Some(verified.customer_id),
+        application_customer_id: Some(verified.application_customer_id),
     }))
 }
 

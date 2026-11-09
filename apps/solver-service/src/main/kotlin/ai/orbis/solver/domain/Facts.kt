@@ -8,6 +8,8 @@ class TimeSlot {
     var slotNumber: Int = 0
     var startTime: String = ""
     var endTime: String = ""
+    var startMinuteOfDay: Int = 0
+    var endMinuteOfDay: Int = 0
     var isBreak: Boolean = false
     var applicableDays: MutableSet<Int> = mutableSetOf()
 }

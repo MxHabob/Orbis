@@ -16,4 +16,3 @@ export function createDashboardStatsQuery(orgId: string | (() => string)) {
     staleTime: 3 * 60 * 1000,
   }));
 }
-

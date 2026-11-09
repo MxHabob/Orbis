@@ -1,4 +1,8 @@
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import * as m from "$lib/paraglide/messages";
 import {
   api,
@@ -111,8 +115,14 @@ export function createStudentFeesQuery(
   filter?: (() => StudentFeeFilterParams | undefined) | StudentFeeFilterParams,
   enabled: (() => boolean) | boolean = () => true,
 ) {
-  const getFilter = typeof filter === "function" ? filter : () => (typeof filter === "object" ? filter : undefined);
-  const getEnabled = typeof enabled === "function" ? enabled : () => (typeof enabled === "boolean" ? enabled : true);
+  const getFilter =
+    typeof filter === "function"
+      ? filter
+      : () => (typeof filter === "object" ? filter : undefined);
+  const getEnabled =
+    typeof enabled === "function"
+      ? enabled
+      : () => (typeof enabled === "boolean" ? enabled : true);
   return createQuery<StudentFeeDto[]>(() => ({
     queryKey: queryKeys.finance.studentFees(orgOrEnrollmentId(), getFilter()),
     queryFn: () => api.listStudentFees(getFilter()),
@@ -362,7 +372,9 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
           // Generic gateway adapter
           methods.push({
             id: "credit_card",
-            name: m.finance_ui_payment_method_gateway({ provider: config.provider_name ?? "" }),
+            name: m.finance_ui_payment_method_gateway({
+              provider: config.provider_name ?? "",
+            }),
             name_en: `Payment Gateway (${config.provider_name})`,
             category: "electronic",
             provider_name: config.provider_name,
@@ -588,7 +600,8 @@ export function createAccountStatementQuery(
 export function createProcessDisbursementMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (req: ProcessDisbursementRequest) => api.processDisbursement(req),
+    mutationFn: (req: ProcessDisbursementRequest) =>
+      api.processDisbursement(req),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.accounts(),
@@ -620,7 +633,8 @@ export function createCreateSubAccountMutation() {
 export function createSettleGatewayPayoutMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (req: SettleGatewayPayoutRequest) => api.settleGatewayPayout(req),
+    mutationFn: (req: SettleGatewayPayoutRequest) =>
+      api.settleGatewayPayout(req),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.accounts(),

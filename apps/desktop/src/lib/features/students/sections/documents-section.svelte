@@ -10,12 +10,7 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@orbis/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import {
   CheckCircle,
   DocumentCheck,
@@ -33,12 +28,17 @@ const docItems = $derived.by(() => {
   if (state.document.fulfillments.length > 0) {
     return state.document.fulfillments.map((f) => ({
       id: f.requirement.code,
-      label: f.requirement.name_ar || f.requirement.name_en || f.requirement.code,
+      label:
+        f.requirement.name_ar || f.requirement.name_en || f.requirement.code,
       isMandatory: f.requirement.is_mandatory,
       blocksEnrollment: f.requirement.blocks_enrollment,
-      isFulfilled: f.is_fulfilled || state.document.submittedDocs.includes(f.requirement.code),
+      isFulfilled:
+        f.is_fulfilled ||
+        state.document.submittedDocs.includes(f.requirement.code),
       condition: f.requirement.condition,
-      fileName: state.document.attachments[f.requirement.code]?.fileName || f.document_name,
+      fileName:
+        state.document.attachments[f.requirement.code]?.fileName ||
+        f.document_name,
       fileSize: state.document.attachments[f.requirement.code]?.fileSize,
       attachment: state.document.attachments[f.requirement.code],
     }));
@@ -51,7 +51,9 @@ const docItems = $derived.by(() => {
     return state.document.requirements
       .filter((r) => {
         if (r.target_id) {
-          const matches = r.target_id === selectedClassId || r.target_id === selectedClassLevel;
+          const matches =
+            r.target_id === selectedClassId ||
+            r.target_id === selectedClassLevel;
           if (!matches && selectedClassId) return false;
         }
         return true;
@@ -61,7 +63,9 @@ const docItems = $derived.by(() => {
         label: r.name_ar || r.name_en || r.code,
         isMandatory: r.is_mandatory,
         blocksEnrollment: r.blocks_enrollment,
-        isFulfilled: state.document.submittedDocs.includes(r.code) || !!state.document.attachments[r.code],
+        isFulfilled:
+          state.document.submittedDocs.includes(r.code) ||
+          !!state.document.attachments[r.code],
         condition: r.condition,
         fileName: state.document.attachments[r.code]?.fileName,
         fileSize: state.document.attachments[r.code]?.fileSize,
@@ -75,7 +79,9 @@ const docItems = $derived.by(() => {
       label: name,
       isMandatory: true,
       blocksEnrollment: false,
-      isFulfilled: state.document.submittedDocs.includes(name) || !!state.document.attachments[name],
+      isFulfilled:
+        state.document.submittedDocs.includes(name) ||
+        !!state.document.attachments[name],
       condition: "all_students",
       fileName: state.document.attachments[name]?.fileName,
       fileSize: state.document.attachments[name]?.fileSize,

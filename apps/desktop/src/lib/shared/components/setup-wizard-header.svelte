@@ -1,32 +1,35 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import { XMark } from "@orbis/icons";
-  import { Skeleton } from "@orbis/ui/skeleton";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { XMark } from "@orbis/icons";
+import { Skeleton } from "@orbis/ui/skeleton";
 
-  let {
-    contextLabel,
-    stepLabel,
-    stepPosition,
-    progressValue,
-    ariaLabel,
-    isLoading = false,
-    closeLabel,
-    onClose,
-  }: {
-    contextLabel: string;
-    stepLabel: string;
-    stepPosition: string;
-    progressValue: number;
-    ariaLabel: string;
-    isLoading?: boolean;
-    closeLabel?: string;
-    onClose?: () => void;
-  } = $props();
+let {
+  contextLabel,
+  stepLabel,
+  stepPosition,
+  progressValue,
+  ariaLabel,
+  isLoading = false,
+  closeLabel,
+  onClose,
+}: {
+  contextLabel: string;
+  stepLabel: string;
+  stepPosition: string;
+  progressValue: number;
+  ariaLabel: string;
+  isLoading?: boolean;
+  closeLabel?: string;
+  onClose?: () => void;
+} = $props();
 
-  const boundedProgress = $derived(
-    Math.min(100, Math.max(0, Number.isFinite(progressValue) ? progressValue : 0)),
-  );
+const boundedProgress = $derived(
+  Math.min(
+    100,
+    Math.max(0, Number.isFinite(progressValue) ? progressValue : 0),
+  ),
+);
 </script>
 
 <header

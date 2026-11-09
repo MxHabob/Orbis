@@ -19,6 +19,9 @@ pub struct Grade {
     pub is_final: bool,
     pub is_excused: bool,
     pub is_exempt: bool, // For Auditor students
+    /// Whether the student was absent for this assessment (replaces magic "ABSENT" in notes/change_reason).
+    #[serde(default)]
+    pub is_absent: bool,
     pub change_reason: Option<String>,
     pub recorded_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,
@@ -41,9 +44,7 @@ impl Grade {
             GradeEntryStatus::Exempt
         } else if self.is_excused {
             GradeEntryStatus::Excused
-        } else if self.notes.as_deref() == Some("ABSENT")
-            || self.change_reason.as_deref() == Some("ABSENT")
-        {
+        } else if self.is_absent {
             GradeEntryStatus::Absent
         } else {
             GradeEntryStatus::Recorded

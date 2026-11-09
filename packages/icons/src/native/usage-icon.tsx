@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface UsageIconProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface UsageIconProps extends SvgProps {
 
 export function UsageIcon({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,9 +45,14 @@ export function UsageIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path d="M20 20H4V4" strokeLinecap="round" strokeLinejoin="round" />
-	<Path d="M4 16.5L12 9L15 12L19.5 7.5" strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M4 16.5L12 9L15 12L19.5 7.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

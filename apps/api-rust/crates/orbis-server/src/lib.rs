@@ -6,13 +6,17 @@ pub mod state;
 use axum::{
     Router,
     body::Body,
-    extract::{FromRequestParts, State},
+    extract::{FromRequestParts, MatchedPath, State},
     http::Request,
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::get,
 };
 use sea_orm::ConnectionTrait;
+use std::{
+    sync::OnceLock,
+    time::{Duration, Instant},
+};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -20,8 +24,8 @@ use api::{
     academic_framework_routes, academic_routes, ai_routes, assessment_routes, autopilot_routes,
     bootstrap_routes, calendar_routes, document_routes, employee_routes, exam_routes,
     finance_routes, folder_routes, group_routes, iam_routes, integration_routes, mulverse_routes,
-    onboarding_routes, org_routes, override_routes, progression_routes, report_routes,
-    scheduling_routes, storage_routes, student_routes,
+    notification_routes, onboarding_routes, org_routes, override_routes, progression_routes,
+    report_routes, scheduling_routes, storage_routes, student_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -50,6 +54,7 @@ use api::{
         (name = "Storage", description = "Physical file storage, upload, download, presigned URLs, archive"),
         (name = "Folder", description = "Hierarchical folders, student folders, and AI curriculum knowledge base"),
         (name = "Integration", description = "Third-party app integrations"),
+        (name = "Notification", description = "Notification center, preferences, and unread counts"),
         (name = "Report", description = "Report definitions, templates, generation"),
         (name = "Autopilot", description = "Autonomous lifecycle, finance & reporting automation engine"),
         (name = "Bootstrap", description = "First-time organization initialization"),
@@ -202,6 +207,7 @@ use api::{
         api::scheduling_routes::update_time_slot,
         api::scheduling_routes::delete_time_slot,
         api::scheduling_routes::schedule_lesson,
+        api::scheduling_routes::update_lesson,
         api::scheduling_routes::bulk_schedule_lessons,
         api::scheduling_routes::list_lessons,
         api::scheduling_routes::delete_lesson,
@@ -270,6 +276,8 @@ use api::{
         api::finance_routes::list_payments,
         api::finance_routes::delete_payment,
         api::finance_routes::list_currencies,
+        api::finance_routes::create_currency,
+        api::finance_routes::update_currency,
         api::finance_routes::list_journal_entries,
         api::finance_routes::get_journal_entry,
         api::finance_routes::create_journal_entry,
@@ -316,6 +324,15 @@ use api::{
         api::integration_routes::get_integration_status,
         api::integration_routes::disconnect_app,
         api::integration_routes::toggle_integration,
+        // Notification
+        api::notification_routes::list_notifications,
+        api::notification_routes::get_unread_count,
+        api::notification_routes::mark_read,
+        api::notification_routes::mark_all_read,
+        api::notification_routes::dismiss_notification,
+        api::notification_routes::get_preferences,
+        api::notification_routes::update_preferences,
+        api::notification_routes::notification_stream,
         api::mulverse_routes::get_status,
         api::mulverse_routes::connect,
         api::mulverse_routes::disconnect,
@@ -399,6 +416,7 @@ use api::{
             api::org_routes::UpdateOrgUnitRequest,
             api::org_routes::OrgUnitDto,
             api::org_routes::OrganizationSettingsDto,
+            api::org_routes::AiSettingsDto,
             api::org_routes::AcademicSettingsDto,
             api::org_routes::EnrollmentSettingsDto,
             api::org_routes::AdmissionConfigurationDto,
@@ -535,6 +553,7 @@ use api::{
             api::finance_routes::PaymentDto,
             api::finance_routes::ProcessPaymentRequest,
             api::finance_routes::CurrencyDto,
+            api::finance_routes::CurrencyInput,
             api::finance_routes::JournalEntryDto,
             api::finance_routes::JournalEntryLineDto,
             api::finance_routes::CreateJournalEntryRequest,
@@ -567,6 +586,14 @@ use api::{
             api::integration_routes::ToggleIntegrationRequest,
             api::integration_routes::NotificationIntegrationQuery,
             api::integration_routes::NotificationIntegrationCheckDto,
+            // Notification
+            api::notification_routes::NotificationDto,
+            api::notification_routes::UnreadCountDto,
+            api::notification_routes::MarkAllReadDto,
+            api::notification_routes::ListNotificationsQuery,
+            api::notification_routes::NotificationPreferenceDto,
+            api::notification_routes::NotificationPreferenceResponseDto,
+            api::notification_routes::UpdatePreferencesRequest,
             api::mulverse_routes::MulverseConnectionDto,
             api::mulverse_routes::ConnectMulverseRequest,
             api::mulverse_routes::DeploymentDto,
@@ -693,6 +720,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(ai_routes::routes())
         .merge(autopilot_routes::routes())
         .merge(bootstrap_routes::routes())
+        .merge(notification_routes::routes())
         .merge(onboarding_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
@@ -700,7 +728,68 @@ pub fn app_router(state: state::AppState) -> Router {
             state.clone(),
             enforce_api_license,
         ))
+        .layer(middleware::from_fn(log_request_performance))
         .with_state(state)
+}
+
+fn slow_request_threshold() -> Duration {
+    static THRESHOLD: OnceLock<Duration> = OnceLock::new();
+
+    *THRESHOLD.get_or_init(|| {
+        const DEFAULT_THRESHOLD_MS: u64 = 500;
+
+        match std::env::var("ORBIS_SLOW_REQUEST_MS") {
+            Ok(value) => match value.parse::<u64>() {
+                Ok(milliseconds) if milliseconds > 0 => Duration::from_millis(milliseconds),
+                _ => {
+                    tracing::warn!(
+                        setting = "ORBIS_SLOW_REQUEST_MS",
+                        default_ms = DEFAULT_THRESHOLD_MS,
+                        "Invalid slow request threshold; using the default"
+                    );
+                    Duration::from_millis(DEFAULT_THRESHOLD_MS)
+                }
+            },
+            Err(_) => Duration::from_millis(DEFAULT_THRESHOLD_MS),
+        }
+    })
+}
+
+async fn log_request_performance(request: Request<Body>, next: Next) -> Response {
+    let method = request.method().clone();
+    let route = request
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|path| path.as_str().to_owned())
+        .unwrap_or_else(|| "unmatched".to_owned());
+    let started_at = Instant::now();
+    let response = next.run(request).await;
+    let duration = started_at.elapsed();
+    let duration_ms = duration.as_secs_f64() * 1000.0;
+    let status = response.status();
+
+    if duration >= slow_request_threshold() || status.is_server_error() {
+        tracing::warn!(
+            target: "orbis::performance",
+            %method,
+            %route,
+            status = status.as_u16(),
+            duration_ms,
+            slow = duration >= slow_request_threshold(),
+            "API request completed"
+        );
+    } else {
+        tracing::debug!(
+            target: "orbis::performance",
+            %method,
+            %route,
+            status = status.as_u16(),
+            duration_ms,
+            "API request completed"
+        );
+    }
+
+    response
 }
 
 async fn api_health(State(state): State<state::AppState>) -> Response {

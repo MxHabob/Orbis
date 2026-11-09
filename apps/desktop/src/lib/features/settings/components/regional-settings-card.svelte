@@ -17,7 +17,9 @@ interface Props {
   timeFormat: string;
   hijriEnabled: boolean;
   isSaving?: boolean;
-  onLanguageChange: (newLocale: string) => void | boolean | Promise<void | boolean>;
+  onLanguageChange: (
+    newLocale: string,
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 let {
@@ -33,20 +35,55 @@ let {
 }: Props = $props();
 
 const dateFormats = [
-  { value: "YYYY-MM-DD", label: m.settings_general_date_iso(), example: "2026-06-24" },
-  { value: "DD/MM/YYYY", label: m.settings_general_date_numeric_dmy(), example: "24/06/2026" },
-  { value: "MM/DD/YYYY", label: m.settings_general_date_numeric_mdy(), example: "06/24/2026" },
-  { value: "DD MMM YYYY", label: m.settings_general_date_short_dmy(), example: "24 Jun 2026" },
-  { value: "MMM DD, YYYY", label: m.settings_general_date_short_mdy(), example: "Jun 24, 2026" },
-  { value: "DD MMMM YYYY", label: m.settings_general_date_long_dmy(), example: "24 June 2026" },
-  { value: "MMMM DD, YYYY", label: m.settings_general_date_long_mdy(), example: "June 24, 2026" },
-  { value: "EEEE, DD MMMM YYYY", label: m.settings_general_date_full_dmy(), example: "Wednesday, 24 June 2026" },
+  {
+    value: "YYYY-MM-DD",
+    label: m.settings_general_date_iso(),
+    example: "2026-06-24",
+  },
+  {
+    value: "DD/MM/YYYY",
+    label: m.settings_general_date_numeric_dmy(),
+    example: "24/06/2026",
+  },
+  {
+    value: "MM/DD/YYYY",
+    label: m.settings_general_date_numeric_mdy(),
+    example: "06/24/2026",
+  },
+  {
+    value: "DD MMM YYYY",
+    label: m.settings_general_date_short_dmy(),
+    example: "24 Jun 2026",
+  },
+  {
+    value: "MMM DD, YYYY",
+    label: m.settings_general_date_short_mdy(),
+    example: "Jun 24, 2026",
+  },
+  {
+    value: "DD MMMM YYYY",
+    label: m.settings_general_date_long_dmy(),
+    example: "24 June 2026",
+  },
+  {
+    value: "MMMM DD, YYYY",
+    label: m.settings_general_date_long_mdy(),
+    example: "June 24, 2026",
+  },
+  {
+    value: "EEEE, DD MMMM YYYY",
+    label: m.settings_general_date_full_dmy(),
+    example: "Wednesday, 24 June 2026",
+  },
 ];
 
 const formatLocales = [
   { value: "auto", label: m.settings_general_format_locale_auto() },
   { value: "ar-SA", label: m.settings_general_format_locale_arabic() },
-  { value: "ar-SA-u-nu-latn", label: m.settings_general_format_locale_arabic_latin_digits() },
+  {
+    value: "ar-SA-u-nu-latn",
+    label: m.settings_general_format_locale_arabic_latin_digits(),
+  },
   { value: "en-US", label: m.settings_general_format_locale_english_us() },
   { value: "en-GB", label: m.settings_general_format_locale_english_uk() },
 ];

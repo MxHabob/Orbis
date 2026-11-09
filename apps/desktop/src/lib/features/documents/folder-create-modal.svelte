@@ -11,8 +11,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orbis/ui/dialog";
-import { Folder, Sparkles, AcademicCap, Plus, Search, Check } from "@orbis/icons";
-import { api, type FolderDto, type CreateFolderRequest, type CreateCurriculumFolderRequest, type StudentDetailDto } from "$lib/api";
+import {
+  Folder,
+  Sparkles,
+  AcademicCap,
+  Plus,
+  Search,
+  Check,
+} from "@orbis/icons";
+import {
+  api,
+  type FolderDto,
+  type CreateFolderRequest,
+  type CreateCurriculumFolderRequest,
+  type StudentDetailDto,
+} from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 
@@ -48,7 +61,8 @@ let selectedStudent = $state<StudentDetailDto | null>(null);
 
 const studentSearchResults = createQuery(() => ({
   queryKey: ["folder-modal-student-search", studentSearch.trim()],
-  queryFn: () => api.listStudents({ search: studentSearch.trim(), pageSize: 5 }),
+  queryFn: () =>
+    api.listStudents({ search: studentSearch.trim(), pageSize: 5 }),
   enabled: activeTab === "student" && studentSearch.trim().length >= 2,
   staleTime: 30 * 1000,
 }));
@@ -89,7 +103,9 @@ async function handleCreate() {
         term_id: termId ?? undefined,
       };
       const created = await api.createFolder(req);
-      toast.success(m.operations_ui_folder_create_success({ name: created.name }));
+      toast.success(
+        m.operations_ui_folder_create_success({ name: created.name }),
+      );
       oncreated(created);
       handleClose();
     } else if (activeTab === "curriculum") {
@@ -109,7 +125,11 @@ async function handleCreate() {
         },
       };
       const created = await api.getOrCreateCurriculumFolder(req);
-      toast.success(m.operations_ui_curriculum_folder_create_success({ name: created.name }));
+      toast.success(
+        m.operations_ui_curriculum_folder_create_success({
+          name: created.name,
+        }),
+      );
       oncreated(created);
       handleClose();
     } else if (activeTab === "student") {
@@ -118,9 +138,15 @@ async function handleCreate() {
         return;
       }
       const sId = selectedStudent.student.id;
-      const sName = selectedStudent.person.full_name || selectedStudent.person.full_name_ar || selectedStudent.student.student_number || m.operations_ui_student_fallback();
+      const sName =
+        selectedStudent.person.full_name ||
+        selectedStudent.person.full_name_ar ||
+        selectedStudent.student.student_number ||
+        m.operations_ui_student_fallback();
       const created = await api.getOrCreateStudentFolder(sId, sName);
-      toast.success(m.operations_ui_student_folder_open_success({ name: created.name }));
+      toast.success(
+        m.operations_ui_student_folder_open_success({ name: created.name }),
+      );
       oncreated(created);
       handleClose();
     }

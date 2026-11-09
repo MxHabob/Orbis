@@ -5,6 +5,7 @@
 
 use crate::state::AppState;
 use orbis_domain::entities::license::{LicenseStateDto, TrialOrganizationProfile};
+use orbis_domain::errors::DomainError;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -28,7 +29,7 @@ pub async fn license_get_state(state: State<'_, AppState>) -> Result<LicenseStat
     Ok(state.license_runtime.current_state_dto())
 }
 
-/// Activate a product key with Mulverse Platform.
+/// Activate a customer-bound key or claim and activate a reseller key.
 #[tauri::command]
 pub async fn license_activate_key(
     state: State<'_, AppState>,
@@ -38,30 +39,22 @@ pub async fn license_activate_key(
     if ctx.tenant_id.is_nil() {
         return Err("An active organization is required to activate a product key.".to_string());
     }
-    state
+    match state
         .license_runtime
         .activate_product_key(&request.product_key, ctx.tenant_id)
         .await
-        .map_err(|error| error.to_string())?;
-    Ok(state.license_runtime.current_state_dto())
-}
-
-/// Claim a reseller key for the active organization and activate this device.
-#[tauri::command]
-pub async fn license_redeem_key(
-    state: State<'_, AppState>,
-    request: ActivateKeyRequest,
-) -> Result<LicenseStateDto, String> {
-    let ctx = crate::commands::make_ctx(&state);
-    if ctx.tenant_id.is_nil() {
-        return Err("An active organization is required to redeem a product key.".to_string());
+    {
+        Ok(_) => {}
+        Err(DomainError::LicenseKeyRequiresClaim) => {
+            let organization = trial_organization_profile(&state, ctx.tenant_id).await?;
+            state
+                .license_runtime
+                .redeem_product_key(&request.product_key, organization)
+                .await
+                .map_err(|error| error.to_string())?;
+        }
+        Err(error) => return Err(error.to_string()),
     }
-    let organization = trial_organization_profile(&state, ctx.tenant_id).await?;
-    state
-        .license_runtime
-        .redeem_product_key(&request.product_key, organization)
-        .await
-        .map_err(|error| error.to_string())?;
     Ok(state.license_runtime.current_state_dto())
 }
 

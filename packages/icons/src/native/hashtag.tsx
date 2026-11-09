@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface HashtagProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface HashtagProps extends SvgProps {
 
 export function Hashtag({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,12 @@ export function Hashtag({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
-      <Path d="M10 3L6 21" strokeLinecap="round"></Path><Path d="M20.5 16H2.5" strokeLinecap="round"
-	></Path><Path d="M22 7H4" strokeLinecap="round"></Path><Path
-		d="M18 3L14 21"
-		strokeLinecap="round"
-	></Path>
+      {...props}
+    >
+      <Path d="M10 3L6 21" strokeLinecap="round"></Path>
+      <Path d="M20.5 16H2.5" strokeLinecap="round"></Path>
+      <Path d="M22 7H4" strokeLinecap="round"></Path>
+      <Path d="M18 3L14 21" strokeLinecap="round"></Path>
     </Svg>
   );
 }

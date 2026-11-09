@@ -124,6 +124,7 @@ export interface TextNode extends BaseNode {
     backgroundColor?: string;
     textAlign?: "start" | "center" | "end" | "justify";
     direction?: "rtl" | "ltr" | "auto";
+    /** Unitless CSS line-height multiplier, such as 1.5. */
     lineHeight?: number;
     letterSpacing?: number;
     textDecoration?: "none" | "underline" | "line-through";

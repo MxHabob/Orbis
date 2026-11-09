@@ -4,242 +4,251 @@ Allows administrators to manage Academic Years, activate current school year,
 close completed years, archive historical years, and view period structure.
 -->
 <script lang="ts">
-  import { api, extractErrorMessage, queryKeys } from "$lib/api";
-  import { formatDate } from "$lib/core/i18n";
-  import * as m from "$lib/paraglide/messages";
-  import { academicContext, confirmStore } from "$lib/stores";
-  import { createacademicCalendarsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
-  import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { LoadingIndicator, toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Card, CardContent } from "@orbis/ui/card";
-  import { Input } from "@orbis/ui/input";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import {
-    AcademicCap,
-    ArchiveBox,
-    Calendar,
-    CheckCircle,
-    ChevronDown,
-    ChevronRight,
-    ClockRotateRight,
-    Lock,
-    Pencil,
-    Plus,
-    Refresh,
-    Search,
-  } from "@orbis/icons";
-  import SearchableMultiFilter, {
-    type SearchableMultiFilterGroup,
-  } from "$lib/shared/components/searchable-multi-filter.svelte";
-  import RelatedActions, {
-    type ActionGroup,
-  } from "$lib/shared/components/related-actions.svelte";
-  import YearCreateSheet from "./year-create-sheet.svelte";
-  import { fade } from "svelte/transition";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import { formatDate } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import { academicContext, confirmStore } from "$lib/stores";
+import {
+  createacademicCalendarsQuery,
+  createPeriodsQuery,
+} from "$lib/features/academics/queries";
+import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { LoadingIndicator, toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Card, CardContent } from "@orbis/ui/card";
+import { Input } from "@orbis/ui/input";
+import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  AcademicCap,
+  ArchiveBox,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  ClockRotateRight,
+  Lock,
+  Pencil,
+  Plus,
+  Refresh,
+  Search,
+} from "@orbis/icons";
+import SearchableMultiFilter, {
+  type SearchableMultiFilterGroup,
+} from "$lib/shared/components/searchable-multi-filter.svelte";
+import RelatedActions, {
+  type ActionGroup,
+} from "$lib/shared/components/related-actions.svelte";
+import YearCreateSheet from "./year-create-sheet.svelte";
+import { fade } from "svelte/transition";
 
-  let { orgId }: { orgId: string } = $props();
+let { orgId }: { orgId: string } = $props();
 
-  const queryClient = useQueryClient();
+const queryClient = useQueryClient();
 
-  // Queries
-  const yearsQuery = createacademicCalendarsQuery(() => orgId);
-  const periodsQuery = createPeriodsQuery(() => orgId);
+// Queries
+const yearsQuery = createacademicCalendarsQuery(() => orgId);
+const periodsQuery = createPeriodsQuery(() => orgId);
 
-  // Derived state from queries
-  const years = $derived(yearsQuery.data ?? []);
-  const periods = $derived(periodsQuery.data ?? []);
-  const isLoading = $derived(yearsQuery.isLoading || periodsQuery.isLoading);
-  const isRefreshing = $derived(yearsQuery.isFetching || periodsQuery.isFetching);
+// Derived state from queries
+const years = $derived(yearsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const isLoading = $derived(yearsQuery.isLoading || periodsQuery.isLoading);
+const isRefreshing = $derived(yearsQuery.isFetching || periodsQuery.isFetching);
 
-  let searchQuery = $state("");
-  let selectedFilters = $state<string[]>([]);
+let searchQuery = $state("");
+let selectedFilters = $state<string[]>([]);
 
-  // Expanded year accordion items
-  let expandedYears = $state<Record<string, boolean>>({});
+// Expanded year accordion items
+let expandedYears = $state<Record<string, boolean>>({});
 
-  // Sheet Controls
-  let isSheetOpen = $state(false);
-  let editingYear = $state<academicCalendarDto | null>(null);
+// Sheet Controls
+let isSheetOpen = $state(false);
+let editingYear = $state<academicCalendarDto | null>(null);
 
-  // Auto expand active year if not yet set
-  $effect(() => {
-    const active = years.find((y) => y.status === "active");
-    if (active && Object.keys(expandedYears).length === 0) {
-      expandedYears[active.id] = true;
-    }
+// Auto expand active year if not yet set
+$effect(() => {
+  const active = years.find((y) => y.status === "active");
+  if (active && Object.keys(expandedYears).length === 0) {
+    expandedYears[active.id] = true;
+  }
+});
+
+async function handleRefresh() {
+  await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+}
+
+// Filter Groups for SearchableMultiFilter
+const filterGroups = $derived<SearchableMultiFilterGroup[]>([
+  {
+    id: "status",
+    label: m.common_word_status(),
+    options: [
+      { value: "status:active", label: m.academic_calendars_filter_active() },
+      {
+        value: "status:planning",
+        label: m.academic_calendars_filter_planning(),
+      },
+      { value: "status:closed", label: m.academic_calendars_filter_closed() },
+      {
+        value: "status:archived",
+        label: m.academic_calendars_filter_archived(),
+      },
+    ],
+  },
+]);
+
+const selectedStatusValues = $derived(
+  selectedFilters
+    .filter((f) => f.startsWith("status:"))
+    .map((f) => f.replace("status:", "")),
+);
+
+// Filtered Years
+let filteredYears = $derived(
+  years.filter((y) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      (y.name && y.name.toLowerCase().includes(q)) ||
+      (y.name_ar && y.name_ar.toLowerCase().includes(q)) ||
+      (y.notes && y.notes.toLowerCase().includes(q));
+
+    const status = y.status || "planning";
+    const matchesStatus =
+      selectedStatusValues.length === 0 ||
+      selectedStatusValues.includes(status);
+
+    return matchesSearch && matchesStatus;
+  }),
+);
+
+function getPeriodsForYear(yearId: string) {
+  return periods.filter((p) => p.year_id === yearId);
+}
+
+function toggleExpand(yearId: string) {
+  expandedYears[yearId] = !expandedYears[yearId];
+}
+
+function openCreateSheet() {
+  editingYear = null;
+  isSheetOpen = true;
+}
+
+function openEditSheet(year: academicCalendarDto) {
+  editingYear = year;
+  isSheetOpen = true;
+}
+
+async function handleActivate(year: academicCalendarDto) {
+  if (year.status === "active") return;
+
+  const confirmed = await confirmStore.prompt({
+    title: m.academic_calendars_activate_confirm_title(),
+    description: `${m.academic_calendars_activate_confirm_desc()} (${year.name_ar || year.name})`,
+    confirmText: m.academic_calendars_activate_btn(),
+    variant: "default",
   });
 
-  async function handleRefresh() {
+  if (!confirmed) return;
+
+  try {
+    await api.activateacademicCalendar(year.id);
+    toast.success(m.academic_calendars_activate_success());
+    await academicContext.resolveContext(orgId);
     await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
+}
 
-  // Filter Groups for SearchableMultiFilter
-  const filterGroups = $derived<SearchableMultiFilterGroup[]>([
-    {
-      id: "status",
-      label: m.common_word_status(),
-      options: [
-        { value: "status:active", label: m.academic_calendars_filter_active() },
-        { value: "status:planning", label: m.academic_calendars_filter_planning() },
-        { value: "status:closed", label: m.academic_calendars_filter_closed() },
-        { value: "status:archived", label: m.academic_calendars_filter_archived() },
-      ],
-    },
-  ]);
+async function handleClose(year: academicCalendarDto) {
+  const confirmed = await confirmStore.prompt({
+    title: m.academic_calendars_close_confirm_title(),
+    description: `${m.academic_calendars_close_confirm_desc()} (${year.name_ar || year.name})`,
+    confirmText: m.academic_calendars_close_btn(),
+    variant: "destructive",
+  });
 
-  const selectedStatusValues = $derived(
-    selectedFilters
-      .filter((f) => f.startsWith("status:"))
-      .map((f) => f.replace("status:", "")),
-  );
+  if (!confirmed) return;
 
-  // Filtered Years
-  let filteredYears = $derived(
-    years.filter((y) => {
-      const q = searchQuery.trim().toLowerCase();
-      const matchesSearch =
-        !q ||
-        (y.name && y.name.toLowerCase().includes(q)) ||
-        (y.name_ar && y.name_ar.toLowerCase().includes(q)) ||
-        (y.notes && y.notes.toLowerCase().includes(q));
-
-      const status = y.status || "planning";
-      const matchesStatus =
-        selectedStatusValues.length === 0 ||
-        selectedStatusValues.includes(status);
-
-      return matchesSearch && matchesStatus;
-    }),
-  );
-
-  function getPeriodsForYear(yearId: string) {
-    return periods.filter((p) => p.year_id === yearId);
+  try {
+    await api.closeacademicCalendar(year.id);
+    toast.success(m.academic_calendars_close_success());
+    await academicContext.resolveContext(orgId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
+}
 
-  function toggleExpand(yearId: string) {
-    expandedYears[yearId] = !expandedYears[yearId];
+async function handleArchive(year: academicCalendarDto) {
+  const confirmed = await confirmStore.prompt({
+    title: m.academic_calendars_archive_confirm_title(),
+    description: `${m.academic_calendars_archive_confirm_desc()} (${year.name_ar || year.name})`,
+    confirmText: m.academic_calendars_archive_btn(),
+    variant: "destructive",
+  });
+
+  if (!confirmed) return;
+
+  try {
+    await api.archiveacademicCalendar(year.id);
+    toast.success(m.academic_calendars_archive_success());
+    await academicContext.resolveContext(orgId);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
+}
 
-  function openCreateSheet() {
-    editingYear = null;
-    isSheetOpen = true;
+let isApplyingTemplate = $state(false);
+
+async function handleApplyTemplate(year: academicCalendarDto) {
+  isApplyingTemplate = true;
+  try {
+    await api.applyCalendarTemplate(year.id, { template_code: "YE-1447-1448" });
+    toast.success("Official calendar template applied successfully.");
+    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
+  } finally {
+    isApplyingTemplate = false;
   }
+}
 
-  function openEditSheet(year: academicCalendarDto) {
-    editingYear = year;
-    isSheetOpen = true;
-  }
-
-  async function handleActivate(year: academicCalendarDto) {
-    if (year.status === "active") return;
-
-    const confirmed = await confirmStore.prompt({
-      title: m.academic_calendars_activate_confirm_title(),
-      description: `${m.academic_calendars_activate_confirm_desc()} (${year.name_ar || year.name})`,
-      confirmText: m.academic_calendars_activate_btn(),
-      variant: "default",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.activateacademicCalendar(year.id);
-      toast.success(m.academic_calendars_activate_success());
-      await academicContext.resolveContext(orgId);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  async function handleClose(year: academicCalendarDto) {
-    const confirmed = await confirmStore.prompt({
-      title: m.academic_calendars_close_confirm_title(),
-      description: `${m.academic_calendars_close_confirm_desc()} (${year.name_ar || year.name})`,
-      confirmText: m.academic_calendars_close_btn(),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.closeacademicCalendar(year.id);
-      toast.success(m.academic_calendars_close_success());
-      await academicContext.resolveContext(orgId);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  async function handleArchive(year: academicCalendarDto) {
-    const confirmed = await confirmStore.prompt({
-      title: m.academic_calendars_archive_confirm_title(),
-      description: `${m.academic_calendars_archive_confirm_desc()} (${year.name_ar || year.name})`,
-      confirmText: m.academic_calendars_archive_btn(),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.archiveacademicCalendar(year.id);
-      toast.success(m.academic_calendars_archive_success());
-      await academicContext.resolveContext(orgId);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  let isApplyingTemplate = $state(false);
-
-  async function handleApplyTemplate(year: academicCalendarDto) {
-    isApplyingTemplate = true;
-    try {
-      await api.applyCalendarTemplate(year.id, { template_code: "YE-1447-1448" });
-      toast.success("Official calendar template applied successfully.");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    } finally {
-      isApplyingTemplate = false;
-    }
-  }
-
-  const relatedActionGroups = $derived<ActionGroup[]>([
-    {
-      id: "academic_calendar_navigation",
-      title: m.academic_calendar_title(),
-      icon: Calendar,
-      defaultExpanded: true,
-      subLinks: [
-        {
-          id: "periods_manager",
-          label: m.settings_nav_cycles(),
-          href: `/${orgId}/settings/periods`,
-        },
-        {
-          id: "visual_calendar",
-          label: m.academics_nav_calendar(),
-          href: `/${orgId}/academics/calendar`,
-        },
-        {
-          id: "academic_policies",
-          label: m.ui_copy_academic_policy_grading_73e34776(),
-          href: `/${orgId}/settings/academic-policy`,
-        },
-        {
-          id: "promotion_wizard",
-          label: m.ui_copy_student_promotion_wizard_e772861a(),
-          href: `/${orgId}/academics/promotion`,
-        },
-      ],
-    },
-  ]);
+const relatedActionGroups = $derived<ActionGroup[]>([
+  {
+    id: "academic_calendar_navigation",
+    title: m.academic_calendar_title(),
+    icon: Calendar,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "periods_manager",
+        label: m.settings_nav_cycles(),
+        href: `/${orgId}/settings/periods`,
+      },
+      {
+        id: "visual_calendar",
+        label: m.academics_nav_calendar(),
+        href: `/${orgId}/academics/calendar`,
+      },
+      {
+        id: "academic_policies",
+        label: m.ui_copy_academic_policy_grading_73e34776(),
+        href: `/${orgId}/settings/academic-policy`,
+      },
+      {
+        id: "promotion_wizard",
+        label: m.ui_copy_student_promotion_wizard_e772861a(),
+        href: `/${orgId}/academics/promotion`,
+      },
+    ],
+  },
+]);
 </script>
 
 <div class="flex h-full w-full flex-col overflow-hidden bg-background font-sans text-start">

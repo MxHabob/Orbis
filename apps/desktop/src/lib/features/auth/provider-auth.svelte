@@ -20,7 +20,13 @@ import MfaChallengeModal from "$lib/features/auth/components/mfa-challenge-modal
 
 let { provider }: { provider?: string } = $props();
 
-type AuthStatus = "idle" | "authenticating" | "linking" | "mfa_challenge" | "success" | "error";
+type AuthStatus =
+  | "idle"
+  | "authenticating"
+  | "linking"
+  | "mfa_challenge"
+  | "success"
+  | "error";
 
 let status = $state<AuthStatus>("authenticating");
 let errorMessage = $state<string>("");
@@ -28,7 +34,9 @@ let isLinking = $state(false);
 let showMfaChallenge = $state(false);
 let mfaToken = $state("");
 
-const providerParam = $derived(provider?.toLowerCase() || page.params.provider?.toLowerCase() || "google");
+const providerParam = $derived(
+  provider?.toLowerCase() || page.params.provider?.toLowerCase() || "google",
+);
 
 const providerConfig = $derived.by(() => {
   switch (providerParam) {
@@ -82,7 +90,9 @@ async function completeProviderLogin(res: any) {
     }
   }
   status = "success";
-  toast.success(m.auth_provider_login_success({ provider: providerConfig.name }));
+  toast.success(
+    m.auth_provider_login_success({ provider: providerConfig.name }),
+  );
   setTimeout(() => {
     if (window.opener) {
       window.close();

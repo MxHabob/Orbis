@@ -63,8 +63,14 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "الوزارة", en: "The Ministry" },
   { ar: "وزارة التربية والتعليم", en: "Ministry of Education" },
   { ar: "وزارة التعليم العالي", en: "Ministry of Higher Education" },
-  { ar: "وزارة التعليم العالي والبحث العلمي", en: "Ministry of Higher Education and Scientific Research" },
-  { ar: "وزارة التعليم الفني والتدريب المهني", en: "Ministry of Technical Education and Vocational Training" },
+  {
+    ar: "وزارة التعليم العالي والبحث العلمي",
+    en: "Ministry of Higher Education and Scientific Research",
+  },
+  {
+    ar: "وزارة التعليم الفني والتدريب المهني",
+    en: "Ministry of Technical Education and Vocational Training",
+  },
   { ar: "إدارة تعليمية", en: "Educational Administration" },
   { ar: "الإدارة التعليمية", en: "Educational Administration" },
   { ar: "مديرية التربية والتعليم", en: "Education Directorate" },
@@ -374,22 +380,46 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "كلية طب الأسنان", en: "Faculty of Dentistry" },
   { ar: "كلية الصيدلة", en: "Faculty of Pharmacy" },
   { ar: "كلية التمريض", en: "Faculty of Nursing" },
-  { ar: "كلية العلوم الطبية التطبيقية", en: "Faculty of Applied Medical Sciences" },
+  {
+    ar: "كلية العلوم الطبية التطبيقية",
+    en: "Faculty of Applied Medical Sciences",
+  },
   { ar: "كلية العلاج الطبيعي", en: "Faculty of Physical Therapy" },
   { ar: "كلية الهندسة", en: "Faculty of Engineering" },
-  { ar: "كلية الهندسة وتكنولوجيا المعلومات", en: "Faculty of Engineering and Information Technology" },
-  { ar: "كلية الحاسوب وتكنولوجيا المعلومات", en: "Faculty of Computer Science and Information Technology" },
-  { ar: "كلية الحاسبات والمعلومات", en: "Faculty of Computers and Information" },
+  {
+    ar: "كلية الهندسة وتكنولوجيا المعلومات",
+    en: "Faculty of Engineering and Information Technology",
+  },
+  {
+    ar: "كلية الحاسوب وتكنولوجيا المعلومات",
+    en: "Faculty of Computer Science and Information Technology",
+  },
+  {
+    ar: "كلية الحاسبات والمعلومات",
+    en: "Faculty of Computers and Information",
+  },
   { ar: "كلية الذكاء الاصطناعي", en: "Faculty of Artificial Intelligence" },
   { ar: "كلية العلوم", en: "Faculty of Science" },
-  { ar: "كلية العلوم الإدارية والمالية", en: "Faculty of Administrative and Financial Sciences" },
-  { ar: "كلية العلوم الإدارية والإنسانية", en: "Faculty of Administrative and Human Sciences" },
+  {
+    ar: "كلية العلوم الإدارية والمالية",
+    en: "Faculty of Administrative and Financial Sciences",
+  },
+  {
+    ar: "كلية العلوم الإدارية والإنسانية",
+    en: "Faculty of Administrative and Human Sciences",
+  },
   { ar: "كلية إدارة الأعمال", en: "Faculty of Business Administration" },
   { ar: "كلية التجارة", en: "Faculty of Commerce" },
-  { ar: "كلية الاقتصاد والعلوم السياسية", en: "Faculty of Economics and Political Science" },
+  {
+    ar: "كلية الاقتصاد والعلوم السياسية",
+    en: "Faculty of Economics and Political Science",
+  },
   { ar: "كلية الشريعة والقانون", en: "Faculty of Sharia and Law" },
   { ar: "كلية الحقوق", en: "Faculty of Law" },
-  { ar: "كلية الشريعة والدراسات الإسلامية", en: "Faculty of Sharia and Islamic Studies" },
+  {
+    ar: "كلية الشريعة والدراسات الإسلامية",
+    en: "Faculty of Sharia and Islamic Studies",
+  },
   { ar: "كلية التربية", en: "Faculty of Education" },
   { ar: "كلية الآداب", en: "Faculty of Arts" },
   { ar: "كلية الآداب والعلوم الإنسانية", en: "Faculty of Arts and Humanities" },
@@ -402,16 +432,34 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "كلية الفنون الجميلة", en: "Faculty of Fine Arts" },
   { ar: "كلية الفنون التطبيقية", en: "Faculty of Applied Arts" },
   { ar: "كلية السياحة والفندقة", en: "Faculty of Tourism and Hospitality" },
-  { ar: "كلية التربية البدنية وعلوم الرياضة", en: "Faculty of Physical Education and Sports Sciences" },
+  {
+    ar: "كلية التربية البدنية وعلوم الرياضة",
+    en: "Faculty of Physical Education and Sports Sciences",
+  },
   { ar: "عمادة الدراسات العليا", en: "Deanship of Graduate Studies" },
   { ar: "عمادة شؤون الطلاب", en: "Deanship of Student Affairs" },
   { ar: "عمادة شؤون الطلبة", en: "Deanship of Student Affairs" },
-  { ar: "عمادة القبول والتسجيل", en: "Deanship of Admissions and Registration" },
+  {
+    ar: "عمادة القبول والتسجيل",
+    en: "Deanship of Admissions and Registration",
+  },
   { ar: "عمادة البحث العلمي", en: "Deanship of Scientific Research" },
-  { ar: "عمادة التطوير وضمان الجودة", en: "Deanship of Development and Quality Assurance" },
-  { ar: "عمادة الجودة والاعتماد الأكاديمي", en: "Deanship of Quality and Academic Accreditation" },
-  { ar: "عمادة خدمة المجتمع والتعليم المستمر", en: "Deanship of Community Service and Continuing Education" },
-  { ar: "عمادة التعليم الإلكتروني والتعليم عن بعد", en: "Deanship of E-Learning and Distance Education" },
+  {
+    ar: "عمادة التطوير وضمان الجودة",
+    en: "Deanship of Development and Quality Assurance",
+  },
+  {
+    ar: "عمادة الجودة والاعتماد الأكاديمي",
+    en: "Deanship of Quality and Academic Accreditation",
+  },
+  {
+    ar: "عمادة خدمة المجتمع والتعليم المستمر",
+    en: "Deanship of Community Service and Continuing Education",
+  },
+  {
+    ar: "عمادة التعليم الإلكتروني والتعليم عن بعد",
+    en: "Deanship of E-Learning and Distance Education",
+  },
   { ar: "عمادة شؤون المكتبات", en: "Deanship of Library Affairs" },
   { ar: "رئاسة الجامعة", en: "University Presidency" },
   { ar: "مجلس الجامعة", en: "University Council" },
@@ -422,16 +470,31 @@ const rawEntries: readonly DictionaryEntry[] = [
   // 5. الأقسام والتخصصات الأكاديمية
   // ==========================================
   { ar: "قسم الهندسة المدنية", en: "Department of Civil Engineering" },
-  { ar: "قسم الهندسة المعمارية", en: "Department of Architectural Engineering" },
+  {
+    ar: "قسم الهندسة المعمارية",
+    en: "Department of Architectural Engineering",
+  },
   { ar: "قسم الهندسة الميكانيكية", en: "Department of Mechanical Engineering" },
   { ar: "قسم الهندسة الكهربائية", en: "Department of Electrical Engineering" },
-  { ar: "قسم الهندسة الإلكترونية والاتصالات", en: "Department of Electronics and Communications Engineering" },
+  {
+    ar: "قسم الهندسة الإلكترونية والاتصالات",
+    en: "Department of Electronics and Communications Engineering",
+  },
   { ar: "قسم هندسة الحاسوب", en: "Department of Computer Engineering" },
   { ar: "قسم هندسة البرمجيات", en: "Department of Software Engineering" },
-  { ar: "قسم هندسة الميكاترونكس", en: "Department of Mechatronics Engineering" },
-  { ar: "قسم هندسة البترول والغاز", en: "Department of Petroleum and Gas Engineering" },
+  {
+    ar: "قسم هندسة الميكاترونكس",
+    en: "Department of Mechatronics Engineering",
+  },
+  {
+    ar: "قسم هندسة البترول والغاز",
+    en: "Department of Petroleum and Gas Engineering",
+  },
   { ar: "قسم الهندسة الكيميائية", en: "Department of Chemical Engineering" },
-  { ar: "قسم الهندسة الطبية الحيوية", en: "Department of Biomedical Engineering" },
+  {
+    ar: "قسم الهندسة الطبية الحيوية",
+    en: "Department of Biomedical Engineering",
+  },
   { ar: "قسم علوم الحاسوب", en: "Department of Computer Science" },
   { ar: "قسم نظم المعلومات", en: "Department of Information Systems" },
   { ar: "قسم تقنية المعلومات", en: "Department of Information Technology" },
@@ -441,21 +504,36 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "قسم علوم البيانات", en: "Department of Data Science" },
   { ar: "قسم المحاسبة", en: "Department of Accounting" },
   { ar: "قسم إدارة الأعمال", en: "Department of Business Administration" },
-  { ar: "قسم العلوم المالية والمصرفية", en: "Department of Finance and Banking" },
+  {
+    ar: "قسم العلوم المالية والمصرفية",
+    en: "Department of Finance and Banking",
+  },
   { ar: "قسم التسويق", en: "Department of Marketing" },
-  { ar: "قسم نظم المعلومات الإدارية", en: "Department of Management Information Systems" },
+  {
+    ar: "قسم نظم المعلومات الإدارية",
+    en: "Department of Management Information Systems",
+  },
   { ar: "قسم الموارد البشرية", en: "Department of Human Resources" },
   { ar: "قسم الاقتصاد", en: "Department of Economics" },
   { ar: "قسم العلوم السياسية", en: "Department of Political Science" },
   { ar: "قسم القانون الخاص", en: "Department of Private Law" },
   { ar: "قسم القانون العام", en: "Department of Public Law" },
-  { ar: "قسم الفقه وأصوله", en: "Department of Jurisprudence and its Principles" },
+  {
+    ar: "قسم الفقه وأصوله",
+    en: "Department of Jurisprudence and its Principles",
+  },
   { ar: "قسم الدراسات الإسلامية", en: "Department of Islamic Studies" },
   { ar: "قسم القرآن وعلومه", en: "Department of Quran and its Sciences" },
   { ar: "قسم اللغة العربية", en: "Department of Arabic Language" },
-  { ar: "قسم اللغة العربية وآدابها", en: "Department of Arabic Language and Literature" },
+  {
+    ar: "قسم اللغة العربية وآدابها",
+    en: "Department of Arabic Language and Literature",
+  },
   { ar: "قسم اللغة الإنجليزية", en: "Department of English Language" },
-  { ar: "قسم اللغة الإنجليزية والترجمة", en: "Department of English Language and Translation" },
+  {
+    ar: "قسم اللغة الإنجليزية والترجمة",
+    en: "Department of English Language and Translation",
+  },
   { ar: "قسم اللغة الفرنسية", en: "Department of French Language" },
   { ar: "قسم اللغة الألمانية", en: "Department of German Language" },
   { ar: "قسم الرياضيات", en: "Department of Mathematics" },
@@ -468,11 +546,17 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "قسم الجغرافيا", en: "Department of Geography" },
   { ar: "قسم الصحافة والنشر", en: "Department of Journalism and Publishing" },
   { ar: "قسم الإذاعة والتلفزيون", en: "Department of Radio and Television" },
-  { ar: "قسم العلاقات العامة والإعلان", en: "Department of Public Relations and Advertising" },
+  {
+    ar: "قسم العلاقات العامة والإعلان",
+    en: "Department of Public Relations and Advertising",
+  },
   { ar: "قسم التصميم الجرافيكي", en: "Department of Graphic Design" },
   { ar: "قسم التصميم الداخلي", en: "Department of Interior Design" },
   { ar: "قسم المختبرات الطبية", en: "Department of Medical Laboratories" },
-  { ar: "قسم الأشعة والتصوير الطبي", en: "Department of Radiology and Medical Imaging" },
+  {
+    ar: "قسم الأشعة والتصوير الطبي",
+    en: "Department of Radiology and Medical Imaging",
+  },
   { ar: "قسم التغذية العلاجية", en: "Department of Clinical Nutrition" },
 
   // ==========================================
@@ -1238,7 +1322,7 @@ const rawEntries: readonly DictionaryEntry[] = [
   // 13. مركبات شائعة لأسماء المدارس والجامعات
   // ==========================================
   { ar: "مدرسة صنعاء النموذجية", en: "Sanaa Model School" },
-  {ar: "مدارس جيل المعرفة", en: "Jeel Al Marifah Schools"},
+  { ar: "مدارس جيل المعرفة", en: "Jeel Al Marifah Schools" },
   { ar: "مدرسة صنعاء", en: "Sanaa School" },
   { ar: "مدرسة نموذجية", en: "Model School" },
   { ar: "مدرسة أهلية", en: "Private School" },
@@ -1254,8 +1338,14 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "جامعة ذمار", en: "Dhamar University" },
   { ar: "جامعة الملك سعود", en: "King Saud University" },
   { ar: "جامعة الملك عبدالعزيز", en: "King Abdulaziz University" },
-  { ar: "جامعة الملك فهد للبترول والمعادن", en: "King Fahd University of Petroleum and Minerals" },
-  { ar: "جامعة الإمام محمد بن سعود", en: "Imam Mohammad Ibn Saud Islamic University" },
+  {
+    ar: "جامعة الملك فهد للبترول والمعادن",
+    en: "King Fahd University of Petroleum and Minerals",
+  },
+  {
+    ar: "جامعة الإمام محمد بن سعود",
+    en: "Imam Mohammad Ibn Saud Islamic University",
+  },
   { ar: "جامعة أم القرى", en: "Umm Al-Qura University" },
   { ar: "جامعة القاهرة", en: "Cairo University" },
   { ar: "جامعة الإسكندرية", en: "Alexandria University" },
@@ -1298,7 +1388,9 @@ const rawEntries: readonly DictionaryEntry[] = [
   { ar: "مدارس أروى", en: "Arwa Schools" },
 ];
 
-function buildUniqueEntries(entries: readonly DictionaryEntry[]): DictionaryEntry[] {
+function buildUniqueEntries(
+  entries: readonly DictionaryEntry[],
+): DictionaryEntry[] {
   const seen = new Set<string>();
   const result: DictionaryEntry[] = [];
 

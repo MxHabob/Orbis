@@ -3,9 +3,9 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AcademicCalendarRepository, AcademicPeriodRepository, AssessmentSchemeRepository,
-    AttendanceRepository, BehaviorRecordRepository, EnrollmentRepository, GpaRecordRepository,
-    GradeRepository, SectionRepository, SectionSubjectRepository, SettingsRepository,
-    StudentRepository, SubjectRepository,
+    AttendanceRepository, BehaviorRecordRepository, EmployeeRepository, EnrollmentRepository,
+    GpaRecordRepository, GradeRepository, ScheduledLessonRepository, SectionRepository,
+    SectionSubjectRepository, SettingsRepository, StudentRepository, SubjectRepository,
 };
 use crate::services::calculation_engine::{
     AcademicCalculationEngine, AstNode, CalcEngine, apply_rounding,
@@ -44,6 +44,7 @@ pub struct BatchGradeItem {
     pub max_score: Option<Decimal>,
     pub is_excused: bool,
     pub is_exempt: bool,
+    pub is_absent: bool,
     pub notes: Option<String>,
 }
 
@@ -53,6 +54,36 @@ pub struct BatchAttendanceItem {
     pub notes: Option<String>,
     pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
+}
+
+fn teacher_is_assigned_to_lesson(
+    employee_id: Uuid,
+    lesson: &orbis_domain::entities::scheduled_lesson::ScheduledLesson,
+    section_subject: &orbis_domain::entities::section_subject::SectionSubject,
+) -> bool {
+    if let Some(teacher_id) = lesson.teacher_id {
+        return teacher_id == employee_id;
+    }
+
+    [
+        section_subject.instructor_id,
+        section_subject.assistant_instructor_id,
+        section_subject.substitute_instructor_id,
+    ]
+    .contains(&Some(employee_id))
+}
+
+async fn authorize_grade_access(
+    permission_checker: &dyn PermissionCheckerPort,
+    ctx: &RequestContext,
+    org_id: Uuid,
+    permission: Permission,
+) -> Result<(), DomainError> {
+    permission_checker.check(ctx, permission).await?;
+    if ctx.tenant_id != org_id {
+        return Err(DomainError::Unauthorized("Organization mismatch".into()));
+    }
+    Ok(())
 }
 
 pub struct AssessmentService {
@@ -65,6 +96,8 @@ pub struct AssessmentService {
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
     pub section_repo: Option<Arc<dyn SectionRepository>>,
+    pub employee_repo: Option<Arc<dyn EmployeeRepository>>,
+    pub scheduled_lesson_repo: Option<Arc<dyn ScheduledLessonRepository>>,
     pub student_repo: Option<Arc<dyn StudentRepository>>,
     pub year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
@@ -95,6 +128,8 @@ impl AssessmentService {
             subject_repo,
             period_repo: None,
             section_repo: None,
+            employee_repo: None,
+            scheduled_lesson_repo: None,
             student_repo: None,
             year_repo: None,
             enrollment_repo: None,
@@ -120,6 +155,16 @@ impl AssessmentService {
         self.year_repo = year_repo;
         self.enrollment_repo = enrollment_repo;
         self.settings_repo = settings_repo;
+        self
+    }
+
+    pub fn with_attendance_scope_repos(
+        mut self,
+        employee_repo: Arc<dyn EmployeeRepository>,
+        scheduled_lesson_repo: Arc<dyn ScheduledLessonRepository>,
+    ) -> Self {
+        self.employee_repo = Some(employee_repo);
+        self.scheduled_lesson_repo = Some(scheduled_lesson_repo);
         self
     }
 
@@ -179,6 +224,7 @@ impl AssessmentService {
             is_final,
             is_excused: false,
             is_exempt: false,
+            is_absent: false,
             change_reason: None,
             recorded_by: ctx.user_id(),
             updated_by: None,
@@ -245,6 +291,7 @@ impl AssessmentService {
                 is_final: false,
                 is_excused: item.is_excused,
                 is_exempt: item.is_exempt,
+                is_absent: item.is_absent,
                 change_reason: None,
                 recorded_by: ctx.user_id(),
                 updated_by: None,
@@ -315,15 +362,41 @@ impl AssessmentService {
     /// Calculate final grade from assessment scheme formula
     pub async fn calculate_scheme_grades(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         scheme_id: Uuid,
         student_id: Uuid,
         section_subject_id: Uuid,
     ) -> Result<Decimal, DomainError> {
+        self.authorize_grade_analytics(ctx).await?;
+        let org_id = ctx.tenant_id;
+        let student_repo = self.student_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal("Student repository is required for grade calculations".into())
+        })?;
+        let student = student_repo
+            .find_by_id(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+        if student.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if !section_subject_id.is_nil() {
+            let section_subject = self
+                .section_subject_repo
+                .find_by_id(section_subject_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
+            if section_subject.org_id != org_id {
+                return Err(DomainError::Unauthorized("Organization mismatch".into()));
+            }
+        }
+
         let scheme = self
             .scheme_repo
-            .find_by_id(scheme_id)
+            .find_by_org(org_id)
             .await?
+            .into_iter()
+            .find(|scheme| scheme.id == scheme_id)
             .ok_or_else(|| DomainError::NotFound("Assessment Scheme not found".into()))?;
 
         let formula_val = scheme
@@ -335,7 +408,7 @@ impl AssessmentService {
 
         let grades = self
             .grade_repo
-            .find_by_student_and_subject(student_id, section_subject_id)
+            .find_by_org_student_and_subject(org_id, student_id, section_subject_id)
             .await?;
 
         let mut engine = CalcEngine::new();
@@ -366,15 +439,46 @@ impl AssessmentService {
         period_id: Uuid,
         student_id: Uuid,
     ) -> Result<CumulativeGpaRecord, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::GradeAnalytics)
-            .await?;
+        authorize_grade_access(
+            self.permission_checker.as_ref(),
+            ctx,
+            org_id,
+            Permission::GradeAnalytics,
+        )
+        .await?;
+
+        let student_repo = self.student_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal("Student repository is required for GPA calculation".into())
+        })?;
+        let student = student_repo
+            .find_by_id(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+        if student.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        let period_repo = self.period_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal(
+                "Academic period repository is required for GPA calculation".into(),
+            )
+        })?;
+        let period = period_repo
+            .find_by_id(period_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
+        if period.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
 
         let term_grades = self
             .grade_repo
-            .find_by_student_and_period(student_id, period_id)
+            .find_by_org_student_and_period(org_id, student_id, period_id)
             .await?;
-        let past_records = self.gpa_repo.find_by_student(student_id).await?;
+        let past_records = self
+            .gpa_repo
+            .find_by_student_in_org(org_id, student_id)
+            .await?;
 
         let mut term_attempted = Decimal::ZERO;
         let mut term_earned = Decimal::ZERO;
@@ -394,7 +498,13 @@ impl AssessmentService {
                 .find_by_id(g.section_subject_id)
                 .await?
             {
+                if cs.org_id != org_id {
+                    return Err(DomainError::Unauthorized("Organization mismatch".into()));
+                }
                 if let Some(subj) = self.subject_repo.find_by_id(cs.subject_id).await? {
+                    if subj.org_id != org_id {
+                        return Err(DomainError::Unauthorized("Organization mismatch".into()));
+                    }
                     subj.credit_units.unwrap_or(Decimal::from(3))
                 } else {
                     Decimal::from(3)
@@ -494,7 +604,7 @@ impl AssessmentService {
     pub async fn mark_attendance(
         &self,
         ctx: &RequestContext,
-        _org_id: Uuid,
+        org_id: Uuid,
         _period_id: Uuid,
         student_id: Uuid,
         section_id: Option<Uuid>,
@@ -506,6 +616,7 @@ impl AssessmentService {
         self.permission_checker
             .check(ctx, Permission::AttendanceWrite)
             .await?;
+        self.ensure_legacy_attendance_allowed(ctx, org_id).await?;
 
         let now = Utc::now();
         let att_id = Uuid::new_v4();
@@ -549,7 +660,7 @@ impl AssessmentService {
     pub async fn batch_mark_attendance(
         &self,
         ctx: &RequestContext,
-        _org_id: Uuid,
+        org_id: Uuid,
         section_id: Uuid,
         date: NaiveDate,
         items: Vec<BatchAttendanceItem>,
@@ -558,13 +669,28 @@ impl AssessmentService {
             .check(ctx, Permission::AttendanceWrite)
             .await?;
 
+        if items.iter().any(|item| item.scheduled_lesson_id.is_some()) {
+            self.validate_lesson_attendance_scope(ctx, org_id, section_id, &items)
+                .await?;
+        } else {
+            self.ensure_legacy_attendance_allowed(ctx, org_id).await?;
+        }
+
         let now = Utc::now();
+        let existing_attendances = self
+            .attendance_repo
+            .find_by_section_and_date(section_id, date)
+            .await?;
         let mut attendances = Vec::with_capacity(items.len());
 
         for item in items {
-            let att_id = Uuid::new_v4();
+            let existing = existing_attendances.iter().find(|attendance| {
+                attendance.student_id == item.student_id
+                    && attendance.section_subject_id == item.section_subject_id
+                    && attendance.scheduled_lesson_id == item.scheduled_lesson_id
+            });
             attendances.push(Attendance {
-                id: att_id,
+                id: existing.map_or_else(Uuid::new_v4, |attendance| attendance.id),
                 student_id: item.student_id,
                 section_id: Some(section_id),
                 section_subject_id: item.section_subject_id,
@@ -573,7 +699,7 @@ impl AssessmentService {
                 status: item.status,
                 notes: item.notes,
                 marked_by: ctx.user_id(),
-                created_at: now,
+                created_at: existing.map_or(now, |attendance| attendance.created_at),
                 updated_at: now,
             });
         }
@@ -601,16 +727,196 @@ impl AssessmentService {
         Ok(attendances)
     }
 
+    async fn validate_lesson_attendance_scope(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        section_id: Uuid,
+        items: &[BatchAttendanceItem],
+    ) -> Result<(), DomainError> {
+        let first = items
+            .first()
+            .ok_or_else(|| DomainError::Validation("Attendance items are required".into()))?;
+        let scheduled_lesson_id = first.scheduled_lesson_id.ok_or_else(|| {
+            DomainError::Validation(
+                "A batch cannot mix lesson-specific and general attendance".into(),
+            )
+        })?;
+        let section_subject_id = first.section_subject_id.ok_or_else(|| {
+            DomainError::Validation("A section subject is required for lesson attendance".into())
+        })?;
+        let mut student_ids = std::collections::HashSet::with_capacity(items.len());
+        for item in items {
+            if item.scheduled_lesson_id != Some(scheduled_lesson_id)
+                || item.section_subject_id != Some(section_subject_id)
+            {
+                return Err(DomainError::Validation(
+                    "All attendance items must belong to the same scheduled lesson".into(),
+                ));
+            }
+            if !student_ids.insert(item.student_id) {
+                return Err(DomainError::Validation(
+                    "A student can only be included once in an attendance batch".into(),
+                ));
+            }
+        }
+
+        let lesson_repo = self.scheduled_lesson_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal("Scheduled lesson repository is not configured".into())
+        })?;
+        let lesson = lesson_repo
+            .find_by_id(scheduled_lesson_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Scheduled lesson not found".into()))?;
+        if lesson.section_subject_id != section_subject_id {
+            return Err(DomainError::Validation(
+                "Scheduled lesson does not belong to the selected section subject".into(),
+            ));
+        }
+
+        let section_subject = self
+            .section_subject_repo
+            .find_by_id(section_subject_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
+        if section_subject.section_id != section_id
+            || section_subject.org_id != org_id
+            || !section_subject.is_active
+        {
+            return Err(DomainError::Forbidden(
+                "Scheduled lesson is outside the requested section".into(),
+            ));
+        }
+
+        let enrollment_repo = self.enrollment_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal("Enrollment repository is not configured".into())
+        })?;
+        let enrolled_students: std::collections::HashSet<Uuid> = enrollment_repo
+            .find_by_section(section_id)
+            .await?
+            .into_iter()
+            .filter(|enrollment| {
+                enrollment.org_id == org_id
+                    && enrollment.period_id == section_subject.period_id
+                    && enrollment.status == EnrollmentStatus::Active
+            })
+            .map(|enrollment| enrollment.student_id)
+            .collect();
+        if items
+            .iter()
+            .any(|item| !enrolled_students.contains(&item.student_id))
+        {
+            return Err(DomainError::Validation(
+                "Attendance can only be recorded for students enrolled in this section".into(),
+            ));
+        }
+
+        self.ensure_teacher_lesson_assignment(ctx, org_id, &lesson, &section_subject)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn teacher_employee(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::employee::Employee>, DomainError> {
+        let Some(user_id) = ctx.user_id() else {
+            return Ok(None);
+        };
+        let employee_repo = self
+            .employee_repo
+            .as_ref()
+            .ok_or_else(|| DomainError::Internal("Employee repository is not configured".into()))?;
+        Ok(employee_repo
+            .find_by_user_id(org_id, user_id)
+            .await?
+            .filter(|employee| employee.is_teacher()))
+    }
+
+    async fn ensure_legacy_attendance_allowed(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+    ) -> Result<(), DomainError> {
+        if self.teacher_employee(ctx, org_id).await?.is_some() {
+            return Err(DomainError::Forbidden(
+                "Teachers must record attendance against a scheduled lesson".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    async fn ensure_teacher_lesson_assignment(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        lesson: &orbis_domain::entities::scheduled_lesson::ScheduledLesson,
+        section_subject: &orbis_domain::entities::section_subject::SectionSubject,
+    ) -> Result<(), DomainError> {
+        if let Some(employee) = self.teacher_employee(ctx, org_id).await? {
+            if !employee.is_active()
+                || !teacher_is_assigned_to_lesson(employee.id, lesson, section_subject)
+            {
+                return Err(DomainError::Forbidden(
+                    "Teachers may only record attendance for their assigned lesson".into(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// Delete an attendance record
     pub async fn delete_attendance(
         &self,
         ctx: &RequestContext,
-        _org_id: Uuid,
+        org_id: Uuid,
         attendance_id: Uuid,
     ) -> Result<(), DomainError> {
         self.permission_checker
             .check(ctx, Permission::AttendanceWrite)
             .await?;
+
+        if let Some(employee) = self.teacher_employee(ctx, org_id).await? {
+            let attendance = self
+                .attendance_repo
+                .find_by_id(attendance_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Attendance record not found".into()))?;
+            let scheduled_lesson_id = attendance.scheduled_lesson_id.ok_or_else(|| {
+                DomainError::Forbidden(
+                    "Teachers may only delete attendance for their assigned lesson".into(),
+                )
+            })?;
+            let section_subject_id = attendance.section_subject_id.ok_or_else(|| {
+                DomainError::Forbidden(
+                    "Teachers may only delete attendance for their assigned lesson".into(),
+                )
+            })?;
+            let lesson_repo = self.scheduled_lesson_repo.as_ref().ok_or_else(|| {
+                DomainError::Internal("Scheduled lesson repository is not configured".into())
+            })?;
+            let lesson = lesson_repo
+                .find_by_id(scheduled_lesson_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Scheduled lesson not found".into()))?;
+            let section_subject = self
+                .section_subject_repo
+                .find_by_id(section_subject_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
+            if section_subject.org_id != org_id
+                || !section_subject.is_active
+                || attendance.section_id != Some(section_subject.section_id)
+                || lesson.section_subject_id != section_subject_id
+                || !teacher_is_assigned_to_lesson(employee.id, &lesson, &section_subject)
+            {
+                return Err(DomainError::Forbidden(
+                    "Teachers may only delete attendance for their assigned lesson".into(),
+                ));
+            }
+        }
 
         self.attendance_repo.delete(attendance_id).await?;
 
@@ -836,6 +1142,43 @@ impl AssessmentService {
         filter: GradeFilter,
     ) -> Result<PaginatedList<Grade>, DomainError> {
         self.grade_repo.list(org_id, filter).await
+    }
+
+    pub async fn list_grades_for_request(
+        &self,
+        ctx: &RequestContext,
+        student_id: Option<Uuid>,
+        section_subject_id: Option<Uuid>,
+    ) -> Result<Vec<Grade>, DomainError> {
+        authorize_grade_access(
+            self.permission_checker.as_ref(),
+            ctx,
+            ctx.tenant_id,
+            Permission::GradeRead,
+        )
+        .await?;
+
+        if let Some(student_id) = student_id {
+            self.grade_repo
+                .find_by_org_and_student(ctx.tenant_id, student_id)
+                .await
+        } else if let Some(section_subject_id) = section_subject_id {
+            self.grade_repo
+                .find_by_org_and_section_subject(ctx.tenant_id, section_subject_id)
+                .await
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    pub async fn authorize_grade_analytics(&self, ctx: &RequestContext) -> Result<(), DomainError> {
+        authorize_grade_access(
+            self.permission_checker.as_ref(),
+            ctx,
+            ctx.tenant_id,
+            Permission::GradeAnalytics,
+        )
+        .await
     }
 
     /// List attendance
@@ -1224,6 +1567,14 @@ impl AssessmentService {
             total_score,
             max_possible_score,
             overall_percentage,
+            overall_letter_grade: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade)
+            },
+            overall_letter_grade_ar: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade_ar)
+            },
             gpa: None,
             rank_in_class: None,
             rank_in_grade: None,
@@ -1412,6 +1763,14 @@ impl AssessmentService {
             total_score,
             max_possible_score,
             overall_percentage,
+            overall_letter_grade: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade)
+            },
+            overall_letter_grade_ar: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade_ar)
+            },
             cumulative_gpa: None,
             rank_in_class: None,
             rank_in_grade: None,
@@ -1738,6 +2097,14 @@ impl AssessmentService {
             total_score,
             max_possible_score,
             overall_percentage,
+            overall_letter_grade: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade)
+            },
+            overall_letter_grade_ar: {
+                let eval = policy.evaluate_percentage(overall_percentage);
+                Some(eval.letter_grade_ar)
+            },
             rank_in_class: None,
             rank_in_grade: None,
             total_students_in_class: 0,
@@ -1745,5 +2112,143 @@ impl AssessmentService {
             status,
             calculated_at: Utc::now(),
         })
+    }
+}
+
+#[cfg(test)]
+mod assessment_service_tests {
+    use super::*;
+    use chrono::Utc;
+
+    struct AllowPermissions;
+
+    #[async_trait::async_trait]
+    impl PermissionCheckerPort for AllowPermissions {
+        async fn check(
+            &self,
+            _ctx: &RequestContext,
+            _permission: Permission,
+        ) -> Result<(), DomainError> {
+            Ok(())
+        }
+    }
+
+    struct DenyPermissions;
+
+    #[async_trait::async_trait]
+    impl PermissionCheckerPort for DenyPermissions {
+        async fn check(
+            &self,
+            _ctx: &RequestContext,
+            _permission: Permission,
+        ) -> Result<(), DomainError> {
+            Err(DomainError::Unauthorized("Permission denied".into()))
+        }
+    }
+
+    fn request_context(tenant_id: Uuid) -> RequestContext {
+        RequestContext {
+            tenant_id,
+            actor: orbis_domain::iam::actor::Actor::User(Uuid::new_v4()),
+            request_id: "test".into(),
+            source: crate::context::ActionSource::Api,
+            org_unit_path: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn grade_access_rejects_callers_without_permission() {
+        let ctx = request_context(Uuid::new_v4());
+        let result =
+            authorize_grade_access(&DenyPermissions, &ctx, ctx.tenant_id, Permission::GradeRead)
+                .await;
+
+        assert!(matches!(result, Err(DomainError::Unauthorized(_))));
+    }
+
+    #[tokio::test]
+    async fn grade_access_rejects_cross_organization_requests() {
+        let ctx = request_context(Uuid::new_v4());
+        let result = authorize_grade_access(
+            &AllowPermissions,
+            &ctx,
+            Uuid::new_v4(),
+            Permission::GradeAnalytics,
+        )
+        .await;
+
+        assert!(matches!(result, Err(DomainError::Unauthorized(_))));
+    }
+
+    fn section_subject(
+        instructor_id: Uuid,
+    ) -> orbis_domain::entities::section_subject::SectionSubject {
+        orbis_domain::entities::section_subject::SectionSubject {
+            id: Uuid::new_v4(),
+            org_id: Uuid::new_v4(),
+            section_id: Uuid::new_v4(),
+            subject_id: Uuid::new_v4(),
+            period_id: Uuid::new_v4(),
+            instructor_id: Some(instructor_id),
+            assistant_instructor_id: None,
+            substitute_instructor_id: None,
+            scheme_id: None,
+            weekly_hours: None,
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            grade_groups: None,
+            capacity: None,
+            status: "active".into(),
+            is_active: true,
+            created_at: None,
+            updated_at: None,
+        }
+    }
+
+    fn lesson(
+        teacher_id: Option<Uuid>,
+    ) -> orbis_domain::entities::scheduled_lesson::ScheduledLesson {
+        orbis_domain::entities::scheduled_lesson::ScheduledLesson {
+            id: Uuid::new_v4(),
+            section_subject_id: Uuid::new_v4(),
+            room_id: None,
+            time_slot_id: Uuid::new_v4(),
+            teacher_id,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+
+    #[test]
+    fn scheduled_lesson_teacher_overrides_section_assignment() {
+        let assigned_teacher = Uuid::new_v4();
+        let substitute_teacher = Uuid::new_v4();
+        let section_subject = section_subject(assigned_teacher);
+        let lesson = lesson(Some(substitute_teacher));
+
+        assert!(!teacher_is_assigned_to_lesson(
+            assigned_teacher,
+            &lesson,
+            &section_subject
+        ));
+        assert!(teacher_is_assigned_to_lesson(
+            substitute_teacher,
+            &lesson,
+            &section_subject
+        ));
+    }
+
+    #[test]
+    fn section_subject_assignment_applies_without_lesson_override() {
+        let assigned_teacher = Uuid::new_v4();
+        let section_subject = section_subject(assigned_teacher);
+        let lesson = lesson(None);
+
+        assert!(teacher_is_assigned_to_lesson(
+            assigned_teacher,
+            &lesson,
+            &section_subject
+        ));
     }
 }

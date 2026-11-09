@@ -29,12 +29,15 @@ const avatarController = new AvatarController();
 
 // Random Initial Hat from available hats
 let currentHat = $state<AvatarHat>(
-  ALL_AVATAR_HATS[Math.floor(Math.random() * ALL_AVATAR_HATS.length)] || "graduation"
+  ALL_AVATAR_HATS[Math.floor(Math.random() * ALL_AVATAR_HATS.length)] ||
+    "graduation",
 );
 
 function randomizeHat() {
   const otherHats = ALL_AVATAR_HATS.filter((h) => h !== currentHat);
-  currentHat = otherHats[Math.floor(Math.random() * otherHats.length)] || ALL_AVATAR_HATS[0];
+  currentHat =
+    otherHats[Math.floor(Math.random() * otherHats.length)] ||
+    ALL_AVATAR_HATS[0];
 }
 
 function handleAvatarClick() {
@@ -69,7 +72,7 @@ onDestroy(() => {
 
 // Localized user name via `l()`
 const fullName = $derived(
-  l(authStore.user?.full_name_ar, authStore.user?.full_name) || ""
+  l(authStore.user?.full_name_ar, authStore.user?.full_name) || "",
 );
 const firstName = $derived(fullName ? fullName.trim().split(" ")[0] : "");
 
@@ -78,7 +81,9 @@ const instType = $derived(orgContext.institutionType);
 
 // Real operational status: Is the organization newly initialized / in setup phase?
 const isNewOrg = $derived(
-  stats != null ? (stats.total_students ?? 0) === 0 && (stats.total_classes ?? 0) === 0 : false
+  stats != null
+    ? (stats.total_students ?? 0) === 0 && (stats.total_classes ?? 0) === 0
+    : false,
 );
 
 // Dynamic time-based Greeting & Conversational Subtitle

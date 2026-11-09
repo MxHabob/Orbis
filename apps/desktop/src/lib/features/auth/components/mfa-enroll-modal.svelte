@@ -16,7 +16,14 @@ import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { api, type MfaEnrollResponse } from "$lib/api";
 import { authStore } from "$lib/stores";
-import { ArrowRight, Check, Clipboard, Download, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import {
+  ArrowRight,
+  Check,
+  Clipboard,
+  Download,
+  InfoCircle,
+  UserBadgeCheck,
+} from "@orbis/icons";
 
 interface Props {
   open: boolean;

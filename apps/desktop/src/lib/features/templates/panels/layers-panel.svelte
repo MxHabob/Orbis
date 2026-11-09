@@ -8,7 +8,24 @@ import type { EditorStore } from "../stores/editor-store.svelte";
 import type { TemplateNode } from "@docforge/core";
 import { isContainerNode } from "@docforge/core";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, Bold, CheckBox, CheckSquare, ChevronDown, ChevronRight, DocumentPage, Eye, EyeSlash, Grid, H1, Hashtag, Lock, Minus, Photo, Plus } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  Bold,
+  CheckBox,
+  CheckSquare,
+  ChevronDown,
+  ChevronRight,
+  DocumentPage,
+  Eye,
+  EyeSlash,
+  Grid,
+  H1,
+  Hashtag,
+  Lock,
+  Minus,
+  Photo,
+  Plus,
+} from "@orbis/icons";
 
 let {
   store,

@@ -1,5 +1,3 @@
-export { Avatar } from "./avatar";
-export type { NativeAvatarProps } from "./avatar";
 export { AvatarController } from "../core/avatar-controller";
 export {
   type AvatarState,
@@ -14,6 +12,8 @@ export {
 } from "../core/avatar-svg";
 export {
   ALL_AVATAR_HATS,
-  resolveAvatarHat,
   type AvatarHat,
+  resolveAvatarHat,
 } from "../core/types";
+export type { NativeAvatarProps } from "./avatar";
+export { Avatar } from "./avatar";

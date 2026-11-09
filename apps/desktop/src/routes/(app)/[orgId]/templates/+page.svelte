@@ -1,10 +1,10 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { page } from "$app/state";
-  import TemplatesGallery from "$lib/features/templates/templates-gallery.svelte";
+import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import TemplatesGallery from "$lib/features/templates/templates-gallery.svelte";
 
-  let { data }: { data: { orgId: string } } = $props();
-  const orgId = $derived(data?.orgId || page.params.orgId || "");
+let { data }: { data: { orgId: string } } = $props();
+const orgId = $derived(data?.orgId || page.params.orgId || "");
 </script>
 
 <svelte:head>

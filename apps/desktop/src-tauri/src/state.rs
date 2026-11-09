@@ -119,6 +119,10 @@ pub struct AppState {
     pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
     pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
     pub notification_adapter: Arc<orbis_infra::adapters::notification::NotificationAdapter>,
+    pub notification_repo: Arc<dyn orbis_app::ports::repositories::NotificationRepository>,
+    pub notification_pref_repo:
+        Arc<dyn orbis_app::ports::repositories::NotificationPreferenceRepository>,
+    pub notification_service: Arc<orbis_app::services::NotificationService>,
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
@@ -131,6 +135,7 @@ pub struct AppState {
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
     pub license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
+    pub camera_stream_manager: Arc<crate::features::camera_stream::CameraStreamManager>,
     pub app_data_dir: std::path::PathBuf,
     // ── Employee Affairs & User Groups ─────────────────────────
     pub employee_repo: Arc<dyn orbis_app::ports::repositories::EmployeeRepository>,
@@ -151,6 +156,7 @@ impl AppState {
         let db = sea_orm::Database::connect(db_url)
             .await
             .map_err(|e| e.to_string())?;
+        let mfa_encryption_key = Self::load_or_generate_mfa_encryption_key(app_data_dir)?;
 
         use orbis_infra::migration::Migrator;
         use sea_orm_migration::{MigratorTrait, SchemaManager};
@@ -214,7 +220,10 @@ impl AppState {
             orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() },
         );
         let integration_repo = Arc::new(
-            orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() },
+            orbis_infra::repositories::integration_repos::IntegrationRepoImpl::new(
+                db.clone(),
+                &mfa_encryption_key,
+            ),
         );
         let workflow_repo = Arc::new(
             orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() },
@@ -282,13 +291,10 @@ impl AppState {
             orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()),
         );
 
-        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
-            workflow_engine: None,
-        });
+        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus::new());
         // Generate or load a per-installation JWT secret.
         // Stored as a file in AppData — never hardcoded.
         let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
-        let mfa_encryption_key = Self::load_or_generate_mfa_encryption_key(app_data_dir)?;
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
 
@@ -348,6 +354,9 @@ impl AppState {
                 student_repo.clone(),
                 person_repo.clone(),
                 student_repo.clone(),
+                org_repo.clone(),
+                calendar_repo.clone(),
+                calendar_repo.clone(),
                 student_repo.clone(),
                 settings_repo.clone(),
                 sequence_repo.clone(),
@@ -522,6 +531,21 @@ impl AppState {
             report_org_context_resolver.clone(),
         ));
 
+        let notification_repo = Arc::new(
+            orbis_infra::repositories::notification_repos::NotificationRepoImpl { db: db.clone() },
+        );
+        let notification_pref_repo = Arc::new(
+            orbis_infra::repositories::notification_repos::NotificationPreferenceRepoImpl {
+                db: db.clone(),
+            },
+        );
+        let notification_service = Arc::new(orbis_app::services::NotificationService::new(
+            notification_repo.clone(),
+            notification_pref_repo.clone(),
+            permission_checker.clone(),
+        ));
+        event_bus.set_notification_service(notification_service.clone());
+
         let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine::new(
             policy_repo.clone(),
             autopilot_task_repo.clone(),
@@ -587,6 +611,9 @@ impl AppState {
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new(
             app_data_dir,
         )?);
+        let camera_stream_manager = Arc::new(
+            crate::features::camera_stream::CameraStreamManager::new(app_data_dir),
+        );
 
         // ── Employee Affairs & User Groups Wiring ───────────────────
         let group_repo =
@@ -745,6 +772,9 @@ impl AppState {
             file_storage_service,
             storage_resolver,
             notification_adapter,
+            notification_repo,
+            notification_pref_repo,
+            notification_service,
             integration_service,
             workflow_service,
             report_service,
@@ -756,6 +786,7 @@ impl AppState {
             entitlement_provider,
             license_runtime: license_runtime.clone(),
             solver_sidecar,
+            camera_stream_manager,
             app_data_dir: app_data_dir.to_path_buf(),
             // ── Employee Affairs & User Groups ─────────────────────────
             employee_repo,

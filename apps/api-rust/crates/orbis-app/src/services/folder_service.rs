@@ -164,8 +164,18 @@ impl FolderService {
                     updated_at: Utc::now(),
                     deleted_at: None,
                 };
-                self.folder_repo.save(&root).await?;
-                root
+                match self.folder_repo.save(&root).await {
+                    Ok(()) => root,
+                    Err(save_error) => {
+                        if let Some(existing) =
+                            self.folder_repo.find_by_path(org_id, "/Students").await?
+                        {
+                            existing
+                        } else {
+                            return Err(save_error);
+                        }
+                    }
+                }
             }
         };
 

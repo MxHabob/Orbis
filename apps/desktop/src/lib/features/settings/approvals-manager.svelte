@@ -17,10 +17,7 @@ import {
   createOverrideRequestsQuery,
 } from "$lib/features/workflow/queries";
 import { useQueryClient } from "@tanstack/svelte-query";
-import {
-  Card,
-  CardContent,
-} from "@orbis/ui/card";
+import { Card, CardContent } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
@@ -66,21 +63,17 @@ const allRequestsQuery = createOverrideRequestsQuery(
   () => "all",
 );
 
-const pendingItems = $derived(
-  (pendingQuery.data ?? []) as any[],
-);
-const allRequests = $derived(
-  (allRequestsQuery.data ?? []) as any[],
-);
+const pendingItems = $derived((pendingQuery.data ?? []) as any[]);
+const allRequests = $derived((allRequestsQuery.data ?? []) as any[]);
 const myRequests = $derived(
   allRequests.filter((r) => String(r.requested_by) === String(userId)),
 );
-const logItems = $derived(
-  allRequests.filter((r) => r.status !== "pending"),
-);
+const logItems = $derived(allRequests.filter((r) => r.status !== "pending"));
 
 // Active Tab & Filter Category
-let activeTab = $state<"pending" | "admission" | "overrides" | "mine" | "log">("pending");
+let activeTab = $state<"pending" | "admission" | "overrides" | "mine" | "log">(
+  "pending",
+);
 let typeFilter = $state<string>("all");
 let searchQuery = $state("");
 
@@ -102,10 +95,11 @@ const filteredPendingItems = $derived.by(() => {
 
   if (searchQuery.trim()) {
     const q = searchQuery.trim().toLowerCase();
-    list = list.filter((r) =>
-      (r.reason || "").toLowerCase().includes(q) ||
-      (r.requested_by_name || "").toLowerCase().includes(q) ||
-      (r.override_type || "").toLowerCase().includes(q)
+    list = list.filter(
+      (r) =>
+        (r.reason || "").toLowerCase().includes(q) ||
+        (r.requested_by_name || "").toLowerCase().includes(q) ||
+        (r.override_type || "").toLowerCase().includes(q),
     );
   }
 
@@ -114,10 +108,10 @@ const filteredPendingItems = $derived.by(() => {
 
 // Counts for quick metrics
 const admissionCount = $derived(
-  pendingItems.filter((r) => r.override_type === "admission_approval").length
+  pendingItems.filter((r) => r.override_type === "admission_approval").length,
 );
 const overrideCount = $derived(
-  pendingItems.filter((r) => r.override_type !== "admission_approval").length
+  pendingItems.filter((r) => r.override_type !== "admission_approval").length,
 );
 
 async function processApproval(
@@ -162,7 +156,10 @@ async function processApproval(
 async function cancelRequest(requestId: string) {
   processingId = requestId;
   try {
-    await api.rejectOverride({ request_id: requestId, reason: "Cancelled by requester" });
+    await api.rejectOverride({
+      request_id: requestId,
+      reason: "Cancelled by requester",
+    });
     toast.success(m.ui_copy_request_cancelled_75ffa047());
     queryClient.invalidateQueries({ queryKey: ["override-requests"] });
   } catch (e: unknown) {
@@ -212,7 +209,9 @@ function getOverrideTypeInfo(typeStr?: string) {
       };
     default:
       return {
-        label: m.settings_ui_approval_unknown_type({ type: (typeStr || "override request").replace(/_/g, " ") }),
+        label: m.settings_ui_approval_unknown_type({
+          type: (typeStr || "override request").replace(/_/g, " "),
+        }),
         icon: CheckSquare,
         variant: "outline" as const,
       };

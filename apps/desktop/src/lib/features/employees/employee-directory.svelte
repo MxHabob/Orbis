@@ -5,20 +5,16 @@
   search, CSV export, slide-over EmployeeSheet, and unified account lifecycle actions.
 -->
 <script lang="ts">
-  import { Skeleton } from "@orbis/ui/skeleton";
-import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
 import { Card } from "@orbis/ui/card";
 import {
   ArrowPath,
   DocumentChartBar,
   Eye,
   Plus,
-  Search,
   Users,
   XMark,
 } from "@orbis/icons";
@@ -28,7 +24,6 @@ import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
-import { debounce } from "$lib/shared/utils/debounce";
 import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { exportToCsv } from "$lib/shared/utils/export";
 import type { EmployeeDetailDto } from "$lib/api/types";
@@ -43,6 +38,7 @@ import { confirmStore } from "$lib/stores";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
 import {
   OrbisGrid,
+  type DataQuery,
   type OrbisColumnDef,
   type GridActionEvent,
   type ActionItem,
@@ -65,7 +61,10 @@ let sheetOpen = $state(false);
 let sheetMode = $state<"preview" | "create" | "edit">("create");
 let selectedEmployee = $state<EmployeeDetailDto | null>(null);
 
-function openEmployeeSheet(emp: EmployeeDetailDto | null, mode: "preview" | "create" | "edit") {
+function openEmployeeSheet(
+  emp: EmployeeDetailDto | null,
+  mode: "preview" | "create" | "edit",
+) {
   selectedEmployee = emp;
   sheetMode = mode;
   sheetOpen = true;
@@ -80,7 +79,10 @@ const filterInput = $derived({
 
 // Queries
 const employeesQuery = createInfiniteQuery(() => ({
-  queryKey: queryKeys.employee.list(orgId, filterInput as Record<string, unknown>),
+  queryKey: queryKeys.employee.list(
+    orgId,
+    filterInput as Record<string, unknown>,
+  ),
   queryFn: ({ pageParam }) =>
     api.listEmployees({ ...filterInput, page: pageParam, page_size: 50 }),
   initialPageParam: 1,
@@ -103,18 +105,24 @@ async function loadMoreEmployees() {
   const result = await employeesQuery.fetchNextPage();
   if (result.isError) throw result.error;
 }
-const stats = $derived(statsQuery.data ?? { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 });
+const stats = $derived(
+  statsQuery.data ?? {
+    total: 0,
+    active: 0,
+    on_leave: 0,
+    suspended: 0,
+    terminated: 0,
+  },
+);
 const isLoading = $derived(employeesQuery.isLoading || statsQuery.isLoading);
 const error = $derived(
   (employeesQuery.data?.pages.length ? undefined : employeesQuery.error) ||
     statsQuery.error,
 );
 
-// Search with debounce
-let localSearch = $state("");
-const updateSearch = debounce((q: string) => {
-  searchQuery = q;
-}, 150);
+function updateSearch(query: string) {
+  searchQuery = query;
+}
 
 function setStatusFilter(status: string) {
   statusFilter = status;
@@ -126,13 +134,12 @@ function setTypeFilter(type: string) {
 
 function clearFilters() {
   searchQuery = "";
-  localSearch = "";
   statusFilter = "all";
   typeFilter = "all";
 }
 
 const hasActiveFilters = $derived(
-  searchQuery !== "" || statusFilter !== "all" || typeFilter !== "all"
+  searchQuery !== "" || statusFilter !== "all" || typeFilter !== "all",
 );
 
 function toggleSelect(id: string) {
@@ -146,7 +153,10 @@ function toggleSelect(id: string) {
 }
 
 // Status Change Handler via Global confirmStore
-async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) {
+async function promptStatusChange(
+  emp: EmployeeDetailDto,
+  targetStatus: string,
+) {
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_confirm_status_change_7af3a189(),
     description: m.operations_ui_employee_status_change_confirm({
@@ -154,7 +164,10 @@ async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) 
       status: getStatusLabel(targetStatus),
     }),
     confirmText: m.ui_copy_confirm_change_6cd511d4(),
-    variant: targetStatus === "suspended" || targetStatus === "terminated" ? "destructive" : "default",
+    variant:
+      targetStatus === "suspended" || targetStatus === "terminated"
+        ? "destructive"
+        : "default",
   });
 
   if (!confirmed) return;
@@ -196,7 +209,6 @@ async function promptDelete(emp: EmployeeDetailDto) {
   }
 }
 
-
 // Export CSV Handler
 async function handleExport() {
   try {
@@ -220,23 +232,50 @@ async function handleExport() {
       }
     }
 
-    const openFile = exportToCsv(
-      `Employees_Roster_${orgId}`,
-      dataset,
-      [
-        { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
-        { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
-        { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
-        { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
-        { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
-        { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
-        { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
-        { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
-        { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
-        { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
-        { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
-      ]
-    );
+    const openFile = exportToCsv(`Employees_Roster_${orgId}`, dataset, [
+      {
+        header: m.operations_ui_employee_number(),
+        accessor: (e) => e.employee_number || "—",
+      },
+      {
+        header: m.operations_ui_full_name(),
+        accessor: (e) =>
+          e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}`,
+      },
+      {
+        header: m.operations_ui_national_id(),
+        accessor: (e) => e.national_id || "—",
+      },
+      {
+        header: m.operations_ui_job_title(),
+        accessor: (e) => e.job_title || "—",
+      },
+      {
+        header: m.operations_ui_department(),
+        accessor: (e) => e.department || "—",
+      },
+      {
+        header: m.operations_ui_employee_category(),
+        accessor: (e) => e.employee_type || "—",
+      },
+      {
+        header: m.operations_ui_status(),
+        accessor: (e) => e.status || "active",
+      },
+      {
+        header: m.operations_ui_user_account(),
+        accessor: (e) => e.username || m.operations_ui_not_linked(),
+      },
+      {
+        header: m.operations_ui_hire_date(),
+        accessor: (e) => (e.hire_date ? formatDate(e.hire_date, "date") : "—"),
+      },
+      {
+        header: m.operations_ui_phone_number(),
+        accessor: (e) => e.phone || "—",
+      },
+      { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
+    ]);
     toast.success(m.operations_ui_employee_export_success(), {
       action: openFile ? createShowInFolderToastAction(openFile) : undefined,
     });
@@ -279,31 +318,63 @@ function getTypeLabel(t: string): string {
 // ── OrbisGrid Actions & Columns (Icon-Only Pure Icons) ─────────────────
 const employeeActions: ActionItem[] = [
   { id: "preview", label: m.ui_copy_view_dossier_ca7e9625(), icon: "Eye" },
-  { id: "edit", label: m.ui_copy_edit_details_bb482293(), icon: "PencilSquare" },
-  { id: "set_active", label: m.ui_copy_set_active_7c3b569e(), icon: "CheckCircle" },
-  { id: "set_on_leave", label: m.ui_copy_set_on_leave_4946e4f1(), icon: "BuildingOffice" },
-  { id: "set_suspended", label: m.ui_copy_suspend_50430438(), icon: "ShieldCheck", variant: "destructive" },
-  { id: "delete", label: m.ui_copy_delete_employee_ef02f4a9(), icon: "Trash", variant: "destructive" },
+  {
+    id: "edit",
+    label: m.ui_copy_edit_details_bb482293(),
+    icon: "PencilSquare",
+  },
+  {
+    id: "set_active",
+    label: m.ui_copy_set_active_7c3b569e(),
+    icon: "CheckCircle",
+  },
+  {
+    id: "set_on_leave",
+    label: m.ui_copy_set_on_leave_4946e4f1(),
+    icon: "BuildingOffice",
+  },
+  {
+    id: "set_suspended",
+    label: m.ui_copy_suspend_50430438(),
+    icon: "ShieldCheck",
+    variant: "destructive",
+  },
+  {
+    id: "delete",
+    label: m.ui_copy_delete_employee_ef02f4a9(),
+    icon: "Trash",
+    variant: "destructive",
+  },
 ];
 
 const gridSource = $derived(
   employees.map((emp, i) => {
-    const fullName = emp.full_name || emp.full_name_ar || `${emp.first_name} ${emp.last_name}`;
+    const fullName =
+      emp.full_name || emp.full_name_ar || `${emp.first_name} ${emp.last_name}`;
     const isSelected = selectedIds.has(emp.id);
     return {
       ...emp,
       __idx: i + 1,
       __selected: isSelected,
       full_name: fullName,
-      job_dept: emp.department || emp.org_unit_name ? `${emp.job_title || ''} • ${emp.department || emp.org_unit_name || ''}` : (emp.job_title || "—"),
+      job_dept:
+        emp.department || emp.org_unit_name
+          ? `${emp.job_title || ""} • ${emp.department || emp.org_unit_name || ""}`
+          : emp.job_title || "—",
       type_display: getTypeLabel(emp.employee_type),
       status_display: getStatusLabel(emp.status),
       account_display: emp.username || m.ui_copy_not_linked_798eb72b(),
-      hire_date_display: emp.hire_date ? formatDate(emp.hire_date, "date") : "—",
-      created_at_display: emp.created_at ? formatDate(emp.created_at, "datetime") : "—",
-      updated_at_display: emp.updated_at ? formatDate(emp.updated_at, "datetime") : "—",
+      hire_date_display: emp.hire_date
+        ? formatDate(emp.hire_date, "date")
+        : "—",
+      created_at_display: emp.created_at
+        ? formatDate(emp.created_at, "datetime")
+        : "—",
+      updated_at_display: emp.updated_at
+        ? formatDate(emp.updated_at, "datetime")
+        : "—",
     };
-  })
+  }),
 );
 
 const columns = $derived.by<OrbisColumnDef[]>(() => [
@@ -442,7 +513,11 @@ function handleGridAction(event: GridActionEvent) {
 
   if (event.actionId === "toggle-select" || event.actionId === "select") {
     toggleSelect(emp.id);
-  } else if (event.actionId === "preview" || event.actionId === "dblclick" || event.actionId === "profile") {
+  } else if (
+    event.actionId === "preview" ||
+    event.actionId === "dblclick" ||
+    event.actionId === "profile"
+  ) {
     openEmployeeSheet(emp, "preview");
   } else if (event.actionId === "edit") {
     openEmployeeSheet(emp, "edit");
@@ -456,7 +531,6 @@ function handleGridAction(event: GridActionEvent) {
     promptDelete(emp);
   }
 }
-
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -587,97 +661,56 @@ function handleGridAction(event: GridActionEvent) {
           </Card>
         </div>
 
-        <!-- Controls Bar: Search & Action Buttons -->
-        <div class="flex items-center justify-between shrink-0 gap-3">
-          <div class="relative w-full max-w-sm shrink-0">
-            <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={m.employees_search_placeholder()}
-              class="input-sunken ps-9 text-xs py-2"
-              bind:value={localSearch}
-              oninput={() => updateSearch(localSearch)}
-            />
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Button
-              variant="outline"
-              class="text-xs h-9 px-3 cursor-pointer"
-              onclick={handleExport}
-            >
-              <DocumentChartBar size={14} class="me-1.5" />
-              {m.common_export()}
-            </Button>
-
-            <Button
-              variant="default"
-              class="text-xs h-9 px-3 cursor-pointer"
-              onclick={() => openEmployeeSheet(null, "create")}
-            >
-              <Plus size={14} class="me-1.5" />
-              {m.employees_new_title()}
-            </Button>
-          </div>
-        </div>
-
         <!-- Table View with OrbisGrid -->
-        <div class="flex-1 min-h-0 flex flex-col bg-card border border-border rounded-lg overflow-hidden shadow-xs">
-          {#if isLoading}
-            <div class="flex h-full min-h-0 flex-col" aria-busy="true">
-              <span class="sr-only">{m.ui_copy_loading_employees_3e3b45d1()}</span>
-              <div class="flex h-11 shrink-0 items-center gap-4 border-b border-border bg-muted/30 px-4">
-                {#each Array.from({ length: 5 }) as _, index (index)}
-                  <Skeleton class="h-4 flex-1" />
-                {/each}
-              </div>
-              <div class="flex-1 divide-y divide-border/60 overflow-hidden">
-                {#each Array.from({ length: 9 }) as _, rowIndex (rowIndex)}
-                  <div class="flex h-11 items-center gap-4 px-4">
-                    {#each Array.from({ length: 5 }) as _, columnIndex (columnIndex)}
-                      <Skeleton class="h-4 flex-1" />
-                    {/each}
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {:else if error}
+        <div class="flex-1 min-h-0 flex flex-col">
+          {#if error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
               <p class="text-xs text-destructive font-semibold">{extractErrorMessage(error)}</p>
               <Button variant="outline" size="sm" class="text-xs" onclick={() => employeesQuery.refetch()}>
                 {m.common_retry()}
               </Button>
             </div>
-          {:else if employees.length === 0}
-            <div class="h-full w-full flex flex-col items-center justify-center p-8 text-center gap-3">
-              <div class="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <Users size={24} />
-              </div>
-              <div class="flex flex-col gap-1">
-                <h3 class="text-sm font-semibold text-foreground">{m.ui_copy_no_employees_found_967f15bd()}</h3>
-                <p class="text-xs text-muted-foreground max-w-xs">{m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2()}</p>
-              </div>
-              {#if hasActiveFilters}
-                <Button variant="outline" size="sm" class="text-xs mt-2" onclick={clearFilters}>
-                  {m.common_filter_clear()}
-                </Button>
-              {/if}
-            </div>
           {:else}
-            <!-- OrbisGrid -->
-            <div class="flex-1 min-h-0 flex flex-col">
-              <OrbisGrid
-                {columns}
-                source={gridSource}
-                height="100%"
-                rowSize={44}
-                rtl={getLocale() === "ar"}
-                readonly
-                onaction={handleGridAction}
-                hasMore={employeesQuery.hasNextPage ?? false}
-                onloadmore={loadMoreEmployees}
-              />
-            </div>
+            <OrbisGrid
+              {columns}
+              source={gridSource}
+              loading={isLoading}
+              height="100%"
+              rtl={getLocale() === "ar"}
+              clientQuery
+              serverQuery
+              search={searchQuery}
+              searchPlaceholder={m.employees_search_placeholder()}
+              onquerychange={(query: DataQuery) => updateSearch(query.search ?? "")}
+              readonly
+              onaction={handleGridAction}
+              hasMore={employeesQuery.hasNextPage ?? false}
+              onloadmore={loadMoreEmployees}
+              emptyTitle={m.ui_copy_no_employees_found_967f15bd()}
+              emptyDescription={m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2()}
+            >
+              {#snippet toolbarActions()}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 px-3 text-xs"
+                  onclick={handleExport}
+                >
+                  <DocumentChartBar size={14} class="me-1.5" />
+                  {m.common_export()}
+                </Button>
+
+                <Button
+                  variant="lime"
+                  size="sm"
+                  class="h-8 px-3 text-xs font-semibold"
+                  onclick={() => openEmployeeSheet(null, "create")}
+                >
+                  <Plus size={14} class="me-1.5" />
+                  {m.employees_new_title()}
+                </Button>
+              {/snippet}
+            </OrbisGrid>
           {/if}
         </div>
       </div>
@@ -716,16 +749,6 @@ function handleGridAction(event: GridActionEvent) {
             {/if}
           {/if}
 
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            class="h-8 px-3 text-xs font-medium cursor-pointer gap-1.5"
-            onclick={handleExport}
-          >
-            <DocumentChartBar size={13} />
-            <span>{m.common_export()}</span>
-          </Button>
         </div>
       </div>
     </div>

@@ -14,7 +14,11 @@ import { l } from "$lib/core/i18n";
 import { formatDate as fmtDate } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import AuditDetailsDialog from "./components/audit-details-dialog.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { auditFilterFields } from "$lib/core/filter-configs";
 
@@ -214,12 +218,13 @@ const columns = $derived<OrbisColumnDef[]>([
   </div>
 
   <!-- OrbisGrid Container -->
-  <div class="flex-1 min-h-0 rounded-xl border border-border/80 bg-background overflow-hidden">
+  <div class="flex-1 min-h-0 overflow-hidden">
     <OrbisGrid
       {columns}
       source={gridSource}
       loading={isLoading}
       clientQuery
+      showFilterButton={false}
       filter={activeFilter}
       emptyTitle={m.ui_copy_no_audit_logs_found_6a299836()}
       emptyDescription={m.ui_copy_no_operations_have_been_recorded_yet_a16f9eb7()}

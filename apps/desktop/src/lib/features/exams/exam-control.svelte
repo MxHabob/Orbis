@@ -3,10 +3,9 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { InfoCircle, Lock } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { slide } from "svelte/transition";
-import { academicContext, authStore } from "$lib/stores";
+import { academicContext, authStore, uiStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import {
@@ -19,7 +18,7 @@ import {
   type GradeCell,
 } from "./grade-helpers";
 import type { CellEditEvent } from "@orbis/svelte-grid";
-    import { ControlGrid } from "../academics";
+import { ControlGrid } from "../academics";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -36,10 +35,19 @@ let matrixData = $state<GradeMatrixResponse | null>(null);
 let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
 let previousSelectedClassId: string | null = null;
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
 
 onMount(() => {
-  if (academicContext.effectivePeriodId)
-    selectedPeriodId = academicContext.effectivePeriodId;
+  selectedPeriodId =
+    uiStore.getPreference(
+      preferenceScope(),
+      "exams.selectedPeriodId",
+      "",
+      (value): value is string => typeof value === "string",
+    ) || academicContext.effectivePeriodId;
   if (academicContext.selectedClassId)
     selectedClassId = academicContext.selectedClassId;
   if (academicContext.selectedSubjectId)
@@ -48,7 +56,22 @@ onMount(() => {
 });
 
 $effect(() => {
-  if (selectedPeriodId) academicContext.selectedPeriodId = selectedPeriodId;
+  if (!periods.length) return;
+
+  if (selectedPeriodId && !selectedPeriod) {
+    selectedPeriodId =
+      academicContext.activePeriod?.id ?? String(periods[0]?.id ?? "");
+    return;
+  }
+
+  if (selectedPeriodId) {
+    academicContext.selectedPeriodId = selectedPeriodId;
+    uiStore.setPreference(
+      preferenceScope(),
+      "exams.selectedPeriodId",
+      selectedPeriodId,
+    );
+  }
 });
 $effect(() => {
   if (selectedClassId) academicContext.selectedClassId = selectedClassId;
@@ -118,52 +141,82 @@ async function loadGradeMatrix() {
   gridSource = [];
   isDirty = false;
   try {
-    const studentRes = await api.listStudents({ pageSize: 200, classId: selectedClassId });
+    const [studentRes, sectionSubjects] = await Promise.all([
+      api.listStudents({
+        page: 1,
+        page_size: 200,
+        class_id: selectedClassId,
+        period_id: selectedPeriodId,
+      }),
+      api.listSectionSubjects(selectedClassId, selectedPeriodId),
+    ]);
     const studentItems = studentRes.items || [];
+    const sectionSubject = sectionSubjects.find(
+      (offering) => String(offering.subject_id) === String(selectedSubjectId),
+    );
+    const gradeItems = sectionSubject
+      ? await api.listGrades({ SectionSubjectId: sectionSubject.id })
+      : [];
     const assessmentConfigs = [
       { type: "monthly", max: 20 },
       { type: "final", max: 30 },
     ];
     const assessmentTypes = assessmentConfigs.map((c) => c.type);
 
-    const students: GradeMatrixStudent[] = await Promise.all(
-      studentItems.map(async (st: any) => {
-        const studentId = st.student?.id || st.id;
-        const studentGrades = await api.listGrades(studentId).catch(() => []);
-        const matchingGrades = studentGrades.filter(
-          (g: any) =>
-            String(g.subject_id) === String(selectedSubjectId) &&
-            String(g.period_id) === String(selectedPeriodId),
+    const students: GradeMatrixStudent[] = studentItems.map((st) => {
+      const studentId = st.student?.id ?? st.id;
+      const matchingGrades = gradeItems.filter(
+        (grade) =>
+          String(grade.student_id) === String(studentId) &&
+          String(grade.period_id) === String(selectedPeriodId),
+      );
+      const cells: GradeCell[] = assessmentConfigs.map(({ type, max }) => {
+        const grade = matchingGrades.find(
+          (item) => Boolean(item.is_final) === (type === "final"),
         );
-        const cells: GradeCell[] = assessmentConfigs.map(({ type, max }) => {
-          const g = matchingGrades.find((gr: any) => gr.grade_type === type);
-          return {
-            grade_id: g?.id || null,
-            exam_type: type,
-            score: g?.raw_score ?? null,
-            max_score: g?.max_score ?? max,
-          };
-        });
-        const total = cells.reduce((acc, c) => acc + (c.score || 0), 0);
-        const maxTotal = cells.reduce((acc, c) => acc + (c.max_score || 50), 0);
-        const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+        const gradeMax = Number(grade?.max_score);
         return {
-          enrollment_id: studentId,
-          student_id: studentId,
-          student_name: st.student?.full_name || st.full_name || "",
-          student_name_ar: st.student?.full_name_ar || st.full_name_ar || null,
-          grades: cells,
-          total,
-          max_total: maxTotal,
-          percentage,
-          grade_letter: scoreToGradeLetter(percentage, academicContext.gradeScaleItems),
+          grade_id: grade?.id ?? null,
+          exam_type: type,
+          score: grade ? Number(grade.score) : null,
+          max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
         };
-      }),
-    );
+      });
+      const total = cells.reduce((acc, cell) => acc + (cell.score || 0), 0);
+      const maxTotal = cells.reduce((acc, cell) => acc + cell.max_score, 0);
+      const percentage =
+        maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+      return {
+        enrollment_id:
+          st.enrollment?.id ??
+          matchingGrades.find((grade) => grade.enrollment_id)?.enrollment_id ??
+          studentId,
+        student_id: studentId,
+        student_name:
+          st.person?.full_name ||
+          st.person?.display_name ||
+          st.student?.student_number ||
+          "",
+        student_name_ar:
+          st.person?.full_name_ar ||
+          st.person?.full_name ||
+          st.person?.display_name ||
+          st.student?.student_number ||
+          null,
+        grades: cells,
+        total,
+        max_total: maxTotal,
+        percentage,
+        grade_letter: scoreToGradeLetter(
+          percentage,
+          academicContext.gradeScaleItems,
+        ),
+      };
+    });
 
     const result: GradeMatrixResponse = {
       period_id: selectedPeriodId,
-      section_subject_id: `${selectedClassId}_${selectedSubjectId}`,
+      section_subject_id: sectionSubject?.id ?? "",
       students,
       assessment_types: assessmentTypes,
     };
@@ -215,18 +268,16 @@ async function handleSaveAll() {
     const items: any[] = [];
     for (const row of gridSource) {
       for (const key of assessmentKeys) {
-        const score = row[`exam_${key}`] ?? row[`score_${key}`];
+        const score = row[`exam_${key}`];
         if (score !== null && score !== undefined && score !== "") {
           const max = key === "final" ? 30 : 20;
           items.push({
             student_id: row.student_id,
             period_id: selectedPeriodId,
-            subject_id: selectedSubjectId,
-            class_id: selectedClassId,
-            grade_type: key,
-            raw_score: Number(score),
+            section_subject_id: matrixData.section_subject_id,
+            score: String(Number(score)),
             max_score: max,
-            weight: 1.0,
+            enrollment_id: row.enrollment_id || undefined,
             notes: null,
           });
         }
@@ -240,7 +291,9 @@ async function handleSaveAll() {
     }
 
     await api.batchRecordGrades({ items });
-    toast.success(m.common_control_save_success({ total: String(items.length) }));
+    toast.success(
+      m.common_control_save_success({ total: String(items.length) }),
+    );
 
     isDirty = false;
     await loadGradeMatrix();
@@ -275,37 +328,31 @@ onMount(() => {
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none">
+<div class="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-3 text-start select-none sm:gap-4 sm:p-4">
   {#if isLoading}
-    <div class="flex flex-col gap-4">
-      <Skeleton class="h-64 w-full rounded-xl" />
+    <div class="flex min-h-0 flex-1 flex-col">
+      <Skeleton class="h-full min-h-64 w-full rounded-xl" />
     </div>
   {:else}
     <!-- Warnings -->
     {#if selectedPeriod && isPeriodLocked}
       <div
-        class="bg-destructive/5 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
+        class="shrink-0 rounded-xl border border-destructive/20 bg-card px-4 py-2.5"
         in:slide={{ duration: 200 }}
       >
-        <div class="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-          <Lock size={16} class="text-destructive" />
-        </div>
-        <div class="text-start">
-          <p class="text-xs font-bold text-destructive">{m.common_control_period_locked_title()}</p>
-          <p class="text-[10px] text-destructive/80 mt-0.5">{m.common_control_period_locked_desc()}</p>
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-start">
+          <p class="text-xs font-medium text-destructive">{m.common_control_period_locked_title()}</p>
+          <p class="text-xs text-muted-foreground">{m.common_control_period_locked_desc()}</p>
         </div>
       </div>
     {:else if selectedPeriod && !isGradeEntryOpen}
       <div
-        class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3"
+        class="shrink-0 rounded-xl border border-amber-500/20 bg-card px-4 py-2.5"
         in:slide={{ duration: 200 }}
       >
-        <div class="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-          <InfoCircle size={16} class="text-amber-500" />
-        </div>
-        <div class="text-start">
-          <p class="text-xs font-bold text-amber-500">{m.common_control_entry_closed_title()}</p>
-          <p class="text-[10px] text-amber-400 mt-0.5">{m.common_control_entry_closed_desc()}</p>
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-start">
+          <p class="text-xs font-medium text-amber-600">{m.common_control_entry_closed_title()}</p>
+          <p class="text-xs text-muted-foreground">{m.common_control_entry_closed_desc()}</p>
         </div>
       </div>
     {/if}

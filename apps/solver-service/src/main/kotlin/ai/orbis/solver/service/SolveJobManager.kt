@@ -33,31 +33,34 @@ class SolveJobManager {
 
     fun submit(problem: TimetableProblemDto): Boolean {
         val jobId = problem.jobId
-        if (jobs.containsKey(jobId)) {
-            return false
-        }
-
         val timetable = ProblemMapper.toTimetable(problem)
-        jobs[jobId] = JobState(
+        val state = JobState(
             jobId = jobId,
             status = JobStatus.running,
             problem = problem,
             bestSolution = ProblemMapper.toSolution(problem, timetable),
         )
+        if (jobs.putIfAbsent(jobId, state) != null) return false
 
-        solverManager.solveBuilder()
-            .withProblemId(jobId)
-            .withProblemFinder { timetable }
-            .withBestSolutionConsumer { best -> onBestSolution(jobId, problem, best) }
-            .withFinalBestSolutionConsumer { _ -> onSolveComplete(jobId) }
-            .withExceptionHandler { _, throwable ->
-                jobs[jobId]?.let { state ->
-                    state.status = JobStatus.failed
-                    state.error = throwable.message ?: "Solver failed"
+        try {
+            solverManager.solveBuilder()
+                .withProblemId(jobId)
+                .withProblemFinder { timetable }
+                .withBestSolutionConsumer { best -> onBestSolution(jobId, problem, best) }
+                .withFinalBestSolutionConsumer { _ -> onSolveComplete(jobId) }
+                .withExceptionHandler { _, throwable ->
+                    jobs[jobId]?.let { state ->
+                        state.status = JobStatus.failed
+                        state.error = throwable.message ?: "Solver failed"
+                    }
+                    log.error("Solving failed for job $jobId", throwable)
                 }
-                log.error("Solving failed for job $jobId", throwable)
-            }
-            .run()
+                .run()
+        } catch (error: RuntimeException) {
+            jobs.remove(jobId, state)
+            log.error("Failed to start solve job $jobId", error)
+            throw IllegalStateException("Failed to start solve job $jobId", error)
+        }
 
         log.infof("Started solve job %s with %d assignments", jobId, problem.assignments.size)
         return true
@@ -95,15 +98,20 @@ class SolveJobManager {
         jobs[jobId]?.let { state ->
             state.status = when {
                 state.status == JobStatus.cancelled -> JobStatus.cancelled
-                state.bestSolution?.score?.let { score ->
-                    score.startsWith("0hard")
-                } == true -> JobStatus.completed
-                else -> JobStatus.completed
+                state.status == JobStatus.failed -> JobStatus.failed
+                state.bestSolution?.score?.let(::hasZeroHardScore) == true -> JobStatus.completed
+                else -> {
+                    state.error = "The solver could not find a conflict-free timetable"
+                    JobStatus.failed
+                }
             }
             log.infof("Solve job %s finished with status %s score %s",
                 jobId, state.status, state.score)
         }
     }
+
+    private fun hasZeroHardScore(score: String): Boolean =
+        score.substringBefore("hard/").toIntOrNull() == 0
 
     // --- Exam Solver Management ---
 
@@ -183,11 +191,11 @@ class SolveJobManager {
 
     private class JobState(
         val jobId: String,
-        var status: JobStatus,
+        @Volatile var status: JobStatus,
         val problem: TimetableProblemDto,
-        var bestSolution: ai.orbis.solver.dto.TimetableSolutionDto? = null,
-        var score: String? = null,
-        var error: String? = null,
+        @Volatile var bestSolution: ai.orbis.solver.dto.TimetableSolutionDto? = null,
+        @Volatile var score: String? = null,
+        @Volatile var error: String? = null,
     )
 
     private class ExamJobState(

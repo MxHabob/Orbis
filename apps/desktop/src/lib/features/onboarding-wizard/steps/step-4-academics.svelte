@@ -52,14 +52,49 @@ let selectedUnitId = $state<string>("");
 
 const STANDARD_SUBJECTS = [
   { code: "MATH-01", name: "Mathematics", nameAr: "الرياضيات", credits: "4" },
-  { code: "ARAB-01", name: "Arabic Language", nameAr: "اللغة العربية", credits: "4" },
-  { code: "ENG-01", name: "English Language", nameAr: "اللغة الإنجليزية", credits: "4" },
-  { code: "ISLM-01", name: "Islamic Studies", nameAr: "الدراسات الإسلامية", credits: "3" },
+  {
+    code: "ARAB-01",
+    name: "Arabic Language",
+    nameAr: "اللغة العربية",
+    credits: "4",
+  },
+  {
+    code: "ENG-01",
+    name: "English Language",
+    nameAr: "اللغة الإنجليزية",
+    credits: "4",
+  },
+  {
+    code: "ISLM-01",
+    name: "Islamic Studies",
+    nameAr: "الدراسات الإسلامية",
+    credits: "3",
+  },
   { code: "SCI-01", name: "Science", nameAr: "العلوم العامة", credits: "3" },
-  { code: "SOC-01", name: "Social Studies", nameAr: "الدراسات الاجتماعية", credits: "2" },
-  { code: "CS-01", name: "Computer Science", nameAr: "الحاسب الآلي والتقنية", credits: "2" },
-  { code: "ART-01", name: "Art Education", nameAr: "التربية الفنية", credits: "1" },
-  { code: "PE-01", name: "Physical Education", nameAr: "التربية البدنية", credits: "1" },
+  {
+    code: "SOC-01",
+    name: "Social Studies",
+    nameAr: "الدراسات الاجتماعية",
+    credits: "2",
+  },
+  {
+    code: "CS-01",
+    name: "Computer Science",
+    nameAr: "الحاسب الآلي والتقنية",
+    credits: "2",
+  },
+  {
+    code: "ART-01",
+    name: "Art Education",
+    nameAr: "التربية الفنية",
+    credits: "1",
+  },
+  {
+    code: "PE-01",
+    name: "Physical Education",
+    nameAr: "التربية البدنية",
+    credits: "1",
+  },
 ];
 
 const STANDARD_CLASSES = [
@@ -71,11 +106,18 @@ const STANDARD_CLASSES = [
   { name: "Grade 6 - A", nameAr: "الصف السادس (أ)", grade: "Grade 6" },
 ];
 
-const stepTasks = $derived(getTasksForStep("academics", systemStore.onboardingTasks));
-const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const stepTasks = $derived(
+  getTasksForStep("academics", systemStore.onboardingTasks),
+);
+const isTaskComplete = $derived(
+  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
+);
 const remainingStandardSubjects = $derived(
   STANDARD_SUBJECTS.filter(
-    (preset) => !subjects.some((subject) => subject.code.toLowerCase() === preset.code.toLowerCase()),
+    (preset) =>
+      !subjects.some(
+        (subject) => subject.code.toLowerCase() === preset.code.toLowerCase(),
+      ),
   ),
 );
 const remainingStandardClasses = $derived(
@@ -85,20 +127,21 @@ const remainingStandardClasses = $derived(
         (classItem) =>
           String(classItem.unit_id) === selectedUnitId &&
           (classItem.name.trim().toLowerCase() === preset.name.toLowerCase() ||
-            classItem.name_ar?.trim().toLowerCase() === preset.nameAr.toLowerCase()) &&
+            classItem.name_ar?.trim().toLowerCase() ===
+              preset.nameAr.toLowerCase()) &&
           classItem.level.trim().toLowerCase() === preset.grade.toLowerCase(),
       ),
   ),
 );
 
-function applySubjectPreset(subject: typeof STANDARD_SUBJECTS[number]) {
+function applySubjectPreset(subject: (typeof STANDARD_SUBJECTS)[number]) {
   subjectName = subject.name;
   subjectNameAr = subject.nameAr;
   subjectCode = subject.code;
   subjectCreditHours = subject.credits;
 }
 
-function applyClassPreset(classPreset: typeof STANDARD_CLASSES[number]) {
+function applyClassPreset(classPreset: (typeof STANDARD_CLASSES)[number]) {
   className = classPreset.name;
   classNameAr = classPreset.nameAr;
   classGrade = classPreset.grade;
@@ -138,7 +181,11 @@ async function handleCreateSubject() {
   }
   const resolvedCode =
     subjectCode.trim() || `SUB-${String(subjects.length + 1).padStart(2, "0")}`;
-  if (subjects.some((subject) => subject.code.toLowerCase() === resolvedCode.toLowerCase())) {
+  if (
+    subjects.some(
+      (subject) => subject.code.toLowerCase() === resolvedCode.toLowerCase(),
+    )
+  ) {
     toast.error(m.onboarding_step4_subject_duplicate_code());
     return;
   }
@@ -217,7 +264,8 @@ async function handleCreateClass() {
         String(classItem.unit_id) === selectedUnitId &&
         (classItem.name.trim().toLowerCase() === resolvedName.toLowerCase() ||
           (!!classNameAr.trim() &&
-            classItem.name_ar?.trim().toLowerCase() === classNameAr.trim().toLowerCase())) &&
+            classItem.name_ar?.trim().toLowerCase() ===
+              classNameAr.trim().toLowerCase())) &&
         classItem.level.trim().toLowerCase() === resolvedLevel.toLowerCase(),
     )
   ) {
@@ -284,7 +332,6 @@ async function handleBatchImportClasses() {
     isSubmittingClass = false;
   }
 }
-
 </script>
 
 <div class="space-y-6">

@@ -1,6 +1,15 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { ChevronLeft, ChevronRight, Folder, FolderOpen, Home, Sparkles, User, AcademicCap } from "@orbis/icons";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Folder,
+  FolderOpen,
+  Home,
+  Sparkles,
+  User,
+  AcademicCap,
+} from "@orbis/icons";
 import type { FolderDto } from "$lib/api";
 
 let {
@@ -17,11 +26,11 @@ let {
 
 const isCurriculum = $derived(
   currentFolder?.folder_type === "curriculum" ||
-  currentFolder?.metadata?.ai_agent_accessible === true
+    currentFolder?.metadata?.ai_agent_accessible === true,
 );
 const isStudent = $derived(
   currentFolder?.folder_type === "student" ||
-  currentFolder?.entity_type === "student"
+    currentFolder?.entity_type === "student",
 );
 </script>
 

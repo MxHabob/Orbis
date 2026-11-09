@@ -1,134 +1,143 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { api, extractErrorMessage, queryKeys, type OrgUnitDto } from "$lib/api";
-  import { getOrgUnitLocationPath } from "$lib/features/academics/room-location";
-  import { createRoomInputSchema } from "@orbis/schemas";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
-  import { FormField } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { toast } from "@orbis/ui";
-  import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
-  import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { untrack } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { createQuery } from "@tanstack/svelte-query";
+import { api, extractErrorMessage, queryKeys, type OrgUnitDto } from "$lib/api";
+import { getOrgUnitLocationPath } from "$lib/features/academics/room-location";
+import { createRoomInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Label } from "@orbis/ui/label";
+import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { toast } from "@orbis/ui";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
-  let {
-    orgId,
-    room = null,
-    onSuccess,
-    onCancel,
-  }: {
-    orgId: string;
-    room?: {
-      id: string;
-      name?: string | null;
-      name_ar?: string | null;
-      capacity?: number | null;
-      room_type?: string | null;
-      floor?: number | null;
-      org_unit_id?: string | null;
-    } | null;
-    onSuccess: () => void;
-    onCancel: () => void;
-  } = $props();
+let {
+  orgId,
+  room = null,
+  onSuccess,
+  onCancel,
+}: {
+  orgId: string;
+  room?: {
+    id: string;
+    name?: string | null;
+    name_ar?: string | null;
+    capacity?: number | null;
+    room_type?: string | null;
+    is_exam_hall?: boolean;
+    floor?: number | null;
+    org_unit_id?: string | null;
+  } | null;
+  onSuccess: () => void;
+  onCancel: () => void;
+} = $props();
 
-  const isEdit = $derived(!!room);
+const isEdit = $derived(!!room);
 
-  const form = untrack(() => new FormController({
-    initialValues: {
-      name: room?.name || "",
-      name_ar: room?.name_ar || "",
-      capacity: room?.capacity ?? null,
-      room_type: room?.room_type || "classroom",
-      floor: room?.floor ?? null,
-      org_unit_id: room?.org_unit_id || "",
-    },
-    schema: createRoomInputSchema,
-  }));
+const form = untrack(
+  () =>
+    new FormController({
+      initialValues: {
+        name: room?.name || "",
+        name_ar: room?.name_ar || "",
+        capacity: room?.capacity ?? null,
+        room_type: room?.room_type || "classroom",
+        is_exam_hall: room?.is_exam_hall ?? false,
+        floor: room?.floor ?? null,
+        org_unit_id: room?.org_unit_id || "",
+      },
+      schema: createRoomInputSchema,
+    }),
+);
 
-  const orgUnitsQuery = createQuery<OrgUnitDto[]>(() => ({
-    queryKey: queryKeys.org.units(orgId),
-    queryFn: () => api.listOrgUnits(),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-  const orgUnits = $derived(orgUnitsQuery.data ?? []);
-  const orgUnitsById = $derived(
-    new Map(orgUnits.map((unit) => [String(unit.id), unit])),
-  );
-  const locationUnits = $derived(
-    orgUnits.filter((unit) =>
-      ["branch", "building", "facility"].includes(unit.unit_type.toLowerCase()),
-    ),
-  );
+const orgUnitsQuery = createQuery<OrgUnitDto[]>(() => ({
+  queryKey: queryKeys.org.units(orgId),
+  queryFn: () => api.listOrgUnits(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+const orgUnits = $derived(orgUnitsQuery.data ?? []);
+const orgUnitsById = $derived(
+  new Map(orgUnits.map((unit) => [String(unit.id), unit])),
+);
+const locationUnits = $derived(
+  orgUnits.filter((unit) =>
+    ["branch", "building", "facility"].includes(unit.unit_type.toLowerCase()),
+  ),
+);
 
-  const selectedLocationName = $derived(
-    form.values.org_unit_id
-      ? getOrgUnitLocationPath(form.values.org_unit_id, orgUnitsById)
-      : null,
-  );
+const selectedLocationName = $derived(
+  form.values.org_unit_id
+    ? getOrgUnitLocationPath(form.values.org_unit_id, orgUnitsById)
+    : null,
+);
 
-  function fieldError(field: string): string | undefined {
-    return form.errors[field]?.[0];
-  }
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
+}
 
-  const roomTypeLabels = {
-    classroom: m.common_rooms_type_classroom(),
-    laboratory: m.common_rooms_type_laboratory(),
-    lecture_hall: m.common_rooms_type_lecture_hall(),
-    office: m.common_rooms_type_office(),
-    other: m.common_rooms_type_other(),
-  };
+const roomTypeLabels = {
+  classroom: m.common_rooms_type_classroom(),
+  laboratory: m.common_rooms_type_laboratory(),
+  lecture_hall: m.common_rooms_type_lecture_hall(),
+  office: m.common_rooms_type_office(),
+  other: m.common_rooms_type_other(),
+};
 
-  async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    const submitted = await form.submit(async (payload) => {
-      const name = payload.name || payload.name_ar;
-      if (!name) throw new Error(m.common_rooms_error_name_required());
-      if (isEdit && room?.id) {
-        await api.updateRoom(room.id, {
-          name,
-          name_ar: payload.name_ar || undefined,
-          capacity: Number(payload.capacity) || 30,
-          room_type: payload.room_type || "classroom",
-          org_unit_id: payload.org_unit_id || null,
-          floor:
-            payload.floor != null && payload.floor !== ""
-              ? Number(payload.floor)
-              : undefined,
-        });
-        toast.success(m.common_rooms_update_success());
-      } else {
-        await api.createRoom({
-          name,
-          name_ar: payload.name_ar || undefined,
-          capacity: Number(payload.capacity) || 30,
-          room_type: payload.room_type || "classroom",
-          org_unit_id: payload.org_unit_id || undefined,
-          floor:
-            payload.floor != null && payload.floor !== ""
-              ? Number(payload.floor)
-              : undefined,
-        });
-        toast.success(m.common_rooms_create_success());
-      }
-    });
-    if (submitted) {
-      onSuccess();
-    } else if (form.formError) {
-      toast.error(form.formError);
-    } else if (Object.keys(form.errors).length > 0) {
-      toast.error(m.common_rooms_error_name_required());
+async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
+  const submitted = await form.submit(async (payload) => {
+    const name = payload.name || payload.name_ar;
+    if (!name) throw new Error(m.common_rooms_error_name_required());
+    if (isEdit && room?.id) {
+      await api.updateRoom(room.id, {
+        name,
+        name_ar: payload.name_ar || undefined,
+        capacity: Number(payload.capacity) || 30,
+        room_type: payload.room_type || "classroom",
+        is_exam_hall: payload.is_exam_hall,
+        org_unit_id: payload.org_unit_id || null,
+        floor:
+          payload.floor != null && payload.floor !== ""
+            ? Number(payload.floor)
+            : undefined,
+      });
+      toast.success(m.common_rooms_update_success());
+    } else {
+      await api.createRoom({
+        name,
+        name_ar: payload.name_ar || undefined,
+        capacity: Number(payload.capacity) || 30,
+        room_type: payload.room_type || "classroom",
+        is_exam_hall: payload.is_exam_hall,
+        org_unit_id: payload.org_unit_id || undefined,
+        floor:
+          payload.floor != null && payload.floor !== ""
+            ? Number(payload.floor)
+            : undefined,
+      });
+      toast.success(m.common_rooms_create_success());
     }
+  });
+  if (submitted) {
+    onSuccess();
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else if (Object.keys(form.errors).length > 0) {
+    toast.error(m.common_rooms_error_name_required());
   }
+}
 </script>
 
 <form
@@ -285,6 +294,22 @@
         {m.common_rooms_location_hint()}
       {/if}
     </p>
+
+    <div class="space-y-1">
+      <div class="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-2.5">
+        <Checkbox
+          id="room_exam_hall"
+          bind:checked={form.values.is_exam_hall}
+          disabled={form.isSubmitting}
+        />
+        <Label for="room_exam_hall" class="cursor-pointer text-sm font-medium">
+          {m.common_rooms_exam_committee()}
+        </Label>
+      </div>
+      <p class="ps-6 text-xs text-muted-foreground">
+        {m.common_rooms_exam_committee_help()}
+      </p>
+    </div>
   </div>
 
   <!-- Actions -->

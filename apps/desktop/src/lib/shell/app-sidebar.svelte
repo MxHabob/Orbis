@@ -36,7 +36,6 @@ import SystemClock from "./system-clock.svelte";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { l } from "$lib/core/i18n/locale";
-import { onMount } from "svelte";
 import { prefetchRouteData } from "$lib/api";
 
 let {
@@ -52,7 +51,9 @@ const orgNameDisplay = $derived(
   l(orgQuery.data?.name_ar, orgQuery.data?.name || initialOrgName || ""),
 );
 const orgNameArabic = $derived(orgQuery.data?.name_ar ?? null);
-const orgPrimaryColor = $derived(orgQuery.data?.primary_color ?? "var(--primary)");
+const orgPrimaryColor = $derived(
+  orgQuery.data?.primary_color ?? "var(--primary)",
+);
 
 const navItems = $derived([
   {

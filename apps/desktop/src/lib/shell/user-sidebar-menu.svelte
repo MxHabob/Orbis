@@ -29,7 +29,9 @@ let {
   orgId: string;
 } = $props();
 
-let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>([]);
+let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>(
+  [],
+);
 let resolvedAvatarUrl = $state<string | undefined>();
 
 $effect(() => {
@@ -63,19 +65,23 @@ onMount(() => {
     .then((units) => {
       branches = units
         .filter((unit) => unit.is_active && unit.unit_type === "branch")
-        .map((unit) => ({ id: unit.id, name: unit.name, name_ar: unit.name_ar }));
+        .map((unit) => ({
+          id: unit.id,
+          name: unit.name,
+          name_ar: unit.name_ar,
+        }));
     })
     .catch((error: unknown) => {
       console.error("Failed to load organization branches:", error);
     });
 });
 
-const displayName = $derived(l(authStore.user?.full_name_ar, authStore.user?.full_name ?? "") ?? "");
+const displayName = $derived(
+  l(authStore.user?.full_name_ar, authStore.user?.full_name ?? "") ?? "",
+);
 const userInitials = $derived(displayName.trim().charAt(0).toUpperCase());
 
-const displayEmail = $derived(
-  authStore.user?.email ?? "",
-);
+const displayEmail = $derived(authStore.user?.email ?? "");
 
 const activeBranchName = $derived.by(() => {
   if (!effectiveContext.activeOrgUnitId) return m.shared_ui_all_branches();
@@ -83,9 +89,7 @@ const activeBranchName = $derived.by(() => {
   return found ? l(found.name_ar, found.name) : m.shared_ui_selected_branch();
 });
 
-const userRoleDisplay = $derived(
-  authStore.user?.roles?.[0] ?? "",
-);
+const userRoleDisplay = $derived(authStore.user?.roles?.[0] ?? "");
 
 function handleNavigate(path: string) {
   goto(localizeHref(path));
@@ -95,7 +99,6 @@ async function handleLogout() {
   await authStore.logout();
   goto(localizeHref("/login"));
 }
-
 </script>
 
 <DropdownMenu>

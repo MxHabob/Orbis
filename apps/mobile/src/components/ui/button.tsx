@@ -222,6 +222,7 @@ export const Button = React.memo<ButtonProps>(
           {
             opacity: isDisabled ? 0.45 : 1,
           },
+          tactilePress.shadowStyle,
           tactilePress.style,
           style,
         ]}

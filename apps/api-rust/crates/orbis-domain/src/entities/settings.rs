@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::academic_calculation::{CalculationPlan, OutcomePolicy};
-use super::academic_policy::{AcademicPolicy, RankingScope, RoundingMode, TiePolicy};
+use super::academic_policy::{
+    AcademicPolicy, PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
+};
 use super::admission::AdmissionConfiguration;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
@@ -20,7 +22,15 @@ pub struct OrganizationSettings {
     #[serde(default)]
     pub notifications: NotificationSettings,
     #[serde(default)]
+    pub ai: AiSettings,
+    #[serde(default)]
     pub autopilot: AutopilotSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AiSettings {
+    pub mobile_chat_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +62,9 @@ pub struct AcademicSettings {
     pub grade_edit_approval: bool,
     pub auto_graduate_final_level: bool,
     pub exclude_withdrawn: bool,
+    /// Configurable grade bands for letter-grade evaluation (source of truth for AcademicPolicy).
+    #[serde(default)]
+    pub grade_bands: Vec<PolicyGradeBand>,
 }
 
 impl Default for AcademicSettings {
@@ -81,6 +94,7 @@ impl Default for AcademicSettings {
             grade_edit_approval: true,
             auto_graduate_final_level: false,
             exclude_withdrawn: true,
+            grade_bands: Vec::new(),
         }
     }
 }
@@ -106,6 +120,7 @@ impl AcademicSettings {
             certificate_exam_max_score: Decimal::from(80),
             certificate_cumulative_max_score: Decimal::from(20),
             certificate_cumulative_year_count: 3,
+            grade_bands: self.grade_bands.clone(),
         }
     }
 }
@@ -284,5 +299,29 @@ impl Default for AutopilotSettings {
             grade_entry_auto_close_days: 7,
             allow_grade_edit_after_close: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::OrganizationSettings;
+
+    #[test]
+    fn missing_ai_settings_default_to_mobile_chat_disabled() {
+        let settings: OrganizationSettings = serde_json::from_value(serde_json::json!({}))
+            .expect("legacy organization settings should deserialize");
+
+        assert!(!settings.ai.mobile_chat_enabled);
+    }
+
+    #[test]
+    fn mobile_chat_setting_round_trips() {
+        let settings: OrganizationSettings = serde_json::from_value(serde_json::json!({
+            "ai": { "mobile_chat_enabled": true }
+        }))
+        .expect("AI settings should deserialize");
+
+        let serialized = serde_json::to_value(settings).expect("settings should serialize");
+        assert_eq!(serialized["ai"]["mobile_chat_enabled"], true);
     }
 }

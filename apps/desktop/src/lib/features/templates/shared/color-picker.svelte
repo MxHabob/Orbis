@@ -19,6 +19,7 @@ let {
   onchange,
   onopacitychange,
   showOpacity = false,
+  allowNone = false,
   size = "default",
 }: {
   value: string;
@@ -26,6 +27,7 @@ let {
   onchange: (color: string) => void;
   onopacitychange?: (opacity: number) => void;
   showOpacity?: boolean;
+  allowNone?: boolean;
   size?: "default" | "sm";
 } = $props();
 
@@ -36,6 +38,9 @@ let isOpen = $state(false);
 // Recent colors (persisted in memory)
 let recentColors = $state<string[]>([]);
 const MAX_RECENT = 12;
+const pickerValue = $derived(
+  value.toLowerCase() === "transparent" ? "#000000" : value,
+);
 
 // Preset swatches — curated palette
 const presetColors = [
@@ -104,6 +109,10 @@ function selectPreset(color: string) {
   addToRecent(color);
 }
 
+function selectNone() {
+  onchange("transparent");
+}
+
 function handleOpacityInput(e: Event) {
   const val = parseInt((e.target as HTMLInputElement).value) || 100;
   const clamped = Math.max(0, Math.min(100, val));
@@ -120,7 +129,7 @@ function addToRecent(color: string) {
 
 // Keep hexInput in sync when value prop changes externally
 $effect(() => {
-  hexInput = value;
+  hexInput = pickerValue;
 });
 
 const swatchSize = $derived(size === "sm" ? 20 : 24);
@@ -146,7 +155,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
       <div class="spectrum-row">
         <input
           type="color"
-          value={value}
+          value={pickerValue}
           oninput={handleColorInput}
           class="spectrum-input"
         />
@@ -157,11 +166,24 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
             value={hexInput.replace("#", "")}
             oninput={handleHexInput}
             class="h-7 text-[10px] font-mono flex-grow"
-            maxlength="7"
+            maxlength={7}
             placeholder="000000"
           />
         </div>
       </div>
+
+      {#if allowNone}
+        <button
+          type="button"
+          class="none-option"
+          class:active={value.toLowerCase() === "transparent"}
+          aria-pressed={value.toLowerCase() === "transparent"}
+          onclick={selectNone}
+        >
+          <span class="none-swatch"></span>
+          {m.template_color_none()}
+        </button>
+      {/if}
 
       {#if showOpacity}
         <div class="opacity-row">
@@ -182,7 +204,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
       <div class="swatches-section">
         <span class="section-label">{m.template_color_colors()}</span>
         <div class="swatches-grid">
-          {#each presetColors as color}
+          {#each presetColors as color (color)}
             <button
               type="button"
               class="swatch"
@@ -200,7 +222,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
         <div class="swatches-section">
           <span class="section-label">{m.template_color_recent()}</span>
           <div class="swatches-grid">
-            {#each recentColors as color}
+            {#each recentColors as color (color)}
               <button
                 type="button"
                 class="swatch"
@@ -277,6 +299,41 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
     align-items: center;
     gap: 2px;
     flex-grow: 1;
+  }
+
+  .none-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    padding: 4px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-size: 10px;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .none-option:hover,
+  .none-option.active {
+    border-color: var(--color-primary);
+  }
+
+  .none-swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    background:
+      linear-gradient(135deg, transparent 46%, #ef4444 47%, #ef4444 53%, transparent 54%),
+      linear-gradient(45deg, #ccc 25%, transparent 25%),
+      linear-gradient(-45deg, #ccc 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ccc 75%),
+      linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
+    background-position: center, 0 0, 0 4px, 4px -4px, -4px 0;
   }
 
   .hex-label {

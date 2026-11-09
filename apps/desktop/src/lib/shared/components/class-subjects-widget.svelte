@@ -6,7 +6,15 @@ import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, ClockRotateRight, Plus, User } from "@orbis/icons";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  ChevronRight,
+  ClockRotateRight,
+  Plus,
+  User,
+} from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import WorkspaceCard from "./workspace-card.svelte";
 import { page } from "$app/state";

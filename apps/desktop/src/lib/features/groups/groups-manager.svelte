@@ -3,7 +3,7 @@
   User Groups catalog and lifecycle manager for IAM subsystem.
 -->
 <script lang="ts">
-  import { Skeleton } from "@orbis/ui/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
@@ -43,7 +43,11 @@ import { toast } from "@orbis/ui";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
-import type { GroupDetailDto, CreateGroupRequest, UpdateGroupRequest } from "$lib/api/types";
+import type {
+  GroupDetailDto,
+  CreateGroupRequest,
+  UpdateGroupRequest,
+} from "$lib/api/types";
 import {
   createGroupsQuery,
   createCreateGroupMutation,
@@ -82,7 +86,7 @@ const groups = $derived(
     const nameAr = (g.name_ar || "").toLowerCase();
     const desc = (g.description || "").toLowerCase();
     return name.includes(q) || nameAr.includes(q) || desc.includes(q);
-  })
+  }),
 );
 
 // Create / Edit Dialog State

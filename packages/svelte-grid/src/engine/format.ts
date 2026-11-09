@@ -49,7 +49,13 @@ export function formatCell(
     return hit?.label ?? String(value);
   }
   if (Array.isArray(value)) {
-    return value.map((v) => (typeof v === "object" && v ? v.name || v.label || v.title || JSON.stringify(v) : String(v))).join(", ");
+    return value
+      .map((v) =>
+        typeof v === "object" && v
+          ? v.name || v.label || v.title || JSON.stringify(v)
+          : String(v),
+      )
+      .join(", ");
   }
   if (typeof value === "object" && value !== null) {
     const obj = value as Record<string, unknown>;

@@ -28,7 +28,10 @@ export function configureApiBaseUrl(baseUrl: string): void {
     __DEV__ &&
     parsedUrl.protocol === "http:" &&
     ["localhost", "127.0.0.1", "10.0.2.2"].includes(parsedUrl.hostname);
-  if (!isAllowedInstitutionEndpoint(parsedUrl.toString()) && !isDevelopmentLoopback) {
+  if (
+    !isAllowedInstitutionEndpoint(parsedUrl.toString()) &&
+    !isDevelopmentLoopback
+  ) {
     throw new Error(
       "The Orbis server must use HTTPS or a private IPv4 address over HTTP.",
     );

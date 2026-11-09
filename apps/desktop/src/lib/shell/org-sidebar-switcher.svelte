@@ -36,15 +36,21 @@ let {
   primaryColor?: string;
 } = $props();
 
-let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>([]);
+let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>(
+  [],
+);
 let organizations = $state<{ id: string; label: string }[]>([]);
 
 const orgNameDisplay = $derived(l(orgNameAr, orgName) ?? "");
 const orgInitials = $derived(orgNameDisplay.trim().charAt(0).toUpperCase());
 const currentBranchLabel = $derived.by(() => {
   if (!effectiveContext.activeOrgUnitId) return m.shared_ui_all_branches();
-  const currentBranch = branches.find((branch) => branch.id === effectiveContext.activeOrgUnitId);
-  return currentBranch ? l(currentBranch.name_ar, currentBranch.name) : m.shared_ui_selected_branch();
+  const currentBranch = branches.find(
+    (branch) => branch.id === effectiveContext.activeOrgUnitId,
+  );
+  return currentBranch
+    ? l(currentBranch.name_ar, currentBranch.name)
+    : m.shared_ui_selected_branch();
 });
 
 onMount(() => {
@@ -76,14 +82,18 @@ onMount(() => {
   if (currentOrgId && orgNameDisplay) {
     const currentOrganization = { id: currentOrgId, label: orgNameDisplay };
     organizations = organizations.some((org) => org.id === currentOrgId)
-      ? organizations.map((org) => (org.id === currentOrgId ? currentOrganization : org))
+      ? organizations.map((org) =>
+          org.id === currentOrgId ? currentOrganization : org,
+        )
       : [currentOrganization, ...organizations];
   }
 
   api
     .listOrgUnits()
     .then((units) => {
-      branches = units.filter((unit) => unit.is_active && unit.unit_type === "branch");
+      branches = units.filter(
+        (unit) => unit.is_active && unit.unit_type === "branch",
+      );
     })
     .catch((error: unknown) => {
       console.error("Failed to load organization branches:", error);

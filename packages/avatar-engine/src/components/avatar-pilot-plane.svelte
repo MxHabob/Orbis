@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Avatar from "./avatar.svelte";
+import Avatar from "./avatar.svelte";
 
 const {
   mood = "steady",

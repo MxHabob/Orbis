@@ -85,6 +85,8 @@ pub struct FrameNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: FrameProps,
     #[serde(default)]
     pub children: Vec<TemplateNode>,
@@ -128,6 +130,8 @@ pub struct TextNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: TextProps,
 }
 
@@ -156,6 +160,8 @@ pub struct ImageNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: ImageProps,
 }
 
@@ -166,6 +172,8 @@ pub struct ImageProps {
     pub asset_ref: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub src: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expression: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -183,6 +191,8 @@ pub struct ShapeNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: ShapeProps,
 }
 
@@ -190,21 +200,87 @@ fn default_shape_type() -> String {
     "rectangle".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShapeProps {
-    #[serde(alias = "shape", default = "default_shape_type")]
     pub shape_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
-    #[serde(alias = "fillColor", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fill: Option<String>,
-    #[serde(alias = "strokeColor", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub stroke: Option<String>,
-    #[serde(alias = "strokeWidth", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub stroke_width: Option<f64>,
-    #[serde(alias = "borderRadius", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub border_radius: Option<f64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ShapePropsWire {
+    shape_type: Option<String>,
+    shape: Option<String>,
+    position: Option<Position>,
+    fill: Option<String>,
+    fill_color: Option<String>,
+    stroke: Option<String>,
+    stroke_color: Option<String>,
+    stroke_width: Option<f64>,
+    border_radius: Option<f64>,
+}
+
+impl<'de> Deserialize<'de> for ShapeProps {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let wire = ShapePropsWire::deserialize(deserializer)?;
+        Ok(Self {
+            shape_type: wire
+                .shape_type
+                .or(wire.shape)
+                .unwrap_or_else(default_shape_type),
+            position: wire.position,
+            fill: wire.fill.or(wire.fill_color),
+            stroke: wire.stroke.or(wire.stroke_color),
+            stroke_width: wire.stroke_width,
+            border_radius: wire.border_radius,
+        })
+    }
+}
+
+#[cfg(test)]
+mod shape_props_tests {
+    use super::ShapeProps;
+
+    #[test]
+    fn accepts_canonical_and_legacy_fill_fields_together() {
+        let props: ShapeProps =
+            serde_json::from_str(r##"{"fill":"#111111","fillColor":"#222222"}"##).unwrap();
+
+        assert_eq!(props.fill.as_deref(), Some("#111111"));
+    }
+
+    #[test]
+    fn accepts_legacy_fill_field_and_serializes_canonical_name() {
+        let props: ShapeProps = serde_json::from_str(r##"{"fillColor":"#222222"}"##).unwrap();
+        let serialized = serde_json::to_value(props).unwrap();
+
+        assert_eq!(serialized["fill"], "#222222");
+        assert!(serialized.get("fillColor").is_none());
+    }
+
+    #[test]
+    fn accepts_canonical_and_legacy_shape_and_stroke_fields_together() {
+        let props: ShapeProps = serde_json::from_str(
+            r##"{"shapeType":"rectangle","shape":"circle","stroke":"#111111","strokeColor":"#222222"}"##,
+        )
+        .unwrap();
+
+        assert_eq!(props.shape_type, "rectangle");
+        assert_eq!(props.stroke.as_deref(), Some("#111111"));
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -391,11 +467,25 @@ fn default_true() -> bool {
     true
 }
 
+fn default_barcode_height() -> f64 {
+    15.0
+}
+
+fn default_qr_size() -> f64 {
+    25.0
+}
+
+fn default_error_correction() -> String {
+    "M".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BarcodeNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: BarcodeProps,
 }
 
@@ -406,6 +496,7 @@ pub struct BarcodeProps {
     pub format: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
+    #[serde(default = "default_barcode_height")]
     pub height: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_text: Option<bool>,
@@ -418,6 +509,8 @@ pub struct QRCodeNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: QRCodeProps,
 }
 
@@ -427,7 +520,9 @@ pub struct QRCodeProps {
     pub data: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
+    #[serde(default = "default_qr_size")]
     pub size: f64,
+    #[serde(default = "default_error_correction")]
     pub error_correction: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
@@ -440,6 +535,8 @@ pub struct SeparatorNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: SeparatorProps,
 }
 

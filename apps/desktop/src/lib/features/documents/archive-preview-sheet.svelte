@@ -50,7 +50,10 @@ const mimeType = $derived(document?.mime_type?.toLowerCase() ?? "");
 const isImage = $derived(mimeType.startsWith("image/"));
 const isVideo = $derived(mimeType.startsWith("video/"));
 const isAudio = $derived(mimeType.startsWith("audio/"));
-const isPdf = $derived(mimeType === "application/pdf" || document?.extension?.toLowerCase() === "pdf");
+const isPdf = $derived(
+  mimeType === "application/pdf" ||
+    document?.extension?.toLowerCase() === "pdf",
+);
 const documentId = $derived(document?.id);
 
 $effect(() => {

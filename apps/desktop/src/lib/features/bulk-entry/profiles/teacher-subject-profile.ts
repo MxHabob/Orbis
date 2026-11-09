@@ -48,7 +48,8 @@ export const teacherSubjectColumnMetadata: ColumnDefinitionMetadata[] = [
     type: "reference",
     referenceSource: "academicPeriods",
     descriptionAr: "يجب أن تكون الفترة هي الفترة المرتبطة بالصف.",
-    descriptionEn: "The period must be the one associated with the selected class.",
+    descriptionEn:
+      "The period must be the one associated with the selected class.",
     example: "",
   },
   {
@@ -70,7 +71,8 @@ export const teacherSubjectColumnMetadata: ColumnDefinitionMetadata[] = [
     type: "reference",
     referenceSource: "teachers",
     descriptionAr: "يجب أن يكون المعلم موظفاً نشطاً مصنفاً كمعلم في النظام.",
-    descriptionEn: "The teacher must be an active employee classified as a teacher.",
+    descriptionEn:
+      "The teacher must be an active employee classified as a teacher.",
     example: "",
   },
   {
@@ -80,19 +82,54 @@ export const teacherSubjectColumnMetadata: ColumnDefinitionMetadata[] = [
     required: false,
     type: "integer",
     descriptionAr: "أدخل عدداً صحيحاً موجباً، أو اتركه فارغاً إذا لم يُحدد.",
-    descriptionEn: "Enter a positive whole number, or leave blank if unspecified.",
+    descriptionEn:
+      "Enter a positive whole number, or leave blank if unspecified.",
     example: "",
   },
 ];
 
 export const teacherSubjectGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
-  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "class_code", header: teacherSubjectColumnMetadata[0]!.headerAr, width: 210 },
-  { id: "academic_period_code", header: teacherSubjectColumnMetadata[1]!.headerAr, width: 230 },
-  { id: "subject_code", header: teacherSubjectColumnMetadata[2]!.headerAr, width: 210 },
-  { id: "teacher_code", header: teacherSubjectColumnMetadata[3]!.headerAr, width: 240 },
-  { id: "weekly_hours", header: teacherSubjectColumnMetadata[4]!.headerAr, width: 130, type: "integer" },
+  {
+    id: "__idx",
+    header: m.bulk_entry_grid_row_number(),
+    width: 50,
+    pin: "left",
+    readonly: true,
+  },
+  {
+    id: "status",
+    header: m.bulk_entry_grid_status(),
+    width: 110,
+    pin: "left",
+    type: "badge",
+    readonly: true,
+  },
+  {
+    id: "class_code",
+    header: teacherSubjectColumnMetadata[0]!.headerAr,
+    width: 210,
+  },
+  {
+    id: "academic_period_code",
+    header: teacherSubjectColumnMetadata[1]!.headerAr,
+    width: 230,
+  },
+  {
+    id: "subject_code",
+    header: teacherSubjectColumnMetadata[2]!.headerAr,
+    width: 210,
+  },
+  {
+    id: "teacher_code",
+    header: teacherSubjectColumnMetadata[3]!.headerAr,
+    width: 240,
+  },
+  {
+    id: "weekly_hours",
+    header: teacherSubjectColumnMetadata[4]!.headerAr,
+    width: 130,
+    type: "integer",
+  },
 ];
 
 export const teacherSubjectImportProfile: BulkImportProfile<
@@ -113,13 +150,17 @@ export const teacherSubjectImportProfile: BulkImportProfile<
   gridColumns: teacherSubjectGridColumns,
 
   async buildReferenceData(): Promise<BulkReferenceData> {
-    const [classesResponse, subjectsResponse, periodsResponse, firstEmployeePage] =
-      await Promise.all([
-        api.listSections(),
-        api.listSubjects(),
-        api.listAcademicPeriods(),
-        api.listEmployees({ status: "active", page: 1, page_size: 100 }),
-      ]);
+    const [
+      classesResponse,
+      subjectsResponse,
+      periodsResponse,
+      firstEmployeePage,
+    ] = await Promise.all([
+      api.listSections(),
+      api.listSubjects(),
+      api.listAcademicPeriods(),
+      api.listEmployees({ status: "active", page: 1, page_size: 100 }),
+    ]);
 
     const employeePages = await Promise.all(
       Array.from(
@@ -146,16 +187,16 @@ export const teacherSubjectImportProfile: BulkImportProfile<
     const classes = classesResponse
       .filter((item) => item.is_active)
       .map((item) => {
-        const period = periodsResponse.find((candidate) => candidate.id === item.period_id);
+        const period = periodsResponse.find(
+          (candidate) => candidate.id === item.period_id,
+        );
         const periodName =
           getLocale() === "ar"
             ? period?.name_ar || period?.name || ""
             : period?.name || period?.name_ar || "";
-        const details = [
-          item.level,
-          item.division,
-          periodName,
-        ].filter(Boolean).join(" · ");
+        const details = [item.level, item.division, periodName]
+          .filter(Boolean)
+          .join(" · ");
         return {
           id: item.id,
           code: item.id,
@@ -250,8 +291,16 @@ export const teacherSubjectImportProfile: BulkImportProfile<
     refData: BulkReferenceData,
   ): BulkCellIssue | null {
     const text = String(value ?? "").trim();
-    if (requiredReferenceFields.includes(colId as (typeof requiredReferenceFields)[number]) && !text) {
-      return issue(colId, message("هذا الحقل مطلوب.", "This field is required."));
+    if (
+      requiredReferenceFields.includes(
+        colId as (typeof requiredReferenceFields)[number],
+      ) &&
+      !text
+    ) {
+      return issue(
+        colId,
+        message("هذا الحقل مطلوب.", "This field is required."),
+      );
     }
 
     const refSource = referenceSourceForField(colId);
@@ -270,7 +319,10 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       if (!Number.isInteger(hours) || hours < 1) {
         return issue(
           colId,
-          message("أدخل عدداً صحيحاً موجباً للحصص الأسبوعية.", "Enter a positive whole number for weekly hours."),
+          message(
+            "أدخل عدداً صحيحاً موجباً للحصص الأسبوعية.",
+            "Enter a positive whole number for weekly hours.",
+          ),
         );
       }
     }
@@ -285,7 +337,10 @@ export const teacherSubjectImportProfile: BulkImportProfile<
   ): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
     const classItem = resolveUnique(refData.classes, row.class_code);
-    const periodItem = resolveUnique(refData.academicPeriods, row.academic_period_code);
+    const periodItem = resolveUnique(
+      refData.academicPeriods,
+      row.academic_period_code,
+    );
     const subjectItem = resolveUnique(refData.subjects, row.subject_code);
 
     if (classItem && periodItem && classItem.meta?.periodId !== periodItem.id) {
@@ -305,8 +360,14 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       const duplicateRow = allRows.findIndex((other, index) => {
         if (index === rowIndex) return false;
         const otherClass = resolveUnique(refData.classes, other.class_code);
-        const otherPeriod = resolveUnique(refData.academicPeriods, other.academic_period_code);
-        const otherSubject = resolveUnique(refData.subjects, other.subject_code);
+        const otherPeriod = resolveUnique(
+          refData.academicPeriods,
+          other.academic_period_code,
+        );
+        const otherSubject = resolveUnique(
+          refData.subjects,
+          other.subject_code,
+        );
         return (
           otherClass &&
           otherPeriod &&
@@ -326,7 +387,8 @@ export const teacherSubjectImportProfile: BulkImportProfile<
         );
       } else if (
         refData.existingSectionSubjectAssignments.some(
-          (item) => assignmentKey(item.classId, item.subjectId, item.periodId) === key,
+          (item) =>
+            assignmentKey(item.classId, item.subjectId, item.periodId) === key,
         )
       ) {
         issues.push(
@@ -354,8 +416,8 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       const row = rows[index]!;
       const invalidCell = teacherSubjectColumnMetadata.some(
         (column) =>
-          this.validateCell(column.id, row[column.id], row, refData)?.severity ===
-          "BLOCKING_ERROR",
+          this.validateCell(column.id, row[column.id], row, refData)
+            ?.severity === "BLOCKING_ERROR",
       );
       const invalidRow = this.validateRow(row, rows, index, refData).length > 0;
       if (invalidCell || invalidRow) errorRowsCount++;
@@ -375,7 +437,10 @@ export const teacherSubjectImportProfile: BulkImportProfile<
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index]!;
       const classItem = resolveUnique(refData.classes, row.class_code);
-      const periodItem = resolveUnique(refData.academicPeriods, row.academic_period_code);
+      const periodItem = resolveUnique(
+        refData.academicPeriods,
+        row.academic_period_code,
+      );
       const subjectItem = resolveUnique(refData.subjects, row.subject_code);
       const teacherItem = resolveUnique(refData.teachers, row.teacher_code);
       const rowNumber = row.rowNumber || index + 1;
@@ -405,7 +470,8 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       const key = assignmentKey(classItem.id, subjectItem.id, periodItem.id);
       if (
         refData.existingSectionSubjectAssignments.some(
-          (item) => assignmentKey(item.classId, item.subjectId, item.periodId) === key,
+          (item) =>
+            assignmentKey(item.classId, item.subjectId, item.periodId) === key,
         )
       ) {
         rowErrors.push({
@@ -441,12 +507,17 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       }
     }
 
-    return { success: true, rowErrors: rowErrors.length ? rowErrors : undefined };
+    return {
+      success: true,
+      rowErrors: rowErrors.length ? rowErrors : undefined,
+    };
   },
 };
 
 function resolveUnique(items: ReferenceItem[], value: unknown) {
-  const needle = String(value ?? "").trim().toLocaleLowerCase();
+  const needle = String(value ?? "")
+    .trim()
+    .toLocaleLowerCase();
   if (!needle) return undefined;
   const matches = items.filter((item) =>
     [item.id, item.code, item.name, item.nameAr]

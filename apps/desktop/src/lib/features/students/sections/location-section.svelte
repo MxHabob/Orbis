@@ -6,12 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@orbis/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import { Home } from "@orbis/icons";
 
 import type { StudentFormState } from "../form-state.svelte";

@@ -14,7 +14,13 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { ArrowForward, CheckCircle, ClockRotateRight, Trash, UndoAction } from "@orbis/icons";
+import {
+  ArrowForward,
+  CheckCircle,
+  ClockRotateRight,
+  Trash,
+  UndoAction,
+} from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {

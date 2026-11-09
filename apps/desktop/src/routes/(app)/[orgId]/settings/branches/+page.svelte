@@ -10,12 +10,28 @@ import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
-import { api, type OrgUnitDto, type EmployeeDto, extractErrorMessage } from "$lib/api";
+import {
+  api,
+  type OrgUnitDto,
+  type EmployeeDto,
+  extractErrorMessage,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui/card";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui/select";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@orbis/ui/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import {
   BuildingOffice,
@@ -31,7 +47,12 @@ import {
   Pencil,
   Eye,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef, type ActionItem, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type ActionItem,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { l, isAr, formatDate, formatNumber } from "$lib/core/i18n";
 import { confirmStore } from "$lib/stores";
 import BranchSheet from "$lib/features/settings/components/branch-sheet.svelte";
@@ -48,7 +69,9 @@ let isRefreshing = $state(false);
 // View & Filter State
 let searchQuery = $state("");
 let statusFilter = $state<"all" | "active" | "inactive">("all");
-let isolationFilter = $state<"all" | "shared" | "isolated" | "read_only">("all");
+let isolationFilter = $state<"all" | "shared" | "isolated" | "read_only">(
+  "all",
+);
 
 // Sheet State
 let isBranchSheetOpen = $state(false);
@@ -100,26 +123,44 @@ onMount(() => {
 });
 
 // Derived Branches
-const branches = $derived(
-  allUnits.filter((u) => u.unit_type === "branch")
-);
+const branches = $derived(allUnits.filter((u) => u.unit_type === "branch"));
 
 // Read default branch ID from settings
 const defaultBranchId = $derived(() => {
   const s = currentOrg?.settings;
-  const parsed = typeof s === "string" ? (() => { try { return JSON.parse(s); } catch { return {}; } })() : s || {};
+  const parsed =
+    typeof s === "string"
+      ? (() => {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return {};
+          }
+        })()
+      : s || {};
   return parsed?.branch_policy?.default_branch_id || null;
 });
 
 // Derived KPI Computations (Matching FinanceOverview)
 const totalBranchesCount = $derived(branches.length);
-const activeBranchesCount = $derived(branches.filter((b) => b.is_active).length);
+const activeBranchesCount = $derived(
+  branches.filter((b) => b.is_active).length,
+);
 const totalCapacity = $derived(
-  branches.reduce((sum, b) => sum + (b.capacity || 0), 0)
+  branches.reduce((sum, b) => sum + (b.capacity || 0), 0),
 );
 const branchPolicyIsolation = $derived(() => {
   const s = currentOrg?.settings;
-  const parsed = typeof s === "string" ? (() => { try { return JSON.parse(s); } catch { return {}; } })() : s || {};
+  const parsed =
+    typeof s === "string"
+      ? (() => {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return {};
+          }
+        })()
+      : s || {};
   return parsed?.branch_policy?.data_isolation || "shared";
 });
 
@@ -133,10 +174,14 @@ const filteredBranches = $derived.by(() => {
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim();
     list = list.filter((b) => {
-      const nameMatch = (b.name_ar || "").toLowerCase().includes(q) || (b.name || "").toLowerCase().includes(q);
+      const nameMatch =
+        (b.name_ar || "").toLowerCase().includes(q) ||
+        (b.name || "").toLowerCase().includes(q);
       const codeMatch = (b.code || "").toLowerCase().includes(q);
       const manager = b.head_id ? employeeMap.get(b.head_id) : null;
-      const managerMatch = manager ? formatEmployeeName(manager).toLowerCase().includes(q) : false;
+      const managerMatch = manager
+        ? formatEmployeeName(manager).toLowerCase().includes(q)
+        : false;
       return nameMatch || codeMatch || managerMatch;
     });
   }
@@ -170,26 +215,133 @@ const gridSource = $derived(
       displayName: b.name_ar || b.name,
       displayCode: b.code || "—",
       managerName: mgr ? formatEmployeeName(mgr) : m.common_unassigned(),
-      displayCapacity: b.capacity ? formatNumber(b.capacity) : m.ui_copy_uncapped_eb8a96f3(),
+      displayCapacity: b.capacity
+        ? formatNumber(b.capacity)
+        : m.ui_copy_uncapped_eb8a96f3(),
       subUnitsCount: b.children_count || 0,
-      isolationLabel: b.data_isolation === "isolated" ? m.ui_copy_isolated_09d34bff() : b.data_isolation === "read_only" ? m.ui_copy_read_only_05cda70d() : m.ui_copy_shared_cdf39825(),
-      statusLabel: b.is_active ? m.common_phase_active() : m.common_status_disabled(),
-      created_at_display: b.created_at ? formatDate(b.created_at, "datetime") : "—",
+      isolationLabel:
+        b.data_isolation === "isolated"
+          ? m.ui_copy_isolated_09d34bff()
+          : b.data_isolation === "read_only"
+            ? m.ui_copy_read_only_05cda70d()
+            : m.ui_copy_shared_cdf39825(),
+      statusLabel: b.is_active
+        ? m.common_phase_active()
+        : m.common_status_disabled(),
+      created_at_display: b.created_at
+        ? formatDate(b.created_at, "datetime")
+        : "—",
     };
-  })
+  }),
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
-  { id: "displayName", prop: "displayName", header: m.ui_copy_branch_name_954ef523(), name: "Branch Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground cursor-pointer hover:underline" },
-  { id: "displayCode", prop: "displayCode", header: m.ui_copy_code_3119a46b(), name: "Code", width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs uppercase" },
-  { id: "managerName", prop: "managerName", header: m.ui_copy_manager_a230935a(), name: "Manager", width: 180, size: 180, readonly: true },
-  { id: "displayCapacity", prop: "displayCapacity", header: m.ui_copy_capacity_6432d6d2(), name: "Capacity", width: 120, size: 120, readonly: true, align: "center", type: "number" },
-  { id: "subUnitsCount", prop: "subUnitsCount", header: m.ui_copy_sub_units_93f58eca(), name: "Sub-units", width: 110, size: 110, readonly: true, align: "center", type: "number" },
-  { id: "isolationLabel", prop: "isolationLabel", header: m.ui_copy_isolation_5fef6f7f(), name: "Isolation", width: 120, size: 120, readonly: true, align: "center" },
-  { id: "statusLabel", prop: "statusLabel", header: m.common_status(), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: "Actions", width: 140, size: 140, type: "action", align: "center", readonly: true, meta: { items: gridActions } },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 50,
+    size: 50,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "displayName",
+    prop: "displayName",
+    header: m.ui_copy_branch_name_954ef523(),
+    name: "Branch Name",
+    width: 220,
+    size: 220,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-semibold text-foreground cursor-pointer hover:underline",
+  },
+  {
+    id: "displayCode",
+    prop: "displayCode",
+    header: m.ui_copy_code_3119a46b(),
+    name: "Code",
+    width: 110,
+    size: 110,
+    readonly: true,
+    cellClass: "font-mono text-xs uppercase",
+  },
+  {
+    id: "managerName",
+    prop: "managerName",
+    header: m.ui_copy_manager_a230935a(),
+    name: "Manager",
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "displayCapacity",
+    prop: "displayCapacity",
+    header: m.ui_copy_capacity_6432d6d2(),
+    name: "Capacity",
+    width: 120,
+    size: 120,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "subUnitsCount",
+    prop: "subUnitsCount",
+    header: m.ui_copy_sub_units_93f58eca(),
+    name: "Sub-units",
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "isolationLabel",
+    prop: "isolationLabel",
+    header: m.ui_copy_isolation_5fef6f7f(),
+    name: "Isolation",
+    width: 120,
+    size: 120,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "statusLabel",
+    prop: "statusLabel",
+    header: m.common_status(),
+    name: "Status",
+    width: 100,
+    size: 100,
+    readonly: true,
+    align: "center",
+    type: "badge",
+  },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: m.ui_copy_created_at_01f6ea5f(),
+    name: "Created At",
+    width: 140,
+    size: 140,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.ui_copy_actions_c48127a5(),
+    name: "Actions",
+    width: 140,
+    size: 140,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: gridActions },
+  },
 ];
 
 function handleGridAction(event: CustomEvent<GridActionEvent>) {
@@ -219,7 +371,9 @@ function openEditBranch(branch: OrgUnitDto) {
 function promptDeleteBranch(branch: OrgUnitDto) {
   const children = allUnits.filter((u) => u.parent_id === branch.id);
   if (children.length > 0) {
-    toast.error(m.settings_branch_delete_with_children({ count: children.length }));
+    toast.error(
+      m.settings_branch_delete_with_children({ count: children.length }),
+    );
     return;
   }
 
@@ -227,7 +381,7 @@ function promptDeleteBranch(branch: OrgUnitDto) {
     title: m.ui_copy_delete_branch_f22fe5e8(),
     description: l(
       `هل أنت متأكد من رغبتك في حذف فرع "${branch.name_ar || branch.name}" بشكل نهائي؟`,
-      `Are you sure you want to permanently delete branch "${branch.name_ar || branch.name}"?`
+      `Are you sure you want to permanently delete branch "${branch.name_ar || branch.name}"?`,
     ),
     confirmText: m.settings_currencies_btn_delete_confirm(),
     variant: "destructive",
@@ -246,13 +400,26 @@ function promptDeleteBranch(branch: OrgUnitDto) {
 async function setDefaultBranch(branch: OrgUnitDto) {
   try {
     const s = currentOrg?.settings;
-    const currentSettings = typeof s === "string" ? (() => { try { return JSON.parse(s); } catch { return {}; } })() : s || {};
+    const currentSettings =
+      typeof s === "string"
+        ? (() => {
+            try {
+              return JSON.parse(s);
+            } catch {
+              return {};
+            }
+          })()
+        : s || {};
     const updatedPolicy = {
       ...(currentSettings?.branch_policy || {}),
       default_branch_id: branch.id,
     };
     await api.updateSettings({ branch_policy: updatedPolicy });
-    toast.success(m.ui_branch_set_default_success({ branchName: branch.name_ar || branch.name }));
+    toast.success(
+      m.ui_branch_set_default_success({
+        branchName: branch.name_ar || branch.name,
+      }),
+    );
     loadData();
   } catch (err) {
     toast.error(extractErrorMessage(err));

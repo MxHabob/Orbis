@@ -4,304 +4,342 @@ Streamlined layout for deep-dive student pages.
 Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 -->
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { page } from "$app/state";
-  import { api, extractErrorMessage, queryKeys } from "$lib/api";
-  import { createClassesQuery, createPeriodsQuery } from "$lib/features/academics";
-  import { createEnrollmentsQuery, createStudentQuery } from "$lib/features/students";
-  import * as m from "$lib/paraglide/messages";
-  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
-  import RelatedActions, {
-      type ActionGroup,
-      type FooterAction,
-  } from "$lib/shared/components/related-actions.svelte";
-  import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
-  import MainViewport from "$lib/shell/main-viewport.svelte";
-  import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-  
-  import { useStudentFolder } from "$lib/features/documents/queries";
-  import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-  import { academicContext, confirmStore } from "$lib/stores";
-  import {
-      AcademicCap,
-      ArrowsRightLeft,
-      Banknotes,
-      BookOpen,
-      Document,
-      DocumentCheck,
-      DocumentPage,
-      EllipsisHorizontal,
-      Phone,
-      Printer,
-      User,
-      UserBadgeCheck,
-      Users
-  } from "@orbis/icons";
-  import { toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import {
-      Dialog,
-      DialogContent,
-      DialogDescription,
-      DialogFooter,
-      DialogHeader,
-      DialogTitle,
-  } from "@orbis/ui/dialog";
-  import {
-      DropdownMenu,
-      DropdownMenuContent,
-      DropdownMenuItem,
-      DropdownMenuSeparator,
-      DropdownMenuTrigger,
-  } from "@orbis/ui/dropdown-menu";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import type { Snippet } from "svelte";
+import { goto } from "$app/navigation";
+import { page } from "$app/state";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import {
+  createClassesQuery,
+  createPeriodsQuery,
+} from "$lib/features/academics";
+import {
+  createEnrollmentsQuery,
+  createStudentQuery,
+} from "$lib/features/students";
+import * as m from "$lib/paraglide/messages";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import RelatedActions, {
+  type ActionGroup,
+  type FooterAction,
+} from "$lib/shared/components/related-actions.svelte";
+import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
+import MainViewport from "$lib/shell/main-viewport.svelte";
+import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 
-  import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
+import { useStudentFolder } from "$lib/features/documents/queries";
+import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import { academicContext, confirmStore } from "$lib/stores";
+import {
+  AcademicCap,
+  ArrowsRightLeft,
+  Banknotes,
+  BookOpen,
+  Document,
+  DocumentCheck,
+  DocumentPage,
+  Phone,
+  Printer,
+  Sparkles,
+  User,
+  UserBadgeCheck,
+  Users,
+} from "@orbis/icons";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { useQueryClient } from "@tanstack/svelte-query";
+import type { Snippet } from "svelte";
 
-  let { children }: { children: Snippet } = $props();
-  const queryClient = useQueryClient();
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 
-  const orgId = $derived(page.params.orgId || "");
-  const studentId = $derived(page.params.studentId || "");
+let { children }: { children: Snippet } = $props();
+const queryClient = useQueryClient();
 
-  // TanStack Queries
-  const studentQuery = createStudentQuery(() => studentId);
-  const classesQuery = createClassesQuery(() => orgId);
-  const periodsQuery = createPeriodsQuery(() => orgId);
+const orgId = $derived(page.params.orgId || "");
+const studentId = $derived(page.params.studentId || "");
 
-  const studentDetail = $derived(studentQuery.data);
-  const student = $derived(studentDetail?.student);
-  const person = $derived(studentDetail?.person);
-  const enrollment = $derived(studentDetail?.enrollment);
+// TanStack Queries
+const studentQuery = createStudentQuery(() => studentId);
+const classesQuery = createClassesQuery(() => orgId);
+const periodsQuery = createPeriodsQuery(() => orgId);
 
-  const studentFullName = $derived(
-    (person?.first_name && person?.last_name
-      ? `${person.first_name} ${person.last_name}`
-      : "") ||
-      person?.name_ar ||
-      person?.name_en ||
-      person?.full_name ||
-      ""
+const studentDetail = $derived(studentQuery.data);
+const student = $derived(studentDetail?.student);
+const person = $derived(studentDetail?.person);
+const enrollment = $derived(studentDetail?.enrollment);
+
+const studentFullName = $derived(
+  (person?.first_name && person?.last_name
+    ? `${person.first_name} ${person.last_name}`
+    : "") ||
+    person?.name_ar ||
+    person?.name_en ||
+    person?.full_name ||
+    "",
+);
+
+function handleAskOrbis() {
+  const newUrl = new URL(page.url.href);
+  newUrl.searchParams.set(
+    "ask_orbis",
+    m.academics_student_evaluation_ai_ask_orbis_query({
+      name: studentFullName,
+    }),
   );
-  const studentFolderQuery = useStudentFolder(
-    () => student?.id || studentId,
-    () => studentFullName,
-  );
+  goto(newUrl.pathname + newUrl.search, {
+    replaceState: true,
+    keepFocus: true,
+    noScroll: true,
+  });
+}
 
-  async function handleStudentAvatarUpload(url: string) {
-    try {
-      await api.updateStudentProfile({
-        student_id: student?.id || studentId,
-        avatar_url: url,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.student.detail(student?.id || studentId),
-      });
-      toast.success(m.students_avatar_updated());
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    }
-  }
+const studentFolderQuery = useStudentFolder(
+  () => student?.id || studentId,
+  () => studentFullName,
+);
 
-  const currentClass = $derived(
-    enrollment?.class_id
-      ? (classesQuery.data ?? []).find(
-          (c: any) => String(c.id) === String(enrollment.class_id),
-        )
-      : null,
-  );
-
-  // Enrollment history for this student
-  const actualStudentId = $derived(student?.id || studentId);
-  const enrollmentsQuery = createEnrollmentsQuery(
-    () => orgId,
-    () => ({ studentId: actualStudentId }),
-  );
-  const enrollmentHistory = $derived(
-    (enrollmentsQuery.data ?? []).filter(
-      (e: any) =>
-        String(e.student_id || e.student?.id) === String(actualStudentId) ||
-        String(e.id) === String(studentId),
-    ),
-  );
-
-  const basePath = $derived(`/${orgId}/students/${studentId}`);
-
-  let isWithdrawing = $state(false);
-
-  async function withdrawStudent() {
-    const confirmed = await confirmStore.prompt({
-      title: m.shared_ui_withdraw_student_title(),
-      description: m.shared_ui_withdraw_student_confirmation(),
-      confirmText: m.shared_ui_confirm_withdrawal(),
-      variant: "destructive",
+async function handleStudentAvatarUpload(url: string) {
+  try {
+    await api.updateStudentProfile({
+      student_id: student?.id || studentId,
+      avatar_url: url,
     });
-    if (!confirmed) return;
-    isWithdrawing = true;
-    try {
-      await api.updateStudentStatus({ student_id: studentId, status: "withdrawn" });
-      toast.success(m.shared_ui_student_status_updated());
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
-    } catch (e: any) {
-      console.error("Withdraw error:", e);
-      toast.error(e?.message || String(e));
-    } finally {
-      isWithdrawing = false;
-    }
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.student.detail(student?.id || studentId),
+    });
+    toast.success(m.students_avatar_updated());
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   }
+}
 
-  let showTransferDialog = $state(false);
-  let showPrintCertificate = $state(false);
-  let showPrintAcademicCertificate = $state(false);
-  let transferTargetClassId = $state("");
-  let isTransferring = $state(false);
+const currentClass = $derived(
+  enrollment?.class_id
+    ? (classesQuery.data ?? []).find(
+        (c: any) => String(c.id) === String(enrollment.class_id),
+      )
+    : null,
+);
 
-  async function transferClass() {
-    if (!transferTargetClassId) {
-      toast.error(m.common_form_error_class_required());
-      return;
-    }
-    isTransferring = true;
-    try {
-      await api.transferClass({
-        enrollmentId: enrollment?.id || studentId,
-        targetClassId: transferTargetClassId,
-      });
-      toast.success(m.common_form_success_update());
-      showTransferDialog = false;
-      transferTargetClassId = "";
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
-    } catch (e: any) {
-      console.error("Transfer error:", e);
-      toast.error(e?.message || String(e));
-    } finally {
-      isTransferring = false;
-    }
+// Enrollment history for this student
+const actualStudentId = $derived(student?.id || studentId);
+const enrollmentsQuery = createEnrollmentsQuery(
+  () => orgId,
+  () => ({ studentId: actualStudentId }),
+);
+const enrollmentHistory = $derived(
+  (enrollmentsQuery.data ?? []).filter(
+    (e: any) =>
+      String(e.student_id || e.student?.id) === String(actualStudentId) ||
+      String(e.id) === String(studentId),
+  ),
+);
+
+const basePath = $derived(`/${orgId}/students/${studentId}`);
+
+let isWithdrawing = $state(false);
+
+async function withdrawStudent() {
+  const confirmed = await confirmStore.prompt({
+    title: m.shared_ui_withdraw_student_title(),
+    description: m.shared_ui_withdraw_student_confirmation(),
+    confirmText: m.shared_ui_confirm_withdrawal(),
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+  isWithdrawing = true;
+  try {
+    await api.updateStudentStatus({
+      student_id: studentId,
+      status: "withdrawn",
+    });
+    toast.success(m.shared_ui_student_status_updated());
+    queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.student.detail(studentId),
+    });
+  } catch (e: any) {
+    console.error("Withdraw error:", e);
+    toast.error(e?.message || String(e));
+  } finally {
+    isWithdrawing = false;
   }
+}
 
-  function getClassName(clsId: string) {
-    const cls = (classesQuery.data ?? []).find((c: any) => String(c.id) === String(clsId));
-    return cls ? String(cls.name || clsId) : clsId;
+let showTransferDialog = $state(false);
+let showPrintCertificate = $state(false);
+let showPrintAcademicCertificate = $state(false);
+let transferTargetClassId = $state("");
+let isTransferring = $state(false);
+
+async function transferClass() {
+  if (!transferTargetClassId) {
+    toast.error(m.common_form_error_class_required());
+    return;
   }
-
-  function getPeriodName(prdId: string) {
-    const prd = (periodsQuery.data ?? []).find((p: any) => String(p.id) === String(prdId));
-    return prd ? String(prd.name || prdId) : prdId;
+  isTransferring = true;
+  try {
+    await api.transferClass({
+      enrollmentId: enrollment?.id || studentId,
+      targetClassId: transferTargetClassId,
+    });
+    toast.success(m.common_form_success_update());
+    showTransferDialog = false;
+    transferTargetClassId = "";
+    queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.student.detail(studentId),
+    });
+  } catch (e: any) {
+    console.error("Transfer error:", e);
+    toast.error(e?.message || String(e));
+  } finally {
+    isTransferring = false;
   }
+}
 
-  const menuItems = $derived([
-    {
-      path: "",
-      label: m.common_breadcrumb_student_profile(),
-      icon: User,
-    },
-    {
-      path: "grades",
-      label: m.students_detail_tab_grades(),
-      icon: BookOpen,
-    },
-    {
-      path: "fees",
-      label: m.students_detail_tab_fees(),
-      icon: Document,
-    },
-    {
-      path: "attendance",
-      label: m.common_promo_attendance(),
-      icon: UserBadgeCheck,
-    },
-    {
-      path: "behavior",
-      label: m.common_detail_tab_behavior(),
-      icon: UserBadgeCheck,
-    },
-    {
-      path: "guardians",
-      label: m.common_guardians_tab(),
-      icon: Users,
-    },
-    {
-      path: "documents",
-      label: m.students_detail_tab_documents(),
-      icon: DocumentPage,
-    },
-  ]);
+function getClassName(clsId: string) {
+  const cls = (classesQuery.data ?? []).find(
+    (c: any) => String(c.id) === String(clsId),
+  );
+  return cls ? String(cls.name || clsId) : clsId;
+}
 
-  const relatedActionGroups = $derived<ActionGroup[]>(studentDetail ? [
-    {
-      id: "academic_actions",
-      title: m.ui_copy_academic_operations_42dbfc55(),
-      icon: AcademicCap,
-      defaultExpanded: true,
-      subLinks: [
+function getPeriodName(prdId: string) {
+  const prd = (periodsQuery.data ?? []).find(
+    (p: any) => String(p.id) === String(prdId),
+  );
+  return prd ? String(prd.name || prdId) : prdId;
+}
+
+const menuItems = $derived([
+  {
+    path: "",
+    label: m.common_breadcrumb_student_profile(),
+    icon: User,
+  },
+  {
+    path: "grades",
+    label: m.students_detail_tab_grades(),
+    icon: BookOpen,
+  },
+  {
+    path: "fees",
+    label: m.students_detail_tab_fees(),
+    icon: Document,
+  },
+  {
+    path: "attendance",
+    label: m.common_promo_attendance(),
+    icon: UserBadgeCheck,
+  },
+  {
+    path: "behavior",
+    label: m.common_detail_tab_behavior(),
+    icon: UserBadgeCheck,
+  },
+  {
+    path: "guardians",
+    label: m.common_guardians_tab(),
+    icon: Users,
+  },
+  {
+    path: "documents",
+    label: m.students_detail_tab_documents(),
+    icon: DocumentPage,
+  },
+]);
+
+const relatedActionGroups = $derived<ActionGroup[]>(
+  studentDetail
+    ? [
         {
-          id: "print_cert",
-          label: m.ui_copy_print_enrollment_certificate_d360ef39(),
-          icon: Printer,
-          onclick: () => (showPrintCertificate = true),
+          id: "academic_actions",
+          title: m.ui_copy_academic_operations_42dbfc55(),
+          icon: AcademicCap,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "print_cert",
+              label: m.ui_copy_print_enrollment_certificate_d360ef39(),
+              icon: Printer,
+              onclick: () => (showPrintCertificate = true),
+            },
+            {
+              id: "print_academic_cert",
+              label: m.student_layout_print_official_academic_certificate(),
+              icon: DocumentCheck,
+              onclick: () => (showPrintAcademicCertificate = true),
+            },
+            {
+              id: "transfer_class",
+              label: m.common_student_layout_transfer_class(),
+              icon: ArrowsRightLeft,
+              onclick: () => (showTransferDialog = true),
+            },
+            ...(currentClass?.id
+              ? [
+                  {
+                    id: "class_curriculum",
+                    label: m.ui_copy_class_curriculum_8b6731cd(),
+                    icon: BookOpen,
+                    href: `/${orgId}/academics/sections/${currentClass.id}/curriculum`,
+                  },
+                ]
+              : []),
+          ],
         },
         {
-          id: "print_academic_cert",
-          label: m.student_layout_print_official_academic_certificate(),
-          icon: DocumentCheck,
-          onclick: () => (showPrintAcademicCertificate = true),
-        },
-        {
-          id: "transfer_class",
-          label: m.common_student_layout_transfer_class(),
-          icon: ArrowsRightLeft,
-          onclick: () => (showTransferDialog = true),
-        },
-        ...(currentClass?.id ? [{
-          id: "class_curriculum",
-          label: m.ui_copy_class_curriculum_8b6731cd(),
-          icon: BookOpen,
-          href: `/${orgId}/academics/sections/${currentClass.id}/curriculum`,
-        }] : []),
-      ],
-    },
-    {
-      id: "financial_actions",
-      title: m.ui_copy_financial_operations_c98b7d37(),
-      icon: Banknotes,
-      defaultExpanded: true,
-      subLinks: [
-        {
-          id: "record_payment",
-          label: m.ui_copy_record_payment_2d05fe8e(),
+          id: "financial_actions",
+          title: m.ui_copy_financial_operations_c98b7d37(),
           icon: Banknotes,
-          href: `/${orgId}/finance/payments?studentId=${actualStudentId}`,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "record_payment",
+              label: m.ui_copy_record_payment_2d05fe8e(),
+              icon: Banknotes,
+              href: `/${orgId}/finance/payments?studentId=${actualStudentId}`,
+            },
+            {
+              id: "account_statement",
+              label: m.ui_copy_account_statement_6b810b21(),
+              icon: Document,
+              href: `/${orgId}/finance/statement?studentId=${actualStudentId}`,
+            },
+            {
+              id: "student_fees",
+              label: m.students_detail_tab_fees(),
+              icon: DocumentPage,
+              href: `/${orgId}/students/${studentId}/fees`,
+            },
+          ],
         },
-        {
-          id: "account_statement",
-          label: m.ui_copy_account_statement_6b810b21(),
-          icon: Document,
-          href: `/${orgId}/finance/statement?studentId=${actualStudentId}`,
-        },
-        {
-          id: "student_fees",
-          label: m.students_detail_tab_fees(),
-          icon: DocumentPage,
-          href: `/${orgId}/students/${studentId}/fees`,
-        },
-      ],
-    },
-  ] : []);
+      ]
+    : [],
+);
 
-  const relatedFooterActions = $derived<FooterAction[]>(studentDetail ? [
-    {
-      id: "withdraw_action",
-      label: m.common_inspector_withdraw(),
-      icon: UserBadgeCheck,
-      onclick: withdrawStudent,
-      disabled: isWithdrawing,
-    },
-  ] : []);
+const relatedFooterActions = $derived<FooterAction[]>(
+  studentDetail
+    ? [
+        {
+          id: "withdraw_action",
+          label: m.common_inspector_withdraw(),
+          icon: UserBadgeCheck,
+          onclick: withdrawStudent,
+          disabled: isWithdrawing,
+        },
+      ]
+    : [],
+);
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -331,88 +369,56 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
     {#snippet actions()}
       {#if studentDetail}
-        <AskOrbisButton
-          query={m.academics_student_evaluation_ai_ask_orbis_query({
-            name: studentFullName || "",
-          })}
-          label={m.academics_student_evaluation_ask_orbis_btn({
-            name: studentFullName || "",
-          })}
+        <SplitActionMenu
+          label={m.academics_student_evaluation_ask_orbis_btn_short()}
+          menuLabel={m.operations_ui_actions()}
+          icon={Sparkles}
           variant="outline"
-          size="sm"
-          class="h-8 text-[11px]"
+          onprimary={handleAskOrbis}
+          actions={[
+            {
+              id: "call-guardian",
+              label: m.students_detail_call_guardian(),
+              icon: Phone,
+              onSelect: () =>
+                toast.info(
+                  m.students_detail_call_guardian_toast({
+                    phone:
+                      person?.phone ||
+                      m.students_detail_phone_unavailable(),
+                  }),
+                ),
+            },
+            {
+              id: "print-certificate",
+              label: m.shared_ui_print_enrollment_certificate(),
+              icon: Printer,
+              onSelect: () => (showPrintCertificate = true),
+            },
+            {
+              id: "record-payment",
+              label: m.shared_ui_record_payment(),
+              icon: Banknotes,
+              onSelect: () =>
+                goto(`/${orgId}/finance/payments?studentId=${studentId}`),
+            },
+            {
+              id: "transfer-class",
+              label: m.common_student_layout_transfer_class(),
+              icon: ArrowsRightLeft,
+              onSelect: () => (showTransferDialog = true),
+            },
+            {
+              id: "withdraw",
+              label: m.common_inspector_withdraw(),
+              icon: UserBadgeCheck,
+              destructive: true,
+              disabled: isWithdrawing,
+              separatorBefore: true,
+              onSelect: withdrawStudent,
+            },
+          ]}
         />
-
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-8 text-[11px] gap-1.5 font-semibold"
-          onclick={() =>
-            toast.info(
-              m.students_detail_call_guardian_toast({
-                phone:
-                  person?.phone ||
-                  m.students_detail_phone_unavailable(),
-              }),
-            )}
-        >
-          <Phone size={12} />
-          {m.students_detail_call_guardian()}
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            {#snippet child({ props })}
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-8 w-8 p-0 cursor-pointer"
-                {...props}
-              >
-                <EllipsisHorizontal size={14} />
-              </Button>
-            {/snippet}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            class="w-52 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none"
-          >
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => (showPrintCertificate = true)}
-            >
-              <Printer size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.shared_ui_print_enrollment_certificate()}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => goto(`/${orgId}/finance/payments?studentId=${studentId}`)}
-            >
-              <Banknotes size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.shared_ui_record_payment()}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => (showTransferDialog = true)}
-            >
-              <ArrowsRightLeft size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.common_student_layout_transfer_class()}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator class="bg-border/60 my-1" />
-
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5 hover:bg-destructive/5 rounded-sm text-start"
-              onclick={withdrawStudent}
-              disabled={isWithdrawing}
-            >
-              <UserBadgeCheck size={12} class="text-destructive shrink-0" />
-              <span>{m.common_inspector_withdraw()}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       {/if}
     {/snippet}
   </DetailPageHeader>
@@ -681,7 +687,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 <!-- Print Certificate Dialog -->
 <PdfReportViewer
   bind:open={showPrintCertificate}
-  templateId="student.enrollment_certificate"
+  templateId="administration.enrollment-certificate"
   parameters={{
     student_id: actualStudentId,
     enrollment_id: studentId,

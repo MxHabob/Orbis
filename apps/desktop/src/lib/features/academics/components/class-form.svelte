@@ -6,11 +6,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-} from "@orbis/ui/select";
+import { Select, SelectTrigger, SelectContent } from "@orbis/ui/select";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
 import { classFormInputSchema } from "@orbis/schemas";
@@ -57,9 +53,7 @@ function fieldError(field: string): string | undefined {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (values) => {
-    const unitId =
-      values.unit_id ||
-      (units[0]?.id ? String(units[0].id) : "");
+    const unitId = values.unit_id || (units[0]?.id ? String(units[0].id) : "");
     if (!unitId) {
       throw new Error(m.shared_ui_organizational_unit_required());
     }

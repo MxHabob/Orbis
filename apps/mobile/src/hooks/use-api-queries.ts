@@ -192,22 +192,35 @@ export function useTeacherClassDataQuery(classId?: string) {
       if (!classItem) {
         throw new Error("The section response was invalid.");
       }
-      const [enrollmentsResponse, classSubjectsResponse, subjectsResponse] =
-        await Promise.all([
-          api.listEnrollments2({
-            query: { section_id: classId },
-            throwOnError: true,
-          }),
-          api.listSectionSubjects2({
-            query: {
-              section_id: classId,
-              period_id: classItem.period_id ?? "",
-            },
-            throwOnError: true,
-          }),
-          api.listSubjects({ throwOnError: true }),
-        ]);
-      const enrollments = extractData<EnrollmentDto[]>(enrollmentsResponse);
+      const [classSubjectsResponse, subjectsResponse] = await Promise.all([
+        api.listSectionSubjects2({
+          query: {
+            section_id: classId,
+            period_id: classItem.period_id ?? "",
+          },
+          throwOnError: true,
+        }),
+        api.listSubjects({ throwOnError: true }),
+      ]);
+      const pageSize = 100;
+      const enrollments: EnrollmentDto[] = [];
+      for (let page = 1; ; page += 1) {
+        const response = await api.listEnrollments2({
+          query: {
+            section_id: classId,
+            period_id: classItem.period_id ?? undefined,
+            page,
+            page_size: pageSize,
+          },
+          throwOnError: true,
+        });
+        const pageEnrollments = extractData<EnrollmentDto[]>(response);
+        if (!Array.isArray(pageEnrollments)) {
+          throw new Error("The enrollment list response was not a list.");
+        }
+        enrollments.push(...pageEnrollments);
+        if (pageEnrollments.length < pageSize) break;
+      }
       const classSubjects = extractData<SectionSubjectDto[]>(
         classSubjectsResponse,
       );
@@ -229,12 +242,7 @@ export function useTeacherClassDataQuery(classId?: string) {
         activeEnrollments.map((enrollment) => enrollment.student_id),
       );
       const studentsById = new Map<string, StudentDto>();
-      const pageSize = 100;
-      for (
-        let page = 1;
-        page <= Math.ceil(activeStudentIds.size / pageSize);
-        page += 1
-      ) {
+      for (let page = 1; ; page += 1) {
         const response = await api.listStudents({
           query: {
             section_id: classId,
@@ -281,7 +289,8 @@ export function useClassAttendanceQuery(
   return useQuery({
     queryKey: queryKeys.assessment.attendance(classId ?? "", date ?? ""),
     queryFn: async (): Promise<AttendanceDto[]> => {
-      if (!classId || !date) throw new Error("A section and date are required.");
+      if (!classId || !date)
+        throw new Error("A section and date are required.");
       const response = await api.client.get<
         { 200: AttendanceDto[] },
         unknown,
@@ -509,15 +518,17 @@ export function useAttendanceQuery(filter?: {
       filter?.date || "",
     ),
     queryFn: async (): Promise<AttendanceDto[]> => {
-      const res = await api.client.get<{ 200: AttendanceDto[] }, unknown, true>({
-        url: "/api/v1/attendance",
-        query: {
-          section_id: filter?.classId,
-          student_id: filter?.studentId,
-          date: filter?.date,
+      const res = await api.client.get<{ 200: AttendanceDto[] }, unknown, true>(
+        {
+          url: "/api/v1/attendance",
+          query: {
+            section_id: filter?.classId,
+            student_id: filter?.studentId,
+            date: filter?.date,
+          },
+          throwOnError: true,
         },
-        throwOnError: true,
-      });
+      );
       const attendance = extractData<AttendanceDto[]>(res);
       if (!Array.isArray(attendance)) {
         throw new Error("The attendance response was not a list.");
@@ -597,7 +608,9 @@ export function useMyStudentQuery(
         throw new Error("The student profile response was invalid.");
       }
       if (expectedStudentId && student.id !== expectedStudentId) {
-        throw new Error("The student profile does not match the active context.");
+        throw new Error(
+          "The student profile does not match the active context.",
+        );
       }
       return student;
     },
@@ -638,10 +651,7 @@ export function useLinkedStudentId(requestedId?: string) {
     Boolean(resolvedRequestedId) && (isDependent || isOwnStudent);
   const isResolving = isAuthLoading && Boolean(requestedId);
   const identityMissing =
-    isStudentRole &&
-    !isAuthLoading &&
-    requestedId === "me" &&
-    !ownStudentId;
+    isStudentRole && !isAuthLoading && requestedId === "me" && !ownStudentId;
 
   return {
     studentId: isLinked ? resolvedRequestedId : undefined,
@@ -864,7 +874,12 @@ export function useStudentScheduleQuery(studentId?: string) {
       }
       const activeClasses = enrollments.flatMap((enrollment) =>
         enrollment.status === "active" && enrollment.section_id
-          ? [{ classId: enrollment.section_id, periodId: enrollment.period_id ?? "" }]
+          ? [
+              {
+                classId: enrollment.section_id,
+                periodId: enrollment.period_id ?? "",
+              },
+            ]
           : [],
       );
       const classSubjectsByEnrollment = await Promise.all(
@@ -1108,7 +1123,10 @@ export function useBatchMarkAttendanceMutation() {
       });
       return extractData(response);
     },
-    onSuccess: async (_data, variables) => {
+    onSuccess: async (
+      _data: unknown,
+      variables: BatchMarkAttendanceRequest,
+    ) => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.assessment.attendance(
           variables.section_id,
@@ -1157,7 +1175,7 @@ export function useBatchRecordGradesMutation() {
       });
       return extractData(response);
     },
-    onSuccess: async (_data, variables) => {
+    onSuccess: async (_data: unknown, variables: BatchRecordGradesRequest) => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.assessment.all,
       });
@@ -1166,6 +1184,80 @@ export function useBatchRecordGradesMutation() {
           queryKey: queryKeys.student.detail(item.student_id),
         });
       }
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATION QUERIES & MUTATIONS
+// ═══════════════════════════════════════════════════════════════
+
+import type {
+  ListNotificationsParams,
+  NotificationDto,
+  NotificationPreferenceResponseDto,
+} from "@/lib/api/types";
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  dismissNotification,
+} from "@/lib/api/notifications";
+
+const NOTIFICATION_STALE_TIME = 1000 * 60 * 2; // 2 minutes
+
+export function useNotificationsQuery(params?: ListNotificationsParams) {
+  return useQuery({
+    queryKey: queryKeys.notifications.list(params),
+    queryFn: async (): Promise<NotificationDto[]> => {
+      return fetchNotifications(params);
+    },
+    staleTime: NOTIFICATION_STALE_TIME,
+  });
+}
+
+export function useUnreadCountQuery() {
+  return useQuery({
+    queryKey: queryKeys.notifications.unreadCount(),
+    queryFn: fetchUnreadCount,
+    staleTime: NOTIFICATION_STALE_TIME,
+    refetchInterval: 1000 * 60 * 2, // Poll every 2 minutes for badge
+  });
+}
+
+export function useMarkNotificationReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.all,
+      });
+    },
+  });
+}
+
+export function useMarkAllReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.all,
+      });
+    },
+  });
+}
+
+export function useDismissNotificationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: dismissNotification,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.all,
+      });
     },
   });
 }

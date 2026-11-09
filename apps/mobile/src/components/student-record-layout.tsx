@@ -67,10 +67,13 @@ export function StudentRecordLayout({
       )}
 
       <ScreenScrollView
-        edges={showBack ? ["bottom", "left", "right"] : ["top", "bottom", "left", "right"]}
+        edges={
+          showBack
+            ? ["bottom", "left", "right"]
+            : ["top", "bottom", "left", "right"]
+        }
         contentContainerStyle={{
-          paddingTop:
-            (showBack ? insets.top : 0) + HEADER_CONTENT_OFFSET,
+          paddingTop: (showBack ? insets.top : 0) + HEADER_CONTENT_OFFSET,
         }}
         scrollViewProps={{
           contentContainerClassName,
@@ -86,7 +89,9 @@ export function StudentRecordLayout({
           <View className="flex-1 items-center justify-center py-twelve">
             <EmptyState
               title={errorTitle ?? t("common_error")}
-              description={errorDescription ?? (canRetry ? t("common_retry") : undefined)}
+              description={
+                errorDescription ?? (canRetry ? t("common_retry") : undefined)
+              }
               actionTitle={canRetry ? t("common_retry") : undefined}
               onAction={canRetry ? onRetry : undefined}
             />

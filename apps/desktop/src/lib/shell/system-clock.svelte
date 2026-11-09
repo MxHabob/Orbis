@@ -17,7 +17,9 @@ $effect(() => {
 });
 
 const timeZone = $derived(organizationQuery.data?.timezone || "UTC");
-const hijriEnabled = $derived(organizationQuery.data?.is_hijri_enabled ?? false);
+const hijriEnabled = $derived(
+  organizationQuery.data?.is_hijri_enabled ?? false,
+);
 const timeLabel = $derived(formatDate(now, "time", { timeZone }));
 const gregorianDate = $derived(
   formatDate(now, "date", {
