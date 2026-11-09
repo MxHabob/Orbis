@@ -1,36 +1,36 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { onMount } from "svelte";
-  import { Button } from "@orbis/ui/button";
-  import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
-  import { Download, ArrowPath } from "@orbis/icons";
-  import { updateManager } from "$lib/features/system/update-manager.svelte";
+import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { Button } from "@orbis/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
+import { Download, ArrowPath } from "@orbis/icons";
+import { updateManager } from "$lib/features/system/update-manager.svelte";
 
-  let isOpen = $state(false);
-  let isRetrying = $state(false);
-  let shouldShowDownloadManager = $derived(
-    updateManager.isChecking ||
-      updateManager.isDownloading ||
-      updateManager.isApplying ||
-      updateManager.isReadyToRestart ||
-      updateManager.error !== null ||
-      updateManager.updateResult?.has_update === true,
-  );
+let isOpen = $state(false);
+let isRetrying = $state(false);
+let shouldShowDownloadManager = $derived(
+  updateManager.isChecking ||
+    updateManager.isDownloading ||
+    updateManager.isApplying ||
+    updateManager.isReadyToRestart ||
+    updateManager.error !== null ||
+    updateManager.updateResult?.has_update === true,
+);
 
-  onMount(() => {
-    void updateManager.initialize();
-  });
+onMount(() => {
+  void updateManager.initialize();
+});
 
-  async function retry() {
-    isRetrying = true;
-    try {
-      await updateManager.retry();
-    } catch (error) {
-      console.warn("Update manager retry failed:", error);
-    } finally {
-      isRetrying = false;
-    }
+async function retry() {
+  isRetrying = true;
+  try {
+    await updateManager.retry();
+  } catch (error) {
+    console.warn("Update manager retry failed:", error);
+  } finally {
+    isRetrying = false;
   }
+}
 </script>
 
 {#if shouldShowDownloadManager}

@@ -25,7 +25,12 @@ class UpdateManager {
 
     try {
       await this.ensureProgressListener();
-      if (!this.hasChecked && !this.isChecking && !this.isDownloading && !this.isApplying) {
+      if (
+        !this.hasChecked &&
+        !this.isChecking &&
+        !this.isDownloading &&
+        !this.isApplying
+      ) {
         await this.checkForUpdates();
       }
     } catch (error) {
@@ -78,7 +83,9 @@ class UpdateManager {
 
   async installUpdate() {
     if (!this.isReadyToRestart) {
-      throw new Error("The update must finish downloading before it can be applied.");
+      throw new Error(
+        "The update must finish downloading before it can be applied.",
+      );
     }
 
     this.error = null;

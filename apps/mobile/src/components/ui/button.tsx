@@ -88,7 +88,13 @@ const variantClasses: Record<
 
 const sizeClasses: Record<
   ButtonSize,
-  { container: string; contentGap: string; text: string; iconOnly: boolean; hitSlop: number }
+  {
+    container: string;
+    contentGap: string;
+    text: string;
+    iconOnly: boolean;
+    hitSlop: number;
+  }
 > = {
   xs: {
     container: "h-[26px] gap-1 rounded-sm px-2",

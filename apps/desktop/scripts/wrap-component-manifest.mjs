@@ -20,7 +20,9 @@ if (
 ) {
   const [payloadPath, signaturePath, outputPath] = process.argv.slice(2);
   if (!payloadPath || !signaturePath || !outputPath) {
-    throw new Error("Usage: wrap-component-manifest.mjs <payload> <signature> <output>");
+    throw new Error(
+      "Usage: wrap-component-manifest.mjs <payload> <signature> <output>",
+    );
   }
   const envelope = createSignedEnvelope(
     readFileSync(payloadPath, "utf8"),

@@ -5,7 +5,9 @@ import {
   normalizeUpdaterPublicKey,
 } from "./prepare-tauri-updater-config.mjs";
 
-const publicKey = normalizeUpdaterPublicKey(process.env.ORBIS_COMPONENT_PUBLIC_KEY);
+const publicKey = normalizeUpdaterPublicKey(
+  process.env.ORBIS_COMPONENT_PUBLIC_KEY,
+);
 const manifestUrl = normalizeHttpsUrl(
   process.env.ORBIS_SOLVER_MANIFEST_URL,
   "ORBIS_SOLVER_MANIFEST_URL",

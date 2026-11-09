@@ -45,8 +45,11 @@ function rangeValue(index: number): string {
 }
 
 function setRangeValue(index: number, value: string) {
-  const range = Array.isArray(condition.value) ? [...condition.value] : ["", ""];
-  range[index] = selectedField?.type === "number" && value !== "" ? Number(value) : value;
+  const range = Array.isArray(condition.value)
+    ? [...condition.value]
+    : ["", ""];
+  range[index] =
+    selectedField?.type === "number" && value !== "" ? Number(value) : value;
   condition.value = range;
 }
 
@@ -54,7 +57,10 @@ function setInValue(value: string) {
   condition.value =
     condition.operator === FilterOperator.In ||
     condition.operator === FilterOperator.NotIn
-      ? value.split(",").map((item) => item.trim()).filter(Boolean)
+      ? value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
       : value;
 }
 

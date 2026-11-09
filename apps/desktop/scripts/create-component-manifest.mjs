@@ -16,7 +16,9 @@ export function createComponentPayload({
   artifactBaseUrl,
 }) {
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version ?? "")) {
-    throw new Error("Component version must use stable MAJOR.MINOR.PATCH SemVer.");
+    throw new Error(
+      "Component version must use stable MAJOR.MINOR.PATCH SemVer.",
+    );
   }
   const baseUrl = new URL(artifactBaseUrl);
   if (
@@ -35,8 +37,14 @@ export function createComponentPayload({
       const fileName = `orbis-solver-${version}-${target}${extension}`;
       const filePath = path.join(artifactDirectory, fileName);
       const stats = statSync(filePath);
-      if (!stats.isFile() || stats.size <= 0 || stats.size > MAX_ARTIFACT_BYTES) {
-        throw new Error(`Solver artifact ${fileName} is missing, empty, or too large.`);
+      if (
+        !stats.isFile() ||
+        stats.size <= 0 ||
+        stats.size > MAX_ARTIFACT_BYTES
+      ) {
+        throw new Error(
+          `Solver artifact ${fileName} is missing, empty, or too large.`,
+        );
       }
       const sha256 = createHash("sha256")
         .update(readFileSync(filePath))
@@ -68,7 +76,9 @@ if (
   const artifactDirectory = process.env.COMPONENT_ARTIFACT_DIRECTORY;
   const outputPath = process.env.COMPONENT_PAYLOAD_PATH;
   if (!artifactDirectory || !outputPath) {
-    throw new Error("COMPONENT_ARTIFACT_DIRECTORY and COMPONENT_PAYLOAD_PATH are required.");
+    throw new Error(
+      "COMPONENT_ARTIFACT_DIRECTORY and COMPONENT_PAYLOAD_PATH are required.",
+    );
   }
   const payload = createComponentPayload({
     version: process.env.COMPONENT_VERSION,

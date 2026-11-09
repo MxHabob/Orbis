@@ -1,104 +1,104 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { onMount } from "svelte";
-  import { api } from "$lib/api/client";
-  import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
-  import { formatDate as formatOrgDate } from "$lib/core/i18n";
-  import { Button } from "@orbis/ui/button";
-  import { LoadingIndicator, toast } from "@orbis/ui";
-  import { ArrowPath, Sparkles } from "@orbis/icons";
-  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
-  import EmptyState from "$lib/shared/components/empty-state.svelte";
-  import { updateManager } from "$lib/features/system/update-manager.svelte";
+import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { api } from "$lib/api/client";
+import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
+import { Button } from "@orbis/ui/button";
+import { LoadingIndicator, toast } from "@orbis/ui";
+import { ArrowPath, Sparkles } from "@orbis/icons";
+import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
+import { updateManager } from "$lib/features/system/update-manager.svelte";
 
-  let releases = $state<ReleaseChangelogItem[]>([]);
-  let appInfo = $state<AppInfo | null>(null);
-  let isLoading = $state(true);
-  let isCheckingUpdate = $derived(updateManager.isChecking);
-  let isDownloadingUpdate = $derived(updateManager.isDownloading);
-  let isReadyToRestart = $derived(updateManager.isReadyToRestart);
-  let updateResult = $derived(updateManager.updateResult);
-  let updateProgress = $derived(updateManager.progress);
+let releases = $state<ReleaseChangelogItem[]>([]);
+let appInfo = $state<AppInfo | null>(null);
+let isLoading = $state(true);
+let isCheckingUpdate = $derived(updateManager.isChecking);
+let isDownloadingUpdate = $derived(updateManager.isDownloading);
+let isReadyToRestart = $derived(updateManager.isReadyToRestart);
+let updateResult = $derived(updateManager.updateResult);
+let updateProgress = $derived(updateManager.progress);
 
-  // Focus strictly on the current installed release
-  const currentRelease = $derived(
-    releases.find((r) => r.is_current) ??
+// Focus strictly on the current installed release
+const currentRelease = $derived(
+  releases.find((r) => r.is_current) ??
     releases.find((r) => r.version === appInfo?.version) ??
     releases[0] ??
-    null
-  );
+    null,
+);
 
-  function formatDate(value?: string) {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? null
-      : formatOrgDate(date, "date");
+function formatDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : formatOrgDate(date, "date");
+}
+
+async function loadData() {
+  isLoading = true;
+  try {
+    const [releaseList, info] = await Promise.all([
+      api.systemGetChangelog().catch((err) => {
+        console.warn("Changelog fetch failed, treating as empty:", err);
+        return [] as ReleaseChangelogItem[];
+      }),
+      api.systemGetAppInfo().catch((err) => {
+        console.warn("App info fetch failed:", err);
+        return null;
+      }),
+    ]);
+    releases = releaseList;
+    appInfo = info;
+  } catch (error) {
+    console.warn("Failed to load changelog data:", error);
+    releases = [];
+  } finally {
+    isLoading = false;
   }
+}
 
-  async function loadData() {
-    isLoading = true;
-    try {
-      const [releaseList, info] = await Promise.all([
-        api.systemGetChangelog().catch((err) => {
-          console.warn("Changelog fetch failed, treating as empty:", err);
-          return [] as ReleaseChangelogItem[];
-        }),
-        api.systemGetAppInfo().catch((err) => {
-          console.warn("App info fetch failed:", err);
-          return null;
-        }),
-      ]);
-      releases = releaseList;
-      appInfo = info;
-    } catch (error) {
-      console.warn("Failed to load changelog data:", error);
-      releases = [];
-    } finally {
-      isLoading = false;
+async function handleCheckForUpdates() {
+  try {
+    const res = await updateManager.checkForUpdates();
+    if (!res.has_update) {
+      toast.info(
+        m.shared_ui_latest_version_installed({ version: res.current_version }),
+      );
     }
+  } catch (error) {
+    console.warn("Check for updates failed:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
   }
+}
 
-  async function handleCheckForUpdates() {
-    try {
-      const res = await updateManager.checkForUpdates();
-      if (!res.has_update) {
-        toast.info(m.shared_ui_latest_version_installed({ version: res.current_version }));
-      }
-    } catch (error) {
-      console.warn("Check for updates failed:", error);
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
-    }
+async function handleDownloadUpdate() {
+  try {
+    await updateManager.downloadUpdate();
+  } catch (error) {
+    console.error("Failed to download update:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    toast.error(`${m.ui_download_manager_update_failed()} ${msg}`);
   }
+}
 
-  async function handleDownloadUpdate() {
-    try {
-      await updateManager.downloadUpdate();
-    } catch (error) {
-      console.error("Failed to download update:", error);
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`${m.ui_download_manager_update_failed()} ${msg}`);
-    }
+async function handleInstallUpdate() {
+  try {
+    await updateManager.installUpdate();
+  } catch (error) {
+    console.error("Failed to install update:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
   }
+}
 
-  async function handleInstallUpdate() {
-    try {
-      await updateManager.installUpdate();
-    } catch (error) {
-      console.error("Failed to install update:", error);
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
-    }
-  }
+function closeWindow() {
+  window.close();
+}
 
-  function closeWindow() {
-    window.close();
-  }
-
-  onMount(() => {
-    void loadData();
-  });
+onMount(() => {
+  void loadData();
+});
 </script>
 
 <svelte:head>

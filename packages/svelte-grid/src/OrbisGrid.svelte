@@ -222,7 +222,8 @@ const filterFields = $derived<FieldDefinition[]>(
     id: columnId(col),
     label: columnHeader(col),
     type:
-      col.options?.length || ["enum", "status", "relation"].includes(col.type ?? "")
+      col.options?.length ||
+      ["enum", "status", "relation"].includes(col.type ?? "")
         ? "select"
         : ["number", "integer", "decimal", "currency", "percentage"].includes(
               col.type ?? "",
@@ -236,9 +237,7 @@ const filterFields = $derived<FieldDefinition[]>(
     options: col.options?.map((option) => ({
       label: option.label,
       value:
-        typeof option.value === "boolean"
-          ? String(option.value)
-          : option.value,
+        typeof option.value === "boolean" ? String(option.value) : option.value,
     })),
   })),
 );
@@ -1217,10 +1216,7 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
-  if (
-    e.target instanceof Element &&
-    e.target.closest(".resize-handle")
-  ) {
+  if (e.target instanceof Element && e.target.closest(".resize-handle")) {
     return;
   }
   if (isCheckboxTarget(e.target)) return;

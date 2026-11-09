@@ -53,10 +53,7 @@ export function ScreenScrollView({
     paddingVertical:
       typeof verticalPadding === "number" ? verticalPadding : undefined,
   };
-  const contentPaddingClass = resolveClass(
-    contentPadding,
-    paddingClasses,
-  );
+  const contentPaddingClass = resolveClass(contentPadding, paddingClasses);
   const horizontalPaddingClass = resolveClass(
     horizontalPadding,
     horizontalPaddingClasses,
