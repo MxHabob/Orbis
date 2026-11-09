@@ -455,8 +455,18 @@ fn verify_signature(key: &PublicKey, envelope: &SignedManifest) -> Result<(), St
     if envelope.payload.len() > MAX_MANIFEST_BYTES || envelope.signature.len() > 4096 {
         return Err("The component manifest exceeds the allowed size.".to_string());
     }
-    let signature = Signature::decode(&envelope.signature)
-        .map_err(|error| format!("The component signature is invalid: {error}"))?;
+    let encoded_signature = envelope.signature.trim();
+    let signature = if encoded_signature.starts_with("untrusted comment:") {
+        Signature::decode(encoded_signature)
+    } else {
+        let signature_bytes = STANDARD
+            .decode(encoded_signature)
+            .map_err(|error| format!("The component signature is invalid: {error}"))?;
+        let signature_text = std::str::from_utf8(&signature_bytes)
+            .map_err(|error| format!("The component signature is invalid: {error}"))?;
+        Signature::decode(signature_text)
+    }
+    .map_err(|error| format!("The component signature is invalid: {error}"))?;
     key.verify(envelope.payload.as_bytes(), &signature, false)
         .map_err(|error| format!("The component signature check failed: {error}"))
 }
@@ -625,6 +635,11 @@ mod tests {
             signature: TEST_SIGNATURE.to_string(),
         };
         assert!(verify_signature(&key, &envelope).is_ok());
+        let encoded_envelope = SignedManifest {
+            payload: "test".to_string(),
+            signature: STANDARD.encode(TEST_SIGNATURE),
+        };
+        assert!(verify_signature(&key, &encoded_envelope).is_ok());
         let tampered = SignedManifest {
             payload: "tampered".to_string(),
             signature: TEST_SIGNATURE.to_string(),
