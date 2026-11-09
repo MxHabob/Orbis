@@ -102,9 +102,11 @@ jobs:
 
       - name: Build native Solver
         working-directory: apps/solver-service
+        shell: bash
         env:
           MAVEN_OPTS: -Xmx6g
-        run: mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ needs.validate.outputs.version }}"
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: mvn -B package -Dnative -DskipTests "-Dquarkus.native.container-build=false" "-Dorbis.version=$VERSION"
 
       - name: Stage and verify native artifact
         shell: bash
