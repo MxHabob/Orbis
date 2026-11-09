@@ -166,6 +166,26 @@ async function handleConnect(values: Record<string, unknown>) {
   }
 }
 
+async function handleSolverDownload(_values: Record<string, unknown>) {
+  if (isConnecting) return;
+  isConnecting = true;
+  connectError = null;
+  try {
+    const status = await api.startSolverSetup();
+    if (status.state === "ready") {
+      await handleConnect(_values);
+      return;
+    }
+    connectSheetOpen = false;
+    toast.info(m.ai_ui_solver_download_started());
+  } catch (error) {
+    connectError = extractErrorMessage(error);
+    toast.error(connectError);
+  } finally {
+    isConnecting = false;
+  }
+}
+
 async function handleDisconnect() {
   if (isDisconnecting) return;
   isDisconnecting = true;
@@ -356,5 +376,6 @@ function settingsRecord(value: unknown): Record<string, unknown> {
     submitting={isConnecting}
     error={connectError}
     onsubmit={handleConnect}
+    onsolverdownload={handleSolverDownload}
   />
 {/if}

@@ -10100,6 +10100,8 @@
         "type": "object",
         "required": [
           "total_students",
+          "total_employees",
+          "active_sections",
           "total_teachers",
           "total_classes",
           "total_enrollments",
@@ -10109,8 +10111,18 @@
         ],
         "properties": {
           "active_academic_calendar": { "type": "string", "nullable": true },
+          "active_sections": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
           "pending_fees_amount": { "type": "number", "format": "double" },
           "total_classes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_employees": {
             "type": "integer",
             "format": "int64",
             "minimum": 0

@@ -528,6 +528,8 @@ pub struct AutopilotSettingsDto {
 #[derive(Serialize, Deserialize, ToSchema, Default)]
 pub struct DashboardCountsDto {
     pub total_students: u64,
+    pub total_employees: u64,
+    pub active_sections: u64,
     pub total_teachers: u64,
     pub total_classes: u64,
     pub total_enrollments: u64,
@@ -830,6 +832,8 @@ async fn get_dashboard(
         .await?;
     Ok(ApiResponse::ok(DashboardCountsDto {
         total_students: counts.total_students,
+        total_employees: counts.total_employees,
+        active_sections: counts.active_sections,
         total_teachers: counts.total_teachers,
         total_classes: counts.total_classes,
         total_enrollments: counts.total_enrollments,

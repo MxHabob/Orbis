@@ -22,14 +22,27 @@ impl DashboardRepository for DashboardRepoImpl {
                 "SELECT COUNT(*) as cnt FROM students WHERE org_id = $1 AND is_deleted = FALSE",
                 org_id,
             )
-            .await
-            .unwrap_or(0);
+            .await?;
+
+        let total_employees = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM employees WHERE org_id = $1 AND is_deleted = FALSE",
+                org_id,
+            )
+            .await?;
+
+        let active_sections = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND is_active = TRUE AND is_deleted = FALSE",
+                org_id,
+            )
+            .await?;
 
         // Count teachers from user_role_assignments
         let total_teachers = self.count_query(
             "SELECT COUNT(DISTINCT user_id) as cnt FROM user_role_assignments WHERE org_id = $1 AND (LOWER(role_id) LIKE '%teacher%')",
             org_id,
-        ).await.unwrap_or(0);
+        ).await?;
 
         // Count classes
         let total_classes = self
@@ -37,8 +50,7 @@ impl DashboardRepository for DashboardRepoImpl {
                 "SELECT COUNT(*) as cnt FROM classes WHERE org_id = $1",
                 org_id,
             )
-            .await
-            .unwrap_or(0);
+            .await?;
 
         // Count enrollments
         let total_enrollments = self
@@ -46,8 +58,7 @@ impl DashboardRepository for DashboardRepoImpl {
                 "SELECT COUNT(*) as cnt FROM enrollments WHERE org_id = $1",
                 org_id,
             )
-            .await
-            .unwrap_or(0);
+            .await?;
 
         // Count subjects
         let total_subjects = self
@@ -55,8 +66,7 @@ impl DashboardRepository for DashboardRepoImpl {
                 "SELECT COUNT(*) as cnt FROM subjects WHERE org_id = $1",
                 org_id,
             )
-            .await
-            .unwrap_or(0);
+            .await?;
 
         // Active academic year (status = 'active')
         let active_year = {
@@ -90,17 +100,18 @@ impl DashboardRepository for DashboardRepoImpl {
                 "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE org_id = $1",
                 org_id,
             )
-            .await
-            .unwrap_or(0.0);
+            .await?;
 
         // Sum of pending fees
         let pending_fees_amount = self.sum_query(
             "SELECT COALESCE(SUM(net_amount), 0) as total FROM student_fees WHERE org_id = $1 AND status != 'paid'",
             org_id,
-        ).await.unwrap_or(0.0);
+        ).await?;
 
         Ok(DashboardCounts {
             total_students,
+            total_employees,
+            active_sections,
             total_teachers,
             total_classes,
             total_enrollments,
@@ -126,10 +137,15 @@ impl DashboardRepoImpl {
 
         match result {
             Some(row) => {
-                let cnt: i64 = row.try_get("", "cnt").unwrap_or(0);
-                Ok(cnt as u64)
+                let cnt: i64 = row
+                    .try_get("", "cnt")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+                u64::try_from(cnt)
+                    .map_err(|e| DomainError::Internal(format!("Invalid dashboard count: {e}")))
             }
-            None => Ok(0),
+            None => Err(DomainError::Internal(
+                "Dashboard count query returned no row".into(),
+            )),
         }
     }
 
@@ -146,10 +162,14 @@ impl DashboardRepoImpl {
 
         match result {
             Some(row) => {
-                let total: f64 = row.try_get("", "total").unwrap_or(0.0);
+                let total: f64 = row
+                    .try_get("", "total")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
                 Ok(total)
             }
-            None => Ok(0.0),
+            None => Err(DomainError::Internal(
+                "Dashboard sum query returned no row".into(),
+            )),
         }
     }
 }

@@ -1,24 +1,70 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { Download, ArrowPath } from "@orbis/icons";
+import { api } from "$lib/api/client";
+import { isDesktopApp } from "$lib/api/runtime";
+import type { SolverSetupStatusDto } from "$lib/api/types";
 import { updateManager } from "$lib/features/system/update-manager.svelte";
 
 let isOpen = $state(false);
 let isRetrying = $state(false);
+let solverSetup = $state<SolverSetupStatusDto | null>(null);
+let unlistenSetup: UnlistenFn | undefined;
 let shouldShowDownloadManager = $derived(
   updateManager.isChecking ||
     updateManager.isDownloading ||
     updateManager.isApplying ||
     updateManager.isReadyToRestart ||
     updateManager.error !== null ||
-    updateManager.updateResult?.has_update === true,
+    updateManager.updateResult?.has_update === true ||
+    solverSetup?.state === "preparing" ||
+    solverSetup?.state === "failed" ||
+    solverSetup?.state === "ready",
 );
 
 onMount(() => {
   void updateManager.initialize();
+  if (!isDesktopApp) return;
+
+  let disposed = false;
+  const listenerPromise = listen<SolverSetupStatusDto>(
+    "solver-setup-status-changed",
+    ({ payload }) => {
+      solverSetup = payload;
+      if (payload.state === "preparing" || payload.state === "failed") {
+        isOpen = true;
+      } else if (payload.state === "ready") {
+        isOpen = true;
+        window.setTimeout(() => {
+          if (solverSetup?.state === "ready") solverSetup = null;
+        }, 6000);
+      }
+    },
+  );
+  void listenerPromise.then(async (unlisten) => {
+    if (disposed) {
+      unlisten();
+      return;
+    }
+    unlistenSetup = unlisten;
+    try {
+      const current = await api.getSolverSetupStatus();
+      if (current.state === "preparing" || current.state === "failed") {
+        solverSetup = current;
+      }
+    } catch (error) {
+      console.error("Failed to load solver download status", error);
+    }
+  });
+
+  return () => {
+    disposed = true;
+    unlistenSetup?.();
+  };
 });
 
 async function retry() {
@@ -29,6 +75,14 @@ async function retry() {
     console.warn("Update manager retry failed:", error);
   } finally {
     isRetrying = false;
+  }
+}
+
+async function retrySolverSetup() {
+  try {
+    solverSetup = await api.startSolverSetup();
+  } catch (error) {
+    console.error("Failed to restart solver setup", error);
   }
 }
 </script>
@@ -80,6 +134,42 @@ async function retry() {
           <ArrowPath size={14} class={updateManager.isChecking ? "animate-spin" : ""} />
         </Button>
       </div>
+
+      {#if solverSetup?.state === "preparing"}
+        <div class="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3" role="status" aria-live="polite">
+          <ArrowPath size={15} class="shrink-0 animate-spin text-primary" />
+          <div class="min-w-0">
+            <p class="text-xs font-medium">{m.ai_ui_solver_download_title()}</p>
+            <p class="mt-1 text-xs text-muted-foreground">{m.ai_ui_solver_download_in_progress()}</p>
+          </div>
+        </div>
+      {:else if solverSetup?.state === "failed"}
+        <div class="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <div>
+            <p class="text-xs font-medium text-destructive">{m.ai_ui_solver_download_failed()}</p>
+            {#if solverSetup.error}
+              <p class="mt-1 break-words text-xs text-muted-foreground" role="alert">{solverSetup.error}</p>
+            {/if}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            class="w-full"
+            disabled={isRetrying}
+            onclick={() => {
+              isRetrying = true;
+              void retrySolverSetup().finally(() => (isRetrying = false));
+            }}
+          >
+            {isRetrying ? m.ui_changelog_checking() : m.common_retry()}
+          </Button>
+        </div>
+      {:else if solverSetup?.state === "ready"}
+        <div class="rounded-lg border border-primary/20 bg-primary/5 p-3" role="status" aria-live="polite">
+          <p class="text-xs font-medium">{m.ai_ui_solver_download_title()}</p>
+          <p class="mt-1 text-xs text-muted-foreground">{m.ai_ui_solver_download_ready()}</p>
+        </div>
+      {/if}
 
       {#if updateManager.isChecking}
         <p class="text-xs text-muted-foreground" aria-live="polite">

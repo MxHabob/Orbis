@@ -105,7 +105,7 @@ const insights = $derived.by<Insight[]>(() => {
     });
 
     const classLink = m.common_insight_classes_link({
-      count: stats.active_classes ?? 0,
+      count: stats.active_sections,
     });
     const classParts = m
       .common_insight_classes({
@@ -121,7 +121,7 @@ const insights = $derived.by<Insight[]>(() => {
     });
 
     const employeeLink = m.common_insight_staff_link({
-      count: stats.active_employees ?? 0,
+      count: stats.total_employees,
     });
     const employeeParts = m
       .common_insight_staff({

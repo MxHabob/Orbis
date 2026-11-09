@@ -606,7 +606,7 @@ pub async fn scheduling_list_lessons(
 // ── Solver IPC Handlers (Timefold Sidecar Integration) ──────────────────────
 // ═════════════════════════════════════════════════════════════════════════════
 
-use crate::features::solver_sidecar::SidecarStatus;
+use crate::features::solver_sidecar::{SidecarStatus, SolverSetupStatus};
 use orbis_app::ports::gateways::SchedulingSolverPort;
 use orbis_domain::entities::solver::{
     ExamProblem, ExamSolveJobStatus, JobStatus, SolveJobStatus, TimetableProblem,
@@ -618,6 +618,21 @@ pub async fn solver_get_sidecar_status(
 ) -> Result<ApiResponse<SidecarStatus>, String> {
     let status = state.solver_sidecar.status().await;
     Ok(ok(status))
+}
+
+#[tauri::command]
+pub async fn solver_get_setup_status(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SolverSetupStatus>, String> {
+    Ok(ok(state.solver_sidecar.setup_status().await))
+}
+
+#[tauri::command]
+pub async fn solver_start_setup(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SolverSetupStatus>, String> {
+    Ok(ok(state.solver_sidecar.start_setup(app).await))
 }
 
 #[tauri::command]
