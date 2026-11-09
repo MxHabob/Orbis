@@ -219,6 +219,9 @@ jobs:
               gh release upload "$TAG" "$windows" "$macos" solver-output/orbis-solver.json \
                 --repo "$GITHUB_REPOSITORY" --clobber
             else
+              release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .id)"
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                -F make_latest=false
               mkdir -p published-solver
               gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir published-solver \
                 --pattern "orbis-solver-${VERSION}-*" --pattern orbis-solver.json
@@ -245,6 +248,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false
+          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -F make_latest=false
 
       - name: Publish stable component catalog
         env:
