@@ -90,9 +90,41 @@ onDestroy(() => fallbackController.destroy());
     animation: error-shake 280ms ease-in-out;
   }
 
+  .avatar-root[data-state="celebrating"] :global(svg) {
+    animation: celebrate 680ms ease-out;
+    transform-origin: center;
+  }
+
+  .avatar-root[data-state="curious"] :global(svg) {
+    animation: curious-tilt 880ms ease-in-out;
+    transform-origin: center;
+  }
+
+  .avatar-root[data-state="sleepy"] :global(svg) {
+    animation: sleepy-breathe 2.2s ease-in-out infinite;
+    transform-origin: center;
+  }
+
   @keyframes happy-bounce {
     0%, 100% { transform: translateY(0) scale(1); }
     45% { transform: translateY(-3px) scale(1.035); }
+  }
+
+  @keyframes celebrate {
+    0%, 100% { transform: translateY(0) scale(1) rotate(0); }
+    24% { transform: translateY(-8px) scale(1.08) rotate(-5deg); }
+    52% { transform: translateY(0) scale(1) rotate(2deg); }
+    76% { transform: translateY(-5px) scale(1.04) rotate(5deg); }
+  }
+
+  @keyframes curious-tilt {
+    0%, 100% { transform: rotate(0); }
+    30%, 65% { transform: rotate(8deg); }
+  }
+
+  @keyframes sleepy-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.025); }
   }
 
   @keyframes error-shake {
