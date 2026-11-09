@@ -49,7 +49,7 @@ jobs:
 
           git fetch origin main --tags --force
           if ! git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::error::The requested tag '$TAG' does not exist in the repository." 
+            echo "::error::The requested tag '$TAG' does not exist in the repository."
             exit 1
           fi
 
@@ -85,13 +85,11 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_dir: nsis
             asset_pattern: '*.exe'
-            solver_extension: .exe
           - name: macos-aarch64
             runner: macos-latest
             target: aarch64-apple-darwin
             artifact_dir: macos
             asset_pattern: '*.app.tar.gz'
-            solver_extension: ""
     steps:
       - name: Checkout validated tag commit
         uses: actions/checkout@v4
@@ -129,21 +127,6 @@ jobs:
           echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
           echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
 
-      - name: Setup GraalVM Mandrel
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: "21"
-          distribution: mandrel
-          github-token: ${{ github.token }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ runner.os }}-${{ hashFiles('apps/solver-service/pom.xml') }}
-          restore-keys: |
-            maven-${{ runner.os }}-
-
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -161,34 +144,13 @@ jobs:
       - name: Install workspace dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build native Solver sidecar
-        working-directory: apps/solver-service
-        shell: bash
-        env:
-          MAVEN_OPTS: -Xmx6g
-        run: |
-          mvn -B package \
-            -Dnative \
-            -DskipTests \
-            -Dquarkus.native.container-build=false \
-            "-Dorbis.version=${{ needs.validate.outputs.version }}"
-
-      - name: Stage Solver release asset and checksum
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ci-artifacts
-          source="apps/solver-service/target/orbis-solver-${{ needs.validate.outputs.version }}-runner${{ matrix.solver_extension }}"
-          target="ci-artifacts/solver-service-${{ matrix.target }}${{ matrix.solver_extension }}"
-          cp "$source" "$target"
-          solver_hash="$(node -e "const fs=require('node:fs');const crypto=require('node:crypto');process.stdout.write(crypto.createHash('sha256').update(fs.readFileSync(process.argv[1])).digest('hex'))" "$target")"
-          printf '%s\n' "$solver_hash" > "${target}.sha256"
-          echo "ORBIS_SOLVER_SHA256=$solver_hash" >> "$GITHUB_ENV"
-
       - name: Prepare updater public-key configuration
         working-directory: apps/desktop
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+          TAURI_UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT }}
+          ORBIS_COMPONENT_PUBLIC_KEY: ${{ vars.ORBIS_COMPONENT_PUBLIC_KEY }}
+          ORBIS_SOLVER_MANIFEST_URL: ${{ vars.ORBIS_SOLVER_MANIFEST_URL }}
           TAURI_UPDATER_CONFIG_PATH: ${{ github.workspace }}/apps/desktop/src-tauri/target/tauri-updater-release.conf.json
         run: node ../../release-tools/apps/desktop/scripts/prepare-tauri-updater-config.mjs
 
@@ -304,21 +266,8 @@ jobs:
           if (Object.keys(targets).sort().join(',') !== expectedTargets.slice().sort().join(',')) {
             throw new Error(`latest.json targets do not match supported updater targets: ${Object.keys(targets).join(', ')}`);
           }
-          const solverTargets = [
-            ['x86_64-pc-windows-msvc', 'solver-service-x86_64-pc-windows-msvc.exe'],
-            ['aarch64-apple-darwin', 'solver-service-aarch64-apple-darwin'],
-          ];
-          for (const [target, fileName] of solverTargets) {
-            const binaryPath = files.find((file) => path.basename(file) === fileName);
-            const checksumPath = files.find((file) => path.basename(file) === `${fileName}.sha256`);
-            if (!binaryPath || !checksumPath) {
-              throw new Error(`Missing timetable solver asset for ${target}.`);
-            }
-            const expectedHash = fs.readFileSync(checksumPath, 'utf8').trim();
-            const actualHash = require('node:crypto').createHash('sha256').update(fs.readFileSync(binaryPath)).digest('hex');
-            if (!/^[a-f0-9]{64}$/i.test(expectedHash) || actualHash !== expectedHash) {
-              throw new Error(`Timetable solver checksum mismatch for ${target}.`);
-            }
+          if (files.some((file) => /^solver-service-|^orbis-solver-/.test(path.basename(file)))) {
+            throw new Error('Desktop releases must not include independently managed Solver binaries.');
           }
 
           const allNames = new Set(files.map((file) => path.basename(file)));
@@ -356,10 +305,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-package
-          find release-artifacts -type f \( -name 'Orbis_*.exe' -o -name 'Orbis_*.exe.sig' -o -name 'Orbis*.app.tar.gz' -o -name 'Orbis*.app.tar.gz.sig' -o \( -name 'solver-service-*' ! -name '*.sha256' \) \) -exec cp {} release-package/ \;
+          find release-artifacts -type f \( -name 'Orbis_*.exe' -o -name 'Orbis_*.exe.sig' -o -name 'Orbis*.app.tar.gz' -o -name 'Orbis*.app.tar.gz.sig' \) -exec cp {} release-package/ \;
           cp release-artifacts/merged-latest.json release-package/latest.json
           find release-package -maxdepth 1 -type f | sort
-          test "$(find release-package -type f | wc -l)" -eq 7
+          test "$(find release-package -type f | wc -l)" -eq 5
 
       - name: Publish release with supported desktop artifacts only
         uses: softprops/action-gh-release@v2

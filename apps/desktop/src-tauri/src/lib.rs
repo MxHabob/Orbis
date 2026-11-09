@@ -55,6 +55,7 @@ pub fn run() {
             // Add updater plugin conditionally for desktop
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            app.manage(commands::system_cmds::PendingUpdateState::default());
             // 1. Initialize local AppData directory
             let app_data_dir = app
                 .path()

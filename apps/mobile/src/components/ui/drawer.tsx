@@ -409,9 +409,7 @@ export function DrawerContent({
         {
           borderColor: theme.border,
           backgroundColor: theme.card,
-          paddingBottom: hasCloseButton
-            ? 0
-            : insets.bottom,
+          paddingBottom: hasCloseButton ? 0 : insets.bottom,
         },
       ]}
     >

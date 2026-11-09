@@ -1040,9 +1040,17 @@ export interface ReleaseChangelogItem {
   published_at?: string;
   body?: string;
   sections?: ReleaseNoteSection[];
+  images?: string[];
+  resources?: ReleaseResource[];
   is_current: boolean;
   is_latest: boolean;
   html_url: string;
+}
+
+export interface ReleaseResource {
+  name: string;
+  url: string;
+  size: number;
 }
 
 export interface AppInfo {
@@ -2324,6 +2332,7 @@ export interface OrbisApiClient {
   systemGetAppInfo(): Promise<AppInfo>;
   systemGetChangelog(): Promise<ReleaseChangelogItem[]>;
   systemCheckForUpdates(): Promise<UpdateCheckResult>;
+  systemDownloadUpdate(): Promise<string>;
   systemInstallUpdate(): Promise<void>;
   openChangelogWindow(): Promise<void>;
   openAgentWindow(): Promise<void>;

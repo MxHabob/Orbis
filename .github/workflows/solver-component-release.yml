@@ -1,0 +1,277 @@
+name: Build and Publish Solver Component
+
+on:
+  push:
+    tags:
+      - "solver-v*.*.*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solver-component-stable
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate solver release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag and signing configuration
+        id: meta
+        env:
+          TAG: ${{ github.ref_name }}
+          ORBIS_COMPONENT_SIGNING_PRIVATE_KEY: ${{ secrets.ORBIS_COMPONENT_SIGNING_PRIVATE_KEY }}
+          ORBIS_COMPONENT_PUBLIC_KEY: ${{ vars.ORBIS_COMPONENT_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^solver-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Solver releases must use solver-vMAJOR.MINOR.PATCH tags."
+            exit 1
+          fi
+          git fetch origin main --no-tags
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The Solver tag must point to a commit already reachable from main."
+            exit 1
+          fi
+          if [[ -z "$ORBIS_COMPONENT_SIGNING_PRIVATE_KEY" || -z "$ORBIS_COMPONENT_PUBLIC_KEY" ]]; then
+            echo "::error::Configure ORBIS_COMPONENT_SIGNING_PRIVATE_KEY and ORBIS_COMPONENT_PUBLIC_KEY before publishing solver components."
+            exit 1
+          fi
+          echo "version=${TAG#solver-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: solver-tests-${{ runner.os }}-${{ hashFiles('apps/solver-service/pom.xml') }}
+          restore-keys: |
+            solver-tests-${{ runner.os }}-
+
+      - name: Run Solver tests
+        working-directory: apps/solver-service
+        run: mvn -B test
+
+  build:
+    name: Build native Solver (${{ matrix.target }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            extension: .exe
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            extension: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup GraalVM Mandrel
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "21"
+          distribution: mandrel
+          github-token: ${{ github.token }}
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: solver-native-${{ runner.os }}-${{ hashFiles('apps/solver-service/pom.xml') }}
+          restore-keys: |
+            solver-native-${{ runner.os }}-
+
+      - name: Build native Solver
+        working-directory: apps/solver-service
+        env:
+          MAVEN_OPTS: -Xmx6g
+        run: mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ needs.validate.outputs.version }}"
+
+      - name: Stage and verify native artifact
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target }}
+          EXTENSION: ${{ matrix.extension }}
+        run: |
+          set -euo pipefail
+          mkdir -p solver-output
+          source="apps/solver-service/target/orbis-solver-${VERSION}-runner${EXTENSION}"
+          destination="solver-output/orbis-solver-${VERSION}-${TARGET}${EXTENSION}"
+          test -s "$source"
+          cp "$source" "$destination"
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: solver-${{ matrix.target }}
+          path: solver-output/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Sign, validate, and publish component
+    needs:
+      - validate
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Download platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: solver-*
+          path: solver-output
+          merge-multiple: true
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Create and sign component manifest
+        env:
+          COMPONENT_VERSION: ${{ needs.validate.outputs.version }}
+          COMPONENT_ARTIFACT_DIRECTORY: ${{ github.workspace }}/solver-output
+          COMPONENT_ARTIFACT_BASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/
+          COMPONENT_PAYLOAD_PATH: ${{ github.workspace }}/solver-output/orbis-solver.payload.json
+          ORBIS_COMPONENT_SIGNING_PRIVATE_KEY: ${{ secrets.ORBIS_COMPONENT_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.ORBIS_COMPONENT_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          node apps/desktop/scripts/create-component-manifest.mjs
+          bun run --cwd apps/desktop tauri signer sign "$COMPONENT_PAYLOAD_PATH" \
+            --private-key "$ORBIS_COMPONENT_SIGNING_PRIVATE_KEY" \
+            --password "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}"
+          node apps/desktop/scripts/wrap-component-manifest.mjs \
+            "$COMPONENT_PAYLOAD_PATH" \
+            "$COMPONENT_PAYLOAD_PATH.sig" \
+            solver-output/orbis-solver.json
+
+      - name: Validate component artifacts and signature metadata
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const crypto = require("node:crypto");
+          const envelope = JSON.parse(fs.readFileSync("solver-output/orbis-solver.json", "utf8"));
+          const payload = JSON.parse(envelope.payload);
+          if (!envelope.signature.trim()) throw new Error("Component manifest signature is missing.");
+          if (payload.schema_version !== 1 || payload.component_id !== "orbis-solver" || payload.version !== process.env.VERSION) {
+            throw new Error("Component manifest identity or version is invalid.");
+          }
+          for (const [target, entry] of Object.entries(payload.platforms ?? {})) {
+            if (!entry.file_name || !entry.url.startsWith("https://") || !/^[a-f0-9]{64}$/i.test(entry.sha256)) {
+              throw new Error(`Invalid signed artifact metadata for ${target}.`);
+            }
+            const bytes = fs.readFileSync(`solver-output/${entry.file_name}`);
+            if (bytes.length !== entry.size_bytes || crypto.createHash("sha256").update(bytes).digest("hex") !== entry.sha256) {
+              throw new Error(`Artifact integrity check failed for ${target}.`);
+            }
+          }
+          if (Object.keys(payload.platforms).length !== 2) throw new Error("Expected both supported Solver platforms.");
+          NODE
+
+      - name: Create or update GitHub Release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          windows="solver-output/orbis-solver-${VERSION}-x86_64-pc-windows-msvc.exe"
+          macos="solver-output/orbis-solver-${VERSION}-aarch64-apple-darwin"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            is_draft="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)"
+            if [[ "$is_draft" == "true" ]]; then
+              gh release upload "$TAG" "$windows" "$macos" solver-output/orbis-solver.json \
+                --repo "$GITHUB_REPOSITORY" --clobber
+            else
+              mkdir -p published-solver
+              gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir published-solver \
+                --pattern "orbis-solver-${VERSION}-*" --pattern orbis-solver.json
+              for file in "$windows" "$macos" solver-output/orbis-solver.json; do
+                if ! cmp --silent "$file" "published-solver/$(basename "$file")"; then
+                  echo "::error::Published immutable Solver release $TAG differs from the rebuilt artifacts."
+                  exit 1
+                fi
+              done
+            fi
+          else
+            gh release create "$TAG" "$windows" "$macos" solver-output/orbis-solver.json \
+              --repo "$GITHUB_REPOSITORY" --draft --title "Orbis Solver $VERSION" \
+              --notes "Independently versioned, signed Orbis scheduling component."
+            is_draft="true"
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets > release.json
+          node -e "const r=require('./release.json'); const names=r.assets.map(a=>a.name); for (const n of ['$(basename "$windows")','$(basename "$macos")','orbis-solver.json']) if (!names.includes(n)) throw new Error('Solver release is missing '+n)"
+          echo "is_draft=$is_draft" >> "$GITHUB_OUTPUT"
+
+      - name: Publish validated GitHub Release
+        if: steps.release.outputs.is_draft == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false
+
+      - name: Publish stable component catalog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code origin refs/heads/components/stable >/dev/null 2>&1; then
+            git fetch origin components/stable
+            git switch --track -c components/stable origin/components/stable
+          else
+            git switch --orphan components/stable
+          fi
+          mkdir -p components
+          cp solver-output/orbis-solver.json components/orbis-solver.json
+          git add components/orbis-solver.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(solver): publish stable component manifest"
+            git push origin components/stable
+          fi
+
+      - name: Summarize component release
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          {
+            echo "## Solver component published"
+            echo "Version: $VERSION"
+            echo "Manifest: https://raw.githubusercontent.com/$GITHUB_REPOSITORY/components/stable/components/orbis-solver.json"
+            echo "Desktop and staging builds download the component on first use; it is not part of their installers."
+          } >> "$GITHUB_STEP_SUMMARY"

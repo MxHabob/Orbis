@@ -79,12 +79,13 @@ if (
     );
   }
 
-  const artifactDir = path.resolve(process.env.CI_ARTIFACT_DIR ?? "ci-artifacts");
+  const artifactDir = path.resolve(
+    process.env.CI_ARTIFACT_DIR ?? "ci-artifacts",
+  );
   const artifactNames = fs
     .readdirSync(artifactDir, { withFileTypes: true })
     .filter(
-      (entry) =>
-        entry.isFile() && platform.artifactPattern.test(entry.name),
+      (entry) => entry.isFile() && platform.artifactPattern.test(entry.name),
     )
     .map((entry) => entry.name);
   if (artifactNames.length !== 1) {

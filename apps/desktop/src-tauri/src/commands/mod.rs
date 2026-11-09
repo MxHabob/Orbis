@@ -112,6 +112,7 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_acknowledge_release_notes"
                 | "api_distribution_verify_manifest"
                 | "system_check_for_updates"
+                | "system_download_update"
                 | "system_install_update"
                 | "bootstrap_detect_environment"
                 | "bootstrap_generate_slug"
@@ -476,6 +477,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         system_cmds::system_get_release_notes_state,
         system_cmds::system_acknowledge_release_notes,
         system_cmds::system_check_for_updates,
+        system_cmds::system_download_update,
         system_cmds::system_install_update,
         // ── License & Activation ────────────────────────────────
         license_cmds::license_get_state,
@@ -525,6 +527,10 @@ fn is_allowed_before_backend_initialization(command: &str) -> bool {
     command.starts_with("connection_")
         || command.starts_with("database_")
         || command.starts_with("window_")
+        || matches!(
+            command,
+            "system_check_for_updates" | "system_download_update" | "system_install_update"
+        )
         || command == "api_distribution_verify_manifest"
 }
 
@@ -586,6 +592,15 @@ mod license_policy_tests {
         ));
         assert!(is_allowed_before_backend_initialization(
             "database_create_local"
+        ));
+        assert!(is_allowed_before_backend_initialization(
+            "system_check_for_updates"
+        ));
+        assert!(is_allowed_before_backend_initialization(
+            "system_download_update"
+        ));
+        assert!(is_allowed_before_backend_initialization(
+            "system_install_update"
         ));
         assert!(!is_allowed_before_backend_initialization(
             "student_register_student"

@@ -6,12 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
-import {
-  ArrowUpTray,
-  DocumentChartBar,
-  Plus,
-  XMark,
-} from "@orbis/icons";
+import { ArrowUpTray, DocumentChartBar, Plus, XMark } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";

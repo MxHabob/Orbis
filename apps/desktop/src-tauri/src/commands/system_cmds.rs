@@ -3,7 +3,32 @@
 
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
+
+#[derive(Debug, Clone, Serialize)]
+struct UpdateDownloadProgress {
+    downloaded_bytes: u64,
+    total_bytes: Option<u64>,
+}
+
+pub struct PendingUpdateState {
+    download_lock: tokio::sync::Mutex<()>,
+    pending: tokio::sync::Mutex<Option<PendingUpdate>>,
+}
+
+struct PendingUpdate {
+    update: tauri_plugin_updater::Update,
+    bytes: Vec<u8>,
+}
+
+impl Default for PendingUpdateState {
+    fn default() -> Self {
+        Self {
+            download_lock: tokio::sync::Mutex::new(()),
+            pending: tokio::sync::Mutex::new(None),
+        }
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DTOs
@@ -46,6 +71,10 @@ pub struct ReleaseNotesRelease {
     pub subtitle: Option<String>,
     #[serde(default)]
     pub sections: Vec<ReleaseNoteSection>,
+    #[serde(default)]
+    pub images: Vec<String>,
+    #[serde(default)]
+    pub resources: Vec<ReleaseResource>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -75,9 +104,19 @@ pub struct ReleaseChangelogItem {
     pub published_at: Option<String>,
     pub body: Option<String>,
     pub sections: Vec<ReleaseNoteSection>,
+    pub images: Vec<String>,
+    pub resources: Vec<ReleaseResource>,
     pub is_current: bool,
     pub is_latest: bool,
     pub html_url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ReleaseResource {
+    pub name: String,
+    pub url: String,
+    #[serde(default)]
+    pub size: u64,
 }
 
 /// Structured update check result with GitHub Releases comparison.
@@ -232,6 +271,8 @@ fn load_release_notes_document(app: &AppHandle) -> Result<Vec<ReleaseChangelogIt
         let subtitle = release.subtitle.clone();
         let published_at = release.release_date.clone();
         let sections = release.sections.clone();
+        let images = release.images.clone();
+        let resources = release.resources.clone();
         let body = release_markdown(&release);
 
         result.push(ReleaseChangelogItem {
@@ -241,6 +282,8 @@ fn load_release_notes_document(app: &AppHandle) -> Result<Vec<ReleaseChangelogIt
             published_at,
             body: Some(body),
             sections,
+            images,
+            resources,
             is_current: version == app.package_info().version.to_string(),
             is_latest: index == 0,
             html_url: String::new(),
@@ -343,13 +386,16 @@ pub async fn system_check_for_updates(app: AppHandle) -> Result<UpdateCheckResul
 }
 
 #[tauri::command]
-pub async fn system_install_update(app: AppHandle) -> Result<(), String> {
+pub async fn system_download_update(
+    app: AppHandle,
+    pending: State<'_, PendingUpdateState>,
+) -> Result<String, String> {
     use tauri_plugin_updater::UpdaterExt;
 
+    let _download_guard = pending.download_lock.lock().await;
     if is_staging_build(&app.config().identifier) {
         return Err("Updates are not configured for staging builds.".to_string());
     }
-
     let update = app
         .updater()
         .map_err(|error| format!("Failed to initialize updater: {error}"))?
@@ -358,13 +404,52 @@ pub async fn system_install_update(app: AppHandle) -> Result<(), String> {
         .map_err(|error| format!("Failed to check for updates: {error}"))?
         .ok_or_else(|| "No update is currently available.".to_string())?;
 
-    update
-        .download_and_install(
-            |_chunk_length, _content_length| {},
-            || tracing::info!("Update download finished"),
+    let version = update.version.clone();
+    let progress_app = app.clone();
+    let mut downloaded_bytes = 0_u64;
+    let bytes = update
+        .download(
+            move |chunk_length, total_bytes| {
+                downloaded_bytes = downloaded_bytes.saturating_add(chunk_length as u64);
+                if let Err(error) = progress_app.emit(
+                    "desktop-update-progress",
+                    UpdateDownloadProgress {
+                        downloaded_bytes,
+                        total_bytes,
+                    },
+                ) {
+                    tracing::warn!(%error, "Could not report desktop update download progress");
+                }
+            },
+            || tracing::info!("Update download and signature verification finished"),
         )
         .await
-        .map_err(|error| format!("Failed to download or install update: {error}"))?;
+        .map_err(|error| format!("Failed to download or verify update: {error}"))?;
+
+    *pending.pending.lock().await = Some(PendingUpdate { update, bytes });
+    Ok(version)
+}
+
+#[tauri::command]
+pub async fn system_install_update(
+    app: AppHandle,
+    pending: State<'_, PendingUpdateState>,
+) -> Result<(), String> {
+    let _update_guard = app
+        .try_state::<AppState>()
+        .map(|state| state.solver_sidecar.begin_application_update())
+        .transpose()?;
+    let pending_update = pending
+        .pending
+        .lock()
+        .await
+        .take()
+        .ok_or_else(|| "Download an update before applying it.".to_string())?;
+
+    if let Err(error) = pending_update.update.install(&pending_update.bytes) {
+        *pending.pending.lock().await = Some(pending_update);
+        return Err(format!("Failed to install downloaded update: {error}"));
+    }
 
     app.restart();
 }

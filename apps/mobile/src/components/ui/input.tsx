@@ -102,7 +102,9 @@ export const Input = React.memo<InputProps>(
           {isPassword && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              accessibilityLabel={
+                showPassword ? "Hide password" : "Show password"
+              }
               className="p-one"
               onPress={() => setShowPassword(!showPassword)}
               hitSlop={8}

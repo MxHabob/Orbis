@@ -1,32 +1,20 @@
-//! Solver Sidecar Manager
-//!
-//! Manages the lifecycle of the on-demand Timefold `solver-service` native binary.
-//!
-//! Architectural Principles:
-//! 1. **Zero-Resource Idle**: The sidecar is spawned on-demand when a timetable or exam
-//!    solving operation begins, and automatically stopped after an idle period (e.g., 5 min)
-//!    to conserve RAM and CPU.
-//! 2. **Process Sandboxing**: On Windows, the process is spawned with `CREATE_NO_WINDOW`
-//!    to run silently without popup windows.
-//! 3. **Clean Shutdown**: Guarantees termination when the main Orbis Desktop application exits.
+//! Process lifecycle for the locally managed scheduling component.
 
+use super::managed_components::ManagedComponentManager;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Child;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
+const COMPONENT_ID: &str = "orbis-solver";
 const DEFAULT_PORT: u16 = 8081;
-const MAX_SOLVER_BINARY_BYTES: u64 = 250 * 1024 * 1024;
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_millis(500);
-const MAX_STARTUP_WAIT: Duration = Duration::from_secs(8);
-const DEFAULT_IDLE_TIMEOUT_SECS: i64 = 300; // 5 minutes
+const MAX_STARTUP_WAIT: Duration = Duration::from_secs(30);
+const DEFAULT_IDLE_TIMEOUT_SECS: i64 = 300;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SidecarStatus {
@@ -43,27 +31,35 @@ pub struct SolverSidecarManager {
     endpoint_url: String,
     last_activity: Arc<AtomicI64>,
     active_jobs: Arc<AtomicUsize>,
+    update_in_progress: Arc<std::sync::atomic::AtomicBool>,
     idle_timeout_secs: i64,
     http_client: reqwest::Client,
-    app_data_dir: PathBuf,
+    components: ManagedComponentManager,
 }
 
 impl SolverSidecarManager {
-    pub fn new(app_data_dir: &std::path::Path) -> Result<Self, String> {
+    pub fn new(app_data_dir: &Path) -> Result<Self, String> {
         let http_client = reqwest::Client::builder()
+            .timeout(HEALTH_CHECK_TIMEOUT)
             .build()
-            .map_err(|error| format!("Could not create solver network client: {error}"))?;
+            .map_err(|error| format!("Could not create solver health client: {error}"))?;
+        let components = ManagedComponentManager::new(
+            app_data_dir,
+            option_env!("ORBIS_SOLVER_MANIFEST_URL"),
+            option_env!("ORBIS_SOLVER_PUBLIC_KEY_B64"),
+            env!("CARGO_PKG_VERSION"),
+        )?;
 
         let manager = Self {
             child: Arc::new(Mutex::new(None)),
-            endpoint_url: format!("http://127.0.0.1:{}", DEFAULT_PORT),
+            endpoint_url: format!("http://127.0.0.1:{DEFAULT_PORT}"),
             last_activity: Arc::new(AtomicI64::new(chrono::Utc::now().timestamp())),
             active_jobs: Arc::new(AtomicUsize::new(0)),
+            update_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             idle_timeout_secs: DEFAULT_IDLE_TIMEOUT_SECS,
             http_client,
-            app_data_dir: app_data_dir.join("solver-service"),
+            components,
         };
-
         manager.start_idle_watchdog();
         Ok(manager)
     }
@@ -77,9 +73,21 @@ impl SolverSidecarManager {
             .store(chrono::Utc::now().timestamp(), Ordering::Relaxed);
     }
 
-    pub fn increment_active_jobs(&self) {
+    pub fn increment_active_jobs(&self) -> Result<(), String> {
+        if self.update_in_progress.load(Ordering::Acquire) {
+            return Err(
+                "An Orbis update is being installed; try scheduling again shortly.".to_string(),
+            );
+        }
         self.active_jobs.fetch_add(1, Ordering::Relaxed);
+        if self.update_in_progress.load(Ordering::Acquire) {
+            self.decrement_active_jobs();
+            return Err(
+                "An Orbis update is being installed; try scheduling again shortly.".to_string(),
+            );
+        }
         self.mark_activity();
+        Ok(())
     }
 
     pub fn decrement_active_jobs(&self) {
@@ -98,7 +106,20 @@ impl SolverSidecarManager {
         self.mark_activity();
     }
 
-    /// Check whether the sidecar HTTP endpoint responds with 200 OK to `/health`
+    pub fn begin_application_update(&self) -> Result<ApplicationUpdateGuard, String> {
+        self.update_in_progress
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map_err(|_| "An Orbis update is already being installed.".to_string())?;
+        let active_jobs = self.active_jobs.load(Ordering::Acquire);
+        if active_jobs > 0 {
+            self.update_in_progress.store(false, Ordering::Release);
+            return Err(format!(
+                "The update cannot restart Orbis while {active_jobs} scheduling job(s) are active."
+            ));
+        }
+        Ok(ApplicationUpdateGuard(Arc::clone(&self.update_in_progress)))
+    }
+
     pub async fn check_health(&self) -> bool {
         let health_url = format!("{}/health", self.endpoint_url);
         match self
@@ -108,99 +129,148 @@ impl SolverSidecarManager {
             .send()
             .await
         {
-            Ok(resp) => resp.status().is_success(),
-            Err(_) => false,
+            Ok(response) if response.status().is_success() => {
+                match response.json::<serde_json::Value>().await {
+                    Ok(health) => {
+                        health.get("status").and_then(serde_json::Value::as_str) == Some("healthy")
+                            && health.get("service").and_then(serde_json::Value::as_str)
+                                == Some("orbis-solver")
+                    }
+                    Err(error) => {
+                        debug!(%error, "Solver health response was invalid");
+                        false
+                    }
+                }
+            }
+            Ok(response) => {
+                debug!(status = %response.status(), "Solver health check failed");
+                false
+            }
+            Err(error) => {
+                debug!(%error, "Solver health check failed");
+                false
+            }
         }
     }
 
-    /// Ensure the sidecar process is running and healthy. If not, spawn it.
     pub async fn ensure_running(&self) -> Result<(), String> {
         self.mark_activity();
-
-        // 1. If already healthy and responding, we are good
         if self.check_health().await {
-            debug!("Solver sidecar is already healthy and reachable");
             return Ok(());
         }
 
         let mut child_guard = self.child.lock().await;
-
-        // Double check under lock
         if self.check_health().await {
             return Ok(());
         }
-
-        // 2. Kill any stale child process
         if let Some(mut old_child) = child_guard.take() {
-            let _ = old_child.kill().await;
+            if let Err(error) = old_child.kill().await {
+                warn!(%error, "Could not terminate an unhealthy solver process");
+            }
         }
 
-        // 3. Locate the sidecar executable
-        let exe_path = match Self::find_sidecar_binary() {
-            Some(path) => path,
-            None => self.download_solver_binary().await?,
+        let target = solver_target();
+        let (version, executable_path) = if let Some(path) = find_development_binary() {
+            ("development".to_string(), path)
+        } else {
+            let target = target.ok_or_else(|| {
+                "The scheduling engine is not available for this platform.".to_string()
+            })?;
+            let component = self
+                .components
+                .ensure_installed(COMPONENT_ID, target)
+                .await?;
+            (component.version, component.executable_path)
         };
+        match self.start_process(&executable_path).await {
+            Ok(child) => {
+                *child_guard = Some(child);
+                Ok(())
+            }
+            Err(start_error) if version != "development" => {
+                let target = target.ok_or(start_error.clone())?;
+                let previous = self
+                    .components
+                    .previous_verified(COMPONENT_ID, target, &version)
+                    .await?;
+                let Some(previous) = previous else {
+                    return Err(start_error);
+                };
+                warn!(
+                    failed_version = %version,
+                    fallback_version = %previous.version,
+                    %start_error,
+                    "Scheduling engine startup failed; trying the previous verified version"
+                );
+                let child = self.start_process(&previous.executable_path).await?;
+                *child_guard = Some(child);
+                Ok(())
+            }
+            Err(error) => Err(error),
+        }
+    }
 
-        info!(path = ?exe_path, "Spawning solver sidecar native binary");
-
-        // 4. Spawn process
-        let mut cmd = tokio::process::Command::new(&exe_path);
-        cmd.env("QUARKUS_HTTP_PORT", DEFAULT_PORT.to_string())
+    async fn start_process(&self, executable_path: &Path) -> Result<Child, String> {
+        info!(path = %executable_path.display(), "Starting the Orbis scheduling engine");
+        let mut command = tokio::process::Command::new(executable_path);
+        command
+            .env("QUARKUS_HTTP_PORT", DEFAULT_PORT.to_string())
+            .env("QUARKUS_HTTP_HOST", "127.0.0.1")
             .env("QUARKUS_LOG_LEVEL", "INFO")
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null());
-
         #[cfg(windows)]
-        {
-            // 0x08000000 = CREATE_NO_WINDOW
-            cmd.creation_flags(0x08000000);
-        }
+        command.creation_flags(0x08000000);
 
-        let child = cmd.spawn().map_err(|e| {
+        let mut child = command.spawn().map_err(|error| {
             format!(
-                "Failed to spawn solver sidecar ({}): {e}",
-                exe_path.display()
+                "Could not start the scheduling engine ({}): {error}",
+                executable_path.display()
             )
         })?;
-
-        *child_guard = Some(child);
-        drop(child_guard);
-
-        // 5. Poll health check until ready
         let start = std::time::Instant::now();
         while start.elapsed() < MAX_STARTUP_WAIT {
             if self.check_health().await {
-                info!("Solver sidecar started and ready in {:?}", start.elapsed());
-                return Ok(());
+                info!("Scheduling engine is ready after {:?}", start.elapsed());
+                return Ok(child);
             }
-            tokio::time::sleep(Duration::from_millis(50)).await;
+            if let Some(status) = child
+                .try_wait()
+                .map_err(|error| format!("Could not inspect scheduling engine process: {error}"))?
+            {
+                return Err(format!(
+                    "The scheduling engine exited during startup with status {status}."
+                ));
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
-        warn!("Solver sidecar spawned but did not respond to health check within timeout");
-        Err("Solver sidecar startup timeout".to_string())
+        if let Err(error) = child.kill().await {
+            warn!(%error, "Could not terminate scheduling engine after startup timeout");
+        }
+        Err("The scheduling engine did not become ready in time.".to_string())
     }
 
-    /// Gracefully stop the sidecar process to release 100% of memory and CPU
     pub async fn stop(&self) {
         let mut child_guard = self.child.lock().await;
         if let Some(mut child) = child_guard.take() {
-            info!("Stopping solver sidecar to free desktop resources (idle timeout)");
-            let _ = child.kill().await;
+            if let Err(error) = child.kill().await {
+                warn!(%error, "Could not stop the scheduling engine");
+            } else {
+                info!("Stopped the idle scheduling engine");
+            }
         }
     }
 
-    /// Returns the current runtime status of the sidecar
     pub async fn status(&self) -> SidecarStatus {
         let is_healthy = self.check_health().await;
         let child_guard = self.child.lock().await;
         let is_running = child_guard.is_some() || is_healthy;
-        let pid = child_guard.as_ref().and_then(|c| c.id());
+        let pid = child_guard.as_ref().and_then(Child::id);
         drop(child_guard);
 
-        let now = chrono::Utc::now().timestamp();
-        let last = self.last_activity.load(Ordering::Relaxed);
-        let idle_seconds = (now - last).max(0);
-
+        let idle_seconds =
+            (chrono::Utc::now().timestamp() - self.last_activity.load(Ordering::Relaxed)).max(0);
         SidecarStatus {
             is_running,
             is_healthy,
@@ -211,231 +281,49 @@ impl SolverSidecarManager {
         }
     }
 
-    /// Background task that terminates the sidecar when idle and no jobs are active
     fn start_idle_watchdog(&self) {
-        let child_arc = Arc::clone(&self.child);
-        let last_activity_arc = Arc::clone(&self.last_activity);
-        let active_jobs_arc = Arc::clone(&self.active_jobs);
+        let child = Arc::clone(&self.child);
+        let last_activity = Arc::clone(&self.last_activity);
+        let active_jobs = Arc::clone(&self.active_jobs);
         let timeout_secs = self.idle_timeout_secs;
 
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(30)).await;
-
-                let active = active_jobs_arc.load(Ordering::Relaxed);
-                if active > 0 {
-                    continue; // Do not shutdown while active solving jobs exist
+                if active_jobs.load(Ordering::Relaxed) > 0 {
+                    continue;
                 }
 
                 let now = chrono::Utc::now().timestamp();
-                let last = last_activity_arc.load(Ordering::Relaxed);
-                if now - last > timeout_secs {
-                    let mut guard = child_arc.lock().await;
-                    if let Some(mut child) = guard.take() {
-                        info!(
-                            "Watchdog: terminating idle solver sidecar after {}s inactivity",
-                            now - last
-                        );
-                        let _ = child.kill().await;
+                let last = last_activity.load(Ordering::Relaxed);
+                if now - last <= timeout_secs {
+                    continue;
+                }
+
+                let mut guard = child.lock().await;
+                if let Some(mut process) = guard.take() {
+                    info!(
+                        "Stopping the scheduling engine after {} seconds of inactivity",
+                        now - last
+                    );
+                    if let Err(error) = process.kill().await {
+                        warn!(%error, "Could not stop the idle scheduling engine");
                     }
                 }
             }
         });
     }
+}
 
-    async fn download_solver_binary(&self) -> Result<PathBuf, String> {
-        let target = solver_release_target().ok_or_else(|| {
-            "The timetable solver is not available for this platform.".to_string()
-        })?;
-        let expected_sha256 = option_env!("ORBIS_SOLVER_SHA256")
-            .filter(|value| {
-                value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
-            })
-            .ok_or_else(|| {
-                "The timetable solver is not bundled for this build. Build it locally or install an official release."
-                    .to_string()
-            })?;
-        let binary_name = if cfg!(windows) {
-            format!("solver-service-{target}.exe")
-        } else {
-            format!("solver-service-{target}")
-        };
-        let version_dir = self.app_data_dir.join(env!("CARGO_PKG_VERSION"));
-        let binary_path = version_dir.join(&binary_name);
-        tokio::fs::create_dir_all(&version_dir)
-            .await
-            .map_err(|error| format!("Could not prepare timetable solver storage: {error}"))?;
+pub struct ApplicationUpdateGuard(Arc<std::sync::atomic::AtomicBool>);
 
-        match sha256_file(&binary_path).await {
-            Ok(actual) if actual.eq_ignore_ascii_case(expected_sha256) => {
-                return Ok(binary_path);
-            }
-            Ok(_) => {
-                tokio::fs::remove_file(&binary_path)
-                    .await
-                    .map_err(|error| {
-                        format!("Could not replace the cached timetable solver: {error}")
-                    })?;
-            }
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-            Err(error) => {
-                return Err(format!(
-                    "Could not verify the cached timetable solver: {error}"
-                ));
-            }
-        }
-
-        let url = format!(
-            "https://github.com/MxHabob/Orbis/releases/download/v{}/{binary_name}",
-            env!("CARGO_PKG_VERSION")
-        );
-        let mut response = self
-            .http_client
-            .get(url)
-            .timeout(Duration::from_secs(300))
-            .send()
-            .await
-            .map_err(|error| format!("Could not download the timetable solver: {error}"))?;
-        if !response.status().is_success() {
-            return Err(format!(
-                "Could not download the timetable solver (HTTP {}).",
-                response.status()
-            ));
-        }
-        if response
-            .content_length()
-            .is_some_and(|length| length > MAX_SOLVER_BINARY_BYTES)
-        {
-            return Err("The timetable solver download exceeds the permitted size.".to_string());
-        }
-
-        let temporary_path = version_dir.join(format!(".{binary_name}.{}", uuid::Uuid::new_v4()));
-        let result = async {
-            let mut file = tokio::fs::File::create(&temporary_path)
-                .await
-                .map_err(|error| format!("Could not save the timetable solver: {error}"))?;
-            let mut hasher = Sha256::new();
-            let mut downloaded_bytes = 0_u64;
-            while let Some(chunk) = response
-                .chunk()
-                .await
-                .map_err(|error| format!("Could not read the timetable solver download: {error}"))?
-            {
-                downloaded_bytes = downloaded_bytes.saturating_add(chunk.len() as u64);
-                if downloaded_bytes > MAX_SOLVER_BINARY_BYTES {
-                    return Err(
-                        "The timetable solver download exceeds the permitted size.".to_string()
-                    );
-                }
-                hasher.update(&chunk);
-                file.write_all(&chunk)
-                    .await
-                    .map_err(|error| format!("Could not save the timetable solver: {error}"))?;
-            }
-            file.flush().await.map_err(|error| {
-                format!("Could not finish saving the timetable solver: {error}")
-            })?;
-            drop(file);
-
-            let actual_sha256 = format!("{:x}", hasher.finalize());
-            if !actual_sha256.eq_ignore_ascii_case(expected_sha256) {
-                return Err(
-                    "The timetable solver failed its integrity check. Please try again."
-                        .to_string(),
-                );
-            }
-
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                let mut permissions = std::fs::metadata(&temporary_path)
-                    .map_err(|error| format!("Could not inspect the timetable solver: {error}"))?
-                    .permissions();
-                permissions.set_mode(0o755);
-                std::fs::set_permissions(&temporary_path, permissions)
-                    .map_err(|error| format!("Could not prepare the timetable solver: {error}"))?;
-            }
-
-            tokio::fs::rename(&temporary_path, &binary_path)
-                .await
-                .map_err(|error| format!("Could not install the timetable solver: {error}"))?;
-            Ok(())
-        }
-        .await;
-
-        if let Err(error) = tokio::fs::remove_file(&temporary_path).await {
-            if error.kind() != io::ErrorKind::NotFound {
-                warn!(%error, "Could not clean up the temporary timetable solver download");
-            }
-        }
-        result?;
-        Ok(binary_path)
-    }
-
-    fn find_sidecar_binary() -> Option<PathBuf> {
-        let mut candidates = Vec::new();
-
-        // 1. Current executable directory (Tauri bundled externalBin)
-        if let Ok(current_exe) = std::env::current_exe() {
-            if let Some(exe_dir) = current_exe.parent() {
-                // Windows bundle pattern
-                candidates.push(exe_dir.join("solver-service.exe"));
-                candidates.push(exe_dir.join("solver-service"));
-                candidates.push(exe_dir.join("binaries").join("solver-service.exe"));
-                candidates.push(exe_dir.join("binaries").join("solver-service"));
-            }
-        }
-
-        // 2. Relative binaries folder (Tauri target triple convention in dev/build)
-        #[cfg(target_os = "windows")]
-        let target_triple = "x86_64-pc-windows-msvc";
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        let target_triple = "aarch64-apple-darwin";
-        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-        let target_triple = "x86_64-apple-darwin";
-        #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-        let target_triple = "x86_64-unknown-linux-gnu";
-
-        let sidecar_name = format!("solver-service-{}", target_triple);
-        let sidecar_name_exe = format!("solver-service-{}.exe", target_triple);
-
-        candidates.push(PathBuf::from("src-tauri/binaries").join(&sidecar_name_exe));
-        candidates.push(PathBuf::from("src-tauri/binaries").join(&sidecar_name));
-        candidates.push(PathBuf::from("binaries").join(&sidecar_name_exe));
-        candidates.push(PathBuf::from("binaries").join(&sidecar_name));
-
-        // 3. Direct Maven native build output (during dev)
-        let solver_version = env!("CARGO_PKG_VERSION");
-        candidates.push(PathBuf::from(format!(
-            "../../apps/solver-service/target/orbis-solver-{solver_version}-runner.exe"
-        )));
-        candidates.push(PathBuf::from(format!(
-            "../../apps/solver-service/target/orbis-solver-{solver_version}-runner"
-        )));
-        candidates.push(PathBuf::from(format!(
-            "../solver-service/target/orbis-solver-{solver_version}-runner.exe"
-        )));
-        candidates.push(PathBuf::from(format!(
-            "../solver-service/target/orbis-solver-{solver_version}-runner"
-        )));
-        candidates.push(PathBuf::from(format!(
-            "apps/solver-service/target/orbis-solver-{solver_version}-runner.exe"
-        )));
-        candidates.push(PathBuf::from(format!(
-            "apps/solver-service/target/orbis-solver-{solver_version}-runner"
-        )));
-
-        for candidate in candidates {
-            if candidate.is_file() {
-                return Some(candidate);
-            }
-        }
-
-        None
+impl Drop for ApplicationUpdateGuard {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
     }
 }
 
-fn solver_release_target() -> Option<&'static str> {
+fn solver_target() -> Option<&'static str> {
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     return Some("x86_64-pc-windows-msvc");
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -444,27 +332,46 @@ fn solver_release_target() -> Option<&'static str> {
     None
 }
 
-async fn sha256_file(path: &std::path::Path) -> io::Result<String> {
-    let mut file = tokio::fs::File::open(path).await?;
-    let mut hasher = Sha256::new();
-    let mut buffer = vec![0; 64 * 1024];
-    loop {
-        let read = file.read(&mut buffer).await?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
+fn find_development_binary() -> Option<PathBuf> {
+    if !cfg!(debug_assertions) {
+        return None;
     }
-    Ok(format!("{:x}", hasher.finalize()))
+
+    let target_file = if cfg!(windows) {
+        "runner.exe"
+    } else {
+        "runner"
+    };
+    let directories = [
+        PathBuf::from("apps/solver-service/target"),
+        PathBuf::from("../solver-service/target"),
+        PathBuf::from("../../apps/solver-service/target"),
+    ];
+    let mut candidates = Vec::new();
+    for directory in directories {
+        let Ok(entries) = std::fs::read_dir(directory) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+                continue;
+            };
+            if name.starts_with("orbis-solver-") && name.ends_with(target_file) && path.is_file() {
+                candidates.push(path);
+            }
+        }
+    }
+    candidates.sort();
+    candidates.pop()
 }
 
 impl Drop for SolverSidecarManager {
     fn drop(&mut self) {
-        // Attempt to kill child process synchronously on drop
-        if let Ok(mut guard) = self.child.try_lock() {
-            if let Some(mut child) = guard.take() {
-                let _ = child.start_kill();
-            }
+        if let Ok(mut guard) = self.child.try_lock()
+            && let Some(mut child) = guard.take()
+        {
+            let _ = child.start_kill();
         }
     }
 }
@@ -473,29 +380,21 @@ impl Drop for SolverSidecarManager {
 mod tests {
     use super::*;
 
-    #[test]
-    fn embeds_the_solver_checksum_from_the_build_environment() {
-        if let Ok(expected) = std::env::var("ORBIS_SOLVER_SHA256") {
-            assert_eq!(option_env!("ORBIS_SOLVER_SHA256"), Some(expected.as_str()));
-        }
-    }
-
     #[tokio::test]
-    async fn hashes_downloaded_solver_files() {
-        let path =
-            std::env::temp_dir().join(format!("orbis-solver-hash-test-{}", uuid::Uuid::new_v4()));
-        tokio::fs::write(&path, b"abc")
-            .await
-            .expect("write test solver file");
+    async fn application_updates_wait_for_jobs_and_reject_new_jobs() {
+        let data_dir = std::env::temp_dir().join(format!("orbis-sidecar-{}", uuid::Uuid::new_v4()));
+        let manager = SolverSidecarManager::new(&data_dir).expect("manager");
 
-        let hash = sha256_file(&path).await.expect("hash test solver file");
+        manager.increment_active_jobs().expect("start job");
+        assert!(manager.begin_application_update().is_err());
+        manager.decrement_active_jobs();
 
-        tokio::fs::remove_file(path)
-            .await
-            .expect("remove test solver file");
-        assert_eq!(
-            hash,
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-        );
+        let update_guard = manager.begin_application_update().expect("begin update");
+        assert!(manager.increment_active_jobs().is_err());
+        drop(update_guard);
+        manager
+            .increment_active_jobs()
+            .expect("start job after update");
+        manager.decrement_active_jobs();
     }
 }

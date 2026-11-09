@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+#!/usr/bin/env node
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,19 +42,51 @@ export function normalizeUpdaterPublicKey(rawValue) {
     extraLines.length > 0
   ) {
     throw new Error(
-      "TAURI_UPDATER_PUBLIC_KEY is missing a valid minisign comment or key.",
+      "TAURI_UPDATER_PUBLIC_KEY is not a valid minisign public key.",
     );
   }
 
   return Buffer.from(publicKey, "utf8").toString("base64");
 }
 
+export function normalizeHttpsUrl(rawValue, label) {
+  let url;
+  try {
+    url = new URL(rawValue?.trim() ?? "");
+  } catch {
+    throw new Error(`${label} must be a valid HTTPS URL.`);
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.hash ||
+    url.search
+  ) {
+    throw new Error(
+      `${label} must use HTTPS and cannot include credentials, a query, or a fragment.`,
+    );
+  }
+  return url.toString();
+}
+
 if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  const publicKey = normalizeUpdaterPublicKey(
+  const updaterPublicKey = normalizeUpdaterPublicKey(
     process.env.TAURI_UPDATER_PUBLIC_KEY,
+  );
+  const updaterEndpoint = normalizeHttpsUrl(
+    process.env.TAURI_UPDATER_ENDPOINT,
+    "TAURI_UPDATER_ENDPOINT",
+  );
+  const componentPublicKey = normalizeUpdaterPublicKey(
+    process.env.ORBIS_COMPONENT_PUBLIC_KEY,
+  );
+  const solverManifestUrl = normalizeHttpsUrl(
+    process.env.ORBIS_SOLVER_MANIFEST_URL,
+    "ORBIS_SOLVER_MANIFEST_URL",
   );
   const desktopRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -68,13 +101,33 @@ if (
         "tauri-updater-release.conf.json",
       ),
   );
+
   mkdirSync(path.dirname(configPath), { recursive: true });
   writeFileSync(
     configPath,
-    `${JSON.stringify({ plugins: { updater: { pubkey: publicKey } } }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        bundle: { createUpdaterArtifacts: true },
+        plugins: {
+          updater: {
+            pubkey: updaterPublicKey,
+            endpoints: [updaterEndpoint],
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
     { mode: 0o600 },
   );
+
+  if (process.env.GITHUB_ENV) {
+    appendFileSync(
+      process.env.GITHUB_ENV,
+      `ORBIS_SOLVER_PUBLIC_KEY_B64=${componentPublicKey}\nORBIS_SOLVER_MANIFEST_URL=${solverManifestUrl}\n`,
+    );
+  }
   console.log(
-    "Validated and prepared the Tauri updater public-key configuration.",
+    "Validated and prepared signed desktop and solver runtime configuration.",
   );
 }
