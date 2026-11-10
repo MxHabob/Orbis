@@ -9,7 +9,7 @@
 
 ## First start
 
-1. Copy `.env.example` to `.env`. The release bundle pins `ORBIS_API_IMAGE` to the published multi-architecture image digest. Keep that value unchanged unless intentionally choosing another verified image. Keep the UID, GID, and bind address restricted to the service account and intended network.
+1. Copy `.env.example` to `.env`, or use the digest-pinned `.env.example` from the Docker deployment bundle attached to the API release. The repository example selects the version tag; the release bundle pins `ORBIS_API_IMAGE` to the published multi-architecture image digest. Keep the image reference unchanged unless intentionally choosing another verified image. Keep the UID, GID, and bind address restricted to the service account and intended network.
 2. Start the API. On its first start, it creates `server.json` in the persistent `orbis_server_config` volume with an empty `database_url`, logs the file location, and exits:
 
    ```sh
@@ -44,4 +44,4 @@ The container runs as a non-root user, drops Linux capabilities, uses a read-onl
 
 Back up the database and retain the current `server.json` and `.env` before changing the version. Replace `ORBIS_API_IMAGE` with the digest-pinned image reference from the desired release bundle, then run `docker compose pull` and `docker compose up -d`. The named configuration volume persists across upgrades. To roll back, restore the previous image reference and start the service again. Confirm that the selected API version supports the existing database schema before upgrading or rolling back.
 
-Release CI validates the Compose bundle and publishes a multi-architecture manifest for Linux AMD64 and ARM64. Container startup and API health require a customer-supplied, migrated PostgreSQL database; automated release checks do not modify a customer database.
+Release CI publishes versioned and `latest` multi-architecture images for Linux AMD64 and ARM64, and attaches a digest-pinned Compose bundle to the API release. For an existing API version, dispatch the API release workflow with `docker_only` enabled to publish its image and bundle without rebuilding or republishing the API binary. Container startup and API health require a customer-supplied, migrated PostgreSQL database; automated release checks do not modify a customer database.
