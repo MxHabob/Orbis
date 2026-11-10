@@ -49,6 +49,8 @@ import {
 } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
+import { createDefaultDateRange } from "$lib/shared/components/date-range";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
@@ -138,7 +140,7 @@ const selectedPaymentMethodObj = $derived(
 // Filters
 let searchQuery = $state("");
 let methodFilter = $state("all");
-let filterDate = $state(getLocalDateInputValue());
+let dateRange = $state(createDefaultDateRange());
 let gridSort = $state<SortSpec[]>([]);
 const paymentPageSort = $derived.by(() => {
   const sort = gridSort[0];
@@ -159,8 +161,8 @@ function handlePaymentGridQuery(query: DataQuery) {
 
 const paymentPageFilter = $derived({
   method: methodFilter === "all" ? undefined : methodFilter,
-  from_date: filterDate || undefined,
-  to_date: filterDate || undefined,
+  from_date: dateRange.fromDate || undefined,
+  to_date: dateRange.toDate || undefined,
 });
 const paymentsQuery = createInfiniteQuery(() => ({
   queryKey: queryKeys.finance.payments(orgId, {
@@ -700,11 +702,7 @@ async function exportCsv() {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          bind:value={filterDate}
-          class="h-8 w-36 text-xs bg-card border-border/60 font-mono"
-        />
+        <DateRangeFilter bind:value={dateRange} />
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
