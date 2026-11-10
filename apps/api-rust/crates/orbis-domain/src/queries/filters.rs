@@ -1,6 +1,7 @@
 use crate::entities::enrollment::{EnrollmentStatus, StudyMode};
 use crate::entities::payment::PaymentMethod;
 use crate::entities::student::{AcademicStanding, StudentStatus};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -156,6 +157,8 @@ pub struct StudentFeeFilter {
     pub enrollment_id: Option<Uuid>,
     pub fee_template_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
+    pub from_date: Option<NaiveDate>,
+    pub to_date: Option<NaiveDate>,
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
     pub only_unpaid: Option<bool>,

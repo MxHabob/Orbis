@@ -536,6 +536,8 @@ pub struct FeeFilterInput {
     pub student_id: Option<String>,
     pub enrollment_id: Option<String>,
     pub fee_template_id: Option<String>,
+    pub from_date: Option<String>,
+    pub to_date: Option<String>,
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
     pub search: Option<String>,
@@ -1000,6 +1002,16 @@ pub async fn finance_list_student_fees(
         enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
         fee_template_id: parse_optional_uuid(f.fee_template_id, "fee_template_id")?,
         period_id: parse_optional_uuid(f.period_id, "period_id")?,
+        from_date: f
+            .from_date
+            .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
+            .transpose()
+            .map_err(|error| format!("Invalid from_date: {error}"))?,
+        to_date: f
+            .to_date
+            .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
+            .transpose()
+            .map_err(|error| format!("Invalid to_date: {error}"))?,
         status: f.status,
         is_overdue: f.is_overdue,
         only_unpaid: None,
@@ -1037,6 +1049,16 @@ pub async fn finance_list_student_fees_paginated(
         enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
         fee_template_id: parse_optional_uuid(f.fee_template_id, "fee_template_id")?,
         period_id: parse_optional_uuid(f.period_id, "period_id")?,
+        from_date: f
+            .from_date
+            .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
+            .transpose()
+            .map_err(|error| format!("Invalid from_date: {error}"))?,
+        to_date: f
+            .to_date
+            .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
+            .transpose()
+            .map_err(|error| format!("Invalid to_date: {error}"))?,
         status: f.status,
         is_overdue: f.is_overdue,
         only_unpaid: None,

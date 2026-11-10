@@ -572,6 +572,8 @@ export interface StudentFeeFilterParams {
   student_id?: string;
   enrollment_id?: string;
   feeTemplate_id?: string;
+  from_date?: string;
+  to_date?: string;
   status?: string;
   is_overdue?: boolean;
   search?: string;

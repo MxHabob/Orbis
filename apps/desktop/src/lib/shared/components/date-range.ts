@@ -46,6 +46,33 @@ export function getDateRangeForPreset(
   };
 }
 
+export function getDateRangeForMonth(
+  month: string,
+  now = new Date(),
+): DateRangeFilterValue {
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) return getDateRangeForPreset("this_month", now);
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  if (monthIndex < 0 || monthIndex > 11) {
+    return getDateRangeForPreset("this_month", now);
+  }
+
+  const firstDay = new Date(year, monthIndex, 1);
+  const lastDay = new Date(year, monthIndex + 1, 0);
+  const isCurrentMonth =
+    year === now.getFullYear() && monthIndex === now.getMonth();
+
+  return {
+    preset: "this_month",
+    fromDate: toLocalDateInputValue(firstDay),
+    toDate: isCurrentMonth
+      ? toLocalDateInputValue(now)
+      : toLocalDateInputValue(lastDay),
+  };
+}
+
 export function createDefaultDateRange(now = new Date()): DateRangeFilterValue {
   return getDateRangeForPreset("today", now);
 }

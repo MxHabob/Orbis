@@ -491,6 +491,12 @@ fn build_student_fee_list_query(
     if let Some(period_id) = filter.period_id {
         query = query.filter(student_fee::Column::PeriodId.eq(Some(period_id)));
     }
+    if let Some(from_date) = filter.from_date {
+        query = query.filter(student_fee::Column::DueDate.gte(from_date));
+    }
+    if let Some(to_date) = filter.to_date {
+        query = query.filter(student_fee::Column::DueDate.lte(to_date));
+    }
     if let Some(status) = filter.status.as_deref() {
         query = query.filter(student_fee::Column::Status.eq(status));
     }
@@ -1206,6 +1212,8 @@ mod tests {
         let period_id = Uuid::new_v4();
         let filter = orbis_domain::queries::filters::StudentFeeFilter {
             period_id: Some(period_id),
+            from_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 11, 1).unwrap()),
+            to_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 11, 30).unwrap()),
             only_unpaid: Some(true),
             ..Default::default()
         };
@@ -1218,6 +1226,7 @@ mod tests {
             let values = format!("{:?}", statement.values);
             assert!(statement.sql.contains("org_id"));
             assert!(statement.sql.contains("period_id"));
+            assert!(statement.sql.contains("due_date"));
             assert!(statement.sql.contains("balance_due"));
             assert!(values.contains("partially_paid"));
             assert!(values.contains(&org_id.to_string()));
