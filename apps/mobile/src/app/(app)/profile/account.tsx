@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -21,6 +21,7 @@ import {
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
+import { Text } from "@/components/ui/text";
 
 const roleKeys: Record<string, TranslationKey> = {
   teacher: "auth_role_teacher",

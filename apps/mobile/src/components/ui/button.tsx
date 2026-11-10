@@ -5,10 +5,11 @@
  */
 
 import React from "react";
-import { Text, type TextStyle, View, type ViewStyle } from "react-native";
+import { type TextStyle, View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
+import { Text } from "@/components/ui/text";
 
 export type ButtonVariant =
   | "default"

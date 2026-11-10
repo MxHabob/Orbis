@@ -7,7 +7,7 @@
  */
 
 import React, { type ReactNode } from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { Header, HEADER_CONTENT_OFFSET } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Text } from "@/components/ui/text";
 
 interface StudentRecordLayoutProps {
   title: string;

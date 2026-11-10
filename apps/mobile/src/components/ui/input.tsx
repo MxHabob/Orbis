@@ -12,17 +12,11 @@
  */
 
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  type TextInputProps,
-  Pressable,
-  type ViewStyle,
-} from "react-native";
+import { View, TextInput, type TextInputProps, Pressable, type ViewStyle } from "react-native";
 import { Eye, EyeSlash } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Text } from "@/components/ui/text";
 
 export interface InputProps extends TextInputProps {
   label?: string;

@@ -5,7 +5,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,6 +28,7 @@ import {
   updateNotificationPreferences,
 } from "@/lib/api/notifications";
 import { ExclamationCircle } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 // ── Types ──────────────────────────────────────────────────────
 

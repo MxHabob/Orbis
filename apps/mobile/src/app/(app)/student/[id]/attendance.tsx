@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import {
   ExclamationCircle,
   Clock,
 } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const attendanceStatusKeys: Record<string, TranslationKey> = {
   present: "student_attendance_present",

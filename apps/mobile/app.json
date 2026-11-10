@@ -41,17 +41,17 @@
       [
         "expo-status-bar",
         {
-          "style": "dark"
+          "style": "auto"
         }
       ],
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "#FCFCFC",
           "image": "./assets/images/splash-icon-light.png",
           "imageWidth": 120,
           "dark": {
-            "backgroundColor": "#000000",
+            "backgroundColor": "#111111",
             "image": "./assets/images/android-icon-foreground.png"
           }
         }
@@ -82,10 +82,12 @@
       "./plugins/with-android-cleartext-traffic.cjs",
       "./plugins/with-android-window-layout.cjs",
       "./plugins/with-android-release-signing.cjs",
+      "./plugins/with-android-native-build-config.cjs",
       [
         "expo-build-properties",
         {
           "android": {
+            "cmakeVersion": "3.31.6",
             "enableMinifyInReleaseBuilds": false,
             "enableShrinkResourcesInReleaseBuilds": false,
             "enablePngCrunchInReleaseBuilds": true

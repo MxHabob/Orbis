@@ -22,7 +22,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { api, configureApiBaseUrl } from "./client";
+import { API_BASE_URL, api, configureApiBaseUrl } from "./client";
 import {
   deleteSecureItem,
   getSecureItem,
@@ -408,16 +408,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         getSecureItem(STORAGE_KEYS.ACTIVE_INSTITUTION_ID),
       ]);
 
-      setInstitutions(savedInstitutions);
       const activeInstitution =
         savedInstitutions.find(
           (institution) => institution.deployment_id === activeInstitutionId,
         ) ?? null;
+
+      setInstitutions(savedInstitutions);
       selectedInstitutionRef.current = activeInstitution;
       setSelectedInstitution(activeInstitution);
 
-      if (savedApiBaseUrl) {
-        configureApiBaseUrl(savedApiBaseUrl);
+      if (activeInstitution) {
+        configureApiBaseUrl(activeInstitution.endpoint_url);
+      } else {
+        configureApiBaseUrl(API_BASE_URL);
+        if (savedApiBaseUrl) {
+          await deleteSecureItem(STORAGE_KEYS.API_BASE_URL);
+        }
       }
       if (savedToken) {
         setToken(savedToken);

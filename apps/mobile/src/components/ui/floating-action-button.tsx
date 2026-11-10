@@ -5,16 +5,11 @@
  */
 
 import React from "react";
-import {
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { StyleSheet, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
+import { Text } from "@/components/ui/text";
 
 export interface FloatingActionButtonProps {
   icon: React.ReactNode;

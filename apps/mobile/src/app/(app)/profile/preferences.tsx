@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,6 +25,7 @@ import {
   type ThemePreference,
 } from "@/lib/theme-preference";
 import { Check, ChevronLeft, ChevronRight } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const themeOptions: ThemePreference[] = ["system", "light", "dark"];
 

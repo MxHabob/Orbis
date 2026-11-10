@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   USER: "orbis_user",
   EFFECTIVE_CONTEXT: "orbis_effective_context",
   DEVICE_ID: "orbis_device_id",
+  ONBOARDING_COMPLETE: "orbis_mobile_onboarding_complete",
   SETUP_COMPLETE: "orbis_is_setup_complete",
   API_BASE_URL: "orbis_api_base_url",
   INSTITUTIONS: "orbis_institutions",

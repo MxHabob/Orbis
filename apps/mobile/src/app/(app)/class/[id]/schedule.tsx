@@ -7,7 +7,8 @@ import type { StudentScheduleItem } from "@/hooks/use-api-queries";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/text";
 
 const weekdayKeys: TranslationKey[] = [
   "student_schedule_day_1",

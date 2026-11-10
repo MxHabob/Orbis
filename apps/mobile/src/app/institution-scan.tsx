@@ -1,20 +1,14 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Camera, XMark } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 export default function InstitutionScanScreen() {
   const router = useRouter();
@@ -61,158 +55,140 @@ export default function InstitutionScanScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
-      <ThemedStatusBar style={permission?.granted ? "light" : "auto"} />
-
-      {permission?.granted ? (
-        <View style={styles.preview}>
-          <CameraView
-            key={cameraError ? "camera-retry" : "camera"}
-            active
-            facing="back"
-            style={styles.camera}
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onCameraReady={() => setCameraReady(true)}
-            onBarcodeScanned={scanCode}
-            onMountError={(error) => {
-              console.error(
-                "[Institution Scan] Camera preview failed to start.",
-                error,
-              );
-              setCameraError(true);
-            }}
-          />
-          <View pointerEvents="none" style={styles.shade} />
-
-          {!cameraReady && !cameraError ? (
-            <View pointerEvents="none" style={styles.cameraLoading}>
-              <LoadingIndicator size="lg" color={theme.primary} />
-            </View>
-          ) : null}
-
-          {cameraError ? (
-            <View style={styles.cameraError}>
-              <View style={styles.stateIcon}>
-                <Camera size={26} color="#FFFFFF" />
-              </View>
-              <Text className="text-center text-base font-semibold text-white">
-                {t("auth_institution_local_camera_error")}
-              </Text>
-              <Button
-                title={t("common_retry")}
-                variant="outline"
-                onPress={retryCamera}
-              />
-            </View>
-          ) : null}
-
-          {cameraReady && !cameraError ? (
-            <View pointerEvents="none" style={styles.scanGuide}>
-              <View
-                style={[
-                  styles.scanFrame,
-                  { width: frameSize, height: frameSize },
-                ]}
-              >
-                <View style={[styles.corner, styles.topStart]} />
-                <View style={[styles.corner, styles.topEnd]} />
-                <View style={[styles.corner, styles.bottomStart]} />
-                <View style={[styles.corner, styles.bottomEnd]} />
-              </View>
-            </View>
-          ) : null}
-        </View>
-      ) : (
-        <View
-          style={[
-            styles.permissionState,
-            { backgroundColor: theme.background },
-          ]}
-        >
-          <View
-            style={[
-              styles.stateIcon,
-              { backgroundColor: theme.backgroundElement },
-            ]}
-          >
-            <Camera size={28} color={theme.foreground} />
-          </View>
-          <Text
-            className="text-center text-2xl leading-8 font-bold"
-            style={{ color: theme.foreground }}
-          >
-            {t("auth_institution_local_camera_title")}
-          </Text>
-          <Text
-            className="text-center text-base leading-6"
-            style={{ color: theme.mutedForeground }}
-          >
-            {permission || permissionRequestError
-              ? t("auth_institution_local_camera_error")
-              : t("auth_institution_local_camera_loading")}
-          </Text>
-          {permission ? (
-            <Button
-              title={t("auth_institution_local_camera_enable")}
-              onPress={() => void enableCamera()}
-            />
-          ) : (
-            <LoadingIndicator size="lg" color="#FFFFFF" />
-          )}
-        </View>
-      )}
-
       <View
-        pointerEvents="box-none"
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[
+          styles.content,
+          {
+            paddingTop: insets.top + 12,
+            paddingBottom: Math.max(insets.bottom, 16),
+          },
+        ]}
       >
-        {permission?.granted && !cameraError ? (
+        <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text className="text-2xl leading-8 font-bold text-white">
+            <Text
+              className="text-2xl leading-8 font-bold"
+              style={{ color: theme.foreground }}
+            >
               {t("auth_institution_local_camera_title")}
             </Text>
-            <Text className="mt-1 text-base leading-6 text-white/85">
+            <Text
+              className="mt-1 text-sm leading-5"
+              style={{ color: theme.mutedForeground }}
+            >
               {t("auth_institution_local_camera_hint")}
             </Text>
           </View>
-        ) : (
-          <View style={styles.headerText} />
-        )}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("common_cancel")}
-          onPress={() => router.back()}
-          hitSlop={8}
-          style={[
-            styles.closeButton,
-            permission?.granted
-              ? styles.closeButtonOverCamera
-              : {
-                  borderColor: theme.border,
-                  backgroundColor: theme.backgroundElement,
-                },
-          ]}
-        >
-          <XMark
-            size={22}
-            color={permission?.granted ? "#FFFFFF" : theme.foreground}
-          />
-        </Pressable>
-      </View>
-
-      {cameraReady && !cameraError ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.footer,
-            { paddingBottom: Math.max(insets.bottom, 16) + 16 },
-          ]}
-        >
-          <View style={styles.readyIndicator} />
-          <Text className="text-sm font-semibold text-white">
-            {t("auth_institution_local_camera_ready")}
-          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("common_cancel")}
+            onPress={() => router.back()}
+            hitSlop={8}
+            style={[
+              styles.closeButton,
+              {
+                borderColor: theme.border,
+                backgroundColor: theme.backgroundElement,
+              },
+            ]}
+          >
+            <XMark size={22} color={theme.foreground} />
+          </Pressable>
         </View>
-      ) : null}
+
+        {permission?.granted ? (
+          <View
+            style={[
+              styles.preview,
+              { backgroundColor: theme.backgroundElement },
+            ]}
+          >
+            <CameraView
+              key={cameraError ? "camera-retry" : "camera"}
+              active
+              facing="back"
+              style={styles.camera}
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              onCameraReady={() => setCameraReady(true)}
+              onBarcodeScanned={scanCode}
+              onMountError={(error) => {
+                console.error(
+                  "[Institution Scan] Camera preview failed to start.",
+                  error,
+                );
+                setCameraError(true);
+              }}
+            />
+            {!cameraReady && !cameraError ? (
+              <View pointerEvents="none" style={styles.cameraLoading}>
+                <LoadingIndicator size="lg" color={theme.primary} />
+              </View>
+            ) : null}
+
+            {cameraError ? (
+              <View
+                style={[
+                  styles.cameraError,
+                  { backgroundColor: theme.backgroundElement },
+                ]}
+              >
+                <Text
+                  className="text-center text-base font-semibold"
+                  style={{ color: theme.foreground }}
+                >
+                  {t("auth_institution_local_camera_error")}
+                </Text>
+                <Button
+                  title={t("common_retry")}
+                  variant="outline"
+                  onPress={retryCamera}
+                />
+              </View>
+            ) : null}
+
+            {cameraReady && !cameraError ? (
+              <View pointerEvents="none" style={styles.scanGuide}>
+                <View
+                  style={[
+                    styles.scanFrame,
+                    { width: frameSize, height: frameSize },
+                  ]}
+                >
+                  <View style={[styles.corner, styles.topStart]} />
+                  <View style={[styles.corner, styles.topEnd]} />
+                  <View style={[styles.corner, styles.bottomStart]} />
+                  <View style={[styles.corner, styles.bottomEnd]} />
+                </View>
+              </View>
+            ) : null}
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.permissionState,
+              { backgroundColor: theme.backgroundElement },
+            ]}
+          >
+            <Camera size={28} color={theme.primary} />
+            <Text
+              className="text-center text-base leading-6"
+              style={{ color: theme.mutedForeground }}
+            >
+              {permission || permissionRequestError
+                ? t("auth_institution_local_camera_error")
+                : t("auth_institution_local_camera_loading")}
+            </Text>
+            {permission ? (
+              <Button
+                title={t("auth_institution_local_camera_enable")}
+                onPress={() => void enableCamera()}
+              />
+            ) : (
+              <LoadingIndicator size="lg" color={theme.primary} />
+            )}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -221,16 +197,19 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+    gap: 20,
+  },
   preview: {
-    ...StyleSheet.absoluteFill,
+    flex: 1,
+    minHeight: 240,
     overflow: "hidden",
+    borderRadius: 28,
   },
   camera: {
     flex: 1,
-  },
-  shade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0, 0, 0, 0.24)",
   },
   cameraLoading: {
     ...StyleSheet.absoluteFill,
@@ -241,16 +220,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
-    gap: 20,
-    paddingHorizontal: 32,
-    backgroundColor: "rgba(0, 0, 0, 0.76)",
+    gap: 16,
+    paddingHorizontal: 24,
   },
   permissionState: {
-    ...StyleSheet.absoluteFill,
+    flex: 1,
+    minHeight: 240,
     alignItems: "center",
     justifyContent: "center",
-    gap: 20,
-    paddingHorizontal: 32,
+    gap: 16,
+    paddingHorizontal: 24,
+    borderRadius: 28,
   },
   closeButton: {
     height: 48,
@@ -260,32 +240,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
   },
-  closeButtonOverCamera: {
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-  },
-  stateIcon: {
-    width: 64,
-    height: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 32,
-    backgroundColor: "rgba(255, 255, 255, 0.14)",
-  },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     gap: 16,
-    paddingHorizontal: 20,
-  },
-  headerText: {
-    flex: 1,
-    paddingTop: 4,
+    minHeight: 56,
   },
   scanGuide: {
     ...StyleSheet.absoluteFill,
@@ -295,7 +255,7 @@ const styles = StyleSheet.create({
   scanFrame: {
     position: "relative",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.48)",
+    borderColor: "rgba(255, 255, 255, 0.72)",
     borderRadius: 28,
     backgroundColor: "rgba(255, 255, 255, 0.025)",
   },
@@ -331,19 +291,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
-  footer: {
-    position: "absolute",
-    left: 24,
-    right: 24,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  readyIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#A3E635",
+  headerText: {
+    flex: 1,
   },
 });

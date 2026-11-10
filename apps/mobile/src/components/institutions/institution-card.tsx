@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { memo, useCallback, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import {
   BuildingOffice,
   CheckCircle,
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useTheme } from "@/hooks/use-theme";
+import { Text } from "@/components/ui/text";
 
 export interface InstitutionCardProps {
   institution: DirectoryInstitution;
@@ -23,7 +24,7 @@ export interface InstitutionCardProps {
   localLabel: string;
   currentLabel?: string;
   onPress: (institution: DirectoryInstitution) => void;
-  variant?: "featured" | "row" | "linked";
+  variant?: "featured" | "row" | "linked" | "launcher";
   width?: number;
 }
 
@@ -41,9 +42,10 @@ export const InstitutionCard = memo(function InstitutionCard({
 }: InstitutionCardProps) {
   const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
   const theme = useTheme();
-  const { isArabic } = useI18n();
+  const { isArabic, t } = useI18n();
   const isFeatured = variant === "featured";
   const isLinked = variant === "linked";
+  const isLauncher = variant === "launcher";
   const DirectionChevron = isArabic ? ChevronLeft : ChevronRight;
   const logoUrl = institution.logo_url;
   const initials = Array.from(name.trim())[0]?.toLocaleUpperCase() ?? "?";
@@ -55,7 +57,9 @@ export const InstitutionCard = memo(function InstitutionCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${institution.deployment_name}`}
+      accessibilityLabel={`${name}, ${
+        isLauncher ? t("auth_institution_server_available") : institution.deployment_name
+      }`}
       accessibilityState={{
         disabled: disabled || isCurrent,
         selected: isCurrent,
@@ -69,57 +73,69 @@ export const InstitutionCard = memo(function InstitutionCard({
       ]}
     >
       <Card
-        variant="default"
-        padding={isFeatured ? "four" : "three"}
-        className={`relative flex-row items-center rounded-2xl ${
-          isCurrent ? "border-primary/40 bg-primary/5" : "border-border bg-card"
-        } ${isFeatured ? "min-h-[112px]" : "min-h-[84px]"}`}
+        variant={isLauncher ? "flat" : "default"}
+        padding={isFeatured ? "four" : isLauncher ? "four" : "three"}
+        className={`relative flex-row items-center ${
+          isLauncher
+            ? isCurrent
+              ? "min-h-[84px] rounded-2xl bg-primary/10"
+              : "min-h-[84px] rounded-2xl bg-card"
+            : isCurrent
+              ? "rounded-2xl border-primary/40 bg-primary/5"
+              : "rounded-2xl border-border bg-card"
+        } ${isFeatured ? "min-h-[112px]" : isLauncher ? "" : "min-h-[84px]"}`}
       >
-        <View
-          className={`items-center justify-center overflow-hidden rounded-2xl bg-background-element ${
-            isFeatured ? "me-4 h-16 w-16" : "me-3 h-14 w-14"
-          }`}
-        >
-          {logoUrl && failedLogoUrl !== logoUrl ? (
-            <Image
-              source={{ uri: logoUrl }}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-              transition={120}
-              onError={() => setFailedLogoUrl(logoUrl)}
-              style={
-                isFeatured
-                  ? { width: 52, height: 52 }
-                  : { width: 44, height: 44 }
-              }
-            />
-          ) : institution.logo_url ? (
-            <BuildingOffice size={24} color={theme.primary} />
-          ) : (
-            <Text className="text-xl font-bold text-primary">{initials}</Text>
-          )}
-        </View>
+        {isLauncher ? (
+          <View className="me-4 h-3 w-3 rounded-full bg-success" />
+        ) : (
+          <View
+            className={`items-center justify-center overflow-hidden rounded-2xl bg-background-element ${
+              isFeatured ? "me-4 h-16 w-16" : "me-3 h-14 w-14"
+            }`}
+          >
+            {logoUrl && failedLogoUrl !== logoUrl ? (
+              <Image
+                source={{ uri: logoUrl }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                transition={120}
+                onError={() => setFailedLogoUrl(logoUrl)}
+                style={
+                  isFeatured
+                    ? { width: 52, height: 52 }
+                    : { width: 44, height: 44 }
+                }
+              />
+            ) : institution.logo_url ? (
+              <BuildingOffice size={24} color={theme.primary} />
+            ) : (
+              <Text className="text-xl font-bold text-primary">{initials}</Text>
+            )}
+          </View>
+        )}
 
         <View className="min-w-0 flex-1">
           <Text
             numberOfLines={2}
             className={`text-start font-semibold text-foreground ${
-              isFeatured ? "text-lg leading-6" : "text-sm leading-5"
+              isFeatured || isLauncher
+                ? "text-base leading-6"
+                : "text-sm leading-5"
             }`}
           >
             {name}
           </Text>
           <Text
             numberOfLines={1}
-            className="mt-1 text-start text-xs leading-4 text-muted-foreground"
+            className={`text-start text-xs leading-4 text-muted-foreground ${isLauncher ? "" : "mt-1"}`}
           >
-            {institution.deployment_name}
+            {isLauncher ? institution.endpoint_url : institution.deployment_name}
           </Text>
-          {isCurrent && currentLabel ? (
+          {!isLauncher && isCurrent && currentLabel ? (
             <Text className="mt-1 text-start text-xs font-medium text-primary">
               {currentLabel}
             </Text>
-          ) : institution.is_local ? (
+          ) : !isLauncher && institution.is_local ? (
             <Badge
               label={localLabel}
               variant="primary"
@@ -134,7 +150,7 @@ export const InstitutionCard = memo(function InstitutionCard({
             <LoadingIndicator size="sm" />
           ) : isCurrent ? (
             <CheckCircle size={20} color={theme.primary} />
-          ) : isLinked ? (
+          ) : isLinked || isLauncher ? (
             <DirectionChevron size={18} color={theme.mutedForeground} />
           ) : null}
         </View>

@@ -5,8 +5,9 @@ import {
   Avatar as CompanionAvatar,
 } from "@orbis/avatar-engine/native";
 import { memo, useCallback, useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 function pickNextHat(
   currentHat?: AvatarHat,

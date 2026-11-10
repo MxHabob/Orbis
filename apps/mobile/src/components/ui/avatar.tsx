@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { Image } from "expo-image";
+import { Text } from "@/components/ui/text";
 
 export type AvatarSize = number | "sm" | "md" | "lg" | "xl";
 

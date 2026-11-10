@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 const VISITOR_FEATURES = [
   ["visitor_academic_title", "visitor_academic_description"],
@@ -25,9 +26,6 @@ export default function VisitorExploreScreen() {
     >
       <View className="gap-eight">
         <View className="gap-three">
-          <Text className="text-xs font-semibold uppercase tracking-widest text-primary">
-            {t("nav_app_name")}
-          </Text>
           <Text className="text-[32px] leading-[38px] font-bold tracking-tight text-foreground">
             {t("visitor_title")}
           </Text>

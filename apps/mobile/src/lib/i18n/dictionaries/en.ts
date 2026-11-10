@@ -16,6 +16,9 @@ export const en: Record<TranslationKey, string> = {
   nav_for_you: "These are for you",
   nav_for_you_user: "{name}, these are for you",
   network_offline_read_only: "No internet connection",
+  network_offline_title: "You’re offline",
+  network_offline_description:
+    "Some data and actions may be unavailable until you reconnect.",
   header_back: "Back",
   header_profile: "Profile",
   header_premium: "PRIME",
@@ -191,6 +194,11 @@ export const en: Record<TranslationKey, string> = {
   visitor_sign_in: "Sign in",
   visitor_register: "Create account",
   visitor_explore: "Explore as a visitor",
+  onboarding_title: "Your learning journey starts here",
+  onboarding_description:
+    "Keep up with your school day and what matters in one place.",
+  onboarding_continue: "Get started",
+  onboarding_continue_error: "We couldn't save your setup. Please try again.",
 
   // Academic Domains & Features
   domain_grades: "Grades",
@@ -459,6 +467,9 @@ export const en: Record<TranslationKey, string> = {
   auth_register_subtitle: "Join the Orbis Educational Platform",
   auth_institution_code: "Institution name",
   auth_institution_search_title: "Choose your institution",
+  auth_institution_directory_title: "Available institutions",
+  auth_institution_local_network_title: "On your local network",
+  auth_institution_server_available: "Server available",
   auth_institution_local_scan: "Scan QR",
   auth_institution_local_label: "Local institution",
   auth_institution_local_reconnect_required:

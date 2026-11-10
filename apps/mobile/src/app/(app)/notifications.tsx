@@ -21,13 +21,7 @@ import {
 } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import {
@@ -41,6 +35,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 import type { NotificationDto } from "@/lib/api/types";
+import { Text } from "@/components/ui/text";
 
 // ── Category helpers ───────────────────────────────────────────
 

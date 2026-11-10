@@ -33,6 +33,7 @@ export {
 // ── Print Dialog Store
 export {
   printState,
+  savePrintPreferences,
   openPrintDialog,
   closePrintDialog,
 } from "./print.svelte";

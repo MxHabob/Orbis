@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ import {
   ExclamationCircle,
   ShieldCheck,
 } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const behaviorTypeKeys: Record<string, TranslationKey> = {
   merit: "behavior_record_merit",

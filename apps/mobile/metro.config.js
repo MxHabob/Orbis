@@ -1,14 +1,29 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
-const { withNativewind } = require("nativewind/metro");
+const { withNativeWind } = require("nativewind/metro");
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
+const reactNativeRoot = path.resolve(monorepoRoot, "node_modules/react-native");
 
 const config = getDefaultConfig(projectRoot);
 
 const defaultResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    moduleName === "react-native" ||
+    moduleName.startsWith("react-native/")
+  ) {
+    const reactNativeContext = {
+      ...context,
+      originModulePath: path.join(reactNativeRoot, "index.js"),
+    };
+
+    return defaultResolveRequest
+      ? defaultResolveRequest(reactNativeContext, moduleName, platform)
+      : context.resolveRequest(reactNativeContext, moduleName, platform);
+  }
+
   const originModulePath = context.originModulePath;
   const relativeOrigin = originModulePath
     ? path.relative(monorepoRoot, originModulePath)
@@ -54,4 +69,6 @@ config.resolver.extraNodeModules = {
   buffer: require.resolve("buffer/"),
 };
 
-module.exports = withNativewind(config);
+module.exports = withNativeWind(config, {
+  input: "./src/global.css",
+});

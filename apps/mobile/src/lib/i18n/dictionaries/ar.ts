@@ -14,6 +14,9 @@ export const ar = {
   nav_for_you: "هذه مخصصة لك",
   nav_for_you_user: "{name}، هذه مخصصة لك",
   network_offline_read_only: "لا يوجد اتصال بالإنترنت",
+  network_offline_title: "أنت غير متصل بالإنترنت",
+  network_offline_description:
+    "قد لا تتوفر بعض البيانات والإجراءات حتى عودة الاتصال.",
   header_back: "رجوع",
   header_profile: "الملف الشخصي",
   header_premium: "PRIME",
@@ -179,6 +182,10 @@ export const ar = {
   visitor_sign_in: "تسجيل الدخول",
   visitor_register: "إنشاء حساب",
   visitor_explore: "استكشاف التطبيق كزائر",
+  onboarding_title: "رحلتك التعليمية تبدأ من هنا",
+  onboarding_description: "تابع يومك الدراسي وكل ما يهمك في تجربة واحدة.",
+  onboarding_continue: "ابدأ الآن",
+  onboarding_continue_error: "تعذر حفظ الإعداد. حاول مرة أخرى.",
 
   // Academic Domains & Features
   domain_grades: "الدرجات",
@@ -433,6 +440,9 @@ export const ar = {
   auth_register_subtitle: "انضم إلى منظومة أوربس التعليمية",
   auth_institution_code: "اسم المؤسسة",
   auth_institution_search_title: "اختر مؤسستك",
+  auth_institution_directory_title: "المؤسسات المتاحة",
+  auth_institution_local_network_title: "على شبكتك المحلية",
+  auth_institution_server_available: "الخادم متاح",
   auth_institution_local_scan: "مسح QR",
   auth_institution_local_label: "مؤسسة محلية",
   auth_institution_local_reconnect_required:

@@ -1,22 +1,19 @@
-import { BuildingOffice, Refresh } from "@orbis/icons/native";
+import { Refresh } from "@orbis/icons/native";
 import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Platform,
-  Pressable,
-  Text,
-  TurboModuleRegistry,
-  View,
-  type TurboModule,
-} from "react-native";
+import { Platform, Pressable, TurboModuleRegistry, View, type TurboModule } from "react-native";
 import Zeroconf, { useZeroconf } from "react-native-zeroconf";
-import { InstitutionCard } from "@/components/institutions/institution-card";
+import {
+  InstitutionCard,
+  type InstitutionCardProps,
+} from "@/components/institutions/institution-card";
 import { useTheme } from "@/hooks/use-theme";
 import {
   createDiscoveredLocalInstitution,
   type DirectoryInstitution,
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 type LocalNetworkAccess = "granted" | "denied" | "unknown";
 
@@ -25,15 +22,19 @@ export const isLocalDiscoveryAvailable =
   TurboModuleRegistry.get<TurboModule>("Zeroconf") !== null;
 
 interface LocalInstitutionDiscoveryProps {
+  title: string;
   connectingId: string | null;
   selectedInstitution: DirectoryInstitution | null;
   onConnect: (institution: DirectoryInstitution) => void;
+  institutionCardVariant?: InstitutionCardProps["variant"];
 }
 
 export function LocalInstitutionDiscovery({
+  title,
   connectingId,
   selectedInstitution,
   onConnect,
+  institutionCardVariant,
 }: LocalInstitutionDiscoveryProps) {
   const isFocused = useIsFocused();
   const theme = useTheme();
@@ -111,39 +112,52 @@ export function LocalInstitutionDiscovery({
 
   return (
     <View className="gap-2">
+      <View className="min-h-11 flex-row items-center justify-between">
+        <Text className="text-start text-xs font-medium tracking-[1px] text-muted-foreground">
+          {title.toLocaleUpperCase(isArabic ? "ar" : "en")}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("auth_institution_lan_retry")}
+          accessibilityState={{
+            disabled:
+              networkAccess === "checking" ||
+              (isScanning && institutions.length === 0),
+          }}
+          disabled={
+            networkAccess === "checking" ||
+            (isScanning && institutions.length === 0)
+          }
+          onPress={retryDiscovery}
+          hitSlop={8}
+          className="min-h-11 min-w-11 items-center justify-center rounded-full"
+        >
+          <Refresh size={17} color={theme.info} />
+        </Pressable>
+      </View>
       {institutions.length > 0 ? (
-        <>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("auth_institution_lan_retry")}
-            onPress={retryDiscovery}
-            hitSlop={8}
-            className="min-h-11 min-w-11 self-end items-center justify-center rounded-full"
-          >
-            <Refresh size={18} color={theme.textMuted} />
-          </Pressable>
-          {institutions.map((institution) => (
-            <InstitutionCard
-              key={institution.deployment_id}
-              institution={institution}
-              name={
-                isArabic && institution.name_ar
-                  ? institution.name_ar
-                  : institution.name
-              }
-              isCurrent={
-                selectedInstitution?.deployment_id === institution.deployment_id
-              }
-              isBusy={connectingId === institution.deployment_id}
-              disabled={connectingId !== null}
-              localLabel={t("auth_institution_local_label")}
-              onPress={onConnect}
-            />
-          ))}
-        </>
+        institutions.map((institution) => (
+          <InstitutionCard
+            key={institution.deployment_id}
+            institution={institution}
+            name={
+              isArabic && institution.name_ar
+                ? institution.name_ar
+                : institution.name
+            }
+            isCurrent={
+              selectedInstitution?.deployment_id === institution.deployment_id
+            }
+            isBusy={connectingId === institution.deployment_id}
+            disabled={connectingId !== null}
+            localLabel={t("auth_institution_local_label")}
+            variant={institutionCardVariant}
+            onPress={onConnect}
+          />
+        ))
       ) : (
-        <View className="min-h-12 flex-row items-center gap-2 rounded-xl bg-background-element px-3 py-1">
-          <BuildingOffice size={18} color={theme.textMuted} />
+        <View className="min-h-[68px] flex-row items-center gap-3 rounded-2xl bg-card px-4 py-3">
+          <View className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
           <Text
             accessibilityRole={
               networkAccess === "denied" || networkAccess === "unavailable"
@@ -151,7 +165,7 @@ export function LocalInstitutionDiscovery({
                 : undefined
             }
             numberOfLines={2}
-            className="flex-1 text-start text-xs leading-4 text-muted-foreground"
+            className="flex-1 text-start text-sm leading-5 text-muted-foreground"
           >
             {networkAccess === "checking"
               ? t("auth_institution_lan_checking")
@@ -161,17 +175,6 @@ export function LocalInstitutionDiscovery({
                   ? t("auth_institution_lan_error")
                   : t("auth_institution_lan_empty")}
           </Text>
-          {networkAccess !== "checking" && !isScanning ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("auth_institution_lan_retry")}
-              onPress={retryDiscovery}
-              hitSlop={8}
-              className="min-h-11 min-w-11 items-center justify-center rounded-full"
-            >
-              <Refresh size={18} color={theme.textMuted} />
-            </Pressable>
-          ) : null}
         </View>
       )}
     </View>

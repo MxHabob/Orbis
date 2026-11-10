@@ -1,8 +1,12 @@
 export function useTheme() {
-  const variable = (name: string) => `var(${name})`;
+  const variable = (name: string) =>
+    name === "--overlay"
+      ? "rgb(var(--overlay) / 0.1)"
+      : `rgb(var(${name}))`;
 
   return {
     primary: variable("--primary"),
+    overlay: variable("--overlay"),
     primaryForeground: variable("--primary-foreground"),
     primaryLight: variable("--primary-light"),
     primaryDark: variable("--primary-dark"),

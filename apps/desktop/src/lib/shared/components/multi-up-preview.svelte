@@ -5,24 +5,21 @@ import * as m from "$lib/paraglide/messages";
  * Renders a scaled representation of the physical sheet with template slots.
  * Matches the Rust engine's compute_layout() output for pixel-perfect accuracy.
  */
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { ChevronLeft, ChevronRight, Grid } from "@orbis/icons";
+import { ChevronLeft, ChevronRight } from "@orbis/icons";
 
 import { getLocale } from "$lib/paraglide/runtime";
 
-import type { MultiUpLayout, SlotPosition } from "@docforge/core";
+import type { MultiUpLayout } from "@docforge/core";
 
 let {
   layout,
   totalRecords = 0,
   currentPage = $bindable(1),
-  entityLabels = [],
 }: {
   layout: MultiUpLayout;
   totalRecords: number;
   currentPage: number;
-  entityLabels?: string[];
 } = $props();
 
 // Derived values
@@ -32,14 +29,8 @@ const totalPages = $derived(
 
 const startIndex = $derived((currentPage - 1) * layout.itemsPerSheet);
 
-// Scaling: fit the sheet preview into the container
-const CONTAINER_MAX_W = 380;
-const CONTAINER_MAX_H = 460;
-const scale = $derived(
-  Math.min(
-    CONTAINER_MAX_W / layout.sheetWidthMm,
-    CONTAINER_MAX_H / layout.sheetHeightMm,
-  ),
+const sheetAspectRatio = $derived(
+  layout.sheetWidthMm / layout.sheetHeightMm,
 );
 
 function prevPage() {
@@ -50,51 +41,49 @@ function nextPage() {
 }
 </script>
 
-<div class="flex flex-col gap-3 items-center w-full">
+<div class="flex h-full min-h-0 w-full flex-col items-center gap-2">
   <!-- Sheet Preview Container -->
   <div
-    class="relative bg-white border border-border shadow-md rounded-sm"
-    style="
-      width: {layout.sheetWidthMm * scale}px;
-      height: {layout.sheetHeightMm * scale}px;
-    "
+    class="flex min-h-0 min-w-0 flex-1 items-center justify-center"
   >
-    <!-- Template Slots -->
-    {#each layout.slots as slot, i}
-      {@const recordIdx = startIndex + i}
-      {@const hasRecord = recordIdx < totalRecords}
-      <div
-        class="absolute border transition-all duration-150 {hasRecord ? 'border-primary bg-primary/5' : 'border-dashed border-border/40 bg-muted/10'}"
-        style="
-          left: {slot.xMm * scale}px;
-          top: {slot.yMm * scale}px;
-          width: {slot.widthMm * scale}px;
-          height: {slot.heightMm * scale}px;
-        "
-      >
-        {#if hasRecord}
-          <div class="absolute inset-0 flex flex-col items-center justify-center gap-0.5 overflow-hidden p-0.5">
-            <span class="text-[9px] font-bold text-primary/80">
-              #{recordIdx + 1}
-            </span>
-            {#if entityLabels[recordIdx]}
-              <span class="text-[7px] text-muted-foreground truncate max-w-full px-1 text-center leading-tight">
-                {entityLabels[recordIdx]}
+    <div
+      class="relative shrink-0 rounded-sm border border-border bg-white shadow-md"
+      style="
+        width: {sheetAspectRatio > 1 ? '100%' : 'auto'};
+        height: {sheetAspectRatio <= 1 ? '100%' : 'auto'};
+        max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: {layout.sheetWidthMm} / {layout.sheetHeightMm};
+      "
+    >
+      <!-- Template Slots -->
+      {#each layout.slots as slot, i (i)}
+        {@const recordIdx = startIndex + i}
+        {@const hasRecord = recordIdx < totalRecords}
+        <div
+          class="absolute border transition-all duration-150 {hasRecord ? 'border-primary bg-primary/5' : 'border-dashed border-border/40 bg-muted/10'}"
+          style="
+            left: {slot.xMm / layout.sheetWidthMm * 100}%;
+            top: {slot.yMm / layout.sheetHeightMm * 100}%;
+            width: {slot.widthMm / layout.sheetWidthMm * 100}%;
+            height: {slot.heightMm / layout.sheetHeightMm * 100}%;
+          "
+        >
+          {#if hasRecord}
+            <div class="absolute inset-0 flex items-center justify-center overflow-hidden p-1">
+              <span class="text-sm font-bold text-primary">
+                #{recordIdx + 1}
               </span>
-            {/if}
-          </div>
-        {:else}
-          <div class="absolute inset-0 flex items-center justify-center">
-            <span class="text-[8px] text-muted-foreground/40">—</span>
-          </div>
-        {/if}
-      </div>
-    {/each}
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
   </div>
 
   <!-- Page Navigation -->
   {#if totalPages > 1}
-    <div class="flex items-center gap-2">
+    <div class="flex shrink-0 items-center gap-2">
       <Button
         variant="ghost"
         size="icon-xs"
@@ -103,7 +92,7 @@ function nextPage() {
       >
         <ChevronLeft size={14} class={getLocale() === "ar" ? "rtl:rotate-180" : ""} />
       </Button>
-      <span class="text-[10px] text-muted-foreground font-medium min-w-[80px] text-center">
+      <span class="text-xs text-muted-foreground font-medium min-w-[80px] text-center">
         {m.common_print_multi_up_page_of({ current: String(currentPage), total: String(totalPages) })}
       </span>
       <Button
@@ -117,13 +106,4 @@ function nextPage() {
     </div>
   {/if}
 
-  <!-- Grid Stats -->
-  <div class="flex items-center gap-2 flex-wrap justify-center">
-    <Badge variant="secondary" class="text-[10px]">
-      {layout.columns}×{layout.rows} = {layout.itemsPerSheet} / {m.common_print_multi_up_items_per_sheet()}
-    </Badge>
-    <Badge variant="outline" class="text-[10px]">
-      {totalPages} {m.common_print_multi_up_sheets_needed()}
-    </Badge>
-  </div>
 </div>

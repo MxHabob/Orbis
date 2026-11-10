@@ -11,7 +11,8 @@ import "../global.css";
 import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
-import { Pressable, Text, View, useColorScheme } from "react-native";
+import { Pressable, View, useColorScheme } from "react-native";
+import { Text } from "@/components/ui/text";
 
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
@@ -63,38 +64,24 @@ function StartupErrorFallback({
   resetErrorBoundary,
 }: ErrorFallbackProps) {
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#1f1f1f",
-        padding: 24,
-      }}
-    >
-      <Text style={{ color: "#ffffff", fontSize: 20, fontWeight: "600" }}>
+    <View className="flex-1 items-center justify-center bg-background px-six">
+      <Text className="text-center text-xl font-semibold text-foreground">
         Orbis could not start
       </Text>
-      <Text style={{ marginTop: 12, color: "#d1d5db", textAlign: "center" }}>
+      <Text className="mt-three text-center text-muted-foreground">
         Please try again. If the problem continues, reinstall the app.
       </Text>
       {__DEV__ && (
-        <Text style={{ marginTop: 12, color: "#d1d5db", textAlign: "center" }}>
+        <Text className="mt-three text-center text-muted-foreground">
           {error.message}
         </Text>
       )}
       <Pressable
         accessibilityRole="button"
         onPress={resetErrorBoundary}
-        style={{
-          marginTop: 24,
-          borderRadius: 8,
-          backgroundColor: "#7c3aed",
-          paddingHorizontal: 20,
-          paddingVertical: 12,
-        }}
+        className="mt-six rounded-md bg-primary px-five py-three"
       >
-        <Text style={{ color: "#ffffff", fontWeight: "600" }}>Try again</Text>
+        <Text className="font-semibold text-primary-foreground">Try again</Text>
       </Pressable>
     </View>
   );
@@ -108,8 +95,8 @@ function RootLayoutContent() {
   });
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const systemBackgroundColor = isDark ? "#1f1f1f" : "#fcfcfc";
   const currentColors = useTheme();
+  const systemBackgroundColor = currentColors.background;
   const { isArabic } = useI18n();
 
   const navigationTheme = useMemo(() => {
@@ -183,7 +170,7 @@ function RootLayoutContent() {
               contentStyle: {
                 backgroundColor: currentColors.background,
                 direction: isArabic ? "rtl" : "ltr",
-                paddingTop: isOffline ? 32 : 0,
+                paddingTop: isOffline ? 68 : 0,
               },
             }}
           >
@@ -200,8 +187,8 @@ function RootLayoutContent() {
                 animation: "slide_from_bottom",
                 headerShown: false,
                 contentStyle: {
-                  backgroundColor: "#000000",
-                  paddingTop: isOffline ? 32 : 0,
+                  backgroundColor: currentColors.background,
+                  paddingTop: isOffline ? 68 : 0,
                 },
               }}
             />

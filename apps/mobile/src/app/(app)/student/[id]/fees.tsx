@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { formatCurrency, useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
 import { CreditCard, Banknotes } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const feeStatusKeys: Record<string, TranslationKey> = {
   pending: "student_fee_pending",

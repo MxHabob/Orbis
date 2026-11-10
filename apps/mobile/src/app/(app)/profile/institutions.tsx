@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { BuildingOffice } from "@orbis/icons/native";
@@ -17,6 +17,7 @@ import {
   type DirectoryInstitution,
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 export default function LinkedInstitutionsScreen() {
   const router = useRouter();

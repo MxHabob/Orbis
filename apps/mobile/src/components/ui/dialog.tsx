@@ -6,19 +6,11 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  type StyleProp,
-  StyleSheet,
-  Text,
-  type TextStyle,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { Modal, Pressable, type StyleProp, StyleSheet, type TextStyle, View, type ViewStyle } from "react-native";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Text } from "@/components/ui/text";
 
 // ─── Dialog Context ─────────────────────────────────────────────────────────
 

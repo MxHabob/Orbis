@@ -2,7 +2,7 @@ import { getPages, type TemplateDocument } from "@docforge/core";
 import { XMark } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { DigitalIdTemplate } from "@/components/digital-id/digital-id-template";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,6 +16,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 import { useEffectiveContext } from "@/providers/effective-context";
+import { Text } from "@/components/ui/text";
 
 export default function DigitalIdModalScreen() {
   const router = useRouter();

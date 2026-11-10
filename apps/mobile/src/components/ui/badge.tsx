@@ -6,7 +6,8 @@
  */
 
 import React from "react";
-import { View, Text, type ViewStyle, type TextStyle } from "react-native";
+import { View, type ViewStyle, type TextStyle } from "react-native";
+import { Text } from "@/components/ui/text";
 
 export type BadgeVariant =
   | "default"

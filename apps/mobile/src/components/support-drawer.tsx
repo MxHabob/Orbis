@@ -1,14 +1,7 @@
 import { CheckCircle } from "@orbis/icons/native";
 import Constants from "expo-constants";
 import { useState } from "react";
-import {
-  Linking,
-  Platform,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Linking, Platform, Pressable, View, useWindowDimensions } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +20,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 type SupportCategory =
   | "technical_support"
