@@ -63,6 +63,7 @@ import type {
   TimetableSolveStatusDto,
   TimetableSolverWireStatusDto,
   SolverSidecarStatusDto,
+  SolverSetupStatusDto,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -826,6 +827,12 @@ export class LocalClient implements OrbisApiClient {
   }
   async getSolverSidecarStatus(): Promise<SolverSidecarStatusDto> {
     return unwrap(await invoke("solver_get_sidecar_status"));
+  }
+  async getSolverSetupStatus(): Promise<SolverSetupStatusDto> {
+    return unwrap(await invoke("solver_get_setup_status"));
+  }
+  async startSolverSetup(): Promise<SolverSetupStatusDto> {
+    return unwrap(await invoke("solver_start_setup"));
   }
   async submitTimetable(problem: TimetableProblem): Promise<void> {
     unwrap(await invoke("solver_submit_timetable", { problem }));

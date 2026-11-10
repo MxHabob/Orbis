@@ -260,6 +260,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         scheduling_cmds::scheduling_list_lessons,
         scheduling_cmds::scheduling_delete_scheduled_lesson,
         scheduling_cmds::solver_get_sidecar_status,
+        scheduling_cmds::solver_get_setup_status,
+        scheduling_cmds::solver_start_setup,
         scheduling_cmds::solver_stop_sidecar,
         scheduling_cmds::solver_submit_timetable,
         scheduling_cmds::solver_get_timetable_status,

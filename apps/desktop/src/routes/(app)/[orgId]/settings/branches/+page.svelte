@@ -344,8 +344,8 @@ const columns: OrbisColumnDef[] = [
   },
 ];
 
-function handleGridAction(event: CustomEvent<GridActionEvent>) {
-  const { actionId, row } = event.detail;
+function handleGridAction(event: GridActionEvent) {
+  const { actionId, row } = event;
   const branch = branches.find((b) => b.id === row.id);
   if (!branch) return;
 
@@ -577,7 +577,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
         source={gridSource}
         {columns}
         enableExport={true}
-        on:action={handleGridAction}
+        onaction={handleGridAction}
       />
     </div>
   {/if}

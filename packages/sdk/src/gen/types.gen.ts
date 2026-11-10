@@ -1209,8 +1209,10 @@ export type CurrencyInput = {
 
 export type DashboardCountsDto = {
   active_academic_calendar?: string | null;
+  active_sections: number;
   pending_fees_amount: number;
   total_classes: number;
+  total_employees: number;
   total_enrollments: number;
   total_payments_amount: number;
   total_students: number;

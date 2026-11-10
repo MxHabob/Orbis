@@ -417,7 +417,9 @@ function handlePdfPreviewLoad() {
       }),
     );
   } catch (error) {
-    toast.error(extractErrorMessage(error) || m.shared_ui_print_frame_unavailable());
+    toast.error(
+      extractErrorMessage(error) || m.shared_ui_print_frame_unavailable(),
+    );
   }
 }
 

@@ -930,6 +930,8 @@ pub trait PolicyRepository: Send + Sync {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DashboardCounts {
     pub total_students: u64,
+    pub total_employees: u64,
+    pub active_sections: u64,
     pub total_teachers: u64,
     pub total_classes: u64,
     pub total_enrollments: u64,

@@ -74,6 +74,7 @@ import type {
   TimetableProblem,
   TimetableSolveStatusDto,
   SolverSidecarStatusDto,
+  SolverSetupStatusDto,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -1293,6 +1294,18 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
+  async getSolverSetupStatus(): Promise<SolverSetupStatusDto> {
+    throw new Error(
+      "The timetable solver is only available in the Orbis desktop app.",
+    );
+  }
+
+  async startSolverSetup(): Promise<SolverSetupStatusDto> {
+    throw new Error(
+      "The timetable solver is only available in the Orbis desktop app.",
+    );
+  }
+
   async submitTimetable(_problem: TimetableProblem): Promise<void> {
     throw new Error(
       "The timetable solver is only available in the Orbis desktop app.",
@@ -1928,7 +1941,9 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
-    return this.fetchApi<StudentFeeSummaryDto[]>("/api/v1/student-fees/summary");
+    return this.fetchApi<StudentFeeSummaryDto[]>(
+      "/api/v1/student-fees/summary",
+    );
   }
 
   async listStudentFees(

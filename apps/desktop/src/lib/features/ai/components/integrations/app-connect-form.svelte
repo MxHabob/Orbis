@@ -27,6 +27,16 @@ import {
   ensureModelCatalog,
   getModelOptions,
 } from "$lib/features/ai/model-catalog.svelte";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@orbis/ui/alert-dialog";
 
 let {
   appId,
@@ -36,6 +46,7 @@ let {
   submitting = false,
   authenticationRequired = false,
   onsubmit,
+  onsolverdownload,
 }: {
   appId: string;
   formId: string;
@@ -44,18 +55,19 @@ let {
   submitting?: boolean;
   authenticationRequired?: boolean;
   onsubmit?: (values: Record<string, unknown>) => void;
+  onsolverdownload?: (values: Record<string, unknown>) => void;
 } = $props();
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+const isTauri =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+let showDownloadConfirmation = $state(false);
 
 let values = $state<Record<string, any>>(
   untrack(() =>
     Object.fromEntries(
       settings.map((setting) => [
         setting.id,
-        appId === "solver-service" &&
-        setting.id === "mode" &&
-        !isTauri
+        appId === "solver-service" && setting.id === "mode" && !isTauri
           ? "remote"
           : setting.id === "use_authentication"
             ? Boolean(
@@ -102,8 +114,10 @@ const visibleSettings = $derived(
           authenticationRequired
         );
       }
-      if (setting.visibleWhen &&
-        values[setting.visibleWhen.settingId] !== setting.visibleWhen.value) {
+      if (
+        setting.visibleWhen &&
+        values[setting.visibleWhen.settingId] !== setting.visibleWhen.value
+      ) {
         return false;
       }
       if (setting.id === "local_path") return values.provider === "local";
@@ -137,9 +151,28 @@ function handleSubmit(e: SubmitEvent) {
     toast.error(m.ui_copy_please_review_the_connection_settings_e94d1183());
     return;
   }
-  const submittedValues = { ...result.data };
+  if (appId === "solver-service" && values.mode === "embedded" && isTauri) {
+    showDownloadConfirmation = true;
+    return;
+  }
+  onsubmit?.(getSubmittedValues(result.data));
+}
+
+function getSubmittedValues(data: Record<string, unknown>) {
+  const submittedValues = { ...data };
   delete submittedValues.use_authentication;
-  onsubmit?.(submittedValues);
+  return submittedValues;
+}
+
+function confirmDownload() {
+  const result = createAppSettingsSchema(visibleSettings).safeParse(values);
+  if (!result.success) {
+    showDownloadConfirmation = false;
+    toast.error(m.ui_copy_please_review_the_connection_settings_e94d1183());
+    return;
+  }
+  onsolverdownload?.(getSubmittedValues(result.data));
+  showDownloadConfirmation = false;
 }
 
 async function browseDirectory(settingId: string) {
@@ -274,3 +307,20 @@ async function browseDirectory(settingId: string) {
   {/if}
   </fieldset>
 </form>
+
+<AlertDialog bind:open={showDownloadConfirmation}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>{m.ai_ui_solver_download_confirm_title()}</AlertDialogTitle>
+      <AlertDialogDescription>
+        {m.ai_ui_solver_download_confirm_description()}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>{m.common_action_cancel()}</AlertDialogCancel>
+      <AlertDialogAction onclick={confirmDownload}>
+        {m.ai_ui_solver_download_confirm_action()}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>

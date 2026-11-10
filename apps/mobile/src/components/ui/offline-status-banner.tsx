@@ -10,9 +10,7 @@ type OfflineStatusBannerProps = {
   visible: boolean;
 };
 
-export function OfflineStatusBanner({
-  visible,
-}: OfflineStatusBannerProps) {
+export function OfflineStatusBanner({ visible }: OfflineStatusBannerProps) {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const theme = useTheme();

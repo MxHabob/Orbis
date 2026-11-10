@@ -316,6 +316,13 @@ export interface SolverSidecarStatusDto {
   idle_seconds: number;
 }
 
+export type SolverSetupState = "idle" | "preparing" | "ready" | "failed";
+
+export interface SolverSetupStatusDto {
+  state: SolverSetupState;
+  error: string | null;
+}
+
 export interface PersonDto {
   id: string;
   org_id?: string | null;
@@ -2018,6 +2025,8 @@ export interface OrbisApiClient {
     SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]>;
   getSolverSidecarStatus(): Promise<SolverSidecarStatusDto>;
+  getSolverSetupStatus(): Promise<SolverSetupStatusDto>;
+  startSolverSetup(): Promise<SolverSetupStatusDto>;
   submitTimetable(problem: TimetableProblem): Promise<void>;
   getTimetableSolveStatus(jobId: string): Promise<TimetableSolveStatusDto>;
 

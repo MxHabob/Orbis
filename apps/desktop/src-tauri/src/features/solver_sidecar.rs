@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::time::Duration;
+use tauri::Emitter;
 use tokio::process::Child;
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
@@ -27,6 +28,21 @@ pub struct SidecarStatus {
     pub idle_seconds: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SolverSetupState {
+    Idle,
+    Preparing,
+    Ready,
+    Failed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SolverSetupStatus {
+    pub state: SolverSetupState,
+    pub error: Option<String>,
+}
+
 pub struct SolverSidecarManager {
     child: Arc<Mutex<Option<Child>>>,
     active_job_ids: Arc<Mutex<HashSet<String>>>,
@@ -37,6 +53,7 @@ pub struct SolverSidecarManager {
     idle_timeout_secs: i64,
     http_client: reqwest::Client,
     components: ManagedComponentManager,
+    setup_status: Mutex<SolverSetupStatus>,
 }
 
 impl SolverSidecarManager {
@@ -62,6 +79,10 @@ impl SolverSidecarManager {
             idle_timeout_secs: DEFAULT_IDLE_TIMEOUT_SECS,
             http_client,
             components,
+            setup_status: Mutex::new(SolverSetupStatus {
+                state: SolverSetupState::Idle,
+                error: None,
+            }),
         };
         manager.start_idle_watchdog();
         Ok(manager)
@@ -69,6 +90,46 @@ impl SolverSidecarManager {
 
     pub fn endpoint_url(&self) -> &str {
         &self.endpoint_url
+    }
+
+    pub async fn setup_status(&self) -> SolverSetupStatus {
+        self.setup_status.lock().await.clone()
+    }
+
+    pub async fn start_setup(self: &Arc<Self>, app: tauri::AppHandle) -> SolverSetupStatus {
+        let mut status = self.setup_status.lock().await;
+        if matches!(
+            status.state,
+            SolverSetupState::Preparing | SolverSetupState::Ready
+        ) {
+            return status.clone();
+        }
+
+        status.state = SolverSetupState::Preparing;
+        status.error = None;
+        let initial_status = status.clone();
+        drop(status);
+        emit_setup_status(&app, &initial_status);
+
+        let manager = Arc::clone(self);
+        tauri::async_runtime::spawn(async move {
+            let result = manager.ensure_running().await;
+            let mut status = manager.setup_status.lock().await;
+            match result {
+                Ok(()) => {
+                    status.state = SolverSetupState::Ready;
+                    status.error = None;
+                }
+                Err(error) => {
+                    warn!(%error, "Could not prepare the scheduling engine");
+                    status.state = SolverSetupState::Failed;
+                    status.error = Some(error);
+                }
+            }
+            emit_setup_status(&app, &status);
+        });
+
+        initial_status
     }
 
     pub fn mark_activity(&self) {
@@ -332,6 +393,12 @@ impl SolverSidecarManager {
                 }
             }
         });
+    }
+}
+
+fn emit_setup_status(app: &tauri::AppHandle, status: &SolverSetupStatus) {
+    if let Err(error) = app.emit("solver-setup-status-changed", status) {
+        warn!(%error, "Could not notify the download manager about solver setup status");
     }
 }
 

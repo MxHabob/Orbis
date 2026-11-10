@@ -13,6 +13,7 @@ let {
   submitting = false,
   error = null,
   onsubmit,
+  onsolverdownload,
 }: {
   open: boolean;
   app: OrbisApp;
@@ -20,6 +21,7 @@ let {
   submitting?: boolean;
   error?: string | null;
   onsubmit: (values: Record<string, unknown>) => void;
+  onsolverdownload: (values: Record<string, unknown>) => void;
 } = $props();
 
 const appName = $derived(l(app.name_ar, app.name) ?? app.name);
@@ -53,6 +55,7 @@ const formId = $derived(`app-connect-form-${app.id}`);
           {submitting}
           authenticationRequired={error?.toLowerCase().includes("authentication") ?? false}
           {onsubmit}
+          {onsolverdownload}
         />
       {/key}
     </div>
