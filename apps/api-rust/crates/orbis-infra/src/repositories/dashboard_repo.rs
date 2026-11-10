@@ -97,14 +97,14 @@ impl DashboardRepository for DashboardRepoImpl {
         // Sum of payment amounts
         let total_payments_amount = self
             .sum_query(
-                "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE org_id = $1",
+                "SELECT CAST(COALESCE(SUM(amount), 0) AS DOUBLE PRECISION) as total FROM payments WHERE org_id = $1",
                 org_id,
             )
             .await?;
 
         // Sum of pending fees
         let pending_fees_amount = self.sum_query(
-            "SELECT COALESCE(SUM(net_amount), 0) as total FROM student_fees WHERE org_id = $1 AND status != 'paid'",
+            "SELECT CAST(COALESCE(SUM(net_amount), 0) AS DOUBLE PRECISION) as total FROM student_fees WHERE org_id = $1 AND status != 'paid'",
             org_id,
         ).await?;
 
@@ -183,6 +183,32 @@ mod tests {
     };
     use chrono::Utc;
     use sea_orm::{ActiveModelTrait, Database, Set};
+
+    #[tokio::test]
+    async fn dashboard_sum_query_decodes_empty_and_integer_sums_as_f64() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE payments (org_id TEXT NOT NULL, amount INTEGER NOT NULL)",
+        )
+        .await
+        .unwrap();
+        let repo = DashboardRepoImpl { db };
+        let org_id = Uuid::new_v4();
+        let query = "SELECT CAST(COALESCE(SUM(amount), 0) AS DOUBLE PRECISION) as total FROM payments WHERE org_id = $1";
+
+        assert_eq!(repo.sum_query(query, org_id).await.unwrap(), 0.0);
+
+        repo.db
+            .execute(Statement::from_sql_and_values(
+                repo.db.get_database_backend(),
+                "INSERT INTO payments (org_id, amount) VALUES ($1, $2)",
+                [org_id.into(), 125.into()],
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(repo.sum_query(query, org_id).await.unwrap(), 125.0);
+    }
 
     #[tokio::test]
     async fn dashboard_counts_classes_from_unified_sections_table() {

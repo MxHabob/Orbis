@@ -107,23 +107,66 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  docker:
-    name: Build and publish API Docker image
+  docker-build:
+    name: Build API Docker image (${{ matrix.arch }})
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
     permissions:
       contents: read
       packages: write
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout API release
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.validate.outputs.tag }}
+          ref: ${{ inputs.docker_only == true && github.sha || needs.validate.outputs.tag }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Verify native runner architecture
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          actual="$(uname -m)"
+          case "$EXPECTED_ARCH:$actual" in
+            amd64:x86_64|arm64:aarch64) ;;
+            *)
+              echo "::error::Expected native $EXPECTED_ARCH runner, got $actual."
+              exit 1
+              ;;
+          esac
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1.97.0
+
+      - name: Cache Rust build outputs
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/api-rust -> target
+          shared-key: orbis-api-docker-${{ matrix.arch }}
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libdbus-1-dev libssl-dev pkg-config
+
+      - name: Build API binary
+        working-directory: apps/api-rust
+        run: cargo build --locked --release -p orbis-server --bin orbis-server
+
+      - name: Prepare runtime image context
+        run: |
+          mkdir -p docker-context
+          cp apps/api-rust/target/release/orbis-server docker-context/orbis-server
+          cp apps/api-rust/deploy/docker/Dockerfile.runtime docker-context/Dockerfile
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -135,31 +178,92 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish multi-architecture image
+      - name: Build and publish native architecture image
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: apps/api-rust/deploy/docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          context: docker-context
+          file: docker-context/Dockerfile
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: |
-            ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}
-            ghcr.io/mxhabob/orbis-api:latest
-          cache-from: type=gha,scope=orbis-api
-          cache-to: type=gha,mode=max,scope=orbis-api
+          tags: ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=orbis-api-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=orbis-api-${{ matrix.arch }}
+
+      - name: Save image digest
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          printf '%s\n' "$IMAGE_DIGEST" > "${IMAGE_ARCH}.digest"
+
+      - name: Upload image digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-image-digest-${{ matrix.arch }}
+          path: ${{ matrix.arch }}.digest
+          if-no-files-found: error
+          retention-days: 1
+
+  docker-manifest:
+    name: Publish multi-architecture API Docker image
+    needs: [validate, docker-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download architecture image digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: api-image-digest-*
+          path: image-digests
+          merge-multiple: true
+
+      - name: Publish multi-architecture manifest
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/mxhabob/orbis-api"
+          amd64_digest="$(cat image-digests/amd64.digest)"
+          arm64_digest="$(cat image-digests/arm64.digest)"
+          [[ "$amd64_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          [[ "$arm64_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          docker buildx imagetools create \
+            --tag "$image:$VERSION" \
+            --tag "$image:latest" \
+            "$image@$amd64_digest" \
+            "$image@$arm64_digest"
 
       - name: Package digest-pinned Docker Compose bundle
         env:
           VERSION: ${{ needs.validate.outputs.version }}
-          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
+          image="ghcr.io/mxhabob/orbis-api:$VERSION"
+          image_digest="$(docker buildx imagetools inspect "$image" | awk '$1 == "Digest:" { print $2; exit }')"
+          if [[ ! "$image_digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::Unable to resolve the published multi-architecture image digest."
+            exit 1
+          fi
           bundle="orbis-api-docker"
           mkdir -p "$bundle"
           cp apps/api-rust/deploy/docker/compose.yaml "$bundle/"
           cp apps/api-rust/deploy/docker/README.md "$bundle/"
-          sed "s|^ORBIS_API_IMAGE=.*|ORBIS_API_IMAGE=ghcr.io/mxhabob/orbis-api@${IMAGE_DIGEST}|" \
+          sed "s|^ORBIS_API_IMAGE=.*|ORBIS_API_IMAGE=ghcr.io/mxhabob/orbis-api@${image_digest}|" \
             apps/api-rust/deploy/docker/.env.example > "$bundle/.env.example"
           tar -czf "Orbis-API-Docker-${VERSION}.tar.gz" "$bundle"
 
@@ -174,7 +278,7 @@ jobs:
   publish:
     name: Publish API release
     if: ${{ inputs.docker_only != true }}
-    needs: [validate, build, docker]
+    needs: [validate, build, docker-manifest]
     runs-on: ubuntu-latest
     steps:
       - name: Download API artifacts
@@ -201,7 +305,7 @@ jobs:
   publish-docker-only:
     name: Publish Docker bundle for existing API release
     if: ${{ inputs.docker_only == true }}
-    needs: [validate, docker]
+    needs: [validate, docker-manifest]
     runs-on: ubuntu-latest
     steps:
       - name: Download Docker deployment bundle
