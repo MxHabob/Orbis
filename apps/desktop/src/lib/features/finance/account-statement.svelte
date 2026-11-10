@@ -25,6 +25,8 @@ import { Card } from "@orbis/ui/card";
 import { Refresh, Download, Printer } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
+import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
+import { createDefaultDateRange } from "$lib/shared/components/date-range";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 import { fade } from "svelte/transition";
@@ -41,14 +43,7 @@ let isLoading = $state(true);
 // Filters
 let selectedAccountId = $state("");
 let currencyPreference = $state("");
-let startDate = $state(getLocalDateInputValue());
-let endDate = $state(getLocalDateInputValue());
-
-function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-}
+let dateRange = $state(createDefaultDateRange());
 
 type StatementMovement = {
   id: string;
@@ -263,9 +258,9 @@ const statementSummary = $derived.by(() => {
   const visibleRows: DisplayStatementMovement[] = [];
 
   for (const row of rows) {
-    if (endDate && row.date > endDate) continue;
+    if (dateRange.toDate && row.date > dateRange.toDate) continue;
     running += row.debit - row.credit;
-    if (startDate && row.date < startDate) continue;
+    if (dateRange.fromDate && row.date < dateRange.fromDate) continue;
     totalDebit += row.debit;
     totalCredit += row.credit;
     visibleRows.push({
@@ -433,10 +428,10 @@ function handlePrintStatement() {
       type: selectedAccount.account_type,
     },
     period: {
-      startDate: startDate || null,
-      endDate: endDate || null,
-      startDateFormatted: startDate ? formatDate(startDate) : "—",
-      endDateFormatted: endDate ? formatDate(endDate) : "—",
+      startDate: dateRange.fromDate || null,
+      endDate: dateRange.toDate || null,
+      startDateFormatted: dateRange.fromDate ? formatDate(dateRange.fromDate) : "—",
+      endDateFormatted: dateRange.toDate ? formatDate(dateRange.toDate) : "—",
     },
     summary: {
       totalDebit,
@@ -484,17 +479,7 @@ function handlePrintStatement() {
       </div>
 
       <div class="flex items-center gap-2">
-        <Input
-          type="date"
-          bind:value={startDate}
-          class="h-8 w-36 text-xs bg-card border-border/60 font-mono"
-        />
-        <span class="text-xs text-muted-foreground">{m.finance_ui_to_date()}</span>
-        <Input
-          type="date"
-          bind:value={endDate}
-          class="h-8 w-36 text-xs bg-card border-border/60 font-mono"
-        />
+        <DateRangeFilter bind:value={dateRange} />
 
         {#if movementCurrencies.length > 0}
           <CurrencySelector

@@ -33,6 +33,8 @@ import {
 } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
+import { createDefaultDateRange } from "$lib/shared/components/date-range";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
@@ -113,7 +115,7 @@ const calculatedTotal = $derived(
 // Filters
 let searchQuery = $state("");
 let methodFilter = $state("all");
-let filterDate = $state(getLocalDateInputValue());
+let dateRange = $state(createDefaultDateRange());
 
 // Print
 let printDialogOpen = $state(false);
@@ -344,9 +346,12 @@ const gridSource = $derived(
 const filteredSource = $derived(
   gridSource.filter((row) => {
     if (
-      filterDate &&
-      (!row.accounting_date ||
-        !String(row.accounting_date).startsWith(filterDate))
+      (dateRange.fromDate &&
+        (!row.accounting_date ||
+          String(row.accounting_date).slice(0, 10) < dateRange.fromDate)) ||
+      (dateRange.toDate &&
+        (!row.accounting_date ||
+          String(row.accounting_date).slice(0, 10) > dateRange.toDate))
     ) {
       return false;
     }
@@ -567,11 +572,7 @@ function exportCsv() {
           />
         </div>
 
-        <Input
-          type="date"
-          bind:value={filterDate}
-          class="h-8 w-36 text-xs bg-card border-border/60 font-mono"
-        />
+        <DateRangeFilter bind:value={dateRange} />
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
