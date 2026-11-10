@@ -94,7 +94,21 @@ jobs:
             bun-${{ runner.os }}-
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --linker=isolated --frozen-lockfile
+
+      - name: Verify NativeWind Tailwind version
+        working-directory: apps/mobile
+        run: |
+          node -e '
+            const { createRequire } = require("node:module");
+            const nativewind = require.resolve("nativewind/metro");
+            const tailwindPackage = createRequire(nativewind).resolve("tailwindcss/package.json");
+            const { version } = require(tailwindPackage);
+            if (!version.startsWith("3.")) {
+              throw new Error(`NativeWind requires Tailwind CSS v3, got ${version} at ${tailwindPackage}`);
+            }
+            console.log(`NativeWind resolves Tailwind CSS ${version}`);
+          '
 
       - name: Prepare Android release signing
         env:
