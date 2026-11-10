@@ -20,6 +20,8 @@ import type {
   FeeTemplateDto,
   DiscountTemplateDto,
   AcademicPeriodDto,
+  EnrollmentDto,
+  StudentDetailDto,
 } from "$lib/api/types";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
@@ -48,6 +50,8 @@ import {
 } from "@orbis/svelte-grid";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
+import { createDefaultDateRange } from "$lib/shared/components/date-range";
 import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
@@ -58,7 +62,7 @@ const asArray = <T>(value: T[] | null | undefined): T[] =>
 // ── State ──────────────────────────────────────────────────────────────
 let feeTemplates = $state<FeeTemplateDto[]>([]);
 let discountTemplates = $state<DiscountTemplateDto[]>([]);
-let students = $state<any[]>([]);
+let enrollments = $state<EnrollmentDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
@@ -90,6 +94,7 @@ let refundNotes = $state("");
 
 // Filters
 let searchQuery = $state("");
+let dateRange = $state(createDefaultDateRange());
 let statusFilter = $state<
   "all" | "pending" | "partially_paid" | "paid" | "overdue"
 >("all");
@@ -112,6 +117,8 @@ function handleFeeGridQuery(query: DataQuery) {
 }
 
 const feePageFilter = $derived({
+  from_date: dateRange.fromDate || undefined,
+  to_date: dateRange.toDate || undefined,
   status:
     statusFilter !== "all" && statusFilter !== "overdue"
       ? statusFilter
@@ -144,12 +151,42 @@ const feeSummaryQuery = createQuery(() => ({
   enabled: !!orgId,
   staleTime: 2 * 60 * 1000,
 }));
+const studentDirectoryQuery = createQuery(() => ({
+  queryKey: queryKeys.finance.studentDirectory(orgId),
+  queryFn: loadAllStudentDetails,
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+const studentNames = $derived.by(() => {
+  const isArabic = isAr();
+  return new Map(
+    (studentDirectoryQuery.data ?? []).map(({ student, person }) => [
+      String(student.id),
+      isArabic
+        ? person.full_name_ar || student.name_ar || person.full_name
+        : person.full_name,
+    ]),
+  );
+});
+const students = $derived(
+  enrollments.map((enrollment) => ({
+    id: String(enrollment.id),
+    student_id: String(enrollment.student_id),
+    full_name: studentNames.get(String(enrollment.student_id)) ?? "",
+    student_number: enrollment.student_number,
+  })),
+);
 const fees = $derived(
   feesQuery.data?.pages.flatMap((page) => page.items) ?? [],
 );
 const feeTotals = $derived(feeSummaryQuery.data ?? []);
 const gridLoading = $derived(
-  isLoading || (feesQuery.isLoading && !feesQuery.data),
+  isLoading ||
+    studentDirectoryQuery.isLoading ||
+    (feesQuery.isLoading && !feesQuery.data),
+);
+const studentsById = $derived(
+  new Map(students.map((student) => [student.student_id, student])),
 );
 
 async function loadMoreFees() {
@@ -171,6 +208,25 @@ function formatFeeAmount(amount: number, currency: string) {
   return currency ? formatCurrency(amount, currency) : amount.toLocaleString();
 }
 
+function getFeeTemplateName(fee: StudentFeeDto) {
+  const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
+  if (!template) return m.finance_ui_tuition_fees();
+  return isAr() ? template.name_ar || template.name : template.name;
+}
+
+async function loadAllStudentDetails(): Promise<StudentDetailDto[]> {
+  const pageSize = 100;
+  const firstPage = await api.listStudents({ page: 1, page_size: pageSize });
+  if (firstPage.total_pages <= 1) return firstPage.items;
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+      api.listStudents({ page: index + 2, page_size: pageSize }),
+    ),
+  );
+  return [firstPage, ...remainingPages].flatMap((page) => page.items);
+}
+
 onMount(async () => {
   if (orgId) {
     await loadData(false);
@@ -180,7 +236,12 @@ onMount(async () => {
 async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [templatesList, discountsList, enrollmentsList, periodsList] =
+    const [
+      templatesList,
+      discountsList,
+      enrollmentsList,
+      periodsList,
+    ] =
       await Promise.all([
         api.listFeeTemplates(),
         api.listDiscountTemplates(),
@@ -192,17 +253,7 @@ async function loadData(refreshFees = true) {
 
     feeTemplates = asArray(templatesList);
     discountTemplates = asArray(discountsList);
-    const safeEnrollments = asArray(enrollmentsList);
-    students = safeEnrollments.map((e: any) => ({
-      id: String(e.id),
-      student_id: String(e.student_id),
-      full_name:
-        e.full_name ||
-        e.name_ar ||
-        e.name_en ||
-        e.student_number ||
-        m.finance_ui_student_number_fallback({ id: e.id }),
-    }));
+    enrollments = asArray(enrollmentsList);
     periods = asArray(periodsList);
 
     if (periods.length > 0 && !formPeriodId) {
@@ -328,7 +379,7 @@ async function handleRefundFee() {
   isSubmitting = true;
   try {
     await api.refundStudentFee(selectedFeeForRefund.id, {
-      refund_amount: Number(refundAmount),
+      refund_amount: String(refundAmount),
       notes: refundNotes.trim() || undefined,
     });
     toast.success(m.finance_ui_fee_refund_success());
@@ -347,15 +398,6 @@ async function handleRefundFee() {
 
 // ── Grid Data ─────────────────────────────────────────────────────────
 function toFeeGridRow(f: StudentFeeDto, idx: number) {
-  const student = students.find(
-    (s) =>
-      String(s.student_id) === String(f.student_id) ||
-      String(s.id) === String(f.enrollment_id),
-  );
-  const template = feeTemplates.find((t) => t.id === f.fee_template_id);
-  const templateName =
-    template?.name_ar || template?.name || m.finance_ui_tuition_fees();
-
   const net = Number(f.net_amount ?? f.original_amount ?? 0);
   const paid = Number(f.paid_amount ?? 0);
   const balance = Number(f.balance_due ?? Math.max(0, net - paid));
@@ -373,9 +415,7 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
   return {
     ...f,
     __idx: idx + 1,
-    student_display:
-      student?.full_name ||
-      m.finance_ui_student_number_fallback({ id: f.enrollment_id }),
+    student_display: studentNames.get(String(f.student_id)) ?? "—",
     status_key:
       f.status === "paid" || balance <= 0
         ? "paid"
@@ -384,7 +424,7 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
           : f.due_date && new Date(f.due_date) < new Date()
             ? "overdue"
             : "pending",
-    template_display: templateName,
+    template_display: getFeeTemplateName(f),
     net_formatted: formatCurrency(net, curr),
     paid_formatted: formatCurrency(paid, curr),
     balance_formatted: formatCurrency(balance, curr),
@@ -395,8 +435,6 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
 }
 
 const gridSource = $derived(fees.map(toFeeGridRow));
-
-const filteredSource = $derived(gridSource);
 
 const columns: OrbisColumnDef[] = [
   {
@@ -689,7 +727,9 @@ async function exportCsv() {
           </SelectContent>
         </Select>
 
-        <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
+        <DateRangeFilter bind:value={dateRange} />
+
+        <Button variant="ghost" size="icon-sm" onclick={() => loadData()} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
         </Button>
 
@@ -714,8 +754,10 @@ async function exportCsv() {
                   placeholder={m.finance_ui_student_select_placeholder()}
                   items={students}
                   getItemValue={(s) => s.id}
-                  getItemLabel={(s) => s.full_name}
+                  getItemLabel={(s) =>
+                    s.full_name || s.student_number || m.finance_ui_student()}
                   onchange={(val) => { if (val) formStudentId = val; }}
+                  disabled={studentDirectoryQuery.isLoading || studentDirectoryQuery.isError}
                   class="w-full h-8 text-xs bg-background border-border/60"
                 />
               </div>
@@ -800,13 +842,17 @@ async function exportCsv() {
                 <SearchableSelect
                   value={selectedFeeForSplit?.id || ""}
                   placeholder={m.finance_ui_installment_fee_placeholder()}
-                  items={fees.filter((f) => f.status === "unpaid" && Number(f.paid_amount || 0) === 0)}
+                  items={fees.filter((f) =>
+                    Number(f.paid_amount || 0) === 0 &&
+                    Number(f.balance_due || f.net_amount || 0) > 0 &&
+                    f.status !== "cancelled"
+                  )}
                   getItemValue={(f) => f.id}
                   getItemLabel={(f) => {
-                    const st = students.find((s) => String(s.id) === String(f.enrollment_id));
+                    const st = studentsById.get(String(f.student_id));
                     return m.finance_ui_installment_fee_option({
-                      student: st?.full_name || m.finance_ui_student(),
-                      fee: f.fee_type_name || m.finance_ui_fees(),
+                      student: st?.full_name || st?.student_number || m.finance_ui_student(),
+                      fee: getFeeTemplateName(f),
                       amount: formatFeeAmount(Number(f.net_amount || 0), getFeeCurrency(f)),
                     });
                   }}
@@ -876,10 +922,10 @@ async function exportCsv() {
                   items={fees.filter((f) => Number(f.paid_amount || 0) > 0)}
                   getItemValue={(f) => f.id}
                   getItemLabel={(f) => {
-                    const st = students.find((s) => String(s.id) === String(f.enrollment_id));
+                    const st = studentsById.get(String(f.student_id));
                     return m.finance_ui_refund_fee_option({
-                      student: st?.full_name || m.finance_ui_student(),
-                      fee: f.fee_type_name || m.finance_ui_fees(),
+                      student: st?.full_name || st?.student_number || m.finance_ui_student(),
+                      fee: getFeeTemplateName(f),
                       amount: formatFeeAmount(Number(f.paid_amount || 0), getFeeCurrency(f)),
                     });
                   }}
@@ -932,22 +978,42 @@ async function exportCsv() {
       </div>
     {/if}
 
-    <!-- Grid Container -->
-    <div class="flex-1 min-h-0 overflow-hidden">
-      <OrbisGrid
-        columns={columns}
-        source={filteredSource}
-        loading={gridLoading}
-        serverQuery
-        search={searchQuery}
-        searchPlaceholder={m.finance_ui_fee_search_placeholder()}
-        onquerychange={handleFeeGridQuery}
-        rtl={isAr()}
-        readonly
-        emptyTitle={m.finance_ui_no_student_fees()}
-        hasMore={feesQuery.hasNextPage ?? false}
-        onloadmore={loadMoreFees}
-      />
-    </div>
+    {#if studentDirectoryQuery.isError}
+      <div
+        class="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm"
+        role="alert"
+      >
+        <span>
+          {m.finance_ui_fees_load_failed()}
+          {extractErrorMessage(studentDirectoryQuery.error)}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => studentDirectoryQuery.refetch()}
+        >
+          <Refresh size={14} />
+          {m.finance_ui_refresh()}
+        </Button>
+      </div>
+    {:else}
+      <!-- Grid Container -->
+      <div class="flex-1 min-h-0 overflow-hidden">
+        <OrbisGrid
+          columns={columns}
+          source={gridSource}
+          loading={gridLoading}
+          serverQuery
+          search={searchQuery}
+          searchPlaceholder={m.finance_ui_fee_search_placeholder()}
+          onquerychange={handleFeeGridQuery}
+          rtl={isAr()}
+          readonly
+          emptyTitle={m.finance_ui_no_student_fees()}
+          hasMore={feesQuery.hasNextPage ?? false}
+          onloadmore={loadMoreFees}
+        />
+      </div>
+    {/if}
   </div>
 </div>

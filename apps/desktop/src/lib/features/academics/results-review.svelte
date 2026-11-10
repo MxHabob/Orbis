@@ -422,6 +422,7 @@ $effect(() => {
               <OrbisGrid
                 source={gridSource}
                 columns={columns}
+                rtl={isRtl}
                 readonly
               />
             </div>

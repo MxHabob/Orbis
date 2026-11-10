@@ -44,10 +44,10 @@ impl DashboardRepository for DashboardRepoImpl {
             org_id,
         ).await?;
 
-        // Count classes
+        // Classes are stored as class-typed sections in the unified schema.
         let total_classes = self
             .count_query(
-                "SELECT COUNT(*) as cnt FROM classes WHERE org_id = $1",
+                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND section_type = 'class' AND is_deleted = FALSE",
                 org_id,
             )
             .await?;
@@ -171,5 +171,105 @@ impl DashboardRepoImpl {
                 "Dashboard sum query returned no row".into(),
             )),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        migration::{Migrator, MigratorTrait},
+        models::{organization, section},
+    };
+    use chrono::Utc;
+    use sea_orm::{ActiveModelTrait, Database, Set};
+
+    #[tokio::test]
+    async fn dashboard_counts_classes_from_unified_sections_table() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        Migrator::up(&db, None).await.unwrap();
+
+        let org_id = Uuid::new_v4();
+        let now = Utc::now();
+        organization::ActiveModel {
+            id: Set(org_id),
+            name: Set("Test organization".to_owned()),
+            name_ar: Set(None),
+            slug: Set(format!("test-{}", org_id)),
+            code: Set(None),
+            institution_type: Set("school".to_owned()),
+            timezone: Set("UTC".to_owned()),
+            locale: Set("en".to_owned()),
+            date_format: Set(None),
+            format_locale: Set(None),
+            time_format: Set(None),
+            is_hijri_enabled: Set(false),
+            base_currency_code: Set(None),
+            settings: Set(None),
+            features: Set(None),
+            logo: Set(None),
+            favicon: Set(None),
+            primary_color: Set(None),
+            is_active: Set(true),
+            is_verified: Set(false),
+            is_deleted: Set(false),
+            deleted_at: Set(None),
+            deleted_by: Set(None),
+            current_period_id: Set(None),
+            metadata: Set(None),
+            created_by: Set(None),
+            updated_by: Set(None),
+            version: Set(1),
+            created_at: Set(now),
+            updated_at: Set(now),
+        }
+        .insert(&db)
+        .await
+        .unwrap();
+
+        for (section_type, is_deleted) in
+            [("class", false), ("class", true), ("course_section", false)]
+        {
+            section::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                org_id: Set(org_id),
+                org_unit_id: Set(None),
+                section_type: Set(section_type.to_owned()),
+                code: Set(Uuid::new_v4().to_string()),
+                name: Set("Test section".to_owned()),
+                name_ar: Set(None),
+                level: Set(None),
+                track: Set(None),
+                capacity: Set(None),
+                color: Set(None),
+                is_active: Set(true),
+                is_deleted: Set(is_deleted),
+                deleted_at: Set(None),
+                created_at: Set(now),
+                updated_at: Set(now),
+            }
+            .insert(&db)
+            .await
+            .unwrap();
+        }
+
+        let repo = DashboardRepoImpl { db };
+        let total_classes = repo
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND section_type = 'class' AND is_deleted = FALSE",
+                org_id,
+            )
+            .await
+            .unwrap();
+        let active_sections = repo
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND is_active = TRUE AND is_deleted = FALSE",
+                org_id,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(total_classes, 1);
+        assert_eq!(active_sections, 2);
     }
 }

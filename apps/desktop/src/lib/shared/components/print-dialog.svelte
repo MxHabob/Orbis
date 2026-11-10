@@ -79,10 +79,12 @@ let templates = $state<any[]>([]);
 let selectedTemplateId = $state<string>("");
 let loadingTemplates = $state(false);
 let generatingPdf = $state(false);
+let pdfPreviewLoading = $state(false);
 let pdfUrl = $state<string | null>(null);
 let previewError = $state<string | null>(null);
 let pdfPreviewFrame: HTMLIFrameElement | undefined = $state();
 let printAfterPreviewLoad = false;
+let pdfLoadTimeout: ReturnType<typeof setTimeout> | null = null;
 let activeTab = $state("preview");
 
 // Batch progress
@@ -211,6 +213,8 @@ function updateConfigFromTemplate(template: any) {
 
 $effect(() => {
   if (open && entityType) {
+    clearPdfLoadTimeout();
+    printAfterPreviewLoad = false;
     loadTemplates();
     clearPdfPreview();
     previewError = null;
@@ -243,11 +247,23 @@ $effect(() => {
 // ── Helpers ──────────────────────────────────────────────────
 
 function clearPdfPreview() {
+  clearPdfLoadTimeout();
+  pdfPreviewLoading = false;
   if (pdfUrl) URL.revokeObjectURL(pdfUrl);
   pdfUrl = null;
 }
 
-onDestroy(clearPdfPreview);
+function clearPdfLoadTimeout() {
+  if (pdfLoadTimeout !== null) {
+    clearTimeout(pdfLoadTimeout);
+    pdfLoadTimeout = null;
+  }
+}
+
+onDestroy(() => {
+  clearPdfLoadTimeout();
+  clearPdfPreview();
+});
 
 function serializeMultiUpConfig(config: MultiUpConfig): string {
   const sheetSize =
@@ -385,7 +401,19 @@ async function generatePdf(): Promise<boolean> {
     pdfUrl = URL.createObjectURL(
       new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }),
     );
+    pdfPreviewLoading = true;
     activeTab = "pdf";
+    pdfLoadTimeout = setTimeout(() => {
+      pdfLoadTimeout = null;
+      if (!pdfPreviewLoading) return;
+      pdfPreviewLoading = false;
+      previewError = m.shared_ui_print_frame_unavailable();
+      if (printAfterPreviewLoad) {
+        printAfterPreviewLoad = false;
+        isBatchProcessing = false;
+      }
+      toast.error(previewError);
+    }, 30_000);
     return true;
   } catch (e: unknown) {
     previewError = extractErrorMessage(e) || m.shared_ui_print_preview_failed();
@@ -401,16 +429,20 @@ const generatePreview = () => generatePdf();
 // ── Print Action ─────────────────────────────────────────────
 
 function handlePdfPreviewLoad() {
+  pdfPreviewLoading = false;
+  clearPdfLoadTimeout();
   if (!printAfterPreviewLoad) return;
   printAfterPreviewLoad = false;
   const printWindow = pdfPreviewFrame?.contentWindow;
   if (!printWindow) {
+    isBatchProcessing = false;
     toast.error(m.shared_ui_print_frame_unavailable());
     return;
   }
   try {
     printWindow.focus();
     printWindow.print();
+    batchProgress = 100;
     toast.success(
       m.common_print_multi_up_complete_detail({
         count: String(entityIds.length),
@@ -420,10 +452,24 @@ function handlePdfPreviewLoad() {
     toast.error(
       extractErrorMessage(error) || m.shared_ui_print_frame_unavailable(),
     );
+  } finally {
+    isBatchProcessing = false;
   }
 }
 
+function handlePdfPreviewError() {
+  pdfPreviewLoading = false;
+  clearPdfLoadTimeout();
+  previewError = m.shared_ui_print_frame_unavailable();
+  if (printAfterPreviewLoad) {
+    printAfterPreviewLoad = false;
+    isBatchProcessing = false;
+  }
+  toast.error(previewError);
+}
+
 async function handlePrintAction() {
+  if (isBatchProcessing || generatingPdf) return;
   if (!selectedTemplateId) {
     toast.error(m.common_print_multi_up_no_templates());
     return;
@@ -433,15 +479,14 @@ async function handlePrintAction() {
   batchProgress = 30;
   batchStatusText = m.common_print_multi_up_processing();
   printAfterPreviewLoad = true;
-  try {
-    if (await generatePdf()) {
-      batchProgress = 100;
-    } else {
-      printAfterPreviewLoad = false;
-    }
-  } finally {
+  if (!(await generatePdf())) {
+    printAfterPreviewLoad = false;
     isBatchProcessing = false;
+    return;
   }
+  if (!printAfterPreviewLoad) return;
+
+  batchProgress = 85;
 }
 
 function triggerDownload() {
@@ -472,29 +517,9 @@ function applySuggestion(suggestion: MultiUpLayout) {
       </DialogTitle>
     </DialogHeader>
 
-    {#if isBatchProcessing}
-      <!-- ═══ Batch Progress View ═══ -->
-      <div class="grow py-12 flex flex-col items-center justify-center gap-6">
-        <div class="w-full max-w-md flex flex-col gap-3">
-          <div class="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{batchStatusText}</span>
-            <span class="font-bold text-foreground">{batchProgress}%</span>
-          </div>
-          <Progress value={batchProgress} class="h-2 w-full" />
-        </div>
-        {#if batchProgress === 100}
-          <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
-            <CheckCircle size={16} />
-            <span>{m.common_print_multi_up_complete()}</span>
-          </div>
-        {:else}
-          <LoadingIndicator class="text-primary mt-2"  size={24} />
-        {/if}
-      </div>
-
-    {:else}
-      <!-- ═══ Main Content: Config + Preview ═══ -->
-      <div class="grow flex flex-col md:flex-row gap-4 overflow-hidden py-3">
+    <!-- ═══ Main Content: Config + Preview ═══ -->
+    <div class="relative grow min-h-0 overflow-hidden">
+      <div class="absolute inset-0 flex flex-col md:flex-row gap-4 overflow-hidden py-3">
 
         <!-- Left Panel: Config -->
         <div class="w-full md:w-60 flex flex-col gap-3 shrink-0 overflow-y-auto scrollbar-hide">
@@ -589,7 +614,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
 
             <!-- PDF Preview Tab -->
             <TabsContent value="pdf" class="grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-70 overflow-hidden flex items-center justify-center">
-              {#if generatingPdf}
+              {#if generatingPdf || pdfPreviewLoading}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
                   <LoadingIndicator class="text-primary"  size={20} />
                   <p class="text-[10px] font-semibold">{m.common_print_multi_up_preview_loading()}</p>
@@ -603,6 +628,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                   title={m.shared_ui_multi_up_print_preview()}
                   class="w-full h-full border-none"
                   onload={handlePdfPreviewLoad}
+                  onerror={handlePdfPreviewError}
                 ></iframe>
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
@@ -647,7 +673,31 @@ function applySuggestion(suggestion: MultiUpLayout) {
           {/if}
         </div>
       </div>
-    {/if}
+
+      {#if isBatchProcessing}
+        <div
+          class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-background/85 px-4 backdrop-blur-xs"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="w-full max-w-md flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{batchStatusText}</span>
+              <span class="font-bold text-foreground">{batchProgress}%</span>
+            </div>
+            <Progress value={batchProgress} class="h-2 w-full" />
+          </div>
+          {#if batchProgress === 100}
+            <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
+              <CheckCircle size={16} />
+              <span>{m.common_print_multi_up_complete()}</span>
+            </div>
+          {:else}
+            <LoadingIndicator class="text-primary mt-2" size={24} />
+          {/if}
+        </div>
+      {/if}
+    </div>
 
     <!-- ═══ Footer ═══ -->
     <DialogFooter class="shrink-0 border-t border-border/40 pt-3 gap-2 sm:gap-0">
