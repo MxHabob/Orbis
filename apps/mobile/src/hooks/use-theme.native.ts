@@ -1,224 +1,179 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useNativeVariable } from "react-native-css/native";
-
-function useColorToken(
-  variable: string,
-  light: string,
-  dark: string,
-  isDark: boolean,
-): string {
-  const value = useNativeVariable(variable);
-  return typeof value === "string" ? value : isDark ? dark : light;
-}
 
 export function useTheme() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const useColor = (variable: string, light: string, dark: string) =>
-    useColorToken(variable, light, dark, isDark);
+  const useColor = (_variable: string, light: string, dark: string) =>
+    isDark ? dark : light;
 
   return {
-    primary: useColor("--primary", "oklch(0.58 0.1 285)", "oklch(0.7 0.1 285)"),
+    primary: useColor("--primary", "#7471B3", "#9896DA"),
+    overlay: useColor("--overlay", "rgb(0 0 0 / 10%)", "rgb(0 0 0 / 10%)"),
     primaryForeground: useColor(
       "--primary-foreground",
-      "oklch(1 0 0)",
-      "oklch(1 0 0)",
+      "#FFFFFF",
+      "#FFFFFF",
     ),
     primaryLight: useColor(
       "--primary-light",
-      "oklch(0.965 0 0)",
-      "oklch(0.34 0 0)",
+      "#928FD4",
+      "#B0AFF5",
     ),
     primaryDark: useColor(
       "--primary-dark",
-      "oklch(0.46 0.1 285)",
-      "oklch(0.58 0.1 285)",
+      "#534F8D",
+      "#7471B3",
     ),
 
     brandPurple: useColor(
       "--brand-purple",
-      "oklch(0.58 0.1 285)",
-      "oklch(0.7 0.1 285)",
+      "#7471B3",
+      "#9896DA",
     ),
     brandPurpleLight: useColor(
       "--brand-purple-light",
-      "oklch(0.68 0.1 285)",
-      "oklch(0.78 0.1 285)",
+      "#928FD4",
+      "#B0AFF5",
     ),
     brandPurpleDark: useColor(
       "--brand-purple-dark",
-      "oklch(0.46 0.1 285)",
-      "oklch(0.58 0.1 285)",
+      "#534F8D",
+      "#7471B3",
     ),
     brandLime: useColor(
       "--brand-lime",
-      "oklch(0.75 0.08 145)",
-      "oklch(0.78 0.08 145)",
+      "#8EBC8F",
+      "#98C598",
     ),
     brandPink: useColor(
       "--brand-pink",
-      "oklch(58.18% 0.23022 346.346)",
-      "oklch(58.18% 0.23022 346.346)",
+      "#D11F96",
+      "#D11F96",
     ),
     brandIndigo: useColor(
       "--brand-indigo",
-      "oklch(0.6 0.08 250)",
-      "oklch(0.72 0.08 250)",
+      "#5B84AE",
+      "#7EA9D5",
     ),
     brandRose: useColor(
       "--brand-rose",
-      "oklch(0.65 0.16 25)",
-      "oklch(0.68 0.16 25)",
+      "#E0615C",
+      "#EA6A64",
     ),
 
-    background: useColor("--background", "oklch(0.99 0 0)", "oklch(0.24 0 0)"),
-    foreground: useColor("--foreground", "oklch(0.23 0 0)", "oklch(0.92 0 0)"),
-    backgroundElement: useColor(
-      "--background-element",
-      "oklch(0.97 0 0)",
-      "oklch(0.32 0 0)",
-    ),
-    backgroundSelected: useColor(
-      "--background-selected",
-      "oklch(0.965 0 0)",
-      "oklch(0.34 0 0)",
-    ),
+    background: useColor("--background", "#FCFCFC", "#111111"),
+    foreground: useColor("--foreground", "#1D1D1D", "#E4E4E4"),
+    backgroundElement: useColor("--background-element", "#F2F2F2", "#292929"),
+    backgroundSelected: useColor("--background-selected", "#EBEBEB", "#333333"),
 
-    card: useColor("--card", "oklch(1 0 0)", "oklch(0.28 0 0)"),
+    card: useColor("--card", "#FFFFFF", "#292929"),
     cardForeground: useColor(
       "--card-foreground",
-      "oklch(0.23 0 0)",
-      "oklch(0.92 0 0)",
+      "#1D1D1D",
+      "#E4E4E4",
     ),
-    cardElevated: useColor(
-      "--card-elevated",
-      "oklch(1 0 0)",
-      "oklch(0.28 0 0)",
-    ),
-    cardBorder: useColor("--card-border", "oklch(0.9 0 0)", "oklch(0.38 0 0)"),
+    cardElevated: useColor("--card-elevated", "#FFFFFF", "#333333"),
+    cardBorder: useColor("--card-border", "#E4E4E4", "#3D3D3D"),
 
-    popover: useColor("--popover", "oklch(1 0 0)", "oklch(0.3 0 0)"),
+    popover: useColor("--popover", "#FFFFFF", "#2E2E2E"),
     popoverForeground: useColor(
       "--popover-foreground",
-      "oklch(0.23 0 0)",
-      "oklch(0.92 0 0)",
+      "#1D1D1D",
+      "#E4E4E4",
     ),
-    secondary: useColor("--secondary", "oklch(0.97 0 0)", "oklch(0.32 0 0)"),
+    secondary: useColor("--secondary", "#F5F5F5", "#333333"),
     secondaryForeground: useColor(
       "--secondary-foreground",
-      "oklch(0.23 0 0)",
-      "oklch(0.92 0 0)",
+      "#1D1D1D",
+      "#E4E4E4",
     ),
-    muted: useColor("--muted", "oklch(0.96 0 0)", "oklch(0.3 0 0)"),
+    muted: useColor("--muted", "#F2F2F2", "#2E2E2E"),
     mutedForeground: useColor(
       "--muted-foreground",
-      "oklch(0.52 0 0)",
-      "oklch(0.7 0 0)",
+      "#696969",
+      "#9E9E9E",
     ),
-    accent: useColor("--accent", "oklch(0.965 0 0)", "oklch(0.34 0 0)"),
+    accent: useColor("--accent", "#F3F3F3", "#383838"),
     accentForeground: useColor(
       "--accent-foreground",
-      "oklch(0.23 0 0)",
-      "oklch(0.92 0 0)",
+      "#1D1D1D",
+      "#E4E4E4",
     ),
-    accentLight: useColor(
-      "--primary-light",
-      "oklch(0.965 0 0)",
-      "oklch(0.34 0 0)",
-    ),
+    accentLight: useColor("--primary-light", "#928FD4", "#B0AFF5"),
 
-    text: useColor("--foreground", "oklch(0.23 0 0)", "oklch(0.92 0 0)"),
+    text: useColor("--foreground", "#1D1D1D", "#E4E4E4"),
     textSecondary: useColor(
       "--muted-foreground",
-      "oklch(0.52 0 0)",
-      "oklch(0.7 0 0)",
+      "#696969",
+      "#9E9E9E",
     ),
     textMuted: useColor(
       "--muted-foreground",
-      "oklch(0.52 0 0)",
-      "oklch(0.7 0 0)",
+      "#696969",
+      "#9E9E9E",
     ),
 
-    border: useColor("--border", "oklch(0.9 0 0)", "oklch(0.38 0 0)"),
-    borderSubtle: useColor(
-      "--border-subtle",
-      "oklch(0.97 0 0)",
-      "oklch(0.32 0 0)",
-    ),
-    input: useColor("--input", "oklch(0.94 0 0)", "oklch(0.34 0 0)"),
-    ring: useColor("--ring", "oklch(0.58 0.1 285)", "oklch(0.7 0.1 285)"),
+    border: useColor("--border", "#DEDEDE", "#424242"),
+    borderSubtle: useColor("--border-subtle", "#E8E8E8", "#383838"),
+    input: useColor("--input", "#EBEBEB", "#383838"),
+    ring: useColor("--ring", "#7471B3", "#9896DA"),
 
     destructive: useColor(
       "--destructive",
-      "oklch(0.62 0.18 25)",
-      "oklch(0.66 0.18 25)",
+      "#DE4E4B",
+      "#EC5B57",
     ),
     destructiveForeground: useColor(
       "--destructive-foreground",
-      "oklch(1 0 0)",
-      "oklch(1 0 0)",
+      "#FFFFFF",
+      "#FFFFFF",
     ),
-    success: useColor(
-      "--success",
-      "oklch(0.74 0.08 145)",
-      "oklch(0.76 0.08 145)",
-    ),
-    successLight: useColor(
-      "--success-light",
-      "oklch(0.97 0 0)",
-      "oklch(0.32 0 0)",
-    ),
-    warning: useColor("--warning", "oklch(0.82 0.1 85)", "oklch(0.84 0.1 85)"),
-    warningLight: useColor(
-      "--warning-light",
-      "oklch(0.97 0 0)",
-      "oklch(0.32 0 0)",
-    ),
-    error: useColor("--error", "oklch(0.62 0.18 25)", "oklch(0.66 0.18 25)"),
-    errorLight: useColor("--error-light", "oklch(0.97 0 0)", "oklch(0.32 0 0)"),
-    info: useColor("--info", "oklch(0.68 0.08 250)", "oklch(0.72 0.08 250)"),
-    infoLight: useColor("--info-light", "oklch(0.97 0 0)", "oklch(0.32 0 0)"),
+    success: useColor("--success", "#009A00", "#39C34B"),
+    successLight: useColor("--success-light", "#D3F7D3", "#0D3811"),
+    warning: useColor("--warning", "#CD8800", "#E4AC59"),
+    warningLight: useColor("--warning-light", "#FBE8CE", "#3F301B"),
+    error: useColor("--error", "#DE4E4B", "#EC5B57"),
+    errorLight: useColor("--error-light", "#FFDCD7", "#4D2623"),
+    info: useColor("--info", "#5B84AE", "#7EA9D5"),
+    infoLight: useColor("--info-light", "#D8EEFF", "#1E2F41"),
 
-    btnShadowPrimary: useColor(
-      "--btn-shadow-primary",
-      "oklch(0.46 0.1 285)",
-      "oklch(0.58 0.1 285)",
-    ),
+    btnShadowPrimary: useColor("--btn-shadow-primary", "#32326D", "#26245E"),
     btnShadowSecondary: useColor(
       "--btn-shadow-secondary",
-      "oklch(0.9 0 0)",
-      "oklch(0.38 0 0)",
+      "#AEAEAE",
+      "#3A3A3A",
     ),
     btnShadowDestructive: useColor(
       "--btn-shadow-destructive",
-      "oklch(0.62 0.18 25)",
-      "oklch(0.66 0.18 25)",
+      "#A10000",
+      "#930000",
     ),
-    btnShadowLime: useColor(
-      "--btn-shadow-lime",
-      "oklch(0.62 0.08 145)",
-      "oklch(0.66 0.08 145)",
-    ),
+    btnShadowLime: useColor("--btn-shadow-lime", "#829D00", "#586F00"),
 
     tabBarBackground: useColor(
       "--tab-bar-background",
-      "oklch(1 0 0)",
-      "oklch(0.28 0 0)",
+      "#FFFFFF",
+      "#292929",
     ),
     tabBarBorder: useColor(
       "--tab-bar-border",
-      "oklch(0.9 0 0)",
-      "oklch(0.38 0 0)",
+      "#DEDEDE",
+      "#424242",
     ),
     tabBarActive: useColor(
       "--tab-bar-active",
-      "oklch(0.58 0.1 285)",
-      "oklch(0.7 0.1 285)",
+      "#7471B3",
+      "#9896DA",
     ),
     tabBarInactive: useColor(
       "--tab-bar-inactive",
-      "oklch(0.52 0 0)",
-      "oklch(0.7 0 0)",
+      "#696969",
+      "#9E9E9E",
+    ),
+    brandLimeForeground: useColor(
+      "--brand-lime-foreground",
+      "#0B290E",
+      "#91E694",
     ),
   };
 }

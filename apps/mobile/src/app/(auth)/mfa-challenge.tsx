@@ -1,29 +1,18 @@
-/**
- * @module @orbis/mobile/app/(auth)/mfa-challenge
- *
- * High-end Two-Factor Authentication screen directly modeled after Reference Image 1
- * (Screen 7/8 with radiant purple top glow, subtle stepper context, clean 6-digit PIN boxes,
- * and bottom tactile pill button).
- */
-
 import React, { useState, useRef, useEffect } from "react";
-import {
-  Text,
-  View,
-  TextInput,
-  Pressable,
-  type TextInputInstance,
-} from "react-native";
+import { View, TextInput, Pressable, type TextInputInstance } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { Button } from "@/components/ui/button";
 import { XMark } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 export default function MFAChallengeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userId?: string }>();
   const theme = useTheme();
   const { t } = useI18n();
@@ -133,49 +122,31 @@ export default function MFAChallengeScreen() {
           flexGrow: 1,
           justifyContent: "space-between",
           paddingHorizontal: 24,
-          paddingTop: 48,
-          paddingBottom: 32,
+          paddingTop: insets.top + 12,
+          paddingBottom: Math.max(insets.bottom, 16) + 8,
         }}
       >
-        {/* Minimalist Top Bar (Like Reference 1) */}
-        <View className="mb-four flex-row items-center justify-between">
-          <Text className="text-xs leading-4 font-semibold tracking-[0.5px] text-muted-foreground uppercase">
-            {t("auth_setup_title")}
-          </Text>
+        <View className="mb-four flex-row justify-end">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("common_cancel")}
             onPress={() => router.back()}
-            className="h-11 w-11 items-center justify-center"
+            className="h-11 w-11 items-center justify-center rounded-full"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <XMark size={16} color={theme.foreground} />
+            <XMark size={20} color={theme.foreground} />
           </Pressable>
         </View>
 
-        {/* Minimal Stepper Status Header */}
-        <View className="mb-six">
-          <View className="flex-row items-center gap-two">
-            <View className="h-5 w-5 items-center justify-center rounded-full bg-primary">
-              <Text className="text-[11px] font-extrabold text-white">✓</Text>
-            </View>
-            <Text className="text-xs leading-4 font-semibold text-muted-foreground">
-              {t("auth_setup_step_device")}
-            </Text>
-          </View>
-        </View>
-
-        {/* Main Content Area */}
         <View className="flex-1 justify-center">
-          <Text className="mb-one text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground">
-            {isBackupMode
-              ? t("auth_mfa_backup_code")
-              : t("auth_setup_step_recovery")}
+          <Text className="mb-one text-[28px] leading-9 font-semibold tracking-tight text-foreground">
+            {isBackupMode ? t("auth_mfa_backup_code") : t("auth_mfa_title")}
           </Text>
 
           <Text className="text-sm leading-5 text-muted-foreground">
             {isBackupMode ? t("auth_mfa_backup_ph") : t("auth_mfa_subtitle")}
           </Text>
 
-          {/* Resend Timer Link */}
           {!isBackupMode && (
             <Pressable
               onPress={() => countdown === 0 && setCountdown(55)}
@@ -198,7 +169,6 @@ export default function MFAChallengeScreen() {
           ) : null}
 
           {!isBackupMode ? (
-            /* 6 Large PIN Boxes with breathing room */
             <View className="my-four flex-row justify-between">
               {digits.map((digit, idx) => {
                 const isCurrent =
@@ -210,14 +180,7 @@ export default function MFAChallengeScreen() {
                     ref={(el) => {
                       inputRefs.current[idx] = el;
                     }}
-                    className={`h-14.5 w-12 rounded-md border bg-background-element text-center text-[22px] font-bold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
-                    style={{
-                      shadowColor: digit ? theme.primary : "#000000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.08,
-                      shadowRadius: 4,
-                      elevation: 2,
-                    }}
+                    className={`h-14.5 w-12 rounded-lg border bg-background-element text-center text-[22px] font-bold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
                     value={digit}
                     onChangeText={(val) => handleDigitChange(val, idx)}
                     onKeyPress={(e) => handleKeyPress(e, idx)}
@@ -230,9 +193,8 @@ export default function MFAChallengeScreen() {
               })}
             </View>
           ) : (
-            /* Backup Code Input */
             <View className="my-four">
-              <View className="h-14 flex-row items-center rounded-full border border-border bg-background-element px-four">
+              <View className="h-14 flex-row items-center rounded-xl border border-border bg-background-element px-four">
                 <TextInput
                   className="flex-1 px-two text-base text-foreground"
                   placeholder="XXXX-XXXX-XXXX"
@@ -246,7 +208,6 @@ export default function MFAChallengeScreen() {
             </View>
           )}
 
-          {/* Fallback mode toggle */}
           <Pressable
             onPress={() => {
               setIsBackupMode(!isBackupMode);
@@ -263,7 +224,6 @@ export default function MFAChallengeScreen() {
           </Pressable>
         </View>
 
-        {/* Bottom Tactile Pill Button */}
         <View className="mt-six">
           <Button
             title={t("auth_verify")}

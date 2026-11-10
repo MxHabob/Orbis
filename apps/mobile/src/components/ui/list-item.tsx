@@ -5,10 +5,11 @@
  */
 
 import React from "react";
-import { View, Text, Pressable, type ViewStyle } from "react-native";
+import { View, Pressable, type ViewStyle } from "react-native";
 import { ChevronRight, ChevronLeft } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 export interface ListItemProps {
   title: string;

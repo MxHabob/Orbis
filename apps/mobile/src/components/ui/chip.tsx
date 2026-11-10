@@ -5,7 +5,8 @@
  */
 
 import React from "react";
-import { View, Text, Pressable, type ViewStyle } from "react-native";
+import { View, Pressable, type ViewStyle } from "react-native";
+import { Text } from "@/components/ui/text";
 
 export interface ChipProps {
   label: string;

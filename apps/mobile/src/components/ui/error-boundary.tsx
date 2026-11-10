@@ -6,10 +6,11 @@
  */
 
 import React from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { InfoCircle } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "./button";
+import { Text } from "@/components/ui/text";
 
 // ─── Error Fallback UI ─────────────────────────────────────────────────────────
 

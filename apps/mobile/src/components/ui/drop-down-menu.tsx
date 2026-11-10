@@ -17,17 +17,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  type GestureResponderEvent,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { type GestureResponderEvent, Modal, Platform, Pressable, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -38,6 +28,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
+import { Text } from "@/components/ui/text";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 

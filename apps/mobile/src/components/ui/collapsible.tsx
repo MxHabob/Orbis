@@ -1,8 +1,9 @@
 import { SymbolView } from "expo-symbols";
 import { PropsWithChildren, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useTheme } from "@/hooks/use-theme";
+import { Text } from "@/components/ui/text";
 
 export function Collapsible({
   children,

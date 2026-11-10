@@ -1,8 +1,14 @@
-import { BuildingOffice, CheckCircle, Search } from "@orbis/icons/native";
+import { BuildingOffice, CheckCircle, Plus, Search } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import type { ListRenderItemInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
@@ -25,6 +31,7 @@ import {
   searchInstitutionDirectory,
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 export default function InstitutionSelectScreen() {
   const router = useRouter();
@@ -148,6 +155,7 @@ export default function InstitutionSelectScreen() {
         isBusy={connectingId === item.deployment_id}
         disabled={connectingId !== null}
         localLabel={t("auth_institution_local_label")}
+        variant="launcher"
         onPress={connectInstitution}
       />
     ),
@@ -200,7 +208,7 @@ export default function InstitutionSelectScreen() {
   }, [directoryError, directoryQuery, search, t]);
 
   return (
-    <Screen edges={[]} statusBarStyle="auto">
+    <Screen edges={[]}>
       <View className="flex-1" style={{ paddingTop: topInset }}>
         <InstitutionPickerHeader
           languageLabel={locale === "ar" ? "English" : "العربية"}
@@ -216,11 +224,45 @@ export default function InstitutionSelectScreen() {
             keyExtractor={(institution) => institution.deployment_id}
             renderItem={renderInstitution}
             ListHeaderComponent={
-              <View className="gap-3 pb-2">
-                <Text className="text-start text-2xl leading-8 font-bold text-foreground">
-                  {t("auth_institution_search_title")}
-                </Text>
+              <View className="gap-3 pb-3 pt-4">
+                {Platform.OS !== "web" && isLocalDiscoveryAvailable ? (
+                  <LocalInstitutionDiscovery
+                    title={t("auth_institution_local_network_title")}
+                    connectingId={connectingId}
+                    selectedInstitution={selectedInstitution}
+                    onConnect={connectInstitution}
+                    institutionCardVariant="launcher"
+                  />
+                ) : null}
 
+                {Platform.OS !== "web" && !isLocalDiscoveryAvailable ? (
+                  <View className="min-h-[68px] flex-row items-center gap-3 rounded-2xl bg-card px-4">
+                    <View className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
+                    <Text className="flex-1 text-start text-sm leading-5 text-muted-foreground">
+                      {t("auth_institution_lan_build_required")}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {Platform.OS !== "web" ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("auth_institution_local_scan")}
+                    onPress={() => router.push("/institution-scan")}
+                    className="min-h-[68px] flex-row items-center gap-3 rounded-2xl bg-card px-4"
+                  >
+                    <Plus size={20} color={theme.info} />
+                    <Text className="text-start text-sm font-medium text-info">
+                      {t("auth_institution_local_scan")}
+                    </Text>
+                  </Pressable>
+                ) : null}
+
+                <Text className="pt-6 text-start text-xs font-medium tracking-[1px] text-muted-foreground">
+                  {t("auth_institution_directory_title").toLocaleUpperCase(
+                    locale,
+                  )}
+                </Text>
                 <Input
                   accessibilityLabel={t("auth_institution_filter_label")}
                   placeholder={t("auth_institution_search_placeholder")}
@@ -232,28 +274,6 @@ export default function InstitutionSelectScreen() {
                   autoCorrect={false}
                   clearButtonMode="while-editing"
                 />
-
-                {Platform.OS !== "web" ? (
-                  <Button
-                    title={t("auth_institution_local_scan")}
-                    variant="outline"
-                    size="md"
-                    fullWidth
-                    onPress={() => router.push("/institution-scan")}
-                  />
-                ) : null}
-
-                {Platform.OS !== "web" && !isLocalDiscoveryAvailable ? (
-                  <Text className="text-start text-xs leading-4 text-muted-foreground">
-                    {t("auth_institution_lan_build_required")}
-                  </Text>
-                ) : isLocalDiscoveryAvailable ? (
-                  <LocalInstitutionDiscovery
-                    connectingId={connectingId}
-                    selectedInstitution={selectedInstitution}
-                    onConnect={connectInstitution}
-                  />
-                ) : null}
               </View>
             }
             ListEmptyComponent={

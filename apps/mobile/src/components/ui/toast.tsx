@@ -13,7 +13,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
   Easing,
   runOnJS,
@@ -24,6 +24,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle, InfoCircle, Sparkles } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
+import { Text } from "@/components/ui/text";
 
 const FLOATING_TAB_BAR_HEIGHT = 48;
 const TOAST_TAB_BAR_GAP = 16;

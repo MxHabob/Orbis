@@ -1,8 +1,9 @@
 import { PropsWithChildren, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { ChevronUp, ChevronDown } from "@orbis/icons/native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useTheme } from "@/hooks/use-theme";
+import { Text } from "@/components/ui/text";
 
 export interface AccordionProps extends PropsWithChildren {
   title: string;

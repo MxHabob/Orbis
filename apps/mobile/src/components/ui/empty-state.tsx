@@ -6,9 +6,10 @@
 
 import { ArchiveBox } from "@orbis/icons/native";
 import type React from "react";
-import { Text, View, type ViewStyle } from "react-native";
+import { View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "./button";
+import { Text } from "@/components/ui/text";
 
 export interface EmptyStateProps {
   icon?:

@@ -11,14 +11,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import {
-  Animated,
-  Keyboard,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Keyboard, Platform, Pressable, View } from "react-native";
 
 import { ChartBar, Document, Grid } from "@orbis/icons/native";
 import type { BottomTabBarProps } from "expo-router/tabs";
@@ -27,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 // ---------------------------------------------------------------------------
 // Types

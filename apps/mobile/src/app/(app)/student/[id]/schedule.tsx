@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
 import { Calendar, Clock } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const weekdayKeys: TranslationKey[] = [
   "student_schedule_day_1",

@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -34,6 +34,7 @@ import {
 } from "@/hooks/use-api-queries";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 export default function SecurityScreen() {
   const router = useRouter();

@@ -16,18 +16,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  type ScrollViewProps,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Keyboard, Modal, Platform, Pressable, ScrollView, type ScrollViewProps, StyleSheet, useWindowDimensions, View } from "react-native";
 import {
   Gesture,
   GestureDetector,
@@ -46,6 +35,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/hooks/use-theme";
+import { Text } from "@/components/ui/text";
 
 interface DrawerContextValue {
   translateY: SharedValue<number>;

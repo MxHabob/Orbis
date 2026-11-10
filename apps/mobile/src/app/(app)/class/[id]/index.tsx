@@ -6,7 +6,7 @@
  * and roster directory.
  */
 
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   ChartBar,
   Calendar,
 } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 export default function ClassIndexScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

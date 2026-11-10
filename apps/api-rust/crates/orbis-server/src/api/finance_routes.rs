@@ -16,7 +16,7 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::finance_service::{
     CreateSubAccountInput, DisbursementInput, PayrollItemInput, PostPayrollInput,
-    SettleGatewayPayoutInput, StatementFilter, StudentFeeSummary,
+    SettleGatewayPayoutInput, StatementFilter,
 };
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};

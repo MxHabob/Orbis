@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const studentValueKeys: Partial<Record<string, TranslationKey>> = {
   active: "student_status_active",

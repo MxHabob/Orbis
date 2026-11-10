@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import {
@@ -37,6 +37,7 @@ import { checkForMobileAppUpdate } from "@/lib/app-updates";
 import { getOrganizationWebsite } from "@/lib/web-urls";
 import type { TranslationKey } from "@/lib/i18n/types";
 import { ChevronLeft, ChevronRight } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 const roleKeys: Record<string, TranslationKey> = {
   teacher: "auth_role_teacher",

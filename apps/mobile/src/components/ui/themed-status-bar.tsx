@@ -13,9 +13,14 @@ export function ThemedStatusBar({ style }: ThemedStatusBarProps) {
   const isDark = colorScheme === "dark";
   const resolvedStyle = style ?? (isDark ? "light" : "dark");
   const barStyle =
-    resolvedStyle === "light" || (resolvedStyle === "inverted" && !isDark)
-      ? "light-content"
-      : "dark-content";
+    resolvedStyle === "inverted"
+      ? isDark
+        ? "dark-content"
+        : "light-content"
+      : resolvedStyle === "light" ||
+          (resolvedStyle === "auto" && isDark)
+        ? "light-content"
+        : "dark-content";
 
   return <StatusBar barStyle={barStyle} animated />;
 }

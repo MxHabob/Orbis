@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { useGradesQuery, useLinkedStudentId } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { ChartBar, AcademicCap } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 export default function StudentGradesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -6,17 +6,12 @@
  */
 
 import React from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  type TextInputProps,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, type TextInputProps, View } from "react-native";
 import { CheckCircle } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { useDrawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { Text } from "@/components/ui/text";
 
 // ─── DrawerFormField ─────────────────────────────────────────────────────────
 // A labeled text input styled for use inside a Drawer form.

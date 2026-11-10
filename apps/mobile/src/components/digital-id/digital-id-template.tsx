@@ -8,7 +8,7 @@ import {
 } from "@docforge/core";
 import { useQueries } from "@tanstack/react-query";
 import { memo, type ReactNode, useMemo } from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import Svg, {
   Ellipse,
@@ -22,6 +22,7 @@ import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/api/query-keys";
 import type { OrgDto, StudentDto, TemplateDto } from "@/lib/api/types";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 type TemplateContext = Record<string, unknown>;
 

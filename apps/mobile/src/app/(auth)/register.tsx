@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Redirect, useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { api, useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { Text } from "@/components/ui/text";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -68,9 +69,9 @@ export default function RegisterScreen() {
           paddingBottom: Math.max(insets.bottom, 20) + 16,
         }}
       >
-        <View className="gap-6">
+        <View className="gap-5 rounded-2xl border border-border bg-card p-5">
           <View className="gap-2">
-            <Text className="font-sans text-[28px] font-extrabold text-foreground">
+            <Text className="font-sans text-[28px] leading-9 font-semibold text-foreground">
               {t("auth_create_account_btn")}
             </Text>
             <Text className="font-sans text-sm text-muted-foreground">

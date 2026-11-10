@@ -15,7 +15,8 @@ import type { GradeDto, SectionSubjectDto, SubjectDto } from "@/lib/api/types";
 import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/text";
 
 export default function ClassGradesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

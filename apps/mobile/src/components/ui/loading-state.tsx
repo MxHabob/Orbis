@@ -4,8 +4,9 @@
  * Full-screen or container loading state with spinner and descriptive label.
  */
 
-import { Text, View, type ViewStyle } from "react-native";
+import { View, type ViewStyle } from "react-native";
 import { LoadingIndicator } from "./loading-indicator";
+import { Text } from "@/components/ui/text";
 
 export interface LoadingStateProps {
   message?: string;

@@ -17,21 +17,14 @@ import {
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useRouter } from "expo-router";
 import type React from "react";
-import {
-  Platform,
-  Pressable,
-  type StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { Platform, Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useUnreadCountQuery } from "@/hooks/use-api-queries";
+import { Text } from "@/components/ui/text";
 
 export const HEADER_CONTENT_OFFSET = 36;
 

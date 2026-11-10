@@ -17,7 +17,8 @@ import type { AttendanceDto } from "@/lib/api/types";
 import { useToast } from "@/components/ui/toast";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/text";
 
 const attendanceOptions: {
   value: string;

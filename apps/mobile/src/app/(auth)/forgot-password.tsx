@@ -5,17 +5,20 @@
  */
 
 import React, { useState } from "react";
-import { Text, View, Pressable, TextInput } from "react-native";
+import { View, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { ArrowLeft, ArrowRight, CheckCircle } from "@orbis/icons/native";
+import { Text } from "@/components/ui/text";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t, isArabic } = useI18n();
 
@@ -54,11 +57,10 @@ export default function ForgotPasswordScreen() {
           flexGrow: 1,
           justifyContent: "space-between",
           paddingHorizontal: 24,
-          paddingTop: 48,
-          paddingBottom: 32,
+          paddingTop: insets.top + 16,
+          paddingBottom: Math.max(insets.bottom, 16) + 8,
         }}
       >
-        {/* Minimal Nav Header */}
         <View className="mb-6 flex-row items-center">
           <Pressable
             onPress={() => router.back()}
@@ -71,9 +73,8 @@ export default function ForgotPasswordScreen() {
 
         {!isSubmitted ? (
           <View className="flex-1 justify-center">
-            {/* Title Block */}
             <View className="mb-6">
-              <Text className="font-sans text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground">
+              <Text className="font-sans text-[28px] leading-9 font-semibold tracking-tight text-foreground">
                 {t("auth_forgot_title")}
               </Text>
               <Text className="mt-one font-sans text-sm leading-5 text-muted-foreground">
@@ -89,17 +90,7 @@ export default function ForgotPasswordScreen() {
               </View>
             ) : null}
 
-            {/* Large Pill Input with embedded arrow */}
-            <View
-              className="min-h-12 flex-row items-center rounded-md border border-border bg-card px-four"
-              style={{
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
+            <View className="min-h-12 flex-row items-center rounded-xl border border-border bg-card px-four">
               <TextInput
                 className="flex-1 px-two font-sans text-base text-foreground"
                 style={{
@@ -127,7 +118,6 @@ export default function ForgotPasswordScreen() {
             </View>
           </View>
         ) : (
-          /* Confirmation State */
           <View className="flex-1 items-center justify-center px-4">
             <View className="mb-five h-16 w-16 items-center justify-center rounded-full bg-success/10">
               <CheckCircle size={44} color={theme.success} />

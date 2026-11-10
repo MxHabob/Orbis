@@ -1,8 +1,9 @@
 import { memo, type ReactNode } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { HomeTileData } from "./types";
+import { Text } from "@/components/ui/text";
 
 export const HomeSection = memo(function HomeSection({
   title,

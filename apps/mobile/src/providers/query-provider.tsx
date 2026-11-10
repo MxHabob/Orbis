@@ -91,21 +91,25 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
   useEffect(
     () =>
       subscribeToSessionEnded((identity) => {
-        if (`${identity.orgId}:${identity.userId}` !== cacheScope) return;
+        const identityScope = `${identity.orgId}:${identity.userId}`;
+        if (identityScope === cacheScope) {
+          void queryClient.cancelQueries().catch((error: unknown) => {
+            console.error(
+              "[Orbis Mobile Cache] Failed to cancel session queries.",
+              error,
+            );
+          });
+          queryClient.clear();
+        }
 
-        void queryClient.cancelQueries().catch((error: unknown) => {
-          console.error(
-            "[Orbis Mobile Cache] Failed to cancel session queries.",
-            error,
-          );
-        });
-        queryClient.clear();
-
-        const removeClient = activePersister.current.removeClient;
+        const removeClient =
+          identityScope === cacheScope
+            ? activePersister.current.removeClient
+            : createOfflineQueryPersister(identityScope).removeClient;
         if (removeClient) {
           void Promise.resolve(removeClient()).catch((error: unknown) => {
             console.error(
-              "[Orbis Mobile Cache] Failed to clear the user cache.",
+              "[Orbis Mobile Cache] Failed to clear the ended session cache.",
               error,
             );
           });

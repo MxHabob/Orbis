@@ -5,8 +5,9 @@
  */
 
 import React from "react";
-import { View, Text, type ViewProps } from "react-native";
+import { View, type ViewProps } from "react-native";
 import { type SpacingScale, marginBottomClasses } from "@/lib/design-tokens";
+import { Text } from "@/components/ui/text";
 
 export interface SectionProps extends ViewProps {
   title?: string;

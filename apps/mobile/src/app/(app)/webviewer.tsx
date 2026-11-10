@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { WebView } from "react-native-webview";
 
 import { Header } from "@/components/header";
@@ -9,6 +9,7 @@ import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 import { normalizeWebUrl } from "@/lib/web-urls";
+import { Text } from "@/components/ui/text";
 
 const ORBIS_WEB_URL = process.env.EXPO_PUBLIC_ORBIS_WEB_URL;
 const ORBIS_LAB_URL = "https://lab.mulverse.com";
