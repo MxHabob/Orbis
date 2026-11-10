@@ -253,7 +253,7 @@ jobs:
         run: |
           set -euo pipefail
           image="ghcr.io/mxhabob/orbis-api:$VERSION"
-          image_digest="$(docker buildx imagetools inspect "$image" | awk '$1 == "Digest:" { print $2; exit }')"
+          image_digest="$(docker buildx imagetools inspect "$image" | awk '$1 == "Digest:" { digest = $2 } END { print digest }')"
           if [[ ! "$image_digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
             echo "::error::Unable to resolve the published multi-architecture image digest."
             exit 1
