@@ -282,8 +282,8 @@ jobs:
       - name: Download API artifacts
         uses: actions/download-artifact@v4
         with:
+          name: api-${{ needs.validate.outputs.version }}
           path: api-artifacts
-          merge-multiple: false
 
       - name: Download Docker deployment bundle
         uses: actions/download-artifact@v4
