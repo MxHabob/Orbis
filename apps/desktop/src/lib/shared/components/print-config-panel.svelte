@@ -21,14 +21,16 @@ import {
 } from "@orbis/ui/accordion";
 import { Separator } from "@orbis/ui/separator";
 
-import { getLocale } from "$lib/paraglide/runtime";
-
 import type { MultiUpConfig, SheetSize } from "@docforge/core";
 
 let {
   config = $bindable(),
+  onConfigChange,
+  disabled = false,
 }: {
   config: MultiUpConfig;
+  onConfigChange?: () => void;
+  disabled?: boolean;
 } = $props();
 
 const sheetSizes: { value: SheetSize; label: string }[] = [
@@ -40,15 +42,24 @@ const sheetSizes: { value: SheetSize; label: string }[] = [
 ];
 
 function onSheetSizeChange(val: string) {
-  if (val) config.sheetSize = val as SheetSize;
+  if (val) {
+    config.sheetSize = val as SheetSize;
+    onConfigChange?.();
+  }
 }
 
 function onOrientationChange(val: string) {
-  if (val) config.sheetOrientation = val as "portrait" | "landscape";
+  if (val) {
+    config.sheetOrientation = val as "portrait" | "landscape";
+    onConfigChange?.();
+  }
 }
 
 function onFillOrderChange(val: string) {
-  if (val) config.fillOrder = val as "ltr-ttb" | "rtl-ttb";
+  if (val) {
+    config.fillOrder = val as "ltr-ttb" | "rtl-ttb";
+    onConfigChange?.();
+  }
 }
 </script>
 
@@ -58,8 +69,8 @@ function onFillOrderChange(val: string) {
     <Label class="text-xs font-semibold text-muted-foreground">
       {m.common_print_multi_up_sheet_size()}
     </Label>
-    <Select type="single" value={config.sheetSize} onValueChange={onSheetSizeChange}>
-      <SelectTrigger class="h-8 text-xs">
+    <Select type="single" value={config.sheetSize} onValueChange={onSheetSizeChange} {disabled}>
+      <SelectTrigger class="h-8 text-xs" {disabled}>
         {sheetSizes.find(s => s.value === config.sheetSize)?.label ?? config.sheetSize}
       </SelectTrigger>
       <SelectContent>
@@ -75,8 +86,8 @@ function onFillOrderChange(val: string) {
     <Label class="text-xs font-semibold text-muted-foreground">
       {m.common_print_multi_up_orientation()}
     </Label>
-    <Select type="single" value={config.sheetOrientation} onValueChange={onOrientationChange}>
-      <SelectTrigger class="h-8 text-xs">
+    <Select type="single" value={config.sheetOrientation} onValueChange={onOrientationChange} {disabled}>
+      <SelectTrigger class="h-8 text-xs" {disabled}>
         {config.sheetOrientation === "portrait" ? m.common_print_multi_up_portrait() : m.common_print_multi_up_landscape()}
       </SelectTrigger>
       <SelectContent>
@@ -99,6 +110,8 @@ function onFillOrderChange(val: string) {
         max={20}
         step={0.5}
         bind:value={config.gapHorizontalMm}
+        oninput={onConfigChange}
+        {disabled}
       />
     </div>
     <div class="flex flex-col gap-1.5">
@@ -110,6 +123,8 @@ function onFillOrderChange(val: string) {
         max={20}
         step={0.5}
         bind:value={config.gapVerticalMm}
+        oninput={onConfigChange}
+        {disabled}
       />
     </div>
   </div>
@@ -126,8 +141,10 @@ function onFillOrderChange(val: string) {
     </div>
     <Switch
       checked={config.cutLineWidthMm > 0}
+      {disabled}
       onCheckedChange={(checked) => {
         config.cutLineWidthMm = checked ? 0.5 : 0;
+        onConfigChange?.();
       }}
     />
   </div>
@@ -135,7 +152,7 @@ function onFillOrderChange(val: string) {
   <!-- Advanced Settings (Accordion) -->
   <Accordion type="single" collapsible>
     <AccordionItem value="advanced">
-      <AccordionTrigger class="text-xs font-medium text-muted-foreground py-2">
+      <AccordionTrigger class="text-xs font-medium text-muted-foreground py-2" {disabled}>
         {m.common_print_multi_up_advanced()}
       </AccordionTrigger>
       <AccordionContent>
@@ -143,8 +160,8 @@ function onFillOrderChange(val: string) {
           <!-- Fill Order -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_fill_order()}</Label>
-            <Select type="single" value={config.fillOrder} onValueChange={onFillOrderChange}>
-              <SelectTrigger class="h-7 text-xs">
+            <Select type="single" value={config.fillOrder} onValueChange={onFillOrderChange} {disabled}>
+              <SelectTrigger class="h-7 text-xs" {disabled}>
                 {config.fillOrder === "rtl-ttb" ? m.common_print_multi_up_fill_rtl() : m.common_print_multi_up_fill_ltr()}
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +176,14 @@ function onFillOrderChange(val: string) {
             <Label class="text-[10px] text-muted-foreground">
               {m.common_print_multi_up_center_on_sheet()}
             </Label>
-            <Switch bind:checked={config.centerOnSheet} />
+            <Switch
+              checked={config.centerOnSheet}
+              {disabled}
+              onCheckedChange={(checked) => {
+                config.centerOnSheet = checked;
+                onConfigChange?.();
+              }}
+            />
           </div>
 
           <!-- Margins -->
@@ -168,19 +192,19 @@ function onFillOrderChange(val: string) {
             <div class="grid grid-cols-2 gap-2">
               <div class="flex flex-col gap-0.5">
                 <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_top()}</span>
-                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.top} />
+                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.top} oninput={onConfigChange} {disabled} />
               </div>
               <div class="flex flex-col gap-0.5">
                 <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_bottom()}</span>
-                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.bottom} />
+                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.bottom} oninput={onConfigChange} {disabled} />
               </div>
               <div class="flex flex-col gap-0.5">
                 <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_left()}</span>
-                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.left} />
+                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.left} oninput={onConfigChange} {disabled} />
               </div>
               <div class="flex flex-col gap-0.5">
                 <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_right()}</span>
-                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.right} />
+                <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.right} oninput={onConfigChange} {disabled} />
               </div>
             </div>
           </div>

@@ -55,7 +55,10 @@
     "updater": {
       "pubkey": "",
       "endpoints": [],
-      "dangerousInsecureTransportProtocol": false
+      "dangerousInsecureTransportProtocol": false,
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

@@ -47,6 +47,19 @@ const selectedStudent = $derived(
       )
     : undefined,
 );
+const selectedStudentLabels = $derived(
+  [...selectedStudentIds].map((id) => {
+    const row = students.find(
+      (student) => (student.student?.id || student.person?.id) === id,
+    );
+    return (
+      l(row?.person?.full_name_ar, row?.person?.full_name) ||
+      row?.person?.first_name ||
+      row?.student?.student_number ||
+      m.operations_ui_student_fallback()
+    );
+  }),
+);
 
 async function deleteSelectedStudents() {
   const studentIds = [...selectedStudentIds];
@@ -301,6 +314,7 @@ async function deleteSelectedStudents() {
     bind:open={printDialogOpen}
     entityType="student"
     entityIds={Array.from(selectedStudentIds)}
+    entityLabels={selectedStudentLabels}
   />
 
   <OverrideRequestDialog

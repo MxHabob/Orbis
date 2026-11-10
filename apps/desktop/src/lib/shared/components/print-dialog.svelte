@@ -1,5 +1,10 @@
 <script lang="ts">
 import { onDestroy } from "svelte";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 /**
@@ -7,7 +12,13 @@ import * as m from "$lib/paraglide/messages";
  * Supports multiple documents per sheet with WYSIWYG preview.
  */
 import { page } from "$app/state";
-import { api, extractErrorMessage } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  isDesktopApp,
+  queryKeys,
+  type BatchPrintParams,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -54,6 +65,15 @@ import type { MultiUpConfig, MultiUpLayout } from "@docforge/core";
 import MultiUpPreview from "./multi-up-preview.svelte";
 import PrintConfigPanel from "./print-config-panel.svelte";
 import { resolveDocumentImageDataUri } from "$lib/features/documents/queries";
+import {
+  createShowInFolderToastAction,
+  downloadBlob,
+  revealDownloadedPath,
+} from "$lib/shared/utils/download";
+import { printState, savePrintPreferences } from "$lib/stores/print.svelte";
+import SplitActionMenu, {
+  type SplitActionItem,
+} from "$lib/shared/components/split-action-menu.svelte";
 
 // ── Props ────────────────────────────────────────────────────
 
@@ -75,23 +95,23 @@ let {
 
 // ── State ────────────────────────────────────────────────────
 
-let templates = $state<any[]>([]);
 let selectedTemplateId = $state<string>("");
-let loadingTemplates = $state(false);
-let generatingPdf = $state(false);
+let activeTab = $state("layout");
 let pdfPreviewLoading = $state(false);
 let pdfUrl = $state<string | null>(null);
+let pdfBytes: Uint8Array | null = null;
 let previewError = $state<string | null>(null);
 let pdfPreviewFrame: HTMLIFrameElement | undefined = $state();
 let printAfterPreviewLoad = false;
 let pdfLoadTimeout: ReturnType<typeof setTimeout> | null = null;
-let activeTab = $state("preview");
+let dialogOpenRequest = 0;
 
 // Batch progress
 let batchProgress = $state(0);
 let isBatchProcessing = $state(false);
 let batchStatusText = $state("");
 let batchJobId = $state<string | null>(null);
+let generatingPdf = $state(false);
 
 // Multi-Up config (initialized when template is selected)
 let multiUpConfig = $state<MultiUpConfig>(createDefaultMultiUpConfig(90, 50));
@@ -101,6 +121,60 @@ let previewPage = $state(1);
 
 const orgId = $derived(page.params.orgId);
 const isRtl = $derived(getLocale() === "ar");
+const templatesQuery = createQuery(() => ({
+  queryKey: queryKeys.report.templates(orgId, {
+    entityType,
+    documentType,
+    status: "published",
+  }),
+  queryFn: async () => {
+    let list = await api.listTemplates({
+      entityType,
+      documentType,
+      status: "published",
+    });
+    if ((!list || list.length === 0) && documentType) {
+      list = await api.listTemplates({ documentType, status: "published" });
+    }
+    if (!list || list.length === 0) {
+      list = await api.listTemplates({ entityType, status: "published" });
+    }
+    if (!list || list.length === 0) {
+      list = await api.listTemplates({ status: "published" });
+    }
+    return Array.isArray(list) ? list : [];
+  },
+  enabled: Boolean(open && entityType && orgId),
+  staleTime: 60_000,
+}));
+const batchPrintMutation = createMutation(() => ({
+  mutationFn: (request: BatchPrintParams) => api.batchPrint(request),
+}));
+const queryClient = useQueryClient();
+const templates = $derived(templatesQuery.data ?? []);
+const loadingTemplates = $derived(templatesQuery.isFetching);
+const selectedTemplate = $derived(
+  templates.find((template) => template.id === selectedTemplateId) ??
+    templates.find((template) => template.is_default) ??
+    templates[0] ??
+    null,
+);
+let configuredTemplateId = "";
+const printActions = $derived<SplitActionItem[]>([
+  {
+    id: "save-pdf",
+    label: m.common_print_multi_up_download(),
+    icon: Download,
+    disabled: !pdfBytes || generatingPdf || isBatchProcessing,
+    onSelect: savePdf,
+  },
+]);
+const selectedTemplateKey = $derived(selectedTemplate?.id ?? "");
+const templateLoadError = $derived(
+  templatesQuery.error
+    ? extractErrorMessage(templatesQuery.error)
+    : null,
+);
 
 // Compute layout reactively whenever config changes
 const multiUpLayout = $derived(computeMultiUpLayout(multiUpConfig));
@@ -119,64 +193,24 @@ const suggestions = $derived(
     : [],
 );
 
-// ── Load Templates ───────────────────────────────────────────
-
-async function loadTemplates() {
-  if (!entityType || !orgId) return;
-  loadingTemplates = true;
-  try {
-    let list = await api.listTemplates({
-      entityType: entityType,
-      documentType,
-      status: "published",
-    });
-    if ((!list || list.length === 0) && documentType) {
-      list = await api.listTemplates({
-        documentType,
-        status: "published",
-      });
-    }
-    if (!list || list.length === 0) {
-      list = await api.listTemplates({
-        entityType,
-        status: "published",
-      });
-    }
-    if (!list || list.length === 0) {
-      list = await api.listTemplates({
-        status: "published",
-      });
-    }
-    templates = Array.isArray(list) ? list : [];
-    if (templates.length > 0) {
-      const defaultTemplate = templates.find((template) => template.is_default);
-      const initialTemplate = defaultTemplate ?? templates[0];
-      selectedTemplateId = initialTemplate.id;
-      updateConfigFromTemplate(initialTemplate);
-    } else {
-      selectedTemplateId = "";
-    }
-  } catch (e: unknown) {
-    const msg =
-      (e as any)?.message || m.shared_ui_print_templates_load_failed();
-    console.error(msg);
-  } finally {
-    loadingTemplates = false;
-  }
-}
-
 async function setSelectedTemplateDefault() {
-  const selected = templates.find(
-    (template) => template.id === selectedTemplateId,
-  );
+  const selected = selectedTemplate;
   if (!selected || selected.is_default) return;
 
   try {
     const updated = await api.updateTemplate(selected.id, { is_default: true });
-    templates = templates.map((template) => ({
-      ...template,
-      is_default: template.id === updated.id,
-    }));
+    queryClient.setQueryData(
+      queryKeys.report.templates(orgId, {
+        entityType,
+        documentType,
+        status: "published",
+      }),
+      (current: typeof templates | undefined) =>
+        (current ?? []).map((template) => ({
+          ...template,
+          is_default: template.id === updated.id,
+        })),
+    );
     toast.success(m.settings_templates_set_default_success());
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -185,7 +219,7 @@ async function setSelectedTemplateDefault() {
   }
 }
 
-function updateConfigFromTemplate(template: any) {
+function updateConfigFromTemplate(template: Record<string, any>) {
   // Extract template dimensions from document JSON
   try {
     const rawJson = template.documentJson ?? template.document_json;
@@ -199,58 +233,39 @@ function updateConfigFromTemplate(template: any) {
         pageSetup.width ?? pageSetup.width_mm,
         pageSetup.height ?? pageSetup.height_mm,
       );
-      multiUpConfig = createDefaultMultiUpConfig(width, height);
-      multiUpConfig.sheetOrientation = orientation;
-      // Set fill order based on locale
-      multiUpConfig.fillOrder = isRtl ? "rtl-ttb" : "ltr-ttb";
+      const defaults = createDefaultMultiUpConfig(width, height);
+      multiUpConfig = {
+        ...defaults,
+        ...printState.preferences,
+        sheetMargins: {
+          ...defaults.sheetMargins,
+          ...printState.preferences.sheetMargins,
+        },
+        sheetOrientation:
+          printState.preferences.sheetOrientation ?? orientation,
+        fillOrder:
+          printState.preferences.fillOrder ?? (isRtl ? "rtl-ttb" : "ltr-ttb"),
+      };
     }
   } catch {
     // Use defaults
   }
 }
 
-// ── React to open/entityType ─────────────────────────────────
-
-$effect(() => {
-  if (open && entityType) {
-    clearPdfLoadTimeout();
-    printAfterPreviewLoad = false;
-    loadTemplates();
-    clearPdfPreview();
-    previewError = null;
-    batchProgress = 0;
-    isBatchProcessing = false;
-    batchJobId = null;
-    previewPage = 1;
-    activeTab = "preview";
-  }
-});
-
-// ── React to template selection ──────────────────────────────
-
-let lastProcessedTemplateId = "";
-$effect(() => {
-  if (
-    selectedTemplateId &&
-    templates.length > 0 &&
-    selectedTemplateId !== lastProcessedTemplateId
-  ) {
-    lastProcessedTemplateId = selectedTemplateId;
-    const tpl = templates.find((t: any) => t.id === selectedTemplateId);
-    if (tpl) {
-      updateConfigFromTemplate(tpl);
-      clearPdfPreview();
-    }
-  }
-});
+function ensureTemplateConfig(template: Record<string, any>) {
+  if (configuredTemplateId === template.id) return;
+  updateConfigFromTemplate(template);
+  configuredTemplateId = template.id;
+}
 
 // ── Helpers ──────────────────────────────────────────────────
 
 function clearPdfPreview() {
   clearPdfLoadTimeout();
   pdfPreviewLoading = false;
-  if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
   pdfUrl = null;
+  pdfBytes = null;
 }
 
 function clearPdfLoadTimeout() {
@@ -379,30 +394,44 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
 }
 
 async function generatePdf(): Promise<boolean> {
-  if (!selectedTemplateId || entityIds.length === 0) return false;
+  if (!selectedTemplateKey) {
+    previewError = m.common_print_multi_up_no_templates();
+    return false;
+  }
+  if (entityIds.length === 0) {
+    previewError = m.shared_ui_print_preview_failed();
+    return false;
+  }
   generatingPdf = true;
   clearPdfPreview();
   previewError = null;
   try {
-    const template = templates.find((t) => t.id === selectedTemplateId);
-    if (!template) throw new Error(m.shared_ui_print_preview_failed());
+    const template = selectedTemplate;
+    if (!template) throw new Error(m.common_print_multi_up_no_templates());
 
-    const docJson = template.documentJson ?? (template as any).document_json;
-    const pdfBytes = await api.batchPrint({
-      templateId: selectedTemplateId,
+    const docJson = template.document_json;
+    const generatedBytes = await batchPrintMutation.mutateAsync({
+      templateId: selectedTemplateKey,
       documentJson: docJson,
       contexts: await resolveContexts(),
       title: template.name,
       batchConfig: JSON.parse(serializeMultiUpConfig(multiUpConfig)),
       locale: getLocale(),
     });
-    if (!pdfBytes.length) throw new Error(m.shared_ui_print_preview_failed());
+    const isPdf =
+      generatedBytes.length >= 4 &&
+      generatedBytes[0] === 0x25 &&
+      generatedBytes[1] === 0x50 &&
+      generatedBytes[2] === 0x44 &&
+      generatedBytes[3] === 0x46;
+    if (!isPdf) throw new Error(m.shared_ui_print_preview_failed());
 
+    pdfBytes = generatedBytes;
     pdfUrl = URL.createObjectURL(
-      new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }),
+      new Blob([new Uint8Array(generatedBytes)], { type: "application/pdf" }),
     );
     pdfPreviewLoading = true;
-    activeTab = "pdf";
+    activeTab = "preview";
     pdfLoadTimeout = setTimeout(() => {
       pdfLoadTimeout = null;
       if (!pdfPreviewLoading) return;
@@ -417,6 +446,7 @@ async function generatePdf(): Promise<boolean> {
     return true;
   } catch (e: unknown) {
     previewError = extractErrorMessage(e) || m.shared_ui_print_preview_failed();
+    console.error("Failed to generate print preview:", e);
     toast.error(previewError);
     return false;
   } finally {
@@ -424,7 +454,72 @@ async function generatePdf(): Promise<boolean> {
   }
 }
 
-const generatePreview = () => generatePdf();
+function handleTemplateChange(templateId: string | undefined) {
+  if (!templateId) return;
+  selectedTemplateId = templateId;
+  clearPdfPreview();
+  previewError = null;
+  const template = templates.find((item) => item.id === templateId);
+  if (template) ensureTemplateConfig(template);
+  void generatePdf();
+}
+
+function handlePreviewRequest() {
+  if (loadingTemplates) return;
+  if (templatesQuery.isError || templates.length === 0) {
+    void reloadTemplates(true);
+    return;
+  }
+  if (selectedTemplate) ensureTemplateConfig(selectedTemplate);
+  void generatePdf();
+}
+
+async function reloadTemplates(force = false) {
+  const requestId = dialogOpenRequest;
+  const data = force || !templatesQuery.data
+    ? (await templatesQuery.refetch()).data
+    : templatesQuery.data;
+  if (!open || requestId !== dialogOpenRequest || !data?.length) return;
+
+  const initialTemplate =
+    data.find((template) => template.is_default) ?? data[0];
+  if (!initialTemplate) return;
+
+  selectedTemplateId = initialTemplate.id;
+  ensureTemplateConfig(initialTemplate);
+  previewError = null;
+}
+
+function handleConfigChange() {
+  savePrintPreferences(multiUpConfig);
+  clearPdfPreview();
+  previewError = null;
+}
+
+function handleTabChange(value: string) {
+  activeTab = value;
+  if (value === "preview" && !pdfUrl && !generatingPdf) {
+    handlePreviewRequest();
+  }
+}
+
+function handleDialogOpenChange(nextOpen: boolean) {
+  dialogOpenRequest += 1;
+  open = nextOpen;
+  if (nextOpen) {
+    previewError = null;
+    batchProgress = 0;
+    isBatchProcessing = false;
+    batchJobId = null;
+    previewPage = 1;
+    activeTab = "layout";
+    void reloadTemplates();
+    return;
+  }
+  printAfterPreviewLoad = false;
+  clearPdfPreview();
+  isBatchProcessing = false;
+}
 
 // ── Print Action ─────────────────────────────────────────────
 
@@ -440,21 +535,27 @@ function handlePdfPreviewLoad() {
     return;
   }
   try {
+    printWindow.addEventListener(
+      "afterprint",
+      () => {
+        batchProgress = 100;
+        toast.success(
+          m.common_print_multi_up_complete_detail({
+            count: String(entityIds.length),
+          }),
+        );
+      },
+      { once: true },
+    );
     printWindow.focus();
     printWindow.print();
-    batchProgress = 100;
-    toast.success(
-      m.common_print_multi_up_complete_detail({
-        count: String(entityIds.length),
-      }),
-    );
   } catch (error) {
+    isBatchProcessing = false;
     toast.error(
       extractErrorMessage(error) || m.shared_ui_print_frame_unavailable(),
     );
-  } finally {
-    isBatchProcessing = false;
   }
+  isBatchProcessing = false;
 }
 
 function handlePdfPreviewError() {
@@ -470,14 +571,20 @@ function handlePdfPreviewError() {
 
 async function handlePrintAction() {
   if (isBatchProcessing || generatingPdf) return;
-  if (!selectedTemplateId) {
+  if (!selectedTemplateKey) {
     toast.error(m.common_print_multi_up_no_templates());
+    return;
+  }
+  if (entityIds.length === 0) {
+    previewError = m.shared_ui_print_preview_failed();
+    toast.error(previewError);
     return;
   }
 
   isBatchProcessing = true;
   batchProgress = 30;
   batchStatusText = m.common_print_multi_up_processing();
+  if (selectedTemplate) ensureTemplateConfig(selectedTemplate);
   printAfterPreviewLoad = true;
   if (!(await generatePdf())) {
     printAfterPreviewLoad = false;
@@ -489,12 +596,41 @@ async function handlePrintAction() {
   batchProgress = 85;
 }
 
-function triggerDownload() {
-  if (!pdfUrl) return;
-  const link = document.createElement("a");
-  link.href = pdfUrl;
-  link.download = `multi_up_${entityType}_${Date.now()}.pdf`;
-  link.click();
+async function savePdf() {
+  if (!pdfBytes) {
+    toast.error(m.shared_ui_print_preview_failed());
+    return;
+  }
+
+  const filename = `multi_up_${entityType}_${Date.now()}.pdf`;
+  try {
+    if (!isDesktopApp) {
+      downloadBlob(
+        new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }),
+        filename,
+      );
+      toast.success(m.common_print_multi_up_pdf_saved());
+      return;
+    }
+
+    const [{ save }, { writeFile }] = await Promise.all([
+      import("@tauri-apps/plugin-dialog"),
+      import("@tauri-apps/plugin-fs"),
+    ]);
+    const path = await save({
+      defaultPath: filename,
+      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    });
+    if (!path) return;
+
+    await writeFile(path, new Uint8Array(pdfBytes));
+    toast.success(m.common_print_multi_up_pdf_saved(), {
+      action: createShowInFolderToastAction(revealDownloadedPath(path)),
+    });
+  } catch (error) {
+    console.error("Failed to save print PDF:", error);
+    toast.error(extractErrorMessage(error));
+  }
 }
 
 function applySuggestion(suggestion: MultiUpLayout) {
@@ -503,13 +639,12 @@ function applySuggestion(suggestion: MultiUpLayout) {
     suggestion.sheetWidthMm < suggestion.sheetHeightMm
       ? "portrait"
       : "landscape";
-  // Recalculate will happen automatically via $derived
-  clearPdfPreview();
+  handleConfigChange();
 }
 </script>
 
-<Dialog bind:open={open}>
-  <DialogContent class="sm:max-w-195 text-start max-h-[90vh] flex flex-col overflow-hidden">
+<Dialog bind:open={open} onOpenChange={handleDialogOpenChange}>
+  <DialogContent class="w-[calc(100vw-1rem)] h-[92dvh] max-h-[92dvh] text-start flex flex-col overflow-hidden sm:w-[calc(100vw-2rem)] sm:max-w-195">
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
         <Grid class="text-primary h-5 w-5" />
@@ -518,11 +653,11 @@ function applySuggestion(suggestion: MultiUpLayout) {
     </DialogHeader>
 
     <!-- ═══ Main Content: Config + Preview ═══ -->
-    <div class="relative grow min-h-0 overflow-hidden">
-      <div class="absolute inset-0 flex flex-col md:flex-row gap-4 overflow-hidden py-3">
+    <div class="relative flex-1 min-h-0 overflow-hidden">
+      <div class="absolute inset-0 flex flex-col md:flex-row gap-3 md:gap-4 overflow-hidden py-2 md:py-3">
 
         <!-- Left Panel: Config -->
-        <div class="w-full md:w-60 flex flex-col gap-3 shrink-0 overflow-y-auto scrollbar-hide">
+        <div class="w-full max-h-[36%] min-h-0 md:max-h-none md:w-60 flex flex-col gap-3 shrink-0 overflow-y-auto scrollbar-hide">
           <!-- Template Selection -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-muted-foreground">
@@ -536,11 +671,10 @@ function applySuggestion(suggestion: MultiUpLayout) {
                 <span>{m.common_print_multi_up_no_templates()}</span>
               </div>
             {:else}
-              <Select type="single" bind:value={selectedTemplateId} onValueChange={(val) => { if (val) { selectedTemplateId = val; clearPdfPreview(); } }}>
-                <SelectTrigger class="h-8 text-xs">
+              <Select type="single" value={selectedTemplateKey} onValueChange={handleTemplateChange}>
+                <SelectTrigger class="h-8 text-xs" disabled={generatingPdf || loadingTemplates}>
                   {(() => {
-                    const selected = templates.find((t: any) => t.id === selectedTemplateId);
-                    return selected ? (isRtl && selected.name_ar ? selected.name_ar : selected.name) : m.common_print_multi_up_template_placeholder();
+                    return selectedTemplate ? (isRtl && selectedTemplate.name_ar ? selectedTemplate.name_ar : selectedTemplate.name) : m.common_print_multi_up_template_placeholder();
                   })()}
                 </SelectTrigger>
                 <SelectContent>
@@ -551,7 +685,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                   {/each}
                 </SelectContent>
               </Select>
-              {#if templates.some((template) => template.id === selectedTemplateId && !template.is_default)}
+              {#if selectedTemplate && !selectedTemplate.is_default}
                 <Button
                   variant="outline"
                   size="xs"
@@ -587,33 +721,27 @@ function applySuggestion(suggestion: MultiUpLayout) {
           <Separator />
 
           <!-- Print Config Panel -->
-          <PrintConfigPanel bind:config={multiUpConfig} />
+          <PrintConfigPanel
+            bind:config={multiUpConfig}
+            onConfigChange={handleConfigChange}
+            disabled={generatingPdf || isBatchProcessing}
+          />
         </div>
 
         <!-- Right Panel: Preview -->
-        <div class="grow flex flex-col gap-3 overflow-hidden">
-          <Tabs bind:value={activeTab} class="grow flex flex-col overflow-hidden">
+        <div class="min-h-0 min-w-0 flex-1 flex flex-col gap-2 md:gap-3 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={handleTabChange} class="min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
             <TabsList class="w-full shrink-0">
               <TabsTrigger value="preview" class="flex-1 text-xs">
                 {m.common_action_preview()}
               </TabsTrigger>
-              <TabsTrigger value="pdf" class="flex-1 text-xs">
-                PDF
+              <TabsTrigger value="layout" class="flex-1 text-xs">
+                {m.common_print_multi_up_layout_preview()}
               </TabsTrigger>
             </TabsList>
 
-            <!-- Grid Preview Tab -->
-            <TabsContent value="preview" class="grow flex items-center justify-center p-4 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
-              <MultiUpPreview
-                layout={multiUpLayout}
-                totalRecords={entityIds.length}
-                bind:currentPage={previewPage}
-                entityLabels={entityLabels}
-              />
-            </TabsContent>
-
-            <!-- PDF Preview Tab -->
-            <TabsContent value="pdf" class="grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-70 overflow-hidden flex items-center justify-center">
+            <!-- Rendered document preview -->
+            <TabsContent value="preview" class="min-h-0 min-w-0 flex-1 border border-border rounded-xl bg-muted/20 mt-2 relative overflow-hidden flex items-center justify-center">
               {#if generatingPdf || pdfPreviewLoading}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
                   <LoadingIndicator class="text-primary"  size={20} />
@@ -633,21 +761,35 @@ function applySuggestion(suggestion: MultiUpLayout) {
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
                   <DocumentPage size={28} />
-                  <p class={previewError ? "text-destructive" : ""}>
-                    {previewError || m.common_print_multi_up_preview_empty()}
+                  <p class={previewError || templateLoadError ? "text-destructive" : ""}>
+                    {previewError || templateLoadError ||
+                      (generatingPdf
+                        ? m.common_print_multi_up_preview_loading()
+                        : m.common_print_multi_up_preview_empty())}
                   </p>
                   <Button
                     variant="outline"
                     size="xs"
-                    onclick={generatePreview}
-                    disabled={generatingPdf || !selectedTemplateId}
+                    onclick={handlePreviewRequest}
+                    disabled={generatingPdf || loadingTemplates || entityIds.length === 0}
                     class="mt-2 cursor-pointer"
                   >
                     <Refresh size={12} class="me-1" />
-                    {m.common_print_multi_up_refresh_preview()}
+                    {templatesQuery.isError || templates.length === 0
+                      ? m.common_retry()
+                      : m.common_action_preview()}
                   </Button>
                 </div>
               {/if}
+            </TabsContent>
+
+            <!-- Layout-only preview -->
+            <TabsContent value="layout" class="min-h-0 min-w-0 flex-1 flex items-center justify-center p-2 md:p-3 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
+              <MultiUpPreview
+                layout={multiUpLayout}
+                totalRecords={entityIds.length}
+                bind:currentPage={previewPage}
+              />
             </TabsContent>
           </Tabs>
 
@@ -663,6 +805,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                     variant={suggestion.itemsPerSheet === multiUpLayout.itemsPerSheet ? "default" : "outline"}
                     size="xs"
                     class="text-[10px] cursor-pointer"
+                    disabled={generatingPdf || isBatchProcessing}
                     onclick={() => applySuggestion(suggestion)}
                   >
                     {suggestion.columns}×{suggestion.rows}={suggestion.itemsPerSheet}
@@ -700,29 +843,27 @@ function applySuggestion(suggestion: MultiUpLayout) {
     </div>
 
     <!-- ═══ Footer ═══ -->
-    <DialogFooter class="shrink-0 border-t border-border/40 pt-3 gap-2 sm:gap-0">
-      <Button variant="outline" size="sm" onclick={() => (open = false)}>
+    <DialogFooter class="shrink-0 flex-row items-center justify-between border-t border-border/40 pt-4 gap-3">
+      <Button
+        variant="outline"
+        size="lg"
+        onclick={() => (open = false)}
+      >
         {m.common_action_cancel()}
       </Button>
 
-      {#if pdfUrl && !isBatchProcessing}
-        <Button variant="outline" size="sm" onclick={triggerDownload}>
-          <Download size={14} class="me-1" />
-          {m.common_print_multi_up_download()}
-        </Button>
-      {/if}
-
-      <Button
-        variant="lime"
-        size="sm"
-        disabled={!selectedTemplateId || generatingPdf || isBatchProcessing}
-        onclick={handlePrintAction}
-      >
-        <Printer size={14} class="me-1.5" />
-        {entityIds.length > multiUpLayout.itemsPerSheet
+      <SplitActionMenu
+        label={entityIds.length > multiUpLayout.itemsPerSheet
           ? m.common_print_multi_up_start_batch_count({ count: String(entityIds.length) })
           : m.common_print_multi_up_start_batch()}
-      </Button>
+        menuLabel={m.operations_ui_actions()}
+        icon={Printer}
+        actions={printActions}
+        variant="lime"
+        size="lg"
+        disabled={!selectedTemplateKey || generatingPdf || isBatchProcessing || loadingTemplates || entityIds.length === 0}
+        onprimary={handlePrintAction}
+      />
     </DialogFooter>
   </DialogContent>
 </Dialog>

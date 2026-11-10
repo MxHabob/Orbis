@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Component, Snippet } from "svelte";
 import { ChevronDown } from "@orbis/icons";
-import { Button } from "@orbis/ui/button";
+import { Button, type ButtonSize, type ButtonVariant } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,7 @@ let {
   onprimary,
   primary,
   variant = "default",
+  size = "sm",
   disabled = false,
 }: {
   label: string;
@@ -37,7 +38,8 @@ let {
   actions: SplitActionItem[];
   onprimary?: () => void;
   primary?: Snippet;
-  variant?: "default" | "outline";
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   disabled?: boolean;
 } = $props();
 </script>
@@ -47,7 +49,7 @@ let {
     {@render primary()}
   {:else}
     <Button
-      size="sm"
+      {size}
       {variant}
       class="rounded-e-none gap-1.5"
       {disabled}
@@ -66,7 +68,7 @@ let {
       {#snippet child({ props })}
         <Button
           {...props}
-          size="sm"
+          {size}
           {variant}
           class="rounded-s-none border-s {variant === 'outline' ? 'border-border' : 'border-primary-foreground/20'} px-2"
           {disabled}

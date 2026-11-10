@@ -2185,7 +2185,7 @@ export function scrollToColumnProp(prop: string) {
     width: 100%;
     min-width: 0;
     min-height: 0;
-    background: var(--card);
+    background: transparent;
     color: var(--card-foreground);
     border: 0;
     border-radius: 0;
@@ -2213,7 +2213,7 @@ export function scrollToColumnProp(prop: string) {
     flex: 0 0 auto;
     min-width: 0;
     border-bottom: 1px solid var(--border);
-    background: var(--card);
+    background: transparent;
   }
   .orbis-toolbar-controls {
     display: flex;
@@ -2426,7 +2426,7 @@ export function scrollToColumnProp(prop: string) {
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
-    scrollbar-color: var(--border) var(--card);
+    scrollbar-color: var(--border) transparent;
     scroll-behavior: auto;
   }
   .orbis-grid-body::-webkit-scrollbar {
@@ -2434,10 +2434,10 @@ export function scrollToColumnProp(prop: string) {
     height: 0.625rem;
   }
   .orbis-grid-body::-webkit-scrollbar-track {
-    background: var(--card);
+    background: transparent;
   }
   .orbis-grid-body::-webkit-scrollbar-thumb {
-    border: 2px solid var(--card);
+    border: 2px solid transparent;
     border-radius: var(--radius-sm);
     background: var(--border);
   }
@@ -2445,7 +2445,7 @@ export function scrollToColumnProp(prop: string) {
     background: var(--muted-foreground);
   }
   .orbis-grid-body::-webkit-scrollbar-corner {
-    background: var(--card);
+    background: transparent;
   }
   .orbis-load-status {
     position: sticky;
@@ -2483,14 +2483,14 @@ export function scrollToColumnProp(prop: string) {
     display: flex;
     height: var(--row-h);
     border-bottom: 1px solid var(--border);
-    background: var(--card);
+    background: transparent;
     contain: layout style;
   }
   .orbis-row:hover {
     background: var(--accent);
   }
   .orbis-row.selected {
-    background: color-mix(in oklab, var(--primary) 8%, var(--card));
+    background: color-mix(in oklab, var(--primary) 8%, transparent);
   }
   .orbis-cell {
     display: flex;
@@ -2515,10 +2515,9 @@ export function scrollToColumnProp(prop: string) {
   .orbis-cell.is-ranged {
     background: color-mix(in oklab, var(--primary) 14%, transparent);
   }
-  .orbis-cell.is-active {
+  .orbis-grid:focus-visible .orbis-cell.is-active {
     box-shadow: inset 0 0 0 1.5px var(--ring);
     z-index: 1;
-    background: var(--card);
   }
   .orbis-cell.is-editing {
     padding: 0;

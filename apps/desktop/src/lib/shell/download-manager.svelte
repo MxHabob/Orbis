@@ -4,6 +4,7 @@ import { onMount } from "svelte";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
+import { Progress } from "@orbis/ui/progress";
 import { Download, ArrowPath } from "@orbis/icons";
 import { api } from "$lib/api/client";
 import { isDesktopApp } from "$lib/api/runtime";
@@ -136,15 +137,12 @@ async function retrySolverSetup() {
       </div>
 
       {#if solverSetup?.state === "preparing"}
-        <div class="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3" role="status" aria-live="polite">
-          <ArrowPath size={15} class="shrink-0 animate-spin text-primary" />
-          <div class="min-w-0">
-            <p class="text-xs font-medium">{m.ai_ui_solver_download_title()}</p>
-            <p class="mt-1 text-xs text-muted-foreground">{m.ai_ui_solver_download_in_progress()}</p>
-          </div>
+        <div class="space-y-2" role="status" aria-live="polite">
+          <p class="text-xs text-muted-foreground">{m.ai_ui_solver_download_in_progress()}</p>
+          <Progress value={0} class="download-progress-indeterminate h-1.5 w-full" />
         </div>
       {:else if solverSetup?.state === "failed"}
-        <div class="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+        <div class="space-y-3">
           <div>
             <p class="text-xs font-medium text-destructive">{m.ai_ui_solver_download_failed()}</p>
             {#if solverSetup.error}
@@ -165,9 +163,8 @@ async function retrySolverSetup() {
           </Button>
         </div>
       {:else if solverSetup?.state === "ready"}
-        <div class="rounded-lg border border-primary/20 bg-primary/5 p-3" role="status" aria-live="polite">
-          <p class="text-xs font-medium">{m.ai_ui_solver_download_title()}</p>
-          <p class="mt-1 text-xs text-muted-foreground">{m.ai_ui_solver_download_ready()}</p>
+        <div role="status" aria-live="polite">
+          <p class="text-xs text-muted-foreground">{m.ai_ui_solver_download_ready()}</p>
         </div>
       {/if}
 
@@ -189,14 +186,16 @@ async function retrySolverSetup() {
               </span>
             {/if}
           </div>
-          {#if updateManager.progress?.total_bytes}
-            <progress
-              class="h-1.5 w-full overflow-hidden rounded-full accent-primary"
-              max={updateManager.progress.total_bytes}
-              value={Math.min(updateManager.progress.downloaded_bytes, updateManager.progress.total_bytes)}
-              aria-label={m.ui_download_manager_title()}
-            ></progress>
-          {/if}
+          <Progress
+            value={updateManager.progress?.total_bytes
+              ? Math.min(updateManager.progress.downloaded_bytes, updateManager.progress.total_bytes)
+              : 0}
+            max={updateManager.progress?.total_bytes ?? 100}
+            class={updateManager.progress?.total_bytes
+              ? "h-1.5 w-full"
+              : "download-progress-indeterminate h-1.5 w-full"}
+            aria-label={m.ui_download_manager_title()}
+          />
         </div>
       {:else if updateManager.error}
         <div class="space-y-3">
@@ -254,3 +253,21 @@ async function retrySolverSetup() {
     </PopoverContent>
   </Popover>
 {/if}
+
+<style>
+  :global(.download-progress-indeterminate [data-slot="progress-indicator"]) {
+    width: 35%;
+    flex: none;
+    animation: download-progress-slide 1.4s ease-in-out infinite;
+  }
+
+  @keyframes download-progress-slide {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(300%);
+    }
+  }
+</style>

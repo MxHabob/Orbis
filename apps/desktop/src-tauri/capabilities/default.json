@@ -26,6 +26,7 @@
     "core:image:default",
     "core:resources:default",
     "dialog:allow-open",
+    "dialog:allow-save",
     "core:menu:default",
     "core:tray:default",
     "core:path:default",
