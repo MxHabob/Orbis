@@ -641,6 +641,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
 
         let request = ActivationRequest {
             product_key: product_key.trim().to_uppercase(),
+            product_id: CANONICAL_PRODUCT_ID.to_owned(),
             organization_id,
             installation_id: installation_id.clone(),
             platform: std::env::consts::OS.to_string(),

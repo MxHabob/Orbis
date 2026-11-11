@@ -284,6 +284,8 @@ pub type LimitEntry = LimitItem;
 pub struct ActivationRequest {
     #[serde(rename = "application_key", alias = "product_key")]
     pub product_key: String,
+    #[serde(rename = "application_id", alias = "product_id")]
+    pub product_id: String,
     #[serde(rename = "customer_id", alias = "organization_id")]
     pub organization_id: uuid::Uuid,
     pub installation_id: String,
@@ -910,6 +912,7 @@ mod tests {
     fn activation_request_uses_application_and_customer_fields() {
         let request = ActivationRequest {
             product_key: "ORBIS-TEST".to_owned(),
+            product_id: CANONICAL_PRODUCT_ID.to_owned(),
             organization_id: uuid::Uuid::nil(),
             installation_id: "installation".to_owned(),
             platform: "windows".to_owned(),
@@ -918,6 +921,7 @@ mod tests {
         };
         let serialized = serde_json::to_value(request).expect("request should serialize");
         assert_eq!(serialized["application_key"], "ORBIS-TEST");
+        assert_eq!(serialized["application_id"], CANONICAL_PRODUCT_ID);
         assert_eq!(serialized["customer_id"], uuid::Uuid::nil().to_string());
         assert!(serialized.get("product_key").is_none());
         assert!(serialized.get("organization_id").is_none());
