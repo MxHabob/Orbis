@@ -48,12 +48,12 @@ jobs:
             echo "::error::The requested tag '$TAG' does not exist in the repository."
             exit 1
           fi
-          COMMIT_SHA="$(git rev-list -n 1 "refs/tags/$TAG")"
-          if ! git merge-base --is-ancestor "$COMMIT_SHA" origin/main; then
+          TAG_COMMIT_SHA="$(git rev-list -n 1 "refs/tags/$TAG")"
+          if ! git merge-base --is-ancestor "$TAG_COMMIT_SHA" origin/main; then
             echo "::error::Tag '$TAG' does not point to a commit reachable from main."
             exit 1
           fi
-          git checkout --detach "$COMMIT_SHA"
+          git checkout --detach "$TAG_COMMIT_SHA"
 
           VERSION="${TAG#v}"
           MOBILE_VERSION=$(node -p "require('./apps/mobile/package.json').version")
@@ -62,9 +62,13 @@ jobs:
             echo "::error::Tag v$VERSION does not match the mobile package versions: package=$MOBILE_VERSION app=$APP_VERSION"
             exit 1
           fi
+          BUILD_COMMIT_SHA="$TAG_COMMIT_SHA"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            BUILD_COMMIT_SHA="$GITHUB_SHA"
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$BUILD_COMMIT_SHA" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build Android release
@@ -108,6 +112,13 @@ jobs:
               throw new Error(`NativeWind requires Tailwind CSS v3, got ${version} at ${tailwindPackage}`);
             }
             console.log(`NativeWind resolves Tailwind CSS ${version}`);
+            const babel = require("@babel/core");
+            const path = require("node:path");
+            babel.transformFileSync(require.resolve("expo-router/entry"), {
+              configFile: path.resolve("babel.config.js"),
+              envName: "production",
+            });
+            console.log("Expo Router entry transforms with the mobile Babel config");
           '
 
       - name: Prepare Android release signing
