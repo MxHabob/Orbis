@@ -187,10 +187,10 @@ jobs:
 
       - name: Create updater metadata from signed artifacts
         env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
           TAURI_UPDATER_TARGET: ${{ matrix.target }}
+          TAURI_UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT }}
           CI_ARTIFACT_DIR: ci-artifacts
           RELEASE_NOTES_PATH: ${{ github.workspace }}/releases/${{ needs.validate.outputs.tag }}.md
         run: node release-tools/apps/desktop/scripts/create-tauri-updater-manifest.mjs
@@ -208,6 +208,16 @@ jobs:
     needs: [validate, build]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout R2 upload tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.commit_sha }}
+          path: release-tools
+          sparse-checkout: |
+            apps/desktop/scripts/prepare-tauri-updater-config.mjs
+            apps/desktop/scripts/upload-tauri-updater-r2.mjs
+          sparse-checkout-cone-mode: false
+
       - name: Download all desktop artifacts
         uses: actions/download-artifact@v4
         with:
@@ -312,6 +322,23 @@ jobs:
           cp release-artifacts/merged-latest.json release-package/latest.json
           find release-package -maxdepth 1 -type f | sort
           test "$(find release-package -type f | wc -l)" -eq 5
+
+      - name: Upload signed desktop updates to Cloudflare R2
+        env:
+          TAURI_UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT }}
+          CLOUDFLARE_R2_ACCOUNT_ID: ${{ vars.CLOUDFLARE_R2_ACCOUNT_ID }}
+          CLOUDFLARE_R2_BUCKET: ${{ vars.CLOUDFLARE_R2_BUCKET }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_EC2_METADATA_DISABLED: "true"
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          R2_RELEASE_PACKAGE: ${{ github.workspace }}/release-package
+        run: |
+          aws --version
+          node release-tools/apps/desktop/scripts/upload-tauri-updater-r2.mjs
 
       - name: Publish release with supported desktop artifacts only
         uses: softprops/action-gh-release@v2
