@@ -427,6 +427,7 @@ impl MulverseLicenseRuntime {
             organization.city.clone().unwrap_or_default(),
         ];
         fields.extend([std::env::consts::OS.to_owned(), self.app_version.clone()]);
+        fields.push(CANONICAL_PRODUCT_ID.to_owned());
         let (device_public_key, device_signature) = self
             .sign_trial_challenge(&challenge, &fields, &installation_id)
             .await
@@ -435,6 +436,7 @@ impl MulverseLicenseRuntime {
             .register_trial(&RegisterTrialRequest {
                 device_public_key,
                 device_signature,
+                application_id: CANONICAL_PRODUCT_ID.to_owned(),
                 challenge_id: challenge.challenge_id,
                 challenge: challenge.challenge,
                 installation_id,
@@ -479,6 +481,7 @@ impl MulverseLicenseRuntime {
             installation_id.clone(),
             organization_id.to_string(),
             self.app_version.clone(),
+            CANONICAL_PRODUCT_ID.to_owned(),
         ];
         let (device_public_key, device_signature) = self
             .sign_trial_challenge(&challenge, &fields, &installation_id)
@@ -489,6 +492,7 @@ impl MulverseLicenseRuntime {
                 trial_id: trial_id.to_owned(),
                 device_public_key,
                 device_signature,
+                application_id: CANONICAL_PRODUCT_ID.to_owned(),
                 challenge_id: challenge.challenge_id,
                 challenge: challenge.challenge,
                 installation_id,
