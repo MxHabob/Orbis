@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  normalizeUpdaterEndpoint,
   normalizeHttpsUrl,
   normalizeUpdaterPublicKey,
 } from "./prepare-tauri-updater-config.mjs";
@@ -61,6 +62,21 @@ test("accepts HTTPS endpoints and canonicalizes URLs", () => {
   );
 });
 
+test("requires a product-specific updater manifest path", () => {
+  assert.equal(
+    normalizeUpdaterEndpoint("https://updates.mulverse.com/orbis/latest.json"),
+    "https://updates.mulverse.com/orbis/latest.json",
+  );
+  assert.throws(
+    () => normalizeUpdaterEndpoint("https://updates.mulverse.com/latest.json"),
+    /product-path/,
+  );
+  assert.throws(
+    () => normalizeUpdaterEndpoint("https://updates.mulverse.com/orbis/manifest.json"),
+    /product-path/,
+  );
+});
+
 test("rejects non-HTTPS and ambiguous endpoints", () => {
   for (const value of [
     "http://updates.example.com/latest.json",
@@ -74,4 +90,8 @@ test("rejects non-HTTPS and ambiguous endpoints", () => {
       /valid HTTPS URL|must use HTTPS/,
     );
   }
+  assert.throws(
+    () => normalizeUpdaterEndpoint("http://updates.mulverse.com/orbis/latest.json"),
+    /must use HTTPS/,
+  );
 });

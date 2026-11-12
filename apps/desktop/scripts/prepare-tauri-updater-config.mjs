@@ -70,6 +70,17 @@ export function normalizeHttpsUrl(rawValue, label) {
   return url.toString();
 }
 
+export function normalizeUpdaterEndpoint(rawValue) {
+  const endpoint = normalizeHttpsUrl(rawValue, "TAURI_UPDATER_ENDPOINT");
+  const url = new URL(endpoint);
+  if (!/^\/(?:[a-z0-9][a-z0-9-]*\/)+latest\.json$/.test(url.pathname)) {
+    throw new Error(
+      "TAURI_UPDATER_ENDPOINT must end with /<product-path>/latest.json, for example /orbis/latest.json.",
+    );
+  }
+  return endpoint;
+}
+
 if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
@@ -77,9 +88,8 @@ if (
   const updaterPublicKey = normalizeUpdaterPublicKey(
     process.env.TAURI_UPDATER_PUBLIC_KEY,
   );
-  const updaterEndpoint = normalizeHttpsUrl(
+  const updaterEndpoint = normalizeUpdaterEndpoint(
     process.env.TAURI_UPDATER_ENDPOINT,
-    "TAURI_UPDATER_ENDPOINT",
   );
   const componentPublicKey = normalizeUpdaterPublicKey(
     process.env.ORBIS_COMPONENT_PUBLIC_KEY,

@@ -1,6 +1,6 @@
 # Desktop releases
 
-Desktop updates are signed and distributed through public GitHub Releases. A release tag triggers `.github/workflows/release.yml`, which builds Windows and macOS installers, creates per-platform updater metadata from the signed artifacts and the release notes in `releases/vX.Y.Z.md`, validates the merged metadata, and publishes the GitHub Release. The Windows updater artifact is the signed NSIS `*-setup.exe` installer and its `.sig` file; the workflow must not expect a `.nsis.zip` asset. The workflow uses stable GitHub Releases download URLs in the metadata and merges each platform's entry into `latest.json` before publication. The desktop updater checks `https://github.com/MxHabob/Orbis/releases/latest/download/latest.json`; the release must be published for that URL to serve update metadata.
+Desktop updates are signed and distributed through the shared public Cloudflare R2 bucket. A release tag triggers `.github/workflows/release.yml`, which builds Windows and macOS installers, creates per-platform updater metadata from the signed artifacts and the release notes in `releases/vX.Y.Z.md`, validates the merged metadata, uploads versioned installers and publishes `latest.json` last. The Windows updater artifact is the signed NSIS `*-setup.exe` installer and its `.sig` file; the workflow must not expect a `.nsis.zip` asset. Orbis uses the isolated `orbis/` prefix, with its updater endpoint at `https://updates.mulverse.com/orbis/latest.json` and bundles under `/orbis/releases/vX.Y.Z/`. The public GitHub Release is still created for manually downloading installers; the installed updater checks R2, not GitHub.
 
 The desktop app downloads and verifies an available signed update before offering a restart to apply it. Its title-bar download control appears only while update activity is in progress or when an update needs attention.
 
@@ -23,7 +23,11 @@ Before publishing, configure these repository Actions settings:
 | `TAURI_SIGNING_PRIVATE_KEY` | Secret | Signs Tauri updater bundles |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Secret | Password for the signing key, if set |
 | `TAURI_UPDATER_PUBLIC_KEY` | Variable | Verifies updates in the installed app; must match the private signing key |
-| `TAURI_UPDATER_ENDPOINT` | Variable | HTTPS URL of the Tauri `latest.json` metadata |
+| `TAURI_UPDATER_ENDPOINT` | Variable | Set to `https://updates.mulverse.com/orbis/latest.json` |
+| `CLOUDFLARE_R2_ACCOUNT_ID` | Variable | Cloudflare account ID used by the S3-compatible R2 API |
+| `CLOUDFLARE_R2_BUCKET` | Variable | Shared public updates bucket; use the same bucket as AqarDesk |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID` | Secret | R2 S3 access key with Object Read & Write on the shared bucket |
+| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Secret | Matching R2 S3 secret access key |
 | `ORBIS_COMPONENT_SIGNING_PRIVATE_KEY` | Secret | Signs the independently released component manifest |
 | `ORBIS_COMPONENT_SIGNING_PRIVATE_KEY_PASSWORD` | Secret | Password for the component signing key, if set |
 | `ORBIS_COMPONENT_PUBLIC_KEY` | Variable | Minisign public key matching the component signing secret |
@@ -41,7 +45,7 @@ Before publishing, configure these repository Actions settings:
 
 For the default stable catalog, set `ORBIS_SOLVER_MANIFEST_URL` to `https://raw.githubusercontent.com/MxHabob/Orbis/components/stable/components/orbis-solver.json`. The Solver component workflow updates this signed catalog after validating and publishing its release. Configure the staging variable to a separate HTTPS manifest URL; staging does not use or overwrite the stable catalog.
 
-Keep all private signing material and passwords in GitHub Secrets. Do not commit them. The workflow no longer requires Mulverse release API credentials to publish desktop updates.
+Keep all private signing material, R2 S3 credentials, and passwords in GitHub Secrets. Do not commit them. The R2 token must be an R2 S3 API token with Object Read & Write permission scoped to the shared updates bucket (not a Cloudflare REST API token or a read-only token). Orbis uploads only under `orbis/`; configure AqarDesk to use its own `aqardesk/` prefix. Ensure the R2 custom domain serves these objects publicly and does not cache `/orbis/latest.json`. The workflow no longer requires Mulverse release API credentials to publish desktop updates.
 The desktop release workflow accepts minisign public-key text or its base64-encoded full text, validates it and writes a temporary Tauri config overlay. It fails before building if required settings are missing or malformed; public keys are never logged.
 
 ## Prepare a release

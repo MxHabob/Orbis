@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { normalizeUpdaterEndpoint } from "./prepare-tauri-updater-config.mjs";
 
 const targetPlatforms = {
   "x86_64-pc-windows-msvc": {
@@ -15,7 +16,7 @@ const targetPlatforms = {
 };
 
 export function createUpdaterManifest({
-  repository,
+  updaterEndpoint,
   tag,
   version,
   target,
@@ -27,9 +28,7 @@ export function createUpdaterManifest({
   if (!platform) {
     throw new Error(`Unsupported Tauri updater target: ${target}.`);
   }
-  if (!/^[^/]+\/[^/]+$/.test(repository ?? "")) {
-    throw new Error(`Invalid GitHub repository name: ${repository}.`);
-  }
+  const endpoint = normalizeUpdaterEndpoint(updaterEndpoint);
   if (!/^v\d+\.\d+\.\d+$/.test(tag ?? "") || tag !== `v${version}`) {
     throw new Error(`Invalid release tag or version: ${tag} (${version}).`);
   }
@@ -49,9 +48,11 @@ export function createUpdaterManifest({
     throw new Error(`Release notes are missing for ${tag}.`);
   }
 
+  const latestUrl = new URL(endpoint);
+  const productPath = latestUrl.pathname.replace(/\/latest\.json$/, "");
   const artifactUrl = new URL(
-    encodeURIComponent(artifactName),
-    `https://github.com/${repository}/releases/download/${tag}/`,
+    `${productPath}/releases/${tag}/${encodeURIComponent(artifactName)}`,
+    latestUrl.origin,
   ).toString();
   const normalizedNotes = notes.replace(/\r\n?/g, "\n").trim();
 
@@ -108,7 +109,7 @@ if (
   }
 
   const manifest = createUpdaterManifest({
-    repository: process.env.GITHUB_REPOSITORY,
+    updaterEndpoint: process.env.TAURI_UPDATER_ENDPOINT,
     tag: process.env.RELEASE_TAG,
     version: process.env.RELEASE_VERSION,
     target,

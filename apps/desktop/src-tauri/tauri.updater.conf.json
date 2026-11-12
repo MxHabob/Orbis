@@ -6,7 +6,7 @@
     "updater": {
       "pubkey": "",
       "endpoints": [
-        "https://github.com/MxHabob/Orbis/releases/latest/download/latest.json"
+        "https://updates.mulverse.com/orbis/latest.json"
       ],
       "dangerousInsecureTransportProtocol": false
     }

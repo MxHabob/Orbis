@@ -1,16 +1,20 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { createUpdaterManifest } from "./create-tauri-updater-manifest.mjs";
+import { createR2UploadPlan } from "./upload-tauri-updater-r2.mjs";
 
 const release = {
-  repository: "MxHabob/Orbis",
+  updaterEndpoint: "https://updates.mulverse.com/orbis/latest.json",
   tag: "v1.2.3",
   version: "1.2.3",
   signature: " signed-signature \n",
   notes: "# Orbis v1.2.3\n\n## Summary\n\nMaintenance release.",
 };
 
-test("creates Windows updater metadata using the signed setup installer", () => {
+test("creates Windows updater metadata using the signed setup installer on R2", () => {
   assert.deepEqual(
     createUpdaterManifest({
       ...release,
@@ -22,7 +26,7 @@ test("creates Windows updater metadata using the signed setup installer", () => 
       notes: "# Orbis v1.2.3\n\n## Summary\n\nMaintenance release.",
       platforms: {
         "windows-x86_64": {
-          url: "https://github.com/MxHabob/Orbis/releases/download/v1.2.3/Orbis_1.2.3_x64-setup.exe",
+          url: "https://updates.mulverse.com/orbis/releases/v1.2.3/Orbis_1.2.3_x64-setup.exe",
           signature: "signed-signature",
         },
       },
@@ -39,7 +43,7 @@ test("creates macOS updater metadata for the Apple Silicon archive", () => {
 
   assert.equal(
     manifest.platforms["darwin-aarch64"].url,
-    "https://github.com/MxHabob/Orbis/releases/download/v1.2.3/Orbis.app.tar.gz",
+    "https://updates.mulverse.com/orbis/releases/v1.2.3/Orbis.app.tar.gz",
   );
 });
 
@@ -107,4 +111,51 @@ test("rejects invalid filenames and empty signatures", () => {
       }),
     /Release notes are missing/,
   );
+});
+
+test("plans Orbis R2 uploads under the isolated product prefix", () => {
+  const packageDir = mkdtempSync(path.join(os.tmpdir(), "orbis-r2-release-"));
+  const windowsName = "Orbis_1.2.3_x64-setup.exe";
+  const macName = "Orbis.app.tar.gz";
+  const windows = createUpdaterManifest({
+    ...release,
+    target: "x86_64-pc-windows-msvc",
+    artifactName: windowsName,
+  });
+  const mac = createUpdaterManifest({
+    ...release,
+    target: "aarch64-apple-darwin",
+    artifactName: macName,
+  });
+  const manifest = {
+    ...windows,
+    platforms: { ...windows.platforms, ...mac.platforms },
+  };
+  writeFileSync(path.join(packageDir, windowsName), "windows bundle");
+  writeFileSync(path.join(packageDir, macName), "mac bundle");
+  writeFileSync(
+    path.join(packageDir, "latest.json"),
+    JSON.stringify(manifest),
+  );
+
+  try {
+    const plan = createR2UploadPlan({
+      updaterEndpoint: release.updaterEndpoint,
+      accountId: "a".repeat(32),
+      bucket: "mulverse-desktop-updates",
+      tag: release.tag,
+      packageDir,
+    });
+    assert.deepEqual(
+      plan.map((item) => item.destination),
+      [
+        `s3://mulverse-desktop-updates/orbis/releases/${release.tag}/${windowsName}`,
+        `s3://mulverse-desktop-updates/orbis/releases/${release.tag}/${macName}`,
+        "s3://mulverse-desktop-updates/orbis/latest.json",
+      ],
+    );
+    assert.equal(plan.at(-1).cacheControl, "no-cache, no-store, must-revalidate");
+  } finally {
+    rmSync(packageDir, { recursive: true, force: true });
+  }
 });
