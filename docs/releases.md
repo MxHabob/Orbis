@@ -2,6 +2,8 @@
 
 Desktop updates are signed and distributed through the shared public Cloudflare R2 bucket. A release tag triggers `.github/workflows/release.yml`, which builds Windows and macOS installers, creates per-platform updater metadata from the signed artifacts and the release notes in `releases/vX.Y.Z.md`, validates the merged metadata, uploads versioned installers and publishes `latest.json` last. The Windows updater artifact is the signed NSIS `*-setup.exe` installer and its `.sig` file; the workflow must not expect a `.nsis.zip` asset. Orbis uses the isolated `orbis/` prefix, with its updater endpoint at `https://updates.mulverse.com/orbis/latest.json` and bundles under `/orbis/releases/vX.Y.Z/`. The public GitHub Release is still created for manually downloading installers; the installed updater checks R2, not GitHub.
 
+After each successful R2 upload, the desktop release workflow retains the three newest Orbis versions under `/orbis/releases/` and removes older Orbis bundles. It never removes `/orbis/latest.json` or objects under another product prefix such as `/aqardesk/`.
+
 The desktop app downloads and verifies an available signed update before offering a restart to apply it. Its title-bar download control appears only while update activity is in progress or when an update needs attention.
 
 If a release build has already created a draft but publication fails during validation, run [Recover Draft GitHub Release](../.github/workflows/recover-release.yml) from the `main` branch and enter the draft's tag. Recovery does not rebuild or replace assets; it repeats the asset, version, updater URL, and signature checks before publishing the existing draft.

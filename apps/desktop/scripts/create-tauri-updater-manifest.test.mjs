@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { createUpdaterManifest } from "./create-tauri-updater-manifest.mjs";
-import { createR2UploadPlan } from "./upload-tauri-updater-r2.mjs";
+import {
+  createR2UploadPlan,
+  planR2ReleasePrune,
+} from "./upload-tauri-updater-r2.mjs";
 
 const release = {
   updaterEndpoint: "https://updates.mulverse.com/orbis/latest.json",
@@ -121,6 +124,33 @@ test("plans Orbis R2 uploads under the isolated product prefix", () => {
     ...release,
     target: "x86_64-pc-windows-msvc",
     artifactName: windowsName,
+  });
+
+  test("keeps the newest three Orbis releases without touching AqarDesk", () => {
+    const plan = planR2ReleasePrune({
+      productPath: "/orbis",
+      latestTag: "v1.1.10",
+      keys: [
+        "orbis/latest.json",
+        "orbis/releases/v1.1.8/Orbis.exe",
+        "orbis/releases/v1.1.10/Orbis.exe",
+        "orbis/releases/v1.1.9/Orbis.exe",
+        "orbis/releases/v1.1.7/Orbis.exe",
+        "aqardesk/releases/v1.0.2/AqarDesk.exe",
+      ],
+    });
+    assert.deepEqual(plan, [{ tag: "v1.1.7", prefix: "orbis/releases/v1.1.7/" }]);
+  });
+
+  test("refuses to prune Orbis releases if the just-uploaded version is missing", () => {
+    assert.throws(
+      () => planR2ReleasePrune({
+        productPath: "/orbis",
+        latestTag: "v1.1.10",
+        keys: ["orbis/releases/v1.1.9/Orbis.exe"],
+      }),
+      /was not found in R2; refusing to prune/,
+    );
   });
   const mac = createUpdaterManifest({
     ...release,
