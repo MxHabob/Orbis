@@ -98,6 +98,7 @@ pub struct UpdateOrbisEndpointRequest {
 pub struct RegisterTrialRequest {
     pub device_public_key: String,
     pub device_signature: String,
+    pub application_id: String,
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
@@ -144,6 +145,7 @@ pub struct RefreshTrialRequest {
     pub trial_id: String,
     pub device_public_key: String,
     pub device_signature: String,
+    pub application_id: String,
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
@@ -779,9 +781,10 @@ impl From<MulverseApiError> for orbis_domain::errors::DomainError {
 #[cfg(test)]
 mod tests {
     use super::{
-        ClaimProductKeyRequest, MulverseApiError, OrbisConnectionResponse, TrialCustomerProfile,
-        format_api_error_body,
+        ClaimProductKeyRequest, MulverseApiError, OrbisConnectionResponse, RefreshTrialRequest,
+        RegisterTrialRequest, TrialCustomerProfile, format_api_error_body,
     };
+    use orbis_domain::entities::license::CANONICAL_PRODUCT_ID;
 
     #[test]
     fn api_error_envelope_displays_message_instead_of_raw_json() {
@@ -871,6 +874,54 @@ mod tests {
             serialized["customer_profile"]
                 .get("organization_size")
                 .is_none()
+        );
+    }
+
+    #[test]
+    fn trial_requests_serialize_the_canonical_application_id() {
+        let registration = RegisterTrialRequest {
+            device_public_key: "public-key".to_owned(),
+            device_signature: "signature".to_owned(),
+            application_id: CANONICAL_PRODUCT_ID.to_owned(),
+            challenge_id: "challenge-id".to_owned(),
+            challenge: "challenge".to_owned(),
+            installation_id: "installation-id".to_owned(),
+            customer_id: "customer-id".to_owned(),
+            customer_name: "School".to_owned(),
+            customer_slug: "school".to_owned(),
+            customer_profile: TrialCustomerProfile {
+                name_ar: None,
+                institution_type: "school".to_owned(),
+                customer_size: None,
+                educational_track: None,
+                country_code: None,
+                country_name: None,
+                region_name: None,
+                city: None,
+            },
+            platform: "windows".to_owned(),
+            app_version: "1.0.0".to_owned(),
+            machine_label: None,
+        };
+        let refresh = RefreshTrialRequest {
+            trial_id: "trial-id".to_owned(),
+            device_public_key: "public-key".to_owned(),
+            device_signature: "signature".to_owned(),
+            application_id: CANONICAL_PRODUCT_ID.to_owned(),
+            challenge_id: "challenge-id".to_owned(),
+            challenge: "challenge".to_owned(),
+            installation_id: "installation-id".to_owned(),
+            customer_id: "customer-id".to_owned(),
+            app_version: "1.0.0".to_owned(),
+        };
+
+        assert_eq!(
+            serde_json::to_value(registration).expect("registration should serialize")["application_id"],
+            CANONICAL_PRODUCT_ID
+        );
+        assert_eq!(
+            serde_json::to_value(refresh).expect("refresh should serialize")["application_id"],
+            CANONICAL_PRODUCT_ID
         );
     }
 
