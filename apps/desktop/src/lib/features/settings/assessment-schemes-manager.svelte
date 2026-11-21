@@ -4,6 +4,7 @@ Manages assessment schemes (weighted grade composition structures).
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { l } from "$lib/core/i18n/locale";
 import { api, extractErrorMessage, type AssessmentComponent } from "$lib/api";
 import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
 import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
@@ -456,7 +457,7 @@ const componentTypes = [
               <div class="flex items-center justify-between gap-2">
                 <div class="flex flex-col gap-0.5 min-w-0 flex-1">
                   <span class="text-xs font-semibold text-foreground truncate">
-                    {scheme.name}
+                    {l(scheme.name_ar, scheme.name)}
                   </span>
                   {#if scheme.description}
                     <span class="text-[10px] text-muted-foreground line-clamp-1">
@@ -495,7 +496,7 @@ const componentTypes = [
               <div class="flex items-center gap-2">
                 <Scale size={15} class="text-primary" />
                 <CardTitle class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-start select-none">
-                  {selectedScheme.name}
+                  {l(selectedScheme.name_ar, selectedScheme.name)}
                 </CardTitle>
               </div>
               <CardAction>
@@ -535,7 +536,7 @@ const componentTypes = [
                     <div
                       class="{colors[i % colors.length]} transition-all"
                       style="width: {comp.weight}%"
-                      title="{comp.name}: {comp.weight}%"
+                      title="{l(comp.name_ar, comp.name)}: {comp.weight}%"
                     ></div>
                   {/each}
                 </div>
@@ -572,7 +573,7 @@ const componentTypes = [
                               ]}"
                             ></div>
                             <span class="font-semibold text-foreground">
-                              {comp.name}
+                              {l(comp.name_ar, comp.name)}
                             </span>
                           </div>
                         </td>
