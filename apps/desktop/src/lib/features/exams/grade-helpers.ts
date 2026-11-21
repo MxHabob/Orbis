@@ -1,12 +1,32 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import * as m from "$lib/paraglide/messages";
 
+// ── Assessment Column Config ───────────────────────────────────────────
+// Describes a single gradable column derived from an AssessmentScheme component.
+// This replaces all hardcoded "monthly"/"final" assessment type assumptions.
+
+export interface AssessmentColumnConfig {
+  /** Stable component code from the scheme (e.g. "assignments", "oral", "written_test") */
+  code: string;
+  /** Display name (English) */
+  name: string;
+  /** Display name (Arabic) */
+  name_ar?: string | null;
+  /** Maximum possible score for this component */
+  max_score: number;
+  /** Sort order within the scheme */
+  sort_order: number;
+}
+
 export interface GradeCell {
   grade_id?: string | null;
   assessment_id?: string | null;
+  /** Component code from scheme (used as column key) */
   exam_type: string;
   score?: number | null;
   max_score: number;
+  /** Links this grade to a specific assessment component for backend storage */
+  component_id?: string | null;
 }
 
 export interface GradeMatrixStudent {
@@ -26,6 +46,8 @@ export interface GradeMatrixResponse {
   section_subject_id: string;
   students: GradeMatrixStudent[];
   assessment_types: string[];
+  /** Typed column configs derived from the assessment scheme. When present, these drive column rendering. */
+  components?: AssessmentColumnConfig[];
 }
 
 export interface GradeScaleItem {
@@ -130,35 +152,64 @@ export function buildGradeColumns(
     },
   ];
 
-  for (const type of matrix.assessment_types || []) {
-    const sample = matrix.students?.[0]?.grades?.find(
-      (g) => g.exam_type === type,
-    );
-    const max = sample?.max_score || (type === "final" ? 30 : 20);
-    const typeLabel =
-      type === "monthly"
-        ? m.exams_grade_work_label({ max })
-        : type === "final"
-          ? m.exams_grade_exam_label({ max })
-          : `${type} (${max})`;
+  // ── Dynamic columns from scheme components ─────────────────
+  if (matrix.components && matrix.components.length > 0) {
+    // Use typed component configs from the assessment scheme
+    for (const comp of matrix.components) {
+      const displayName =
+        locale === "ar" && comp.name_ar ? comp.name_ar : comp.name;
+      const typeLabel = `${displayName} (${comp.max_score})`;
 
-    cols.push({
-      id: `exam_${type}`,
-      prop: `exam_${type}`,
-      header: typeLabel,
-      name: typeLabel,
-      width: 105,
-      size: 105,
-      type: "number",
-      align: "end",
-      editor: readonly
-        ? undefined
-        : {
-            type: "text",
-            config: { min: 0, max },
-          },
-      sort: true,
-    });
+      cols.push({
+        id: `exam_${comp.code}`,
+        prop: `exam_${comp.code}`,
+        header: typeLabel,
+        name: typeLabel,
+        width: 105,
+        size: 105,
+        type: "number",
+        align: "end",
+        editor: readonly
+          ? undefined
+          : {
+              type: "text",
+              config: { min: 0, max: comp.max_score },
+            },
+        sort: true,
+      });
+    }
+  } else {
+    // Legacy fallback: use assessment_types strings
+    for (const type of matrix.assessment_types || []) {
+      const sample = matrix.students?.[0]?.grades?.find(
+        (g) => g.exam_type === type,
+      );
+      const max = sample?.max_score || (type === "final" ? 30 : 20);
+      const typeLabel =
+        type === "monthly"
+          ? m.exams_grade_work_label({ max })
+          : type === "final"
+            ? m.exams_grade_exam_label({ max })
+            : `${type} (${max})`;
+
+      cols.push({
+        id: `exam_${type}`,
+        prop: `exam_${type}`,
+        header: typeLabel,
+        name: typeLabel,
+        width: 105,
+        size: 105,
+        type: "number",
+        align: "end",
+        editor: readonly
+          ? undefined
+          : {
+              type: "text",
+              config: { min: 0, max },
+            },
+        sort: true,
+      });
+    }
   }
 
   cols.push(
@@ -230,6 +281,7 @@ export function transformMatrixToSource(
       row[`__meta_exam_${g.exam_type}`] = {
         grade_id: g.grade_id,
         assessment_id: g.assessment_id,
+        component_id: g.component_id ?? null,
         max_score: g.max_score,
       };
     }
@@ -270,4 +322,73 @@ export function recalculateRowTotals(
       row.grade_letter as string,
     ),
   };
+}
+
+// ── Scheme Helpers ──────────────────────────────────────────────────────
+
+/**
+ * Extract AssessmentColumnConfig[] from an assessment scheme's components.
+ * The scheme data may carry components under `components` (array of objects
+ * with camelCase keys from the backend) or under `formula.components`.
+ */
+export function extractSchemeComponents(
+  scheme: Record<string, unknown>,
+): AssessmentColumnConfig[] {
+  const raw: unknown[] =
+    Array.isArray(scheme.components) && scheme.components.length > 0
+      ? (scheme.components as unknown[])
+      : Array.isArray(
+            (scheme.formula as Record<string, unknown> | null)?.components,
+          )
+        ? (
+            (scheme.formula as Record<string, unknown>)
+              .components as unknown[]
+          )
+        : [];
+
+  if (raw.length === 0) return [];
+
+  return raw
+    .map((c, i) => {
+      const comp = (typeof c === "object" && c !== null ? c : {}) as Record<
+        string,
+        unknown
+      >;
+      return {
+        code: String(comp.code ?? comp.id ?? `comp-${i}`),
+        name: String(comp.name ?? ""),
+        name_ar:
+          typeof comp.name_ar === "string"
+            ? comp.name_ar
+            : typeof comp.nameAr === "string"
+              ? comp.nameAr
+              : null,
+        max_score:
+          Number(comp.max_score ?? comp.maxScore) || 0,
+        sort_order:
+          Number(comp.sort_order ?? comp.sortOrder) || i + 1,
+      } satisfies AssessmentColumnConfig;
+    })
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+/**
+ * Find the default monthly-period assessment scheme from a list of schemes.
+ * Prioritises: (1) scheme with level "monthly_period", (2) scheme with
+ * level "monthly", (3) the default scheme, (4) the first scheme.
+ */
+export function findMonthlyScheme(
+  schemes: Record<string, unknown>[],
+): Record<string, unknown> | null {
+  if (!schemes.length) return null;
+  return (
+    schemes.find(
+      (s) =>
+        String(s.level) === "monthly_period" ||
+        String(s.level) === "monthly",
+    ) ??
+    schemes.find((s) => s.is_default === true) ??
+    schemes[0] ??
+    null
+  );
 }

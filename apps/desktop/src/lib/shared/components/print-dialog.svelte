@@ -788,6 +788,9 @@ function applySuggestion(suggestion: MultiUpLayout) {
               <MultiUpPreview
                 layout={multiUpLayout}
                 totalRecords={entityIds.length}
+                cutLineWidthMm={multiUpConfig.cutLineWidthMm}
+                cutLineColor={multiUpConfig.cutLineColor}
+                sheetMargins={multiUpConfig.sheetMargins}
                 bind:currentPage={previewPage}
               />
             </TabsContent>

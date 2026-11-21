@@ -13,6 +13,9 @@ import {
   transformMatrixToSource,
   recalculateRowTotals,
   scoreToGradeLetter,
+  extractSchemeComponents,
+  findMonthlyScheme,
+  type AssessmentColumnConfig,
   type GradeMatrixResponse,
   type GradeMatrixStudent,
   type GradeCell,
@@ -34,6 +37,7 @@ let isDirty = $state(false);
 let matrixData = $state<GradeMatrixResponse | null>(null);
 let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
+let schemeComponents = $state<AssessmentColumnConfig[]>([]);
 let previousSelectedClassId: string | null = null;
 const preferenceScope = () => ({
   userId: authStore.userId,
@@ -107,7 +111,17 @@ let gridColumns = $derived.by(() => {
 async function loadInitialData() {
   isLoading = true;
   try {
-    subjects = await api.listSubjects();
+    const [subjectList, schemes] = await Promise.all([
+      api.listSubjects(),
+      api.listAssessmentSchemes(),
+    ]);
+    subjects = subjectList;
+
+    // Resolve the monthly-period scheme and extract its components
+    const monthlyScheme = findMonthlyScheme(schemes as Record<string, unknown>[]);
+    if (monthlyScheme) {
+      schemeComponents = extractSchemeComponents(monthlyScheme);
+    }
 
     // If no period selected yet, use context's effective period
     if (!selectedPeriodId && academicContext.effectivePeriodId) {
@@ -157,11 +171,23 @@ async function loadGradeMatrix() {
     const gradeItems = sectionSubject
       ? await api.listGrades({ SectionSubjectId: sectionSubject.id })
       : [];
-    const assessmentConfigs = [
-      { type: "monthly", max: 20 },
-      { type: "final", max: 30 },
-    ];
-    const assessmentTypes = assessmentConfigs.map((c) => c.type);
+
+    // ── Build assessment columns from scheme components ────────
+    const hasSchemeComponents = schemeComponents.length > 0;
+    const assessmentConfigs = hasSchemeComponents
+      ? schemeComponents.map((comp) => ({
+          code: comp.code,
+          name: comp.name,
+          name_ar: comp.name_ar,
+          max: comp.max_score,
+          sort_order: comp.sort_order,
+        }))
+      : [
+          // Legacy fallback when no scheme is configured
+          { code: "monthly", name: "Monthly", name_ar: "العملية", max: 20, sort_order: 1 },
+          { code: "final", name: "Final", name_ar: "الاختبار", max: 30, sort_order: 2 },
+        ];
+    const assessmentTypes = assessmentConfigs.map((c) => c.code);
 
     const students: GradeMatrixStudent[] = studentItems.map((st) => {
       const studentId = st.student?.id ?? st.id;
@@ -170,16 +196,30 @@ async function loadGradeMatrix() {
           String(grade.student_id) === String(studentId) &&
           String(grade.period_id) === String(selectedPeriodId),
       );
-      const cells: GradeCell[] = assessmentConfigs.map(({ type, max }) => {
-        const grade = matchingGrades.find(
-          (item) => Boolean(item.is_final) === (type === "final"),
-        );
+      const cells: GradeCell[] = assessmentConfigs.map(({ code, max }) => {
+        // Match grade by component_id (component code) or fall back to is_final for legacy data
+        const grade = hasSchemeComponents
+          ? matchingGrades.find(
+              (item) =>
+                String(item.component_id ?? "") === code ||
+                // Fallback: match by component_id containing the code
+                (item.component_id &&
+                  String(item.component_id).includes(code)),
+            ) ??
+            // Last-resort legacy match for old 2-column data
+            (code === "final" || code === "written_test" || code === "term_exam"
+              ? matchingGrades.find((item) => Boolean(item.is_final))
+              : null)
+          : matchingGrades.find(
+              (item) => Boolean(item.is_final) === (code === "final"),
+            );
         const gradeMax = Number(grade?.max_score);
         return {
           grade_id: grade?.id ?? null,
-          exam_type: type,
+          exam_type: code,
           score: grade ? Number(grade.score) : null,
           max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
+          component_id: grade?.component_id ?? null,
         };
       });
       const total = cells.reduce((acc, cell) => acc + (cell.score || 0), 0);
@@ -219,6 +259,7 @@ async function loadGradeMatrix() {
       section_subject_id: sectionSubject?.id ?? "",
       students,
       assessment_types: assessmentTypes,
+      components: hasSchemeComponents ? schemeComponents : undefined,
     };
 
     matrixData = result;
@@ -270,14 +311,20 @@ async function handleSaveAll() {
       for (const key of assessmentKeys) {
         const score = row[`exam_${key}`];
         if (score !== null && score !== undefined && score !== "") {
-          const max = key === "final" ? 30 : 20;
+          const meta = row[`__meta_exam_${key}`] as
+            | { max_score: number; component_id?: string | null }
+            | undefined;
+          // Read max_score from the scheme component, fall back to meta or legacy defaults
+          const compConfig = schemeComponents.find((c) => c.code === key);
+          const maxScore = compConfig?.max_score ?? meta?.max_score ?? 100;
           items.push({
             student_id: row.student_id,
             period_id: selectedPeriodId,
             section_subject_id: matrixData.section_subject_id,
             score: String(Number(score)),
-            max_score: max,
+            max_score: maxScore,
             enrollment_id: row.enrollment_id || undefined,
+            component_id: meta?.component_id ?? key,
             notes: null,
           });
         }
