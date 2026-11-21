@@ -45,7 +45,10 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "sidebarImage": "./images/orbis-installer-sidebar.bmp"
+        "displayLanguageSelector": false,
+        "sidebarImage": "./images/orbis-installer-sidebar.bmp",
+        "installerIcon": "./images/installerico.ico",
+        "uninstallerIcon": "./images/installerico.ico"
       }
     },
     "icon": [

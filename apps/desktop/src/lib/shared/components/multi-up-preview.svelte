@@ -10,15 +10,21 @@ import { ChevronLeft, ChevronRight } from "@orbis/icons";
 
 import { getLocale } from "$lib/paraglide/runtime";
 
-import type { MultiUpLayout } from "@docforge/core";
+import type { MultiUpConfig, MultiUpLayout } from "@docforge/core";
 
 let {
   layout,
   totalRecords = 0,
+  cutLineWidthMm,
+  cutLineColor,
+  sheetMargins,
   currentPage = $bindable(1),
 }: {
   layout: MultiUpLayout;
   totalRecords: number;
+  cutLineWidthMm: number;
+  cutLineColor: string;
+  sheetMargins: MultiUpConfig["sheetMargins"];
   currentPage: number;
 } = $props();
 
@@ -27,24 +33,85 @@ const totalPages = $derived(
   layout.itemsPerSheet > 0 ? Math.ceil(totalRecords / layout.itemsPerSheet) : 1,
 );
 
-const startIndex = $derived((currentPage - 1) * layout.itemsPerSheet);
+const visiblePage = $derived(
+  Math.max(1, Math.min(currentPage, totalPages || 1)),
+);
+
+const startIndex = $derived((visiblePage - 1) * layout.itemsPerSheet);
 
 const sheetAspectRatio = $derived(
   layout.sheetWidthMm / layout.sheetHeightMm,
 );
 
+const cutLines = $derived.by(() => {
+  if (cutLineWidthMm <= 0) return [];
+
+  const lines: {
+    id: string;
+    xMm: number;
+    yMm: number;
+    widthMm: number;
+    heightMm: number;
+  }[] = [];
+
+  for (let col = 1; col < layout.columns; col++) {
+    const leftSlot = layout.slots.find(
+      (slot) => slot.col === col - 1 && slot.row === 0,
+    );
+    const rightSlot = layout.slots.find(
+      (slot) => slot.col === col && slot.row === 0,
+    );
+    if (!leftSlot || !rightSlot) continue;
+
+    const centerMm =
+      (leftSlot.xMm + leftSlot.widthMm + rightSlot.xMm) / 2;
+    lines.push({
+      id: `vertical-${col}`,
+      xMm: centerMm - cutLineWidthMm / 2,
+      yMm: sheetMargins.top / 2,
+      widthMm: cutLineWidthMm,
+      heightMm:
+        layout.sheetHeightMm -
+        (sheetMargins.top + sheetMargins.bottom) / 2,
+    });
+  }
+
+  for (let row = 1; row < layout.rows; row++) {
+    const topSlot =
+      layout.slots.find(
+        (slot) => slot.row === row - 1 && slot.col === 0,
+      ) ?? layout.slots.find((slot) => slot.row === row - 1);
+    const bottomSlot = layout.slots.find((slot) => slot.row === row);
+    if (!topSlot || !bottomSlot) continue;
+
+    const centerMm =
+      (topSlot.yMm + topSlot.heightMm + bottomSlot.yMm) / 2;
+    lines.push({
+      id: `horizontal-${row}`,
+      xMm: sheetMargins.left / 2,
+      yMm: centerMm - cutLineWidthMm / 2,
+      widthMm:
+        layout.sheetWidthMm -
+        (sheetMargins.left + sheetMargins.right) / 2,
+      heightMm: cutLineWidthMm,
+    });
+  }
+
+  return lines;
+});
+
 function prevPage() {
-  if (currentPage > 1) currentPage--;
+  if (visiblePage > 1) currentPage = visiblePage - 1;
 }
 function nextPage() {
-  if (currentPage < totalPages) currentPage++;
+  if (visiblePage < totalPages) currentPage = visiblePage + 1;
 }
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col items-center gap-2">
   <!-- Sheet Preview Container -->
   <div
-    class="flex min-h-0 min-w-0 flex-1 items-center justify-center"
+    class="flex min-h-0 min-w-0 w-full flex-1 items-center justify-center"
   >
     <div
       class="relative shrink-0 rounded-sm border border-border bg-white shadow-md"
@@ -78,6 +145,19 @@ function nextPage() {
           {/if}
         </div>
       {/each}
+
+      {#each cutLines as line (line.id)}
+        <div
+          class="absolute pointer-events-none"
+          style="
+            left: {line.xMm / layout.sheetWidthMm * 100}%;
+            top: {line.yMm / layout.sheetHeightMm * 100}%;
+            width: {line.widthMm / layout.sheetWidthMm * 100}%;
+            height: {line.heightMm / layout.sheetHeightMm * 100}%;
+            background-color: {cutLineColor};
+          "
+        ></div>
+      {/each}
     </div>
   </div>
 
@@ -88,18 +168,18 @@ function nextPage() {
         variant="ghost"
         size="icon-xs"
         onclick={prevPage}
-        disabled={currentPage <= 1}
+        disabled={visiblePage <= 1}
       >
         <ChevronLeft size={14} class={getLocale() === "ar" ? "rtl:rotate-180" : ""} />
       </Button>
       <span class="text-xs text-muted-foreground font-medium min-w-[80px] text-center">
-        {m.common_print_multi_up_page_of({ current: String(currentPage), total: String(totalPages) })}
+        {m.common_print_multi_up_page_of({ current: String(visiblePage), total: String(totalPages) })}
       </span>
       <Button
         variant="ghost"
         size="icon-xs"
         onclick={nextPage}
-        disabled={currentPage >= totalPages}
+        disabled={visiblePage >= totalPages}
       >
         <ChevronRight size={14} class={getLocale() === "ar" ? "rtl:rotate-180" : ""} />
       </Button>

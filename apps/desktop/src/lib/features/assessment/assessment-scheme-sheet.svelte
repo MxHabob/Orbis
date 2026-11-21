@@ -1,7 +1,7 @@
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
 import { api, type AssessmentSchemeDto } from "$lib/api";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n/locale";
 import * as m from "$lib/paraglide/messages";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Button } from "@orbis/ui/button";
@@ -21,7 +21,6 @@ const schemesQuery = createQuery(() => ({
 }));
 
 const schemes = $derived(schemesQuery.data ?? []);
-const locale = $derived(getLocale());
 
 function componentWeight(
   scheme: AssessmentSchemeDto,
@@ -84,9 +83,7 @@ function componentWeight(
               <header class="flex items-start justify-between gap-3 border-b border-border/40 p-4">
                 <div class="min-w-0">
                   <h3 class="truncate text-sm font-bold text-foreground">
-                    {locale === "ar"
-                      ? scheme.name_ar || scheme.name
-                      : scheme.name || scheme.name_ar}
+                    {l(scheme.name_ar, scheme.name)}
                   </h3>
                   {#if scheme.description}
                     <p class="mt-1 text-xs text-muted-foreground">
@@ -110,9 +107,7 @@ function componentWeight(
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                       <div class="min-w-0">
                         <p class="truncate text-xs font-medium text-foreground">
-                          {locale === "ar"
-                            ? component.nameAr || component.name
-                            : component.name || component.nameAr}
+                          {l(component.nameAr, component.name)}
                         </p>
                         <p class="mt-0.5 text-[10px] text-muted-foreground">
                           {m.academics_assessment_component_weight({
