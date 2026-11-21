@@ -143,6 +143,12 @@ jobs:
         working-directory: apps/mobile
         run: bun run expo prebuild --platform android
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android CMake
+        run: sdkmanager --install "cmake;3.31.6"
+
       - name: Cache Gradle dependencies and build outputs
         uses: gradle/actions/setup-gradle@v4
 

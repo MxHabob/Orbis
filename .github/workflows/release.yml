@@ -83,11 +83,13 @@ jobs:
           - name: windows-x86_64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
+            bundle_dir: t
             artifact_dir: nsis
             asset_pattern: '*.exe'
           - name: macos-aarch64
             runner: macos-latest
             target: aarch64-apple-darwin
+            bundle_dir: apps/desktop/src-tauri/target
             artifact_dir: macos
             asset_pattern: '*.app.tar.gz'
     steps:
@@ -112,10 +114,16 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Set short Cargo target directory
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "CARGO_TARGET_DIR=$env:GITHUB_WORKSPACE\t" >> $env:GITHUB_ENV
+
       - name: Cache Tauri Rust build outputs
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/desktop/src-tauri -> target
+          workspaces: apps/desktop/src-tauri -> ${{ runner.os == 'Windows' && '../../../t' || 'target' }}
           shared-key: orbis-tauri-${{ matrix.target }}
 
       - name: Setup Rust compiler cache
@@ -169,7 +177,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ci-artifacts
-          bundle_dir="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/${{ matrix.artifact_dir }}"
+          bundle_dir="${{ matrix.bundle_dir }}/${{ matrix.target }}/release/bundle/${{ matrix.artifact_dir }}"
           if [[ ! -d "$bundle_dir" ]]; then
             echo "::error::No bundle directory found for target ${{ matrix.target }} at $bundle_dir"
             exit 1
