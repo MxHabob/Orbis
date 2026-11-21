@@ -718,7 +718,7 @@ function handleDirectPrint() {
           actionLabel={m.academics_studio_manage_periods()}
           onaction={() =>
             goto(resolve("/(app)/[orgId]/settings/periods", { orgId }))}
-          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs h-auto!"
         />
       {:else if timeSlots.length === 0}
         <EmptyState
@@ -727,14 +727,14 @@ function handleDirectPrint() {
           description={m.academics_schedule_no_slots_desc()}
           actionLabel={m.academics_schedule_config_slots_btn()}
           onaction={() => (isTimeSlotsSheetOpen = true)}
-          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs h-auto!"
         />
       {:else if classes.length === 0}
         <EmptyState
           icon={Users}
           title={m.academics_schedule_no_classes()}
           description={m.academics_schedule_no_classes_desc()}
-          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs h-auto!"
         />
       {:else}
         <!-- Contextual Header Info Banner (For Teacher Workload / Room Occupancy) -->
@@ -808,7 +808,7 @@ function handleDirectPrint() {
                     ? m.academics_studio_select_room()
                     : m.academics_schedule_select_subject()}
               description={m.academics_schedule_choose_view_item()}
-              class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+              class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs h-auto!"
             />
           {:else if searchedLessons.length === 0}
             <EmptyState
@@ -821,7 +821,7 @@ function handleDirectPrint() {
                 : m.academics_schedule_no_lessons_desc()}
               actionLabel={searchTerm.trim() ? "" : m.academics_schedule_add_first_lesson()}
               onaction={searchTerm.trim() ? undefined : () => openNewLessonSheet()}
-              class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+              class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs h-auto!"
             />
           {:else}
             <TimetableGrid
