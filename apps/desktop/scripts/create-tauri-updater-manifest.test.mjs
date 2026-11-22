@@ -139,16 +139,19 @@ test("plans Orbis R2 uploads under the isolated product prefix", () => {
         "aqardesk/releases/v1.0.2/AqarDesk.exe",
       ],
     });
-    assert.deepEqual(plan, [{ tag: "v1.1.7", prefix: "orbis/releases/v1.1.7/" }]);
+    assert.deepEqual(plan, [
+      { tag: "v1.1.7", prefix: "orbis/releases/v1.1.7/" },
+    ]);
   });
 
   test("refuses to prune Orbis releases if the just-uploaded version is missing", () => {
     assert.throws(
-      () => planR2ReleasePrune({
-        productPath: "/orbis",
-        latestTag: "v1.1.10",
-        keys: ["orbis/releases/v1.1.9/Orbis.exe"],
-      }),
+      () =>
+        planR2ReleasePrune({
+          productPath: "/orbis",
+          latestTag: "v1.1.10",
+          keys: ["orbis/releases/v1.1.9/Orbis.exe"],
+        }),
       /was not found in R2; refusing to prune/,
     );
   });
@@ -163,10 +166,7 @@ test("plans Orbis R2 uploads under the isolated product prefix", () => {
   };
   writeFileSync(path.join(packageDir, windowsName), "windows bundle");
   writeFileSync(path.join(packageDir, macName), "mac bundle");
-  writeFileSync(
-    path.join(packageDir, "latest.json"),
-    JSON.stringify(manifest),
-  );
+  writeFileSync(path.join(packageDir, "latest.json"), JSON.stringify(manifest));
 
   try {
     const plan = createR2UploadPlan({
@@ -184,7 +184,10 @@ test("plans Orbis R2 uploads under the isolated product prefix", () => {
         "s3://mulverse-desktop-updates/orbis/latest.json",
       ],
     );
-    assert.equal(plan.at(-1).cacheControl, "no-cache, no-store, must-revalidate");
+    assert.equal(
+      plan.at(-1).cacheControl,
+      "no-cache, no-store, must-revalidate",
+    );
   } finally {
     rmSync(packageDir, { recursive: true, force: true });
   }

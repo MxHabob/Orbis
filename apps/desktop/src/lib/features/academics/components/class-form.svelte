@@ -1,12 +1,23 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, type CreateSectionRequest, type UpdateSectionRequest, type SectionDto, queryKeys } from "$lib/api";
+import {
+  api,
+  type CreateSectionRequest,
+  type UpdateSectionRequest,
+  type SectionDto,
+  queryKeys,
+} from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
 import { classFormInputSchema, type ClassFormInput } from "@orbis/schemas";

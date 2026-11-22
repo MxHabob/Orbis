@@ -40,8 +40,9 @@ async function loadData() {
       data = filteredSections
         .map((c) => ({
           name:
-            (getLocale() === "ar" ? c.name_ar || c.name : c.name || c.name_ar) ||
-            String(c.id),
+            (getLocale() === "ar"
+              ? c.name_ar || c.name
+              : c.name || c.name_ar) || String(c.id),
           count: c.current_students || 0,
         }))
         .sort((a, b) => b.count - a.count)

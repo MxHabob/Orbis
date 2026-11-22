@@ -1,7 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api, type SubjectDto } from "$lib/api";
-import { createSubjectInputSchema, type CreateSubjectInput } from "@orbis/schemas";
+import {
+  createSubjectInputSchema,
+  type CreateSubjectInput,
+} from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -19,7 +22,7 @@ type SubjectDraft = {
   name_ar: string;
   code: string;
   credit_hours: number;
-  color: string | null;
+  color: string;
   description: string;
   sort_order: number;
   is_core: boolean;
@@ -45,7 +48,7 @@ const form = new FormController<SubjectDraft, CreateSubjectInput>({
     name_ar: subject?.name_ar ?? "",
     code: subject?.code ?? "",
     credit_hours: Number(subject?.credit_hours ?? 3),
-    color: subject?.color ?? null,
+    color: subject?.color ?? "",
     description: subject?.description ?? "",
     sort_order: subject?.sort_order ?? 1,
     is_core: subject?.is_core ?? true,

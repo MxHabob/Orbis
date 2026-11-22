@@ -85,9 +85,7 @@ function handleNavigate(step: OnboardingStep) {
   isOpen = false;
   if (orgId) {
     goto(
-      resolve(
-        localizeHref(`/${orgId}/onboarding/${step.route}`) as Pathname,
-      ),
+      resolve(localizeHref(`/${orgId}/onboarding/${step.route}`) as Pathname),
     );
   }
 }

@@ -41,7 +41,10 @@ function readPrintPreferences(value: unknown): Partial<PrintPreferences> {
   ) {
     preferences.sheetSize = value.sheetSize as PrintPreferences["sheetSize"];
   }
-  if (value.sheetOrientation === "portrait" || value.sheetOrientation === "landscape") {
+  if (
+    value.sheetOrientation === "portrait" ||
+    value.sheetOrientation === "landscape"
+  ) {
     preferences.sheetOrientation = value.sheetOrientation;
   }
   if (isRecord(value.sheetMargins)) {

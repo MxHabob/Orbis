@@ -5,9 +5,7 @@
   "plugins": {
     "updater": {
       "pubkey": "",
-      "endpoints": [
-        "https://updates.mulverse.com/orbis/latest.json"
-      ],
+      "endpoints": ["https://updates.mulverse.com/orbis/latest.json"],
       "dangerousInsecureTransportProtocol": false
     }
   }

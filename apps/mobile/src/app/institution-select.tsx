@@ -2,13 +2,7 @@ import { BuildingOffice, CheckCircle, Plus, Search } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  FlatList,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { FlatList, Platform, Pressable, StyleSheet, View } from "react-native";
 import type { ListRenderItemInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";

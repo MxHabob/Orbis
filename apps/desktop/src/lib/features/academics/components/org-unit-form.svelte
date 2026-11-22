@@ -115,8 +115,8 @@ async function handleSubmit(e: SubmitEvent) {
   const submitted = await form.submit(async (values) => {
     const payload = {
       ...values,
-      name: values.name.trim() || values.name_ar.trim(),
-      name_ar: values.name_ar.trim() || values.name.trim(),
+      name: values.name.trim() || values.name_ar?.trim() || "",
+      name_ar: values.name_ar?.trim() || values.name.trim(),
       parent_id: values.parent_id || undefined,
       head_id: values.head_id || undefined,
     };

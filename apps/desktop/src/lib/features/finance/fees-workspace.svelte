@@ -236,12 +236,7 @@ onMount(async () => {
 async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [
-      templatesList,
-      discountsList,
-      enrollmentsList,
-      periodsList,
-    ] =
+    const [templatesList, discountsList, enrollmentsList, periodsList] =
       await Promise.all([
         api.listFeeTemplates(),
         api.listDiscountTemplates(),

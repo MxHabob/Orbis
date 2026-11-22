@@ -24,7 +24,12 @@ const periods = $derived(periodsQuery.data ?? []);
 function periodLabel(periodId?: string | null): string {
   if (!periodId) return "—";
   const period = periods.find((item) => item.id === periodId);
-  return period ? l(period.name_ar, period.name) : periodId;
+  return period
+    ? l(period.name_ar, period.name) ||
+        period.name ||
+        period.name_ar ||
+        periodId
+    : periodId;
 }
 
 function statusIcon(status: string) {

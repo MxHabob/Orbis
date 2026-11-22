@@ -21,7 +21,8 @@ let shouldShowDownloadManager = $derived(
     updateManager.isApplying ||
     updateManager.isReadyToRestart ||
     (updateManager.isOnline && updateManager.error !== null) ||
-    (updateManager.isOnline && updateManager.updateResult?.has_update === true) ||
+    (updateManager.isOnline &&
+      updateManager.updateResult?.has_update === true) ||
     solverSetup?.state === "preparing" ||
     (updateManager.isOnline && solverSetup?.state === "failed") ||
     (updateManager.isOnline && solverSetup?.state === "ready"),

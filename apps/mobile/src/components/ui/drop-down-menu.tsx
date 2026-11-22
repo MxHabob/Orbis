@@ -17,7 +17,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { type GestureResponderEvent, Modal, Platform, Pressable, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import {
+  type GestureResponderEvent,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,

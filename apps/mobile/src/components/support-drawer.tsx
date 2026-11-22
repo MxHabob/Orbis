@@ -1,7 +1,13 @@
 import { CheckCircle } from "@orbis/icons/native";
 import Constants from "expo-constants";
 import { useState } from "react";
-import { Linking, Platform, Pressable, View, useWindowDimensions } from "react-native";
+import {
+  Linking,
+  Platform,
+  Pressable,
+  View,
+  useWindowDimensions,
+} from "react-native";
 
 import { Button } from "@/components/ui/button";
 import {

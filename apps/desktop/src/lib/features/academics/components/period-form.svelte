@@ -89,6 +89,9 @@ const form = untrack(
       schema: createPeriodInputSchema,
     }),
 );
+const selectedParentPeriod = $derived(
+  periodsList.find((p) => String(p.id) === form.values.parent_id),
+);
 
 function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];
@@ -121,7 +124,6 @@ async function handleSubmit(e: SubmitEvent) {
         await api.updateAcademicPeriod(period.id, {
           name: payload.name || payload.name_ar || "",
           name_ar: payload.name_ar || payload.name || undefined,
-          period_type: payload.period_type,
           start_date: new Date(payload.start_date).toISOString(),
           end_date: new Date(payload.end_date).toISOString(),
         });
@@ -139,7 +141,8 @@ async function handleSubmit(e: SubmitEvent) {
         toast.success(m.common_action_save());
       } else {
         const selectedYearId =
-          payload.year_id || (yearsList[0]?.id ? String(yearsList[0].id) : "");
+          form.values.year_id ||
+          (yearsList[0]?.id ? String(yearsList[0].id) : "");
         if (!selectedYearId) {
           throw new Error(m.shared_ui_academic_calendar_required_for_period());
         }
@@ -219,7 +222,11 @@ async function handleSubmit(e: SubmitEvent) {
           {#snippet children()}
           <Select type="single" value={form.values.parent_id} onValueChange={(v) => (form.values.parent_id = v ?? "")} disabled={isEdit}>
             <SelectTrigger class="h-9 text-sm w-full">
-              {periodsList.find(p => String(p.id) === form.values.parent_id) ? (periodsList.find(p => String(p.id) === form.values.parent_id).name_ar || periodsList.find(p => String(p.id) === form.values.parent_id).name) : m.common_period_form_parent_none()}
+              {selectedParentPeriod
+                ? selectedParentPeriod.name_ar ||
+                  selectedParentPeriod.name ||
+                  m.common_period_form_parent_none()
+                : m.common_period_form_parent_none()}
             </SelectTrigger>
             <SelectContent class="max-h-60 overflow-y-auto">
               <SelectItem value="">{m.common_period_form_parent_none()}</SelectItem>

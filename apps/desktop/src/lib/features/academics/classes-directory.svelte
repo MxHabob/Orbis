@@ -81,9 +81,7 @@ const enrollmentsQuery = createQuery(() => ({
   staleTime: 3 * 60 * 1000,
 }));
 
-const classes = $derived(
-  (classesQuery.data as SectionDto[] | undefined) ?? [],
-);
+const classes = $derived((classesQuery.data as SectionDto[] | undefined) ?? []);
 const enrollments = $derived(
   (enrollmentsQuery.data as EnrollmentDto[] | undefined) ?? [],
 );
@@ -108,9 +106,7 @@ function refetchAll() {
   enrollmentsQuery.refetch();
 }
 
-function getClassMetric(
-  cls: SectionDto,
-): {
+function getClassMetric(cls: SectionDto): {
   active_students: number;
   capacity: number;
   utilization_rate: number;

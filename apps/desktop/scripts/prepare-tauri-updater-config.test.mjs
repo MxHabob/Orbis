@@ -72,7 +72,10 @@ test("requires a product-specific updater manifest path", () => {
     /product-path/,
   );
   assert.throws(
-    () => normalizeUpdaterEndpoint("https://updates.mulverse.com/orbis/manifest.json"),
+    () =>
+      normalizeUpdaterEndpoint(
+        "https://updates.mulverse.com/orbis/manifest.json",
+      ),
     /product-path/,
   );
 });
@@ -91,7 +94,8 @@ test("rejects non-HTTPS and ambiguous endpoints", () => {
     );
   }
   assert.throws(
-    () => normalizeUpdaterEndpoint("http://updates.mulverse.com/orbis/latest.json"),
+    () =>
+      normalizeUpdaterEndpoint("http://updates.mulverse.com/orbis/latest.json"),
     /must use HTTPS/,
   );
 });

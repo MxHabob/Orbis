@@ -219,9 +219,13 @@ async function savePolicy() {
           }),
         ),
         minimum_final_exam_score:
-          optionalNumericValue(form.minimumFinalExamScore, "Minimum final exam score", {
-            minimum: 0,
-          })?.toString() ?? null,
+          optionalNumericValue(
+            form.minimumFinalExamScore,
+            "Minimum final exam score",
+            {
+              minimum: 0,
+            },
+          )?.toString() ?? null,
         max_failed_subjects_for_conditional_pass: numericValue(
           form.maxFailedSubjects,
           "Maximum failed subjects",

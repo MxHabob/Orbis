@@ -164,8 +164,7 @@ const recentPayments = $derived.by(() => {
 
   return sorted.slice(0, 5).map((p) => {
     const enrollment = enrollments.find((e) => e.id === p.enrollment_id);
-    const studentName =
-      p.payer_name || enrollment?.student_number || "—";
+    const studentName = p.payer_name || enrollment?.student_number || "—";
 
     return {
       ...p,

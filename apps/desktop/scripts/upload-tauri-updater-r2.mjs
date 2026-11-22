@@ -25,7 +25,11 @@ function compareReleaseTags(left, right) {
 
 export function planR2ReleasePrune({ keys, productPath, latestTag }) {
   const normalizedProductPath = `/${productPath.replace(/^\/+|\/+$/g, "")}`;
-  if (!/^\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/.test(normalizedProductPath)) {
+  if (
+    !/^\/[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/.test(
+      normalizedProductPath,
+    )
+  ) {
     throw new Error("R2 product path is invalid; refusing to prune.");
   }
   if (!/^v\d+\.\d+\.\d+$/.test(latestTag ?? "")) {
@@ -40,11 +44,15 @@ export function planR2ReleasePrune({ keys, productPath, latestTag }) {
   }
 
   if (!versions.has(latestTag)) {
-    throw new Error(`The uploaded release ${latestTag} was not found in R2; refusing to prune.`);
+    throw new Error(
+      `The uploaded release ${latestTag} was not found in R2; refusing to prune.`,
+    );
   }
   const sortedVersions = [...versions].sort(compareReleaseTags).reverse();
   if (sortedVersions[0] !== latestTag) {
-    throw new Error(`Release ${latestTag} is not the newest version in R2; refusing to prune.`);
+    throw new Error(
+      `Release ${latestTag} is not the newest version in R2; refusing to prune.`,
+    );
   }
   return sortedVersions.slice(retainedReleaseCount).map((tag) => ({
     tag,
@@ -84,8 +92,9 @@ export function createR2UploadPlan({
     );
   }
   if (
-    Object.keys(manifest.platforms ?? {}).sort().join(",") !==
-    expectedPlatforms.slice().sort().join(",")
+    Object.keys(manifest.platforms ?? {})
+      .sort()
+      .join(",") !== expectedPlatforms.slice().sort().join(",")
   ) {
     throw new Error(
       "Updater manifest does not contain exactly the Windows and macOS builds.",
@@ -98,7 +107,10 @@ export function createR2UploadPlan({
   const plan = [];
   for (const platform of expectedPlatforms) {
     const entry = manifest.platforms[platform];
-    if (typeof entry?.url !== "string" || typeof entry?.signature !== "string") {
+    if (
+      typeof entry?.url !== "string" ||
+      typeof entry?.signature !== "string"
+    ) {
       throw new Error(`Updater entry is incomplete for ${platform}.`);
     }
     const artifactUrl = new URL(entry.url);
@@ -152,7 +164,9 @@ function run() {
     accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
     bucket: process.env.CLOUDFLARE_R2_BUCKET,
     tag: process.env.RELEASE_TAG,
-    packageDir: path.resolve(process.env.R2_RELEASE_PACKAGE ?? "release-package"),
+    packageDir: path.resolve(
+      process.env.R2_RELEASE_PACKAGE ?? "release-package",
+    ),
   });
 
   for (const upload of plan) {
@@ -207,10 +221,14 @@ function run() {
     { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 },
   );
   if (listed.error) {
-    throw new Error(`Could not list R2 updater objects: ${listed.error.message}`);
+    throw new Error(
+      `Could not list R2 updater objects: ${listed.error.message}`,
+    );
   }
   if (listed.status !== 0) {
-    throw new Error(`Could not list R2 updater objects (exit code ${listed.status}).`);
+    throw new Error(
+      `Could not list R2 updater objects (exit code ${listed.status}).`,
+    );
   }
   const keys = JSON.parse(listed.stdout || "[]") ?? [];
   if (!Array.isArray(keys)) {
@@ -238,17 +256,24 @@ function run() {
       { stdio: "inherit" },
     );
     if (result.error) {
-      throw new Error(`Could not start AWS CLI cleanup: ${result.error.message}`);
+      throw new Error(
+        `Could not start AWS CLI cleanup: ${result.error.message}`,
+      );
     }
     if (result.status !== 0) {
-      throw new Error(`Could not prune R2 release ${release.tag} (exit code ${result.status}).`);
+      throw new Error(
+        `Could not prune R2 release ${release.tag} (exit code ${result.status}).`,
+      );
     }
     console.log(`Removed expired R2 updater release ${release.tag}.`);
   }
   console.log("Uploaded Orbis signed updater bundles and latest.json to R2.");
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   try {
     run();
   } catch (error) {

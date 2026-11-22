@@ -6,8 +6,16 @@ import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { AdjustmentsHorizontal } from "@orbis/icons";
 import { Label } from "@orbis/ui/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui/select";
-import { assessmentSchemeInputSchema, type AssessmentSchemeInput } from "@orbis/schemas";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import {
+  assessmentSchemeInputSchema,
+  type AssessmentSchemeInput,
+} from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { untrack } from "svelte";
 import type { AssessmentSchemeDto } from "$lib/api";

@@ -130,7 +130,7 @@ const pageItems = $derived(
 );
 
 function periodLabel(period: AcademicPeriodDto): string {
-  return l(period.name_ar, period.name);
+  return l(period.name_ar, period.name) || period.name || period.name_ar || "";
 }
 
 function sectionLabel(sectionId: string): string {
@@ -550,14 +550,12 @@ function changeItemDecision(index: number, value: string | undefined) {
       </Card>
       <div class="flex justify-end">
         <Button variant="outline" onclick={() => {
+          const nextSourcePeriodId = form.values.target_period_id;
           cohort = [];
           result = null;
           step = "setup";
-          form.reset({
-            source_period_id: form.values.target_period_id,
-            target_period_id: "",
-            job_name: "",
-          });
+          form.reset();
+          form.setField("source_period_id", nextSourcePeriodId);
         }}>
           <Refresh class="me-2 size-4" />
           {m.common_promo_execute()}

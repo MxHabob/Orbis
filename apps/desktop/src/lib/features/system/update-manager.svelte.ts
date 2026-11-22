@@ -20,9 +20,7 @@ class UpdateManager {
   private hasChecked = false;
   private listenerPromise: Promise<UnlistenFn> | null = null;
   private networkCleanup: (() => void) | null = null;
-  isOnline = $state(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  isOnline = $state(typeof navigator === "undefined" ? true : navigator.onLine);
 
   async initialize() {
     if (!isDesktopApp) return;
@@ -52,7 +50,10 @@ class UpdateManager {
       throw new Error("An update operation is already in progress.");
     }
     this.error = null;
-    if (!this.isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+    if (
+      !this.isOnline ||
+      (typeof navigator !== "undefined" && !navigator.onLine)
+    ) {
       throw new Error("No internet connection");
     }
     this.isChecking = true;
@@ -71,7 +72,10 @@ class UpdateManager {
   }
 
   async downloadUpdate() {
-    if (!this.isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+    if (
+      !this.isOnline ||
+      (typeof navigator !== "undefined" && !navigator.onLine)
+    ) {
       this.error = null;
       throw new Error("No internet connection");
     }
@@ -116,7 +120,10 @@ class UpdateManager {
   }
 
   async retry() {
-    if (!this.isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+    if (
+      !this.isOnline ||
+      (typeof navigator !== "undefined" && !navigator.onLine)
+    ) {
       this.error = null;
       throw new Error("No internet connection");
     }

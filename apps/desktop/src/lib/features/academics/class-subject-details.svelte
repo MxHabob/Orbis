@@ -66,7 +66,9 @@ const schemeComponents = $derived.by((): AssessmentColumnConfig[] => {
 const isMatrixLoading = $derived(
   studentsQuery.isLoading || gradesQuery.isLoading || schemesQuery.isLoading,
 );
-const error = $derived(studentsQuery.error || gradesQuery.error || schemesQuery.error);
+const error = $derived(
+  studentsQuery.error || gradesQuery.error || schemesQuery.error,
+);
 
 let isSaving = $state(false);
 let isDirty = $state(false);
@@ -86,8 +88,20 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
         sort_order: comp.sort_order,
       }))
     : [
-        { code: "monthly", name: "Monthly", name_ar: "العملية", max: 20, sort_order: 1 },
-        { code: "final", name: "Final", name_ar: "الاختبار", max: 30, sort_order: 2 },
+        {
+          code: "monthly",
+          name: "Monthly",
+          name_ar: "العملية",
+          max: 20,
+          sort_order: 1,
+        },
+        {
+          code: "final",
+          name: "Final",
+          name_ar: "الاختبار",
+          max: 30,
+          sort_order: 2,
+        },
       ];
 
   const students: GradeMatrixStudent[] = roster.map((student: any) => {
@@ -100,7 +114,7 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
     const cells: GradeCell[] = assessmentConfigs.map(({ code, max }) => {
       // Match by component_id when using scheme, legacy is_final fallback otherwise
       const grade = hasScheme
-        ? studentGrades.find(
+        ? (studentGrades.find(
             (item) =>
               String(item.component_id ?? "") === code ||
               (item.component_id && String(item.component_id).includes(code)),
@@ -108,7 +122,7 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
           // Legacy fallback for old 2-column data
           (code === "final" || code === "written_test" || code === "term_exam"
             ? studentGrades.find((item) => Boolean(item.is_final))
-            : null)
+            : null))
         : studentGrades.find(
             (item) => Boolean(item.is_final) === (code === "final"),
           );

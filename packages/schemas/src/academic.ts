@@ -154,7 +154,9 @@ export type CreateRoomInput = z.infer<typeof createRoomInputSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectInputSchema>;
 export type CreateAssessmentInput = z.infer<typeof createAssessmentInputSchema>;
 export type AssessmentSchemeInput = z.infer<typeof assessmentSchemeInputSchema>;
-export type AssessmentComponentInput = z.infer<typeof assessmentComponentInputSchema>;
+export type AssessmentComponentInput = z.infer<
+  typeof assessmentComponentInputSchema
+>;
 export type CreateTimeSlotInput = z.infer<typeof createTimeSlotInputSchema>;
 export type ClassFormInput = z.infer<typeof classFormInputSchema>;
 export type ClassSubjectFormInput = z.infer<typeof classSubjectFormInputSchema>;

@@ -79,10 +79,10 @@ export default defineConfig(({ mode }) => {
       host: host || undefined,
       hmr: host
         ? {
-          protocol: "ws",
-          host,
-          port: 4174,
-        }
+            protocol: "ws",
+            host,
+            port: 4174,
+          }
         : undefined,
       watch: {
         ignored: ["**/src-tauri/**"],

@@ -171,9 +171,7 @@ const printActions = $derived<SplitActionItem[]>([
 ]);
 const selectedTemplateKey = $derived(selectedTemplate?.id ?? "");
 const templateLoadError = $derived(
-  templatesQuery.error
-    ? extractErrorMessage(templatesQuery.error)
-    : null,
+  templatesQuery.error ? extractErrorMessage(templatesQuery.error) : null,
 );
 
 // Compute layout reactively whenever config changes
@@ -476,9 +474,10 @@ function handlePreviewRequest() {
 
 async function reloadTemplates(force = false) {
   const requestId = dialogOpenRequest;
-  const data = force || !templatesQuery.data
-    ? (await templatesQuery.refetch()).data
-    : templatesQuery.data;
+  const data =
+    force || !templatesQuery.data
+      ? (await templatesQuery.refetch()).data
+      : templatesQuery.data;
   if (!open || requestId !== dialogOpenRequest || !data?.length) return;
 
   const initialTemplate =

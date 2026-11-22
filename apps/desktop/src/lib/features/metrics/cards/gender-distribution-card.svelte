@@ -51,7 +51,9 @@ async function loadData() {
     const femaleLabel = m.common_form_female().toLowerCase();
     const maleLabel = m.common_form_male().toLowerCase();
     for (const student of students) {
-      const gender = String(student.person.gender || "").trim().toLowerCase();
+      const gender = String(student.person.gender || "")
+        .trim()
+        .toLowerCase();
       if (gender.startsWith("f") || gender === femaleLabel) {
         female++;
       } else if (gender.startsWith("m") || gender === maleLabel) {

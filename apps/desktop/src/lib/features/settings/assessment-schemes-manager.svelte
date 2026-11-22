@@ -5,8 +5,16 @@ Manages assessment schemes (weighted grade composition structures).
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n/locale";
-import { api, extractErrorMessage, type AssessmentComponent, type AssessmentSchemeDto } from "$lib/api";
-import type { AssessmentSchemeInput, AssessmentComponentInput } from "@orbis/schemas";
+import {
+  api,
+  extractErrorMessage,
+  type AssessmentComponent,
+  type AssessmentSchemeDto,
+} from "$lib/api";
+import type {
+  AssessmentSchemeInput,
+  AssessmentComponentInput,
+} from "@orbis/schemas";
 import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
 import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";

@@ -7,7 +7,8 @@ const NDK_VERSION = "30.0.16248370";
 const CMAKE_OBJECT_PATH_MAX = "200";
 const ROOT_PLUGIN = 'apply plugin: "expo-root-project"';
 const REACT_ROOT_PLUGIN = 'apply plugin: "com.facebook.react.rootproject"';
-const NATIVE_REGENERATION_MARKER = "// Orbis: stabilize Android native CMake builds";
+const NATIVE_REGENERATION_MARKER =
+  "// Orbis: stabilize Android native CMake builds";
 
 const NATIVE_REGENERATION_CONFIG = `${NATIVE_REGENERATION_MARKER}
 subprojects { nativeProject ->

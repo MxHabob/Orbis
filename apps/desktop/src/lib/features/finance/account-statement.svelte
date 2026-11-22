@@ -430,7 +430,9 @@ function handlePrintStatement() {
     period: {
       startDate: dateRange.fromDate || null,
       endDate: dateRange.toDate || null,
-      startDateFormatted: dateRange.fromDate ? formatDate(dateRange.fromDate) : "—",
+      startDateFormatted: dateRange.fromDate
+        ? formatDate(dateRange.fromDate)
+        : "—",
       endDateFormatted: dateRange.toDate ? formatDate(dateRange.toDate) : "—",
     },
     summary: {

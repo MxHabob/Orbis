@@ -48,14 +48,15 @@ async function loadData() {
 
     if (sequence !== loadSequence) return;
 
-    const enrollmentIds = new Set(enrollments.map((enrollment) => enrollment.id));
+    const enrollmentIds = new Set(
+      enrollments.map((enrollment) => enrollment.id),
+    );
     const feeIds = new Set(
       fees
         .filter(
           (fee) =>
             selectedClass === "all" ||
-            (fee.enrollment_id != null &&
-              enrollmentIds.has(fee.enrollment_id)),
+            (fee.enrollment_id != null && enrollmentIds.has(fee.enrollment_id)),
         )
         .map((fee) => fee.id),
     );

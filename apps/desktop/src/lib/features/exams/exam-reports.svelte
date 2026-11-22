@@ -180,8 +180,7 @@ function handlePrintTemplate() {
     },
     exam: {
       sessionId: selectedSessionId || null,
-      sessionName:
-        session?.name_ar || session?.name || activePeriodName || "",
+      sessionName: session?.name_ar || session?.name || activePeriodName || "",
       hallId: selectedRoomId || null,
       hallName: room?.name_ar || room?.name || "",
       classId: selectedSectionId || null,

@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, TextInput, Pressable, type TextInputInstance } from "react-native";
+import {
+  View,
+  TextInput,
+  Pressable,
+  type TextInputInstance,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/api";

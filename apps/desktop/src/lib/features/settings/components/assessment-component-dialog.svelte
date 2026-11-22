@@ -6,7 +6,10 @@ import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { AdjustmentsHorizontal, ArrowPath } from "@orbis/icons";
 import { Checkbox } from "@orbis/ui/checkbox";
-import { assessmentComponentInputSchema, type AssessmentComponentInput } from "@orbis/schemas";
+import {
+  assessmentComponentInputSchema,
+  type AssessmentComponentInput,
+} from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { untrack } from "svelte";
 import {
@@ -32,7 +35,10 @@ let {
   onsubmit: (payload: AssessmentComponentInput) => void;
 } = $props();
 
-const form = new FormController<AssessmentComponentInput, AssessmentComponentInput>({
+const form = new FormController<
+  AssessmentComponentInput,
+  AssessmentComponentInput
+>({
   initialValues: untrack(() => ({
     code: component?.code ?? "",
     name: component?.name ?? "",

@@ -10,10 +10,7 @@ const config = getDefaultConfig(projectRoot);
 
 const defaultResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (
-    moduleName === "react-native" ||
-    moduleName.startsWith("react-native/")
-  ) {
+  if (moduleName === "react-native" || moduleName.startsWith("react-native/")) {
     const reactNativeContext = {
       ...context,
       originModulePath: path.join(reactNativeRoot, "index.js"),

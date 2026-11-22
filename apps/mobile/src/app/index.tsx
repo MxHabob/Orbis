@@ -24,7 +24,10 @@ export default function IndexGate() {
         if (isMounted) setHasCompletedOnboarding(value === "true");
       })
       .catch((error: unknown) => {
-        console.error("[Mobile Onboarding] Failed to load completion state.", error);
+        console.error(
+          "[Mobile Onboarding] Failed to load completion state.",
+          error,
+        );
       })
       .finally(() => {
         if (isMounted) setIsCheckingOnboarding(false);
@@ -40,10 +43,7 @@ export default function IndexGate() {
     setHasCompletedOnboarding(true);
   }
 
-  if (
-    isInitializing ||
-    (!isAuthenticated && isCheckingOnboarding)
-  ) {
+  if (isInitializing || (!isAuthenticated && isCheckingOnboarding)) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <LoadingIndicator size="lg" />
