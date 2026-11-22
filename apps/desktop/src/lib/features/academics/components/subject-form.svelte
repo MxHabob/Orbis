@@ -166,7 +166,7 @@ async function handleSubmit(e: SubmitEvent) {
       />
     </div>
 
-    <FormField id="sub_sort_order" label="Sort Order" required>
+    <FormField id="sub_sort_order" label={m.common_sort_order()} required>
       {#snippet children()}
         <Input
           id="sub_sort_order"
@@ -181,19 +181,19 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <label class="flex items-center gap-2 text-xs text-foreground">
         <Checkbox checked={form.values.is_core} onCheckedChange={(value) => (form.values.is_core = value)} />
-        Core
+        {m.common_core_subject()}
       </label>
       <label class="flex items-center gap-2 text-xs text-foreground">
         <Checkbox checked={form.values.is_elective} onCheckedChange={(value) => (form.values.is_elective = value)} />
-        Elective
+        {m.common_elective_subject()}
       </label>
       <label class="flex items-center gap-2 text-xs text-foreground">
         <Checkbox checked={form.values.is_lab_required} onCheckedChange={(value) => (form.values.is_lab_required = value)} />
-        Lab Required
+        {m.common_lab_required_subject()}
       </label>
     </div>
 
-    <FormField id="sub_description" label="Description">
+    <FormField id="sub_description" label={m.common_description()}>
       {#snippet children()}
         <Input
           id="sub_description"

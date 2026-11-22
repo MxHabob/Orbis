@@ -20,10 +20,8 @@ let shouldShowDownloadManager = $derived(
     updateManager.isDownloading ||
     updateManager.isApplying ||
     updateManager.isReadyToRestart ||
-    updateManager.error !== null ||
     updateManager.updateResult?.has_update === true ||
     solverSetup?.state === "preparing" ||
-    solverSetup?.state === "failed" ||
     solverSetup?.state === "ready",
 );
 
@@ -35,8 +33,13 @@ onMount(() => {
   const listenerPromise = listen<SolverSetupStatusDto>(
     "solver-setup-status-changed",
     ({ payload }) => {
-      solverSetup = payload;
-      if (payload.state === "preparing" || payload.state === "failed") {
+      if (payload.state === "failed") {
+        solverSetup = null;
+        isOpen = false;
+      } else {
+        solverSetup = payload;
+      }
+      if (payload.state === "preparing") {
         isOpen = true;
       } else if (payload.state === "ready") {
         isOpen = true;
@@ -54,7 +57,11 @@ onMount(() => {
     unlistenSetup = unlisten;
     try {
       const current = await api.getSolverSetupStatus();
-      if (current.state === "preparing" || current.state === "failed") {
+      if (current.state === "preparing") {
+        solverSetup = current;
+      } else if (current.state === "failed") {
+        solverSetup = null;
+      } else if (current.state === "ready") {
         solverSetup = current;
       }
     } catch (error) {

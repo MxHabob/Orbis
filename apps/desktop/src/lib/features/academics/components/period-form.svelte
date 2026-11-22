@@ -96,7 +96,7 @@ function fieldError(field: string): string | undefined {
 
 const periodTypeLabels = $derived({
   year: m.common_cycle_form_type_year(),
-  annual: "Annual",
+  annual: m.common_period_type_annual(),
   term: m.common_period_form_type_term(),
 });
 
@@ -207,7 +207,7 @@ async function handleSubmit(e: SubmitEvent) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="year">{m.common_cycle_form_type_year()}</SelectItem>
-            <SelectItem value="annual">Annual</SelectItem>
+            <SelectItem value="annual">{m.common_period_type_annual()}</SelectItem>
             <SelectItem value="term">{m.common_period_form_type_term()}</SelectItem>
           </SelectContent>
         </Select>

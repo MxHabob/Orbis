@@ -90,16 +90,16 @@ function submit() {
         <Input type="number" min="0" max="1000" bind:value={form.values.passing_score} class="text-xs font-mono" />
       </div>
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">Sort Order</Label>
+        <Label class="text-xs">{m.common_sort_order()}</Label>
         <Input type="number" min="1" bind:value={form.values.sort_order} class="text-xs font-mono" />
       </div>
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">Code</Label>
+        <Label class="text-xs">{m.common_code()}</Label>
         <Input bind:value={form.values.code} class="text-xs font-mono" />
       </div>
       <div class="flex items-center gap-2 sm:col-span-2">
         <Checkbox checked={form.values.is_required} onCheckedChange={(value) => (form.values.is_required = value)} />
-        <Label class="text-xs">Required</Label>
+        <Label class="text-xs">{m.common_required()}</Label>
       </div>
     </div>
     {#if form.formError}

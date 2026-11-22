@@ -84,15 +84,15 @@ function submit() {
           <Select type="single" value={form.values.level} onValueChange={(value) => (form.values.level = (value as AssessmentSchemeInput["level"]) ?? "term")}>
             <SelectTrigger class="h-9 w-full text-xs">{form.values.level}</SelectTrigger>
             <SelectContent>
-              <SelectItem value="monthly_period">monthly_period</SelectItem>
-              <SelectItem value="term">term</SelectItem>
-              <SelectItem value="annual">annual</SelectItem>
-              <SelectItem value="coursework">coursework</SelectItem>
-              <SelectItem value="midterm">midterm</SelectItem>
-              <SelectItem value="final">final</SelectItem>
-              <SelectItem value="module_assessment">module_assessment</SelectItem>
-              <SelectItem value="certificate">certificate</SelectItem>
-              <SelectItem value="certificate_cumulative">certificate_cumulative</SelectItem>
+              <SelectItem value="monthly_period">{m.settings_assessment_level_monthly_period()}</SelectItem>
+              <SelectItem value="term">{m.settings_assessment_level_term()}</SelectItem>
+              <SelectItem value="annual">{m.settings_assessment_level_annual()}</SelectItem>
+              <SelectItem value="coursework">{m.settings_assessment_level_coursework()}</SelectItem>
+              <SelectItem value="midterm">{m.settings_assessment_level_midterm()}</SelectItem>
+              <SelectItem value="final">{m.settings_assessment_level_final()}</SelectItem>
+              <SelectItem value="module_assessment">{m.settings_assessment_level_module()}</SelectItem>
+              <SelectItem value="certificate">{m.settings_assessment_level_certificate()}</SelectItem>
+              <SelectItem value="certificate_cumulative">{m.settings_assessment_level_certificate_cumulative()}</SelectItem>
             </SelectContent>
           </Select>
         {/snippet}
@@ -102,16 +102,16 @@ function submit() {
           <Select type="single" value={form.values.institution_scope} onValueChange={(value) => (form.values.institution_scope = (value as AssessmentSchemeInput["institution_scope"]) ?? "all")}>
             <SelectTrigger class="h-9 w-full text-xs">{form.values.institution_scope}</SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">all</SelectItem>
-              <SelectItem value="school">school</SelectItem>
-              <SelectItem value="university">university</SelectItem>
-              <SelectItem value="institute">institute</SelectItem>
+              <SelectItem value="all">{m.settings_assessment_scope_all()}</SelectItem>
+              <SelectItem value="school">{m.settings_general_institution_school()}</SelectItem>
+              <SelectItem value="university">{m.settings_general_institution_university()}</SelectItem>
+              <SelectItem value="institute">{m.settings_general_institution_institute()}</SelectItem>
             </SelectContent>
           </Select>
         {/snippet}
       </FormField>
       <div class="flex items-center justify-between rounded-md border border-border px-3 py-2">
-        <Label class="text-xs">Default Scheme</Label>
+        <Label class="text-xs">{m.settings_assessment_default_scheme()}</Label>
         <Switch checked={form.values.is_default} onCheckedChange={(value) => (form.values.is_default = value)} />
       </div>
     </div>
