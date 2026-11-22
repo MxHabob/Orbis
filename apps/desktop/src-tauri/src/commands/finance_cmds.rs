@@ -1108,8 +1108,7 @@ pub async fn finance_process_payment(
     let enrollment_id = parse_optional_uuid(request.enrollment_id, "enrollment_id")?;
     let receivable_account_id =
         parse_optional_uuid(request.receivable_account_id, "receivable_account_id")?;
-    let idempotency_key =
-        parse_optional_uuid(request.idempotency_key, "idempotency_key")?;
+    let idempotency_key = parse_optional_uuid(request.idempotency_key, "idempotency_key")?;
     let account_id = Uuid::parse_str(&request.account_id).map_err(|_| "Invalid account_id")?;
     let payment_date = request
         .payment_date
