@@ -20,7 +20,7 @@ let shouldShowDownloadManager = $derived(
     updateManager.isDownloading ||
     updateManager.isApplying ||
     updateManager.isReadyToRestart ||
-    updateManager.updateResult?.has_update === true ||
+    (updateManager.isOnline && updateManager.updateResult?.has_update === true) ||
     solverSetup?.state === "preparing" ||
     solverSetup?.state === "ready",
 );
@@ -88,9 +88,16 @@ async function retry() {
 
 async function retrySolverSetup() {
   try {
+    if (!navigator.onLine) {
+      solverSetup = null;
+      isOpen = false;
+      return;
+    }
     solverSetup = await api.startSolverSetup();
   } catch (error) {
     console.error("Failed to restart solver setup", error);
+    solverSetup = null;
+    isOpen = false;
   }
 }
 </script>
