@@ -25,7 +25,7 @@ const percentage = $derived(
     <div class="w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl p-6 flex flex-col items-center text-center space-y-5">
       <!-- Animated Spinner / Icon -->
       <div class="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary relative">
-        <LoadingIndicator viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" size={32} class="h-8 w-8" />
+        <LoadingIndicator size={32} class="h-8 w-8" />
       </div>
 
       <!-- Title & Subtitle -->

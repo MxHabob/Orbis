@@ -8,7 +8,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
-import { Button } from "@orbis/ui/button";
+import { Button, type ButtonVariant } from "@orbis/ui/button";
 import { AdjustmentsHorizontal, ArrowPath, InfoCircle } from "@orbis/icons";
 
 interface Props {
@@ -20,13 +20,7 @@ interface Props {
   resetLabel?: string;
   message?: string;
   showReset?: boolean;
-  saveVariant?:
-    | "default"
-    | "destructive"
-    | "primary"
-    | "secondary"
-    | "lime"
-    | "outline";
+  saveVariant?: ButtonVariant;
   statusVariant?: "amber" | "rose" | "primary" | "emerald";
   maxWidthClass?: string;
   actions?: import("svelte").Snippet;

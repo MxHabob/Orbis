@@ -36,7 +36,6 @@ import SectionSubjectSheet from "$lib/features/academics/components/class-subjec
 interface EnrichedSectionSubject extends SectionSubjectDto {
   catalog?: SubjectDto;
   teacher_name?: string;
-  is_active?: boolean;
 }
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
@@ -118,7 +117,7 @@ const gridSource = $derived(
     subject_name: subjectName(subject),
     teacher_display: subject.teacher_name || subject.instructor_id || "-",
     weekly_hours: subject.weekly_hours || "-",
-    status: subject.is_active === 0 ? "inactive" : "active",
+    status: subject.is_active === false ? "inactive" : "active",
   })),
 );
 

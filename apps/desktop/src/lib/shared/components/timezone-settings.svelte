@@ -14,6 +14,7 @@ let {
   description = m.settings_general_timezone_desc(),
   currentTimezone = $bindable("Asia/Aden"),
   compact = false,
+  required = false,
   disabled = false,
   last = false,
   onchange,
@@ -22,6 +23,7 @@ let {
   description?: string;
   currentTimezone?: string;
   compact?: boolean;
+  required?: boolean;
   disabled?: boolean;
   last?: boolean;
   onchange?: (timezone: string) => void;
@@ -59,6 +61,9 @@ function handleChange(val: string | null) {
   <div class="flex flex-col gap-1.5">
     <Label class="text-xs font-semibold">
       {title}
+      {#if required}
+        <span class="text-destructive" aria-hidden="true"> *</span>
+      {/if}
     </Label>
     {#if description}
       <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
@@ -70,6 +75,7 @@ function handleChange(val: string | null) {
         placeholder={m.common_general_timezone()}
         searchPlaceholder={m.shared_ui_search_timezones_placeholder()}
         emptyText={m.shared_ui_no_matching_timezones()}
+        {required}
         {disabled}
         getItemValue={getTimezoneValue}
         getItemLabel={getTimezoneLabel}
@@ -81,7 +87,7 @@ function handleChange(val: string | null) {
     </div>
   </div>
 {:else}
-  <SettingsRow {title} {description} {last}>
+  <SettingsRow title={required ? `${title} *` : title} {description} {last}>
     {#snippet children()}
       <SearchableSelect
         bind:value={currentTimezone}
@@ -89,6 +95,7 @@ function handleChange(val: string | null) {
         placeholder={m.common_general_timezone()}
         searchPlaceholder={m.shared_ui_search_timezones_placeholder()}
         emptyText={m.shared_ui_no_matching_timezones()}
+        {required}
         {disabled}
         getItemValue={getTimezoneValue}
         getItemLabel={getTimezoneLabel}

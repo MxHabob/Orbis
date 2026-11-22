@@ -118,7 +118,7 @@ function handleChange(val: string | null) {
         searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
         emptyText={m.shared_ui_no_matching_currencies()}
         showAllOption={includeAll}
-        {allLabel}
+        allOptionLabel={allLabel}
         disabled={disabled || isLoading}
         getItemValue={getCurrencyValue}
         getItemLabel={getCurrencyLabel}
@@ -139,7 +139,7 @@ function handleChange(val: string | null) {
         searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
         emptyText={m.shared_ui_no_matching_currencies()}
         showAllOption={includeAll}
-        {allLabel}
+        allOptionLabel={allLabel}
         disabled={disabled || isLoading}
         getItemValue={getCurrencyValue}
         getItemLabel={getCurrencyLabel}

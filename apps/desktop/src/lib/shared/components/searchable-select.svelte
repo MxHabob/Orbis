@@ -32,6 +32,7 @@ interface Props {
   getItemBadge?: (item: T) => string | undefined;
   showAllOption?: boolean;
   allOptionLabel?: string;
+  required?: boolean;
   disabled?: boolean;
   size?: "sm" | "default";
   class?: string;
@@ -76,6 +77,7 @@ let {
   getItemBadge = (item: any) => item?.badge || item?.status || undefined,
   showAllOption = false,
   allOptionLabel = m.shared_ui_all(),
+  required = false,
   disabled = false,
   size = "default",
   class: className = "",
@@ -157,6 +159,7 @@ function handleCreateClick(e: MouseEvent) {
 >
   <SelectTrigger
     {id}
+    aria-required={required ? "true" : undefined}
     class="{size === 'sm' ? 'h-8 text-xs' : 'h-9 text-xs'} w-full bg-background text-start flex items-center justify-between gap-2 overflow-hidden {className}"
   >
     <span class="truncate font-normal flex-1 text-start {(!value || value === 'all') && !selectedItem ? 'text-muted-foreground' : 'text-foreground'}">

@@ -75,7 +75,7 @@ function handleChange(val: string | null) {
   searchPlaceholder={m.shared_ui_search_roles_placeholder()}
   emptyText={m.shared_ui_no_matching_roles()}
   showAllOption={allowAll}
-  {allLabel}
+  allOptionLabel={allLabel}
   disabled={disabled || rolesQuery.isLoading}
   {size}
   {id}

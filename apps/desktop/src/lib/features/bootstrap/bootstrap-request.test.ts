@@ -5,8 +5,9 @@ import {
   BOOTSTRAP_REQUIRED_FIELDS,
   buildBootstrapRequest,
 } from "./bootstrap-request";
+import type { OnboardingFormModel } from "./types";
 
-const EMPTY_FORM = {
+const EMPTY_FORM: OnboardingFormModel = {
   institutionType: "k12_school",
   organizationName: "",
   organizationNameAr: "",
@@ -39,6 +40,7 @@ const EMPTY_FORM = {
   adminPassword: "",
   adminConfirmPassword: "",
   adminPhone: "",
+  enableMfa: false,
 };
 
 describe("Bootstrap request contract", () => {

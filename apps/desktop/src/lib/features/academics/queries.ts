@@ -8,7 +8,7 @@ import {
   type SectionDto,
   type SubjectDto,
   type AcademicPeriodDto,
-  type academicCalendarDto,
+  type AcademicCalendarDto,
   type SectionSubjectDto,
   type AssessmentSchemeDto,
   type TimeSlotDto,
@@ -23,7 +23,7 @@ import { academicContext } from "$lib/stores";
 
 /** All academic years for current organization. */
 export function createacademicCalendarsQuery(orgId: () => string) {
-  return createQuery<academicCalendarDto[]>(() => ({
+  return createQuery<AcademicCalendarDto[]>(() => ({
     queryKey: queryKeys.calendar.years(orgId()),
     queryFn: () => api.listacademicCalendars(),
     enabled: !!orgId(),

@@ -32,7 +32,7 @@ const sectionId = $derived(
 );
 const orgId = $derived(data.orgId || String(page.params.orgId || ""));
 const SectionSubjectId = $derived(
-  page.params.SectionSubjectId ? String(page.params.SectionSubjectId) : null,
+  page.params.classSubjectId ? String(page.params.classSubjectId) : null,
 );
 
 // Class Info Query using consolidated feature query

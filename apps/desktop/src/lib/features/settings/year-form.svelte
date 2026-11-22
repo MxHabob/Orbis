@@ -8,7 +8,7 @@ import { untrack } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
-import type { academicCalendarDto } from "@orbis/sdk";
+import type { AcademicCalendarDto } from "@orbis/sdk";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -27,8 +27,8 @@ let {
   onCancel,
 }: {
   orgId: string;
-  year?: academicCalendarDto | null;
-  existingYears?: academicCalendarDto[];
+  year?: AcademicCalendarDto | null;
+  existingYears?: AcademicCalendarDto[];
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();

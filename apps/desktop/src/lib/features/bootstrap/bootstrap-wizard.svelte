@@ -10,6 +10,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { createMutation } from "@tanstack/svelte-query";
 import { api } from "$lib/api/client";
 import type { BootstrapRequest, BootstrapResult } from "$lib/api/types";
@@ -81,7 +82,7 @@ const canGoBack = $derived(currentStepIndex > 0);
 const isSkippable = $derived(currentStep === "mfa");
 const isLastStep = $derived(currentStep === "review");
 function navigateToWorkspace(organizationId: string) {
-  return goto(resolve(localizeHref(`/${organizationId}`)), {
+  return goto(resolve(localizeHref(`/${organizationId}`) as Pathname), {
     replaceState: true,
   });
 }
@@ -95,7 +96,9 @@ async function initializeBootstrap() {
       if (authStore.isAuthenticated && organizationId) {
         await navigateToWorkspace(organizationId);
       } else {
-        await goto(resolve(localizeHref("/login")), { replaceState: true });
+        await goto(resolve(localizeHref("/login") as Pathname), {
+          replaceState: true,
+        });
       }
       return;
     }
@@ -287,14 +290,20 @@ async function handleLaunchBootstrap() {
 
 function enterWorkspace() {
   if (postBootstrapError && !authStore.isAuthenticated) {
-    goto(resolve(localizeHref("/login")), { replaceState: true });
+    goto(resolve(localizeHref("/login") as Pathname), {
+      replaceState: true,
+    });
     return;
   }
   const orgId = bootstrapResult?.organization_id || authStore.orgId;
   if (orgId) {
-    goto(resolve(localizeHref(`/${orgId}`)), { replaceState: true });
+    goto(resolve(localizeHref(`/${orgId}`) as Pathname), {
+      replaceState: true,
+    });
   } else {
-    goto(resolve(localizeHref("/login")), { replaceState: true });
+    goto(resolve(localizeHref("/login") as Pathname), {
+      replaceState: true,
+    });
   }
 }
 

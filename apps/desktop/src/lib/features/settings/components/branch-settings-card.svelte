@@ -89,9 +89,7 @@ const isDirty = $derived(
 );
 
 const activeBranchCount = $derived(
-  branches.filter(
-    (branch) => branch.is_active === true || (branch.is_active as any) === 1,
-  ).length,
+  branches.filter((branch) => branch.is_active).length,
 );
 
 onMount(async () => {

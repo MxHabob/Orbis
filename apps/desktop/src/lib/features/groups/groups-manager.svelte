@@ -8,6 +8,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -302,7 +303,12 @@ async function promptDeleteGroup(group: GroupDetailDto) {
                 variant="outline"
                 size="sm"
                 class="h-7 shrink-0 cursor-pointer rounded-md px-2.5 text-xs"
-                onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups/${group.id}`)))}
+                onclick={() =>
+                  goto(
+                    resolve(
+                      localizeHref(`/${orgId}/settings/groups/${group.id}`) as Pathname,
+                    ),
+                  )}
               >
                 <Pencil size={12} class="me-1.5" />
                 {m.ui_copy_members_permissions_bd07beaa()}

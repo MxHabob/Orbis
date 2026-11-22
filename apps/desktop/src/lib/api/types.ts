@@ -1128,6 +1128,9 @@ export interface BootstrapRequest {
   organization_name_ar?: string;
   organization_slug?: string;
   organization_code?: string;
+  country_name?: string;
+  ministry_name?: string;
+  region_name?: string;
   educational_track?: string;
   organization_size?: string;
   country_code?: string;

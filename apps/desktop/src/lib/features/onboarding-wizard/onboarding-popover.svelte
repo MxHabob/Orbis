@@ -6,6 +6,7 @@
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { effectiveContext, systemStore, authStore } from "$lib/stores";
@@ -83,14 +84,18 @@ function handleNavigate(step: OnboardingStep) {
   if (!step.isAccessible) return;
   isOpen = false;
   if (orgId) {
-    goto(resolve(localizeHref(`/${orgId}/onboarding/${step.route}`)));
+    goto(
+      resolve(
+        localizeHref(`/${orgId}/onboarding/${step.route}`) as Pathname,
+      ),
+    );
   }
 }
 
 function handleOpenHub() {
   isOpen = false;
   if (orgId) {
-    goto(resolve(localizeHref(`/${orgId}/onboarding`)));
+    goto(resolve(localizeHref(`/${orgId}/onboarding`) as Pathname));
   }
 }
 </script>
