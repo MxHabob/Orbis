@@ -7,7 +7,6 @@ pub mod iam;
 pub mod identity;
 pub mod license_runtime;
 pub mod llm_adapter;
-pub mod mada;
 pub mod moyasar;
 pub mod mulverse_client;
 pub mod notification;

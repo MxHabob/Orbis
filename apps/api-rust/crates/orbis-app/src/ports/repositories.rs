@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use orbis_domain::{
-    autopilot::task::AutopilotTask,
+    autopilot::task::{AutopilotTask, TaskStatus},
     entities::{
         academic_calendar::AcademicCalendar,
         academic_period::AcademicPeriod,
@@ -390,12 +390,26 @@ pub trait EnrollmentRepository: Send + Sync {
     async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn save(&self, enrollment: &Enrollment) -> Result<(), DomainError>;
+
+    async fn save_with_capacity(
+        &self,
+        enrollment: &mut Enrollment,
+        default_capacity: i32,
+        allow_waitlist: bool,
+        capacity_override: Option<AcademicOverrideRequest>,
+        admission_override: Option<AcademicOverrideRequest>,
+    ) -> Result<EnrollmentSaveResult, DomainError>;
     async fn save_batch(&self, enrollments: &[Enrollment]) -> Result<(), DomainError>;
     async fn update_status_batch(
         &self,
         enrollment_ids: &[Uuid],
         status: EnrollmentStatus,
     ) -> Result<(), DomainError>;
+}
+
+pub struct EnrollmentSaveResult {
+    pub capacity_breach: Option<(i32, i32)>,
+    pub override_request: Option<AcademicOverrideRequest>,
 }
 
 #[async_trait]
@@ -957,8 +971,13 @@ pub trait DashboardRepository: Send + Sync {
 // =========================================================================
 
 /// System-level queries for health checks, bootstrap status, and readiness.
+pub trait BootstrapLockGuard: Send {}
+
 #[async_trait]
 pub trait SystemRepository: Send + Sync {
+    /// Acquire a cross-process lock for the first-time bootstrap operation.
+    async fn acquire_bootstrap_lock(&self) -> Result<Box<dyn BootstrapLockGuard>, DomainError>;
+
     /// Check if any organization exists in the database.
     async fn has_organization(&self) -> Result<bool, DomainError>;
 
@@ -995,6 +1014,12 @@ pub trait AutopilotTaskRepository: Send + Sync {
 
     /// Find a specific task by its ID
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AutopilotTask>, DomainError>;
+    async fn claim_task(
+        &self,
+        id: Uuid,
+        org_id: Uuid,
+        expected_status: TaskStatus,
+    ) -> Result<bool, DomainError>;
 
     /// Find tasks by org with status/task_type filters and pagination
     async fn find_by_org(

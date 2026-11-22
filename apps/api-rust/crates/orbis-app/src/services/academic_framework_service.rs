@@ -21,7 +21,6 @@ pub struct AcademicFrameworkService {
     pub student_repo: Arc<dyn StudentRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
-    offering_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl AcademicFrameworkService {
@@ -36,7 +35,6 @@ impl AcademicFrameworkService {
             student_repo,
             org_unit_repo,
             permission_checker,
-            offering_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -469,7 +467,6 @@ impl AcademicFrameworkService {
     ) -> Result<Enrollment, DomainError> {
         self.require_org_permission(ctx, org_id, Permission::EnrollmentWrite)
             .await?;
-        let _offering_guard = self.offering_lock.lock().await;
         if attempt_number == 0 || i32::try_from(attempt_number).is_err() {
             return Err(DomainError::Validation(
                 "Attempt number must be within the supported positive integer range".into(),
@@ -504,23 +501,6 @@ impl AcademicFrameworkService {
             return Err(DomainError::Conflict(
                 "This learner already has a record for the specified course attempt".into(),
             ));
-        }
-
-        if let Some(capacity) = offering.capacity {
-            let active_count = self
-                .framework_repo
-                .list_enrollments(org_id, offering_id)
-                .await?
-                .into_iter()
-                .filter(|item| {
-                    item.status == orbis_domain::entities::enrollment::EnrollmentStatus::Active
-                })
-                .count();
-            if active_count as i32 >= capacity {
-                return Err(DomainError::BusinessRule(
-                    "Course offering capacity has been reached".into(),
-                ));
-            }
         }
 
         let now = Utc::now();

@@ -2126,6 +2126,7 @@ export type ProcessPaymentRequest = {
   amount: string;
   enrollment_id?: string | null;
   fee_id?: string | null;
+  idempotency_key?: string | null;
   method: string;
   notes?: string | null;
   payer_name?: string | null;

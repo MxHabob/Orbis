@@ -16,6 +16,8 @@
    docker compose up -d
    docker compose logs --tail=100 api
    ```
+
+   Once `database_url` is configured, the API generates independent cryptographically random JWT and MFA-encryption keys and persists them in this protected volume. Secret environment variables are not required for this single-instance Compose setup. Keep the volume in protected backups. For clustered deployments, configure the same stable `JWT_SECRET` and `MFA_ENCRYPTION_KEY` through the deployment's secret manager on every instance; do not put their values in `.env` or commit them. Rotating the JWT key invalidates sessions, and rotating the MFA key makes existing encrypted integration credentials unreadable unless re-encrypted.
 3. Copy the generated file from the container, set `database_url` to the customer-managed PostgreSQL connection string, then copy it back:
 
    ```sh

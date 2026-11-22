@@ -495,6 +495,7 @@ impl FinanceService {
         receipt_number: Option<String>,
         payment_date: Option<NaiveDate>,
         notes: Option<String>,
+        idempotency_key: Option<Uuid>,
     ) -> Result<Payment, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ProcessPayment)
@@ -526,8 +527,20 @@ impl FinanceService {
         } else {
             now
         };
+        let requires_gateway = matches!(
+            method,
+            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
+        );
+        let payment_id = match idempotency_key {
+            Some(id) => id,
+            None if requires_gateway => {
+                return Err(DomainError::Validation(
+                    "Electronic payments require an idempotency_key UUID".into(),
+                ));
+            }
+            None => Uuid::new_v4(),
+        };
         let journal_entry_id = Uuid::new_v4();
-        let payment_id = Uuid::new_v4();
 
         // 1. Fetch org settings to determine base currency
         let org_settings = self.policy_repo.get_settings(org_id).await?;
@@ -550,6 +563,34 @@ impl FinanceService {
             ));
         }
         let transaction_currency = account.currency_code;
+
+        if let Some(existing) = self.payment_repo.find_by_id(payment_id).await? {
+            if existing.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Payment idempotency key belongs to another organization".into(),
+                ));
+            }
+            let request_matches = existing.created_by == ctx.user_id()
+                && existing.fee_id == fee_id
+                && existing.account_id == account_id
+                && existing.amount == amount
+                && existing.method == method
+                && existing.currency_code == transaction_currency
+                && student_id.map_or(true, |id| existing.student_id == Some(id))
+                && enrollment_id.map_or(true, |id| existing.enrollment_id == Some(id))
+                && payer_name == existing.payer_name
+                && payer_phone == existing.payer_phone
+                && notes == existing.notes
+                && receipt_number.as_ref().map_or(true, |number| {
+                    existing.receipt_number.as_ref() == Some(number)
+                });
+            if request_matches {
+                return Ok(existing);
+            }
+            return Err(DomainError::ConcurrencyConflict(
+                "Idempotency key was already used with a different payment request".into(),
+            ));
+        }
 
         if receivable_account_id.is_some() && fee_id.is_some() {
             return Err(DomainError::Validation(
@@ -604,28 +645,7 @@ impl FinanceService {
             }
         }
 
-        // 3. Electronic Gateway Processing if applicable
-        let mut final_reference = reference.clone();
-        if matches!(
-            method,
-            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
-        ) {
-            if let Some(src) = source {
-                let amount_f64 = rust_decimal::prelude::ToPrimitive::to_f64(&amount).unwrap_or(0.0);
-                let gateway_ref = self
-                    .payment_gateway
-                    .process_payment(ctx, amount_f64, &transaction_currency, &src)
-                    .await?;
-                final_reference = Some(gateway_ref);
-            } else {
-                return Err(DomainError::Validation(format!(
-                    "Payment method '{}' requires a source token",
-                    method
-                )));
-            }
-        }
-
-        // 4. Update StudentFee if fee_id is provided
+        // 3. Validate and prepare StudentFee update if fee_id is provided
         let mut receivable_acct = direct_receivable_account.unwrap_or(account_id);
         let mut student_resolved_id = student_id;
         let mut enrollment_resolved_id = enrollment_id;
@@ -672,6 +692,27 @@ impl FinanceService {
                 }
                 receivable_acct = template.receivable_account_id;
             }
+        }
+
+        let mut final_reference = reference.clone();
+        if requires_gateway {
+            let src = source.ok_or_else(|| {
+                DomainError::Validation(format!(
+                    "Payment method '{}' requires a source token",
+                    method
+                ))
+            })?;
+            let amount_f64 =
+                rust_decimal::prelude::ToPrimitive::to_f64(&amount).ok_or_else(|| {
+                    DomainError::Validation(
+                        "Payment amount cannot be represented by the gateway".into(),
+                    )
+                })?;
+            let gateway_ref = self
+                .payment_gateway
+                .process_payment(ctx, amount_f64, &transaction_currency, &src, payment_id)
+                .await?;
+            final_reference = Some(gateway_ref);
         }
 
         let base_amount = amount * exchange_rate_value;

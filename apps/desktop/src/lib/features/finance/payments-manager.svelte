@@ -12,6 +12,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
+import { SvelteMap } from "svelte/reactivity";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
 import {
   api,
@@ -107,6 +108,7 @@ let selectedTreasuryId = $state("");
 let paymentMethod = $state("cash");
 let sourceToken = $state("");
 let receiptLines = $state<ReceiptLine[]>([createReceiptLine()]);
+const paymentAttemptKeys = new SvelteMap<number, SvelteMap<string, string>>();
 const selectedCurrency = $derived(
   treasuries.find(
     (account) => String(account.id) === String(selectedTreasuryId),
@@ -300,6 +302,7 @@ function handleQuickAddReceiptLine(event: KeyboardEvent) {
 }
 
 function removeReceiptLine(lineId: number) {
+  paymentAttemptKeys.delete(lineId);
   if (receiptLines.length === 1) {
     receiptLines = [createReceiptLine()];
     return;
@@ -311,7 +314,36 @@ function clearForm() {
   receiptNumber = "";
   paymentDate = getLocalDateInputValue();
   sourceToken = "";
+  paymentAttemptKeys.clear();
   receiptLines = [createReceiptLine()];
+}
+
+async function getPaymentAttemptKey(
+  lineId: number,
+  request: Parameters<typeof api.processPayment>[0],
+) {
+  const serializedRequest = JSON.stringify({
+    ...request,
+    idempotency_key: undefined,
+  });
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(serializedRequest),
+  );
+  const fingerprint = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+  let attempts = paymentAttemptKeys.get(lineId);
+  if (!attempts) {
+    attempts = new SvelteMap();
+    paymentAttemptKeys.set(lineId, attempts);
+  }
+  const previousKey = attempts.get(fingerprint);
+  if (previousKey) return previousKey;
+
+  const key = crypto.randomUUID();
+  attempts.set(fingerprint, key);
+  return key;
 }
 
 async function handleSavePayment() {
@@ -360,21 +392,26 @@ async function handleSavePayment() {
           ? `${baseReceiptNumber}-${String(line.sequence).padStart(2, "0")}`
           : baseReceiptNumber
         : undefined;
+      const request = {
+        receivable_account_id: line.accountId,
+        account_id: selectedTreasuryId,
+        amount: String(line.amount),
+        method: paymentMethod,
+        source: sourceToken.trim() || undefined,
+        payer_name:
+          selectedAccount?.name_ar || selectedAccount?.name || undefined,
+        receipt_number: lineReceiptNumber,
+        payment_date: paymentDate || undefined,
+        notes: line.notes.trim() || undefined,
+      };
 
       try {
         await api.processPayment({
-          receivable_account_id: line.accountId,
-          account_id: selectedTreasuryId,
-          amount: String(line.amount),
-          method: paymentMethod,
-          source: sourceToken.trim() || undefined,
-          payer_name:
-            selectedAccount?.name_ar || selectedAccount?.name || undefined,
-          receipt_number: lineReceiptNumber,
-          payment_date: paymentDate || undefined,
-          notes: line.notes.trim() || undefined,
+          ...request,
+          idempotency_key: await getPaymentAttemptKey(line.id, request),
         });
         savedCount += 1;
+        paymentAttemptKeys.delete(line.id);
         receiptLines = receiptLines.filter((item) => item.id !== line.id);
       } catch (error) {
         failure = error;

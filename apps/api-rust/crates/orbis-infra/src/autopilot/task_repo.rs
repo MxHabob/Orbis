@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::Utc;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
     QueryFilter, QueryOrder, QuerySelect,
@@ -75,6 +76,43 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         Ok(model.map(Self::model_to_domain))
+    }
+
+    async fn claim_task(
+        &self,
+        id: Uuid,
+        org_id: Uuid,
+        expected_status: TaskStatus,
+    ) -> Result<bool, DomainError> {
+        if !matches!(
+            expected_status,
+            TaskStatus::Pending | TaskStatus::Suggested | TaskStatus::Failed
+        ) {
+            return Err(DomainError::Validation(
+                "Only pending, suggested, or failed tasks can be claimed".into(),
+            ));
+        }
+
+        let attempts = if expected_status == TaskStatus::Failed {
+            Expr::value(1)
+        } else {
+            Expr::col(autopilot_task::Column::Attempts).add(1)
+        };
+        let result = autopilot_task::Entity::update_many()
+            .col_expr(
+                autopilot_task::Column::Status,
+                Expr::value(TaskStatus::Executing.as_str()),
+            )
+            .col_expr(autopilot_task::Column::Attempts, attempts)
+            .col_expr(autopilot_task::Column::UpdatedAt, Expr::value(Utc::now()))
+            .filter(autopilot_task::Column::Id.eq(id))
+            .filter(autopilot_task::Column::OrgId.eq(org_id))
+            .filter(autopilot_task::Column::Status.eq(expected_status.as_str()))
+            .exec(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+        Ok(result.rows_affected == 1)
     }
 
     async fn find_by_org(
@@ -214,5 +252,121 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         Ok(models.into_iter().map(Self::model_to_domain).collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::{ConnectionTrait, Database, DatabaseBackend, Statement};
+
+    #[tokio::test]
+    async fn task_claim_is_scoped_and_only_succeeds_once() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE autopilot_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                org_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                attempts INTEGER NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+        )
+        .await
+        .unwrap();
+
+        let task_id = Uuid::new_v4();
+        let org_id = Uuid::new_v4();
+        db.execute(Statement::from_sql_and_values(
+            DatabaseBackend::Sqlite,
+            "INSERT INTO autopilot_tasks (id, org_id, status, attempts, updated_at) VALUES (?, ?, 'pending', 0, ?)",
+            [
+                task_id.into(),
+                org_id.into(),
+                Utc::now().into(),
+            ],
+        ))
+        .await
+        .unwrap();
+
+        let repo = PgAutopilotTaskRepo::new(db.clone());
+        assert!(
+            !repo
+                .claim_task(task_id, Uuid::new_v4(), TaskStatus::Pending)
+                .await
+                .unwrap()
+        );
+        assert!(
+            repo.claim_task(task_id, org_id, TaskStatus::Pending)
+                .await
+                .unwrap()
+        );
+        assert!(
+            !repo
+                .claim_task(task_id, org_id, TaskStatus::Pending)
+                .await
+                .unwrap()
+        );
+
+        let row = db
+            .query_one(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "SELECT status, attempts FROM autopilot_tasks WHERE id = ?",
+                [task_id.into()],
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(row.try_get_by::<String, _>("status").unwrap(), "executing");
+        assert_eq!(row.try_get_by::<i32, _>("attempts").unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn retry_claim_resets_the_attempt_counter_atomically() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE autopilot_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                org_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                attempts INTEGER NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+        )
+        .await
+        .unwrap();
+
+        let task_id = Uuid::new_v4();
+        let org_id = Uuid::new_v4();
+        db.execute(Statement::from_sql_and_values(
+            DatabaseBackend::Sqlite,
+            "INSERT INTO autopilot_tasks (id, org_id, status, attempts, updated_at) VALUES (?, ?, 'failed', 4, ?)",
+            [
+                task_id.into(),
+                org_id.into(),
+                Utc::now().into(),
+            ],
+        ))
+        .await
+        .unwrap();
+
+        let repo = PgAutopilotTaskRepo::new(db.clone());
+        assert!(
+            repo.claim_task(task_id, org_id, TaskStatus::Failed)
+                .await
+                .unwrap()
+        );
+
+        let row = db
+            .query_one(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "SELECT status, attempts FROM autopilot_tasks WHERE id = ?",
+                [task_id.into()],
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(row.try_get_by::<String, _>("status").unwrap(), "executing");
+        assert_eq!(row.try_get_by::<i32, _>("attempts").unwrap(), 1);
     }
 }

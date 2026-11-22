@@ -624,6 +624,7 @@ impl BootstrapService {
     /// bootstrap by creating the admin — this handles crash recovery.
     pub async fn execute(&self, req: BootstrapRequest) -> Result<BootstrapResult, DomainError> {
         let _bootstrap_guard = self.bootstrap_lock.lock().await;
+        let _database_guard = self.system_repo.acquire_bootstrap_lock().await?;
         // ── Step 1: Validate request ──────────────────────────
         self.validate_request(&req)?;
 

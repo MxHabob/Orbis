@@ -46,6 +46,79 @@ pub struct StudentService {
     enrollment_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
+fn capacity_override_request(
+    org_id: Uuid,
+    student_id: Uuid,
+    section_id: Uuid,
+    requested_by: Uuid,
+    now: chrono::DateTime<Utc>,
+) -> AcademicOverrideRequest {
+    AcademicOverrideRequest {
+        id: Uuid::new_v4(),
+        org_id,
+        override_type: OverrideType::CapacityOverride,
+        risk_level: RiskLevel::Medium,
+        entity_type: "enrollment".to_string(),
+        entity_id: student_id,
+        field_name: Some("class_id".to_string()),
+        old_value: None,
+        new_value: Some(section_id.to_string()),
+        reason: "Class capacity reached; review required.".to_string(),
+        requested_by,
+        requested_by_name: None,
+        status: OverrideStatus::Pending,
+        current_approver_role: Some("admin".to_string()),
+        approval_chain: vec![],
+        resolved_by: None,
+        resolved_by_name: None,
+        resolved_at: None,
+        resolution_notes: None,
+        expires_at: None,
+        metadata: serde_json::json!({ "class_id": section_id }),
+        created_at: now,
+        updated_at: now,
+    }
+}
+
+fn admission_override_request(
+    org_id: Uuid,
+    student_id: Uuid,
+    period_id: Uuid,
+    section_id: Option<Uuid>,
+    requested_by: Uuid,
+    reason: &str,
+    now: chrono::DateTime<Utc>,
+) -> AcademicOverrideRequest {
+    AcademicOverrideRequest {
+        id: Uuid::new_v4(),
+        org_id,
+        override_type: OverrideType::AdmissionApproval,
+        risk_level: RiskLevel::Low,
+        entity_type: "enrollment".to_string(),
+        entity_id: student_id,
+        field_name: None,
+        old_value: None,
+        new_value: None,
+        reason: reason.to_string(),
+        requested_by,
+        requested_by_name: None,
+        status: OverrideStatus::Pending,
+        current_approver_role: Some("registrar".to_string()),
+        approval_chain: vec![],
+        resolved_by: None,
+        resolved_by_name: None,
+        resolved_at: None,
+        resolution_notes: None,
+        expires_at: None,
+        metadata: serde_json::json!({
+            "period_id": period_id,
+            "class_id": section_id
+        }),
+        created_at: now,
+        updated_at: now,
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RegisterStudentInput {
     pub person_id: Option<Uuid>,
@@ -491,95 +564,8 @@ impl StudentService {
             let mode = input.study_mode.unwrap_or(StudyMode::Regular);
             let mut enrollment_status = EnrollmentStatus::Active;
 
-            // Check capacity invariant
-            if let Some(class_id) = input.initial_section_id {
-                let current_enrollments = self.enrollment_repo.find_by_section(class_id).await?;
-                let active_count = current_enrollments
-                    .iter()
-                    .filter(|e| e.status == EnrollmentStatus::Active)
-                    .count() as i32;
-
-                let max_cap = if let Ok(Some(cls)) = self.section_repo.find_by_id(class_id).await {
-                    cls.capacity.unwrap_or(admission_policy.max_class_capacity)
-                } else {
-                    admission_policy.max_class_capacity
-                };
-
-                if active_count >= max_cap {
-                    // Capacity breach: Create CapacityOverride request and hold enrollment
-                    let req_id = Uuid::new_v4();
-                    let override_req = AcademicOverrideRequest {
-                        id: req_id,
-                        org_id,
-                        override_type: OverrideType::CapacityOverride,
-                        risk_level: RiskLevel::Medium,
-                        entity_type: "enrollment".to_string(),
-                        entity_id: student_id,
-                        field_name: Some("class_id".to_string()),
-                        old_value: None,
-                        new_value: Some(class_id.to_string()),
-                        reason: format!(
-                            "Class capacity reached ({}/{}). Override required to add student.",
-                            active_count, max_cap
-                        ),
-                        requested_by: ctx.user_id().unwrap_or(student_id),
-                        requested_by_name: None,
-                        status: OverrideStatus::Pending,
-                        current_approver_role: Some("admin".to_string()),
-                        approval_chain: vec![],
-                        resolved_by: None,
-                        resolved_by_name: None,
-                        resolved_at: None,
-                        resolution_notes: None,
-                        expires_at: None,
-                        metadata: serde_json::json!({
-                            "class_id": class_id,
-                            "active_count": active_count,
-                            "max_capacity": max_cap
-                        }),
-                        created_at: now,
-                        updated_at: now,
-                    };
-                    self.override_repo.save(&override_req).await?;
-                    created_override_req = Some(override_req);
-                    enrollment_status = EnrollmentStatus::PendingApproval;
-                }
-            }
-
-            // Check approval policy
-            if admission_policy.requires_approval && enrollment_status == EnrollmentStatus::Active {
+            if admission_policy.requires_approval {
                 enrollment_status = EnrollmentStatus::PendingApproval;
-                let req_id = Uuid::new_v4();
-                let override_req = AcademicOverrideRequest {
-                    id: req_id,
-                    org_id,
-                    override_type: OverrideType::AdmissionApproval,
-                    risk_level: RiskLevel::Low,
-                    entity_type: "enrollment".to_string(),
-                    entity_id: student_id,
-                    field_name: None,
-                    old_value: None,
-                    new_value: None,
-                    reason: "New applicant registration requires administrative review and verification.".to_string(),
-                    requested_by: ctx.user_id().unwrap_or(student_id),
-                    requested_by_name: None,
-                    status: OverrideStatus::Pending,
-                    current_approver_role: Some("registrar".to_string()),
-                    approval_chain: vec![],
-                    resolved_by: None,
-                    resolved_by_name: None,
-                    resolved_at: None,
-                    resolution_notes: None,
-                    expires_at: None,
-                    metadata: serde_json::json!({
-                        "period_id": period_id,
-                        "class_id": input.initial_section_id
-                    }),
-                    created_at: now,
-                    updated_at: now,
-                };
-                self.override_repo.save(&override_req).await?;
-                created_override_req = Some(override_req);
             }
 
             let mut enrollment = Enrollment::new(
@@ -591,7 +577,38 @@ impl StudentService {
                 mode,
             );
             enrollment.status = enrollment_status;
-            self.enrollment_repo.save(&enrollment).await?;
+            let capacity_override = input.initial_section_id.map(|section_id| {
+                capacity_override_request(
+                    org_id,
+                    student_id,
+                    section_id,
+                    ctx.user_id().unwrap_or(student_id),
+                    now,
+                )
+            });
+            let admission_override = admission_policy.requires_approval.then(|| {
+                admission_override_request(
+                    org_id,
+                    student_id,
+                    period_id,
+                    input.initial_section_id,
+                    ctx.user_id().unwrap_or(student_id),
+                    "New applicant registration requires administrative review and verification.",
+                    now,
+                )
+            });
+            let save_result = self
+                .enrollment_repo
+                .save_with_capacity(
+                    &mut enrollment,
+                    admission_policy.max_class_capacity,
+                    true,
+                    capacity_override,
+                    admission_override,
+                )
+                .await?;
+            enrollment_status = enrollment.status;
+            created_override_req = save_result.override_request;
 
             // 6. Auto-assign tuition fee templates if enabled and enrollment is active
             if admission_policy.auto_assign_fees && enrollment_status == EnrollmentStatus::Active {
@@ -732,95 +749,8 @@ impl StudentService {
                     "Student registration is disabled by organization policy".to_string(),
                 ));
             }
-
-            if let Some(class_id) = section_id {
-                let enrollments = self.enrollment_repo.find_by_section(class_id).await?;
-                let active_count = enrollments
-                    .iter()
-                    .filter(|enrollment| enrollment.status == EnrollmentStatus::Active)
-                    .count() as i32;
-                let capacity = self
-                    .section_repo
-                    .find_by_id(class_id)
-                    .await?
-                    .and_then(|section| section.capacity)
-                    .unwrap_or(max_class_capacity);
-
-                if active_count >= capacity {
-                    if !allow_waitlist {
-                        return Err(DomainError::Validation(format!(
-                            "Class capacity exceeded ({active_count}/{capacity})"
-                        )));
-                    }
-
-                    let request = AcademicOverrideRequest {
-                        id: Uuid::new_v4(),
-                        org_id,
-                        override_type: OverrideType::CapacityOverride,
-                        risk_level: RiskLevel::Medium,
-                        entity_type: "enrollment".to_string(),
-                        entity_id: student_id,
-                        field_name: Some("class_id".to_string()),
-                        old_value: None,
-                        new_value: Some(class_id.to_string()),
-                        reason: format!(
-                            "Class capacity reached ({active_count}/{capacity}); review required."
-                        ),
-                        requested_by: ctx.user_id().unwrap_or(student_id),
-                        requested_by_name: None,
-                        status: OverrideStatus::Pending,
-                        current_approver_role: Some("admin".to_string()),
-                        approval_chain: vec![],
-                        resolved_by: None,
-                        resolved_by_name: None,
-                        resolved_at: None,
-                        resolution_notes: None,
-                        expires_at: None,
-                        metadata: serde_json::json!({
-                            "class_id": class_id,
-                            "active_count": active_count,
-                            "max_capacity": capacity
-                        }),
-                        created_at: now,
-                        updated_at: now,
-                    };
-                    self.override_repo.save(&request).await?;
-                    enrollment_status = EnrollmentStatus::PendingApproval;
-                }
-            }
-
             if requires_approval {
                 enrollment_status = EnrollmentStatus::PendingApproval;
-                let request = AcademicOverrideRequest {
-                    id: Uuid::new_v4(),
-                    org_id,
-                    override_type: OverrideType::AdmissionApproval,
-                    risk_level: RiskLevel::Low,
-                    entity_type: "enrollment".to_string(),
-                    entity_id: student_id,
-                    field_name: None,
-                    old_value: None,
-                    new_value: None,
-                    reason: "Student completed registration and requires administrative review."
-                        .to_string(),
-                    requested_by: ctx.user_id().unwrap_or(student_id),
-                    requested_by_name: None,
-                    status: OverrideStatus::Pending,
-                    current_approver_role: Some("registrar".to_string()),
-                    approval_chain: vec![],
-                    resolved_by: None,
-                    resolved_by_name: None,
-                    resolved_at: None,
-                    resolution_notes: None,
-                    expires_at: None,
-                    metadata: serde_json::json!({
-                        "period_id": period_id,
-                        "class_id": section_id
-                    }),
-                    created_at: now,
-                    updated_at: now,
-                };
-                self.override_repo.save(&request).await?;
             }
         }
 
@@ -834,7 +764,36 @@ impl StudentService {
         );
         enrollment.status = enrollment_status;
 
-        self.enrollment_repo.save(&enrollment).await?;
+        let capacity_override = section_id.map(|section_id| {
+            capacity_override_request(
+                org_id,
+                student_id,
+                section_id,
+                ctx.user_id().unwrap_or(student_id),
+                now,
+            )
+        });
+        let admission_override = (completing_draft && requires_approval).then(|| {
+            admission_override_request(
+                org_id,
+                student_id,
+                period_id,
+                section_id,
+                ctx.user_id().unwrap_or(student_id),
+                "Student completed registration and requires administrative review.",
+                now,
+            )
+        });
+        self.enrollment_repo
+            .save_with_capacity(
+                &mut enrollment,
+                max_class_capacity,
+                allow_waitlist,
+                capacity_override,
+                admission_override,
+            )
+            .await?;
+        enrollment_status = enrollment.status;
 
         if completing_draft
             && admission_policy.auto_assign_fees
@@ -1003,11 +962,18 @@ impl StudentService {
             .ok_or_else(|| {
                 DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
             })?;
+        if enrollment.org_id != ctx.tenant_id {
+            return Err(DomainError::NotFound("Enrollment not found".into()));
+        }
 
+        let settings = self.settings_repo.get_settings(enrollment.org_id).await?;
+        let default_capacity = settings.enrollment.max_class_size_default.max(0);
         enrollment.section_id = Some(target_section_id);
         enrollment.updated_at = Utc::now();
 
-        self.enrollment_repo.save(&enrollment).await?;
+        self.enrollment_repo
+            .save_with_capacity(&mut enrollment, default_capacity, false, None, None)
+            .await?;
         Ok(enrollment)
     }
 

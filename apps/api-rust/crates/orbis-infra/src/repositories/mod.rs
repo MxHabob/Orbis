@@ -6,6 +6,7 @@ pub mod dashboard_repo;
 pub mod device_repo;
 pub mod document_repos;
 pub mod employee_repo;
+pub mod enrollment_capacity;
 pub mod exam_repos;
 pub mod finance_repos;
 pub mod folder_repo;

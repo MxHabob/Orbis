@@ -11977,6 +11977,12 @@
             "nullable": true
           },
           "fee_id": { "type": "string", "format": "uuid", "nullable": true },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Reuse this UUID unchanged when retrying the same payment request."
+          },
           "method": { "type": "string" },
           "notes": { "type": "string", "nullable": true },
           "payer_name": { "type": "string", "nullable": true },

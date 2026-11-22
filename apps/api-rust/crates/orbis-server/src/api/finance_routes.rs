@@ -216,6 +216,8 @@ pub struct PaymentDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ProcessPaymentRequest {
+    /// Reuse this UUID unchanged when retrying the same payment request.
+    pub idempotency_key: Option<Uuid>,
     pub fee_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
     pub enrollment_id: Option<Uuid>,
@@ -978,6 +980,7 @@ pub async fn process_payment(
             p.receipt_number,
             p.payment_date,
             p.notes,
+            p.idempotency_key,
         )
         .await?;
 

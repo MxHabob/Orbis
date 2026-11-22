@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
-    EnrollmentRepository, StudentGuardianRepository, StudentRepository,
+    EnrollmentRepository, EnrollmentSaveResult, StudentGuardianRepository, StudentRepository,
 };
 use orbis_domain::entities::enrollment::{
     Enrollment as DomainEnrollment, EnrollmentStatus, StudyMode,
@@ -19,8 +19,10 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::models::{
+    academic_period::{self, Entity as AcademicPeriodEntity},
     enrollment::{self, Entity as EnrollmentEntity},
     person::{self, Entity as PersonEntity},
+    section::{self, Entity as SectionEntity},
     student::{self, Entity as StudentEntity},
     student_guardian::{self, Entity as StudentGuardianEntity},
 };
@@ -547,28 +549,7 @@ impl EnrollmentRepository for StudentRepoImpl {
     }
 
     async fn save(&self, e: &DomainEnrollment) -> Result<(), DomainError> {
-        let active = enrollment::ActiveModel {
-            id: Set(e.id),
-            org_id: Set(e.org_id),
-            period_id: Set(e.period_id),
-            student_id: Set(e.student_id),
-            section_id: Set(e.section_id),
-            student_number: Set(e.student_number.clone()),
-            status: Set(e.status.to_string()),
-            study_mode: Set(Some(e.study_mode.to_string())),
-            attempt_number: Set(e.attempt_number),
-            is_attendance_exempt: Set(Some(e.is_attendance_exempt)),
-            is_grade_exempt: Set(Some(e.is_grade_exempt)),
-            enrolled_at: Set(e.enrolled_at.into()),
-            enrollment_type: Set(Some(e.study_mode.to_string())),
-            withdrawn_at: Set(e.withdrawn_at.map(Into::into)),
-            withdrawal_reason: Set(e.withdrawal_reason.clone()),
-            created_by: Set(e.created_by),
-            updated_by: Set(e.updated_by),
-            meta: Set(Some(e.meta.clone())),
-            created_at: Set(e.created_at.into()),
-            updated_at: Set(e.updated_at.into()),
-        };
+        let active = enrollment_to_active_model(e);
 
         if EnrollmentEntity::find_by_id(e.id)
             .one(&self.db)
@@ -587,6 +568,185 @@ impl EnrollmentRepository for StudentRepoImpl {
                 .map_err(|err| DomainError::Internal(err.to_string()))?;
         }
         Ok(())
+    }
+
+    async fn save_with_capacity(
+        &self,
+        enrollment_record: &mut DomainEnrollment,
+        default_capacity: i32,
+        allow_waitlist: bool,
+        capacity_override: Option<
+            orbis_domain::entities::override_request::AcademicOverrideRequest,
+        >,
+        admission_override: Option<
+            orbis_domain::entities::override_request::AcademicOverrideRequest,
+        >,
+    ) -> Result<EnrollmentSaveResult, DomainError> {
+        let transaction = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if let Some(section_id) = enrollment_record.section_id {
+            crate::repositories::enrollment_capacity::acquire_capacity_lock(
+                &transaction,
+                enrollment_record.org_id,
+                section_id,
+                crate::repositories::enrollment_capacity::CapacityLockTarget::ClassSection,
+            )
+            .await?;
+        }
+
+        let existing = EnrollmentEntity::find_by_id(enrollment_record.id)
+            .one(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if existing
+            .as_ref()
+            .is_some_and(|record| record.org_id != enrollment_record.org_id)
+        {
+            return Err(DomainError::Forbidden(
+                "Cannot update an enrollment owned by another organization".into(),
+            ));
+        }
+
+        let period_exists = AcademicPeriodEntity::find_by_id(enrollment_record.period_id)
+            .filter(academic_period::Column::OrgId.eq(enrollment_record.org_id))
+            .one(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
+            .is_some();
+        if !period_exists {
+            return Err(DomainError::NotFound("Academic period not found".into()));
+        }
+
+        let student_exists = StudentEntity::find_by_id(enrollment_record.student_id)
+            .filter(student::Column::OrgId.eq(enrollment_record.org_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .one(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
+            .is_some();
+        if !student_exists {
+            return Err(DomainError::NotFound("Student not found".into()));
+        }
+
+        let capacity_breach = if let Some(section_id) = enrollment_record.section_id {
+            let section = SectionEntity::find_by_id(section_id)
+                .filter(section::Column::OrgId.eq(enrollment_record.org_id))
+                .filter(section::Column::IsActive.eq(true))
+                .filter(section::Column::IsDeleted.eq(false))
+                .one(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?
+                .ok_or_else(|| DomainError::NotFound("Class section not found".into()))?;
+            let capacity = section.capacity.unwrap_or(default_capacity).max(0);
+
+            let active_count = EnrollmentEntity::find()
+                .filter(enrollment::Column::OrgId.eq(enrollment_record.org_id))
+                .filter(enrollment::Column::SectionId.eq(Some(section_id)))
+                .filter(enrollment::Column::Status.eq(EnrollmentStatus::Active.to_string()))
+                .filter(enrollment::Column::Id.ne(enrollment_record.id))
+                .count(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            let active_count_i32 = i32::try_from(active_count)
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            let capacity_reached = active_count_i32 >= capacity;
+            if capacity_reached && !allow_waitlist {
+                return Err(DomainError::Validation(format!(
+                    "Class capacity exceeded ({active_count_i32}/{capacity})"
+                )));
+            }
+
+            let duplicate = EnrollmentEntity::find()
+                .filter(enrollment::Column::OrgId.eq(enrollment_record.org_id))
+                .filter(enrollment::Column::StudentId.eq(enrollment_record.student_id))
+                .filter(enrollment::Column::PeriodId.eq(enrollment_record.period_id))
+                .filter(enrollment::Column::SectionId.eq(Some(section_id)))
+                .filter(enrollment::Column::AttemptNumber.eq(enrollment_record.attempt_number))
+                .filter(enrollment::Column::Id.ne(enrollment_record.id))
+                .one(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if duplicate.is_some() {
+                return Err(DomainError::Conflict(
+                    "Student already has an enrollment record for this class and period".into(),
+                ));
+            }
+
+            if capacity_reached {
+                enrollment_record.status = EnrollmentStatus::PendingApproval;
+            }
+            capacity_reached.then_some((active_count_i32, capacity))
+        } else {
+            None
+        };
+
+        let override_request = if let Some((active_count, capacity)) = capacity_breach {
+            let mut request = capacity_override.ok_or_else(|| {
+                DomainError::Internal(
+                    "A capacity override request is required for a waitlisted enrollment".into(),
+                )
+            })?;
+            if request.org_id != enrollment_record.org_id
+                || request.entity_id != enrollment_record.student_id
+            {
+                return Err(DomainError::Validation(
+                    "Capacity override request does not match the enrollment".into(),
+                ));
+            }
+            let section_id = enrollment_record.section_id.ok_or_else(|| {
+                DomainError::Internal(
+                    "A capacity breach was reported without an assigned class".into(),
+                )
+            })?;
+            request.reason =
+                format!("Class capacity reached ({active_count}/{capacity}); review required.");
+            request.metadata = serde_json::json!({
+                "class_id": section_id,
+                "active_count": active_count,
+                "max_capacity": capacity
+            });
+            Some(request)
+        } else {
+            admission_override
+        };
+
+        let active = enrollment_to_active_model(enrollment_record);
+        if existing.is_some() {
+            active
+                .update(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+        } else {
+            active
+                .insert(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+        }
+        if let Some(request) = override_request.as_ref() {
+            if request.org_id != enrollment_record.org_id
+                || request.entity_id != enrollment_record.student_id
+            {
+                return Err(DomainError::Validation(
+                    "Approval request does not match the enrollment".into(),
+                ));
+            }
+            crate::repositories::override_repos::override_to_active_model(request)?
+                .insert(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+        }
+        transaction
+            .commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+        Ok(EnrollmentSaveResult {
+            capacity_breach,
+            override_request,
+        })
     }
 
     async fn save_batch(&self, enrollments: &[DomainEnrollment]) -> Result<(), DomainError> {
@@ -609,6 +769,31 @@ impl EnrollmentRepository for StudentRepoImpl {
             }
         }
         Ok(())
+    }
+}
+
+fn enrollment_to_active_model(e: &DomainEnrollment) -> enrollment::ActiveModel {
+    enrollment::ActiveModel {
+        id: Set(e.id),
+        org_id: Set(e.org_id),
+        period_id: Set(e.period_id),
+        student_id: Set(e.student_id),
+        section_id: Set(e.section_id),
+        student_number: Set(e.student_number.clone()),
+        status: Set(e.status.to_string()),
+        study_mode: Set(Some(e.study_mode.to_string())),
+        attempt_number: Set(e.attempt_number),
+        is_attendance_exempt: Set(Some(e.is_attendance_exempt)),
+        is_grade_exempt: Set(Some(e.is_grade_exempt)),
+        enrolled_at: Set(e.enrolled_at.into()),
+        enrollment_type: Set(Some(e.study_mode.to_string())),
+        withdrawn_at: Set(e.withdrawn_at.map(Into::into)),
+        withdrawal_reason: Set(e.withdrawal_reason.clone()),
+        created_by: Set(e.created_by),
+        updated_by: Set(e.updated_by),
+        meta: Set(Some(e.meta.clone())),
+        created_at: Set(e.created_at.into()),
+        updated_at: Set(e.updated_at.into()),
     }
 }
 
@@ -754,5 +939,189 @@ impl StudentGuardianRepository for StudentRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::{ConnectionTrait, Database, Schema};
+
+    #[tokio::test]
+    async fn capacity_is_checked_atomically_and_waitlisted_enrollments_are_not_active() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        db.execute_unprepared("PRAGMA foreign_keys = OFF;")
+            .await
+            .unwrap();
+        let schema = Schema::new(db.get_database_backend());
+        for statement in [
+            schema
+                .create_table_from_entity(AcademicPeriodEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
+                .create_table_from_entity(StudentEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
+                .create_table_from_entity(SectionEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
+                .create_table_from_entity(EnrollmentEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
+                .create_table_from_entity(crate::models::override_request::Entity)
+                .if_not_exists()
+                .to_owned(),
+        ] {
+            db.execute(db.get_database_backend().build(&statement))
+                .await
+                .unwrap();
+        }
+        let org_id = Uuid::new_v4();
+        let period_id = Uuid::new_v4();
+        let section_id = Uuid::new_v4();
+        let first_student_id = Uuid::new_v4();
+        let second_student_id = Uuid::new_v4();
+        let now = chrono::Utc::now();
+
+        academic_period::ActiveModel {
+            id: Set(period_id),
+            org_id: Set(org_id),
+            calendar_id: Set(Uuid::new_v4()),
+            period_type_id: Set(Uuid::new_v4()),
+            name: Set("Term".into()),
+            period_kind: Set("teaching".into()),
+            is_enrollment_open: Set(true),
+            is_grade_entry_open: Set(false),
+            status: Set("active".into()),
+            is_locked: Set(false),
+            created_at: Set(now),
+            updated_at: Set(now),
+            ..Default::default()
+        }
+        .insert(&db)
+        .await
+        .unwrap();
+
+        for student_id in [first_student_id, second_student_id] {
+            student::ActiveModel {
+                id: Set(student_id),
+                org_id: Set(org_id),
+                person_id: Set(Uuid::new_v4()),
+                student_number: Set(student_id.to_string()),
+                status: Set("active".into()),
+                standing: Set("good".into()),
+                admitted_at: Set(now),
+                is_deleted: Set(false),
+                created_at: Set(now),
+                updated_at: Set(now),
+                ..Default::default()
+            }
+            .insert(&db)
+            .await
+            .unwrap();
+        }
+
+        section::ActiveModel {
+            id: Set(section_id),
+            org_id: Set(org_id),
+            section_type: Set("class".into()),
+            code: Set("A".into()),
+            name: Set("Grade 1 / A".into()),
+            capacity: Set(Some(1)),
+            is_active: Set(true),
+            is_deleted: Set(false),
+            created_at: Set(now),
+            updated_at: Set(now),
+            ..Default::default()
+        }
+        .insert(&db)
+        .await
+        .unwrap();
+
+        let repository = StudentRepoImpl { db };
+        let mut first = DomainEnrollment::new(
+            org_id,
+            period_id,
+            first_student_id,
+            Some(section_id),
+            "S-001".into(),
+            StudyMode::Regular,
+        );
+        assert!(
+            repository
+                .save_with_capacity(&mut first, 30, false, None, None)
+                .await
+                .unwrap()
+                .capacity_breach
+                .is_none()
+        );
+
+        let mut second = DomainEnrollment::new(
+            org_id,
+            period_id,
+            second_student_id,
+            Some(section_id),
+            "S-002".into(),
+            StudyMode::Regular,
+        );
+        assert!(matches!(
+            repository
+                .save_with_capacity(&mut second, 30, false, None, None)
+                .await,
+            Err(DomainError::Validation(_))
+        ));
+        let capacity_override = orbis_domain::entities::override_request::AcademicOverrideRequest {
+            id: Uuid::new_v4(),
+            org_id,
+            override_type: orbis_domain::entities::override_request::OverrideType::CapacityOverride,
+            risk_level: orbis_domain::entities::override_request::RiskLevel::Medium,
+            entity_type: "enrollment".into(),
+            entity_id: second_student_id,
+            field_name: Some("class_id".into()),
+            old_value: None,
+            new_value: Some(section_id.to_string()),
+            reason: "Class capacity reached; review required.".into(),
+            requested_by: Uuid::new_v4(),
+            requested_by_name: None,
+            status: orbis_domain::entities::override_request::OverrideStatus::Pending,
+            current_approver_role: Some("admin".into()),
+            approval_chain: vec![],
+            resolved_by: None,
+            resolved_by_name: None,
+            resolved_at: None,
+            resolution_notes: None,
+            expires_at: None,
+            metadata: serde_json::json!({ "class_id": section_id }),
+            created_at: now,
+            updated_at: now,
+        };
+        let save_result = repository
+            .save_with_capacity(&mut second, 30, true, Some(capacity_override), None)
+            .await
+            .unwrap();
+
+        assert_eq!(save_result.capacity_breach, Some((1, 1)));
+        assert_eq!(second.status, EnrollmentStatus::PendingApproval);
+        assert!(save_result.override_request.is_some());
+        assert_eq!(
+            EnrollmentEntity::find_by_id(second.id)
+                .one(&repository.db)
+                .await
+                .unwrap()
+                .unwrap()
+                .status,
+            EnrollmentStatus::PendingApproval.to_string()
+        );
+        assert_eq!(
+            crate::models::override_request::Entity::find()
+                .count(&repository.db)
+                .await
+                .unwrap(),
+            1
+        );
     }
 }

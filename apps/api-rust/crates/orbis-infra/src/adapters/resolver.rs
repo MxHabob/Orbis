@@ -9,12 +9,12 @@ use orbis_domain::entities::solver::{
 };
 use orbis_domain::errors::DomainError;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::adapters::{
     authen::AuthenAdapter,
     hikvision::HikvisionAdapter,
     llm_adapter::{LlmAdapter, LlmAdapterConfig, LlmProviderProtocol},
-    mada::MadaAdapter,
     moyasar::MoyasarAdapter,
     solver_adapter::RemoteTimefoldSolver,
 };
@@ -465,6 +465,7 @@ impl PaymentGatewayPort for IntegrationResolver {
         amount: f64,
         currency: &str,
         source: &str,
+        idempotency_key: Uuid,
     ) -> Result<String, DomainError> {
         let configs = self
             .integration_repo
@@ -486,12 +487,21 @@ impl PaymentGatewayPort for IntegrationResolver {
                     .map(|s| s.secret_key)
                     .unwrap_or_default();
 
-                if config.provider_name == "mada" {
-                    let adapter = MadaAdapter::new(secret_key);
-                    adapter.process_payment(ctx, amount, currency, source).await
-                } else if config.provider_name == "moyasar" {
+                if config.provider_name == "moyasar" {
+                    if secret_key.trim().is_empty() {
+                        return Err(DomainError::Validation(
+                            "Moyasar secret key is not configured".into(),
+                        ));
+                    }
                     let adapter = MoyasarAdapter::new(secret_key);
-                    adapter.process_payment(ctx, amount, currency, source).await
+                    adapter
+                        .process_payment(ctx, amount, currency, source, idempotency_key)
+                        .await
+                } else if config.provider_name == "mada" {
+                    Err(DomainError::Validation(
+                        "Direct Mada processing is unsupported. Configure a verified payment gateway such as Moyasar."
+                            .into(),
+                    ))
                 } else {
                     Err(DomainError::Validation(format!(
                         "Unsupported Payment Provider: {}",

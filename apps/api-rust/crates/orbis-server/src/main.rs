@@ -27,9 +27,7 @@ fn validate_jwt_secret(secret: Option<String>) -> Result<String, &'static str> {
                 && normalized != "change-me"
                 && normalized != "changeme"
         })
-        .ok_or(
-            "JWT_SECRET is required and must be a non-placeholder value of at least 32 characters",
-        )?;
+        .ok_or("JWT_SECRET must be a non-placeholder value of at least 32 characters")?;
     Ok(secret)
 }
 
@@ -119,6 +117,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // The API server owns its database configuration. Never discover a Desktop
     // user's local database or log credentials embedded in a database URL.
     let db_url = orbis_infra::config::resolve_database_url()?;
+    let server_secrets = orbis_infra::config::resolve_server_secrets()?;
+    let jwt_secret = validate_jwt_secret(Some(server_secrets.jwt_secret))?;
+    let mfa_encryption_key = server_secrets.mfa_encryption_key;
     tracing::info!("Connecting to configured server database");
 
     // Connect to database
@@ -225,21 +226,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
 
     let event_bus = Arc::new(MemoryEventBus::new());
-    let jwt_secret = validate_jwt_secret(std::env::var("JWT_SECRET").ok())?;
-    let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
-        Ok(key) if !key.trim().is_empty() => key,
-        _ if std::env::var("APP_ENV")
-            .map(|environment| environment != "production")
-            .unwrap_or(true) =>
-        {
-            tracing::warn!(
-                "MFA_ENCRYPTION_KEY is unset; deriving the MFA key from JWT_SECRET for development"
-            );
-            jwt_secret.clone()
-        }
-
-        _ => return Err("MFA_ENCRYPTION_KEY is required in production".into()),
-    };
     let integration_repo = Arc::new(
         orbis_infra::repositories::integration_repos::IntegrationRepoImpl::new(
             db.clone(),
