@@ -743,6 +743,12 @@ pub trait PaymentRepository: Send + Sync {
         filter: orbis_domain::queries::filters::PaymentFilter,
     ) -> Result<PaginatedList<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
+    async fn save_payment_posting(
+        &self,
+        payment: &Payment,
+        journal_entry: &JournalEntry,
+        fee_update: Option<(&StudentFee, &StudentFee)>,
+    ) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 

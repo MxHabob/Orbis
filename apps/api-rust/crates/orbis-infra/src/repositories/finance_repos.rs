@@ -19,8 +19,8 @@ use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, Order,
-    PaginatorTrait, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, EntityTrait,
+    Order, PaginatorTrait, QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -940,6 +940,148 @@ impl PaymentRepository for FinanceRepoImpl {
         Ok(())
     }
 
+    async fn save_payment_posting(
+        &self,
+        payment_record: &DomainPayment,
+        entry: &DomainJournalEntry,
+        fee_update: Option<(&DomainStudentFee, &DomainStudentFee)>,
+    ) -> Result<(), DomainError> {
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+        let result = async {
+            if let Some((previous, updated)) = fee_update {
+                let paid_amount_filter = if previous.paid_amount == Decimal::ZERO {
+                    Condition::any()
+                        .add(student_fee::Column::PaidAmount.eq(Some(Decimal::ZERO)))
+                        .add(student_fee::Column::PaidAmount.is_null())
+                } else {
+                    Condition::all()
+                        .add(student_fee::Column::PaidAmount.eq(Some(previous.paid_amount)))
+                };
+                let balance_due_filter = if previous.balance_due == previous.net_amount {
+                    Condition::any()
+                        .add(student_fee::Column::BalanceDue.eq(Some(previous.balance_due)))
+                        .add(student_fee::Column::BalanceDue.is_null())
+                } else {
+                    Condition::all()
+                        .add(student_fee::Column::BalanceDue.eq(Some(previous.balance_due)))
+                };
+                let update = StudentFeeEntity::update_many()
+                    .col_expr(
+                        student_fee::Column::PaidAmount,
+                        Expr::value(Some(updated.paid_amount)),
+                    )
+                    .col_expr(
+                        student_fee::Column::BalanceDue,
+                        Expr::value(Some(updated.balance_due)),
+                    )
+                    .col_expr(
+                        student_fee::Column::Status,
+                        Expr::value(updated.status.to_string()),
+                    )
+                    .col_expr(
+                        student_fee::Column::UpdatedAt,
+                        Expr::value(Some(updated.updated_at)),
+                    )
+                    .filter(student_fee::Column::Id.eq(previous.id))
+                    .filter(student_fee::Column::OrgId.eq(previous.org_id))
+                    .filter(paid_amount_filter)
+                    .filter(balance_due_filter)
+                    .exec(&txn)
+                    .await
+                    .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+                if update.rows_affected != 1 {
+                    return Err(DomainError::ConcurrencyConflict(
+                        "Student fee changed while the payment was being processed".into(),
+                    ));
+                }
+            }
+
+            let journal_active = journal_entry::ActiveModel {
+                id: Set(entry.id),
+                org_id: Set(entry.org_id),
+                reference_number: Set(entry.reference_number.clone()),
+                accounting_date: Set(entry.accounting_date),
+                amount: Set(entry.amount),
+                base_amount: Set(entry.base_amount),
+                currency_code: Set(entry.currency_code.clone()),
+                exchange_rate: Set(entry.exchange_rate),
+                debit_account_id: Set(Some(entry.debit_account_id)),
+                credit_account_id: Set(Some(entry.credit_account_id)),
+                description: Set(entry.description.clone()),
+                description_ar: Set(entry.description_ar.clone()),
+                source_type: Set(Some(entry.source_type.clone())),
+                source_id: Set(entry.source_id),
+                status: Set(Some(entry.status.to_string())),
+                is_reversed: Set(Some(entry.is_reversed)),
+                reversed_by: Set(entry.reversed_by),
+                reversal_reason: Set(entry.reversal_reason.clone()),
+                created_by: Set(entry.created_by),
+                updated_by: Set(entry.updated_by),
+                org_unit_id: Set(entry.org_unit_id),
+                version: Set(entry.version),
+                created_at: Set(entry.created_at.into()),
+                updated_at: Set(Some(entry.updated_at.into())),
+            };
+            journal_active
+                .insert(&txn)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+            let payment_active = payment::ActiveModel {
+                id: Set(payment_record.id),
+                org_id: Set(payment_record.org_id),
+                fee_id: Set(payment_record.fee_id),
+                enrollment_id: Set(payment_record.enrollment_id),
+                student_id: Set(payment_record.student_id),
+                account_id: Set(payment_record.account_id),
+                amount: Set(payment_record.amount),
+                currency_code: Set(Some(payment_record.currency_code.clone())),
+                exchange_rate: Set(Some(payment_record.exchange_rate)),
+                base_amount: Set(Some(payment_record.base_amount)),
+                method: Set(payment_record.method.to_string()),
+                reference: Set(payment_record.reference.clone()),
+                receipt_number: Set(payment_record.receipt_number.clone()),
+                journal_entry_id: Set(payment_record.journal_entry_id),
+                payer_name: Set(payment_record.payer_name.clone()),
+                payer_phone: Set(payment_record.payer_phone.clone()),
+                notes: Set(payment_record.notes.clone()),
+                paid_at: Set(payment_record.paid_at.into()),
+                created_by: Set(payment_record.created_by),
+                org_unit_id: Set(payment_record.org_unit_id),
+                created_at: Set(payment_record.created_at.into()),
+                updated_at: Set(Some(payment_record.updated_at.into())),
+            };
+            payment_active
+                .insert(&txn)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+            Ok::<(), DomainError>(())
+        }
+        .await;
+
+        match result {
+            Ok(()) => txn
+                .commit()
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string())),
+            Err(error) => {
+                if let Err(rollback_error) = txn.rollback().await {
+                    return Err(DomainError::Internal(format!(
+                        "{error}; transaction rollback failed: {rollback_error}"
+                    )));
+                }
+                Err(error)
+            }
+        }
+    }
+
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
         PaymentEntity::delete_by_id(id)
             .exec(&self.db)
@@ -1204,7 +1346,117 @@ fn map_payment_model_to_domain(m: payment::Model) -> DomainPayment {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sea_orm::QueryTrait;
+    use chrono::Utc;
+    use sea_orm::{Database, QueryTrait, Schema};
+
+    fn test_fee(org_id: Uuid, now: chrono::DateTime<Utc>) -> DomainStudentFee {
+        DomainStudentFee {
+            id: Uuid::new_v4(),
+            org_id,
+            period_id: Uuid::new_v4(),
+            student_id: Uuid::new_v4(),
+            enrollment_id: None,
+            fee_template_id: Uuid::new_v4(),
+            original_amount: Decimal::new(10000, 2),
+            discount_amount: Decimal::ZERO,
+            net_amount: Decimal::new(10000, 2),
+            paid_amount: Decimal::ZERO,
+            balance_due: Decimal::new(10000, 2),
+            status: FeeStatus::Pending,
+            due_date: chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap(),
+            discount_details: None,
+            installment_number: None,
+            notes: None,
+            created_by: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    fn test_entry(org_id: Uuid, id: Uuid, now: chrono::DateTime<Utc>) -> DomainJournalEntry {
+        DomainJournalEntry {
+            id,
+            org_id,
+            reference_number: format!("PAY-{}", id),
+            accounting_date: now.date_naive(),
+            amount: Decimal::new(4000, 2),
+            currency_code: "SAR".into(),
+            exchange_rate: Decimal::ONE,
+            base_amount: Decimal::new(4000, 2),
+            debit_account_id: Uuid::new_v4(),
+            credit_account_id: Uuid::new_v4(),
+            description: "Test payment".into(),
+            description_ar: None,
+            source_type: "student_payment".into(),
+            source_id: Some(id),
+            status: JournalPostingStatus::Posted,
+            lines: Vec::new(),
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: None,
+            created_at: now,
+            updated_at: now,
+            updated_by: None,
+            org_unit_id: None,
+            version: 1,
+        }
+    }
+
+    fn test_payment(
+        org_id: Uuid,
+        fee_id: Uuid,
+        id: Uuid,
+        journal_id: Uuid,
+        now: chrono::DateTime<Utc>,
+    ) -> DomainPayment {
+        DomainPayment {
+            id,
+            org_id,
+            fee_id: Some(fee_id),
+            enrollment_id: None,
+            student_id: None,
+            account_id: Uuid::new_v4(),
+            amount: Decimal::new(4000, 2),
+            currency_code: "SAR".into(),
+            exchange_rate: Decimal::ONE,
+            base_amount: Decimal::new(4000, 2),
+            method: PaymentMethod::Cash,
+            reference: None,
+            receipt_number: None,
+            journal_entry_id: Some(journal_id),
+            payer_name: None,
+            payer_phone: None,
+            notes: None,
+            paid_at: now,
+            created_by: None,
+            created_at: now,
+            updated_at: now,
+            org_unit_id: None,
+        }
+    }
+
+    async fn create_payment_tables(db: &DatabaseConnection) {
+        let schema = Schema::new(db.get_database_backend());
+        for statement in [
+            schema
+                .create_table_from_entity(StudentFeeEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
+                .create_table_from_entity(JournalEntryEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
+                .create_table_from_entity(PaymentEntity)
+                .if_not_exists()
+                .to_owned(),
+        ] {
+            db.execute(db.get_database_backend().build(&statement))
+                .await
+                .unwrap();
+        }
+    }
 
     #[test]
     fn student_fee_query_applies_organization_period_and_unpaid_filters() {
@@ -1279,5 +1531,70 @@ mod tests {
             assert!(values.contains("%receipt-7%"), "query values: {values}");
             assert!(values.contains(&org_id.to_string()));
         }
+    }
+
+    #[tokio::test]
+    async fn payment_posting_rolls_back_as_a_unit_and_rejects_stale_fee_balance() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        create_payment_tables(&db).await;
+        let repo = FinanceRepoImpl { db: db.clone() };
+        let now = Utc::now();
+        let org_id = Uuid::new_v4();
+        let fee = test_fee(org_id, now);
+        StudentFeeRepository::save(&repo, &fee).await.unwrap();
+
+        let failed_entry = test_entry(org_id, Uuid::new_v4(), now);
+        let failed_payment = test_payment(org_id, fee.id, Uuid::new_v4(), Uuid::new_v4(), now);
+        PaymentRepository::save(&repo, &failed_payment)
+            .await
+            .unwrap();
+        let mut updated_fee = fee.clone();
+        updated_fee.apply_payment(failed_payment.amount);
+        assert!(
+            repo.save_payment_posting(&failed_payment, &failed_entry, Some((&fee, &updated_fee)),)
+                .await
+                .is_err()
+        );
+        let unchanged_fee = StudentFeeRepository::find_by_id(&repo, fee.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(unchanged_fee.paid_amount, Decimal::ZERO);
+        assert_eq!(unchanged_fee.balance_due, fee.balance_due);
+        assert!(
+            JournalEntryEntity::find_by_id(failed_entry.id)
+                .one(&db)
+                .await
+                .unwrap()
+                .is_none()
+        );
+
+        let entry = test_entry(org_id, Uuid::new_v4(), now);
+        let payment = test_payment(org_id, fee.id, Uuid::new_v4(), entry.id, now);
+        let mut updated_fee = fee.clone();
+        updated_fee.apply_payment(payment.amount);
+        repo.save_payment_posting(&payment, &entry, Some((&fee, &updated_fee)))
+            .await
+            .unwrap();
+
+        let stale_entry = test_entry(org_id, Uuid::new_v4(), now);
+        let stale_payment = test_payment(org_id, fee.id, Uuid::new_v4(), stale_entry.id, now);
+        let mut stale_updated_fee = fee.clone();
+        stale_updated_fee.apply_payment(stale_payment.amount);
+        assert!(matches!(
+            repo.save_payment_posting(
+                &stale_payment,
+                &stale_entry,
+                Some((&fee, &stale_updated_fee)),
+            )
+            .await,
+            Err(DomainError::ConcurrencyConflict(_))
+        ));
+        let final_fee = StudentFeeRepository::find_by_id(&repo, fee.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(final_fee.paid_amount, payment.amount);
+        assert_eq!(PaymentEntity::find().all(&db).await.unwrap().len(), 2);
     }
 }

@@ -15,6 +15,24 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 
+fn validate_jwt_secret(secret: Option<String>) -> Result<String, &'static str> {
+    let secret = secret
+        .map(|value| value.trim().to_owned())
+        .filter(|value| value.len() >= 32)
+        .filter(|value| {
+            let normalized = value.to_ascii_lowercase();
+            !normalized.contains("replace-with")
+                && !normalized.contains("random-32-plus")
+                && normalized != "orbis_dev_super_secret_jwt_key_2026_educational_platform"
+                && normalized != "change-me"
+                && normalized != "changeme"
+        })
+        .ok_or(
+            "JWT_SECRET is required and must be a non-placeholder value of at least 32 characters",
+        )?;
+    Ok(secret)
+}
+
 fn start_lan_discovery(
     bind_host: &str,
     port: u16,
@@ -207,18 +225,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
 
     let event_bus = Arc::new(MemoryEventBus::new());
-    let jwt_secret = std::env::var("JWT_SECRET")
-        .ok()
-        .map(|value| value.trim().to_owned())
-        .filter(|value| value.len() >= 32)
-        .filter(|value| {
-            value != "orbis_dev_super_secret_jwt_key_2026_educational_platform"
-                && value != "change-me"
-                && value != "changeme"
-        })
-        .ok_or_else(|| {
-            "JWT_SECRET is required and must contain at least 32 characters; the development fallback is forbidden"
-        })?;
+    let jwt_secret = validate_jwt_secret(std::env::var("JWT_SECRET").ok())?;
     let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
         Ok(key) if !key.trim().is_empty() => key,
         _ if std::env::var("APP_ENV")
@@ -230,6 +237,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
             jwt_secret.clone()
         }
+
         _ => return Err("MFA_ENCRYPTION_KEY is required in production".into()),
     };
     let integration_repo = Arc::new(
@@ -816,4 +824,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     serve_result?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_jwt_secret;
+
+    #[test]
+    fn jwt_secret_validation_rejects_published_example_value() {
+        assert!(
+            validate_jwt_secret(Some(
+                "replace-with-a-random-32-plus-character-secret".to_string()
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn jwt_secret_validation_accepts_configured_secret() {
+        assert_eq!(
+            validate_jwt_secret(Some(
+                "a-private-random-secret-with-enough-length".to_string()
+            ))
+            .unwrap(),
+            "a-private-random-secret-with-enough-length"
+        );
+    }
 }

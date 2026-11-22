@@ -39,7 +39,10 @@ pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::Re
     let session = state.get_active_session();
     let (tenant_id, actor) = match session {
         Some(s) => (s.org_id, orbis_domain::iam::actor::Actor::User(s.user_id)),
-        None => (uuid::Uuid::nil(), orbis_domain::iam::actor::Actor::User(uuid::Uuid::nil())),
+        None => (
+            uuid::Uuid::nil(),
+            orbis_domain::iam::actor::Actor::User(uuid::Uuid::nil()),
+        ),
     };
     orbis_app::context::RequestContext {
         tenant_id,
@@ -60,12 +63,10 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
             .state_ref()
             .try_get::<crate::state::AppState>()
         {
-            if state.get_active_session().is_none()
-                && !is_allowed_before_auth(&command)
-            {
-                invoke.resolver.reject(
-                    "Authentication is required to execute this operation.".to_string(),
-                );
+            if state.get_active_session().is_none() && !is_allowed_before_auth(&command) {
+                invoke
+                    .resolver
+                    .reject("Authentication is required to execute this operation.".to_string());
                 return true;
             }
 

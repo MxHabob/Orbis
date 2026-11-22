@@ -96,8 +96,7 @@ fn validate_assessment_components(
     }
 
     let weighted_sum_valid = (total_weight - Decimal::ONE).abs() <= Decimal::new(1, 3);
-    let raw_score_sum_valid =
-        (total_max_score - scheme_max_score).abs() <= Decimal::new(1, 3);
+    let raw_score_sum_valid = (total_max_score - scheme_max_score).abs() <= Decimal::new(1, 3);
 
     if !weighted_sum_valid && !raw_score_sum_valid {
         return Err(DomainError::Validation(
@@ -312,9 +311,9 @@ impl AssessmentService {
                     .await?
                     .into_iter()
                     .find(|item| item.period_id == period_id)
-                    .ok_or_else(|| DomainError::NotFound(
-                        "Active enrollment not found for this period".into(),
-                    ))?
+                    .ok_or_else(|| {
+                        DomainError::NotFound("Active enrollment not found for this period".into())
+                    })?
             };
 
             if enrollment.org_id != org_id
@@ -356,13 +355,7 @@ impl AssessmentService {
         }
 
         let enrollment_id = self
-            .validate_grade_context(
-                org_id,
-                period_id,
-                student_id,
-                section_subject_id,
-                None,
-            )
+            .validate_grade_context(org_id, period_id, student_id, section_subject_id, None)
             .await?;
 
         let now = Utc::now();
@@ -1134,10 +1127,7 @@ impl AssessmentService {
             .check(ctx, Permission::AssessmentWrite)
             .await?;
 
-        validate_assessment_components(
-            max_score,
-            components.as_deref().unwrap_or_default(),
-        )?;
+        validate_assessment_components(max_score, components.as_deref().unwrap_or_default())?;
 
         let now = Utc::now();
         let scheme_id = Uuid::new_v4();

@@ -389,8 +389,14 @@ async fn register_user(
             .one(&state.db)
             .await
             .map_err(|e| ApiError::internal(e.to_string()))?;
-        if tenant_role.as_ref().map(|item| item.is_system).unwrap_or(true) {
-            return Err(ApiError::bad_request("Role does not belong to this organization"));
+        if tenant_role
+            .as_ref()
+            .map(|item| item.is_system)
+            .unwrap_or(true)
+        {
+            return Err(ApiError::bad_request(
+                "Role does not belong to this organization",
+            ));
         }
         let model = user_role_assignment::ActiveModel {
             id: Set(Uuid::new_v4()),
@@ -464,7 +470,9 @@ async fn provision_user(
             .await?
             .ok_or_else(|| ApiError::not_found(format!("Employee {} not found", emp_id)))?;
         if emp.org_id != ctx.tenant_id {
-            return Err(ApiError::forbidden("Employee belongs to another organization"));
+            return Err(ApiError::forbidden(
+                "Employee belongs to another organization",
+            ));
         }
         resolved_person_id = Some(emp.person_id);
         actor_type = ActorType::Employee;
@@ -475,7 +483,9 @@ async fn provision_user(
             .await?
             .ok_or_else(|| ApiError::not_found(format!("Student {} not found", std_id)))?;
         if std.org_id != ctx.tenant_id {
-            return Err(ApiError::forbidden("Student belongs to another organization"));
+            return Err(ApiError::forbidden(
+                "Student belongs to another organization",
+            ));
         }
         resolved_person_id = Some(std.person_id);
         actor_type = ActorType::Student;
@@ -589,6 +599,10 @@ async fn list_users(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<UserDto>>>, ApiError> {
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserRead)
+        .await?;
     let users = state.user_repo.find_by_org(ctx.tenant_id).await?;
     let mut dtos = Vec::new();
     for u in users {
@@ -625,7 +639,7 @@ async fn get_user(
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
     state
         .permission_checker
-        .check(&ctx.0, Permission::UserWrite)
+        .check(&ctx.0, Permission::UserRead)
         .await?;
     let user = state
         .user_repo
@@ -636,42 +650,6 @@ async fn get_user(
     // Tenant isolation
     if user.org_id != ctx.tenant_id && !ctx.actor.is_system() {
         return Err(ApiError::forbidden("Access denied to this user"));
-    }
-
-    let requires_profile_or_status_update =
-        p.full_name.is_some()
-            || p.full_name_ar.is_some()
-            || p.phone.is_some()
-            || p.national_id.is_some()
-            || p.gender.is_some()
-            || p.birth_date.is_some()
-            || p.address.is_some()
-            || p.avatar_url.is_some()
-            || p.is_active.is_some()
-            || p.status.is_some();
-    if requires_profile_or_status_update {
-        state
-            .permission_checker
-            .check(&ctx.0, Permission::UserWrite)
-            .await?;
-    }
-
-    let requires_profile_or_status_update =
-        p.full_name.is_some()
-            || p.full_name_ar.is_some()
-            || p.phone.is_some()
-            || p.national_id.is_some()
-            || p.gender.is_some()
-            || p.birth_date.is_some()
-            || p.address.is_some()
-            || p.avatar_url.is_some()
-            || p.is_active.is_some()
-            || p.status.is_some();
-    if requires_profile_or_status_update {
-        state
-            .permission_checker
-            .check(&ctx.0, Permission::UserWrite)
-            .await?;
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
@@ -716,6 +694,10 @@ pub async fn update_user(
     axum::extract::Path(id): axum::extract::Path<Uuid>,
     Json(p): Json<UpdateUserRequest>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserWrite)
+        .await?;
     let mut user = state
         .user_repo
         .find_by_id(id)
@@ -727,10 +709,10 @@ pub async fn update_user(
     }
 
     if let Some(ref name) = p.full_name {
-        let _ = state
+        state
             .auth_service
             .update_user(&ctx, id, Some(name.clone()))
-            .await;
+            .await?;
     }
 
     if let Some(is_active) = p.is_active {
@@ -810,7 +792,11 @@ pub async fn update_user(
                 .one(&state.db)
                 .await
                 .map_err(|e| ApiError::internal(e.to_string()))?;
-            if tenant_role.as_ref().map(|item| item.is_system).unwrap_or(true) {
+            if tenant_role
+                .as_ref()
+                .map(|item| item.is_system)
+                .unwrap_or(true)
+            {
                 return Err(ApiError::bad_request(
                     "Role does not belong to this organization",
                 ));
@@ -1156,7 +1142,11 @@ pub async fn save_permissions(
             .one(&state.db)
             .await
             .map_err(|e| ApiError::internal(e.to_string()))?;
-        if tenant_role.as_ref().map(|item| item.is_system).unwrap_or(true) {
+        if tenant_role
+            .as_ref()
+            .map(|item| item.is_system)
+            .unwrap_or(true)
+        {
             return Err(ApiError::bad_request(
                 "Permissions can only be assigned to editable tenant roles",
             ));

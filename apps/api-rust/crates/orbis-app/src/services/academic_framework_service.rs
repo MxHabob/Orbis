@@ -513,8 +513,7 @@ impl AcademicFrameworkService {
                 .await?
                 .into_iter()
                 .filter(|item| {
-                    item.status
-                        == orbis_domain::entities::enrollment::EnrollmentStatus::Active
+                    item.status == orbis_domain::entities::enrollment::EnrollmentStatus::Active
                 })
                 .count();
             if active_count as i32 >= capacity {

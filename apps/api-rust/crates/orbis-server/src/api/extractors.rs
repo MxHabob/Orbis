@@ -87,10 +87,8 @@ impl FromRequestParts<AppState> for AuthContext {
                     org_unit_path: None,
                 }))
             }
-            None => {
-                Err(ApiError::unauthorized("Missing Authorization header")
-                    .with_request_id(request_id.to_string()))
-            }
+            None => Err(ApiError::unauthorized("Missing Authorization header")
+                .with_request_id(request_id.to_string())),
         }
     }
 }

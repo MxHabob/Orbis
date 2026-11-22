@@ -390,7 +390,6 @@ pub struct FinanceService {
     pub payment_gateway: Arc<dyn PaymentGatewayPort>,
     pub notification_gateway: Arc<dyn NotificationPort>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
-    payment_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -474,7 +473,6 @@ impl FinanceService {
             payment_gateway,
             notification_gateway,
             permission_checker,
-            payment_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -501,7 +499,6 @@ impl FinanceService {
         self.permission_checker
             .check(ctx, Permission::ProcessPayment)
             .await?;
-        let _payment_guard = self.payment_lock.lock().await;
 
         if amount <= Decimal::ZERO {
             return Err(DomainError::Validation(
@@ -632,43 +629,48 @@ impl FinanceService {
         let mut receivable_acct = direct_receivable_account.unwrap_or(account_id);
         let mut student_resolved_id = student_id;
         let mut enrollment_resolved_id = enrollment_id;
+        let mut fee_update = None;
 
         if let Some(f_id) = fee_id {
-            if let Some(mut fee) = self.student_fee_repo.find_by_id(f_id).await? {
-                if fee.org_id != org_id {
+            let mut fee = self
+                .student_fee_repo
+                .find_by_id(f_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", f_id)))?;
+            if fee.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Fee belongs to another organization".into(),
+                ));
+            }
+            if amount > fee.balance_due {
+                return Err(DomainError::Validation(format!(
+                    "Payment amount ({}) exceeds fee balance due ({})",
+                    amount, fee.balance_due
+                )));
+            }
+            if !org_settings.finance.allow_partial_payments && amount < fee.balance_due {
+                return Err(DomainError::Validation(format!(
+                    "Partial payments are not permitted by organization policy. Full balance of {} is required.",
+                    fee.balance_due
+                )));
+            }
+            student_resolved_id = Some(fee.student_id);
+            enrollment_resolved_id = fee.enrollment_id;
+            let previous_fee = fee.clone();
+            fee.apply_payment(amount);
+            fee_update = Some((previous_fee, fee.clone()));
+
+            if let Some(template) = self
+                .fee_template_repo
+                .find_by_id(fee.fee_template_id)
+                .await?
+            {
+                if template.org_id != org_id {
                     return Err(DomainError::Unauthorized(
-                        "Fee belongs to another organization".into(),
+                        "Fee template belongs to another organization".into(),
                     ));
                 }
-                if amount > fee.balance_due {
-                    return Err(DomainError::Validation(format!(
-                        "Payment amount ({}) exceeds fee balance due ({})",
-                        amount, fee.balance_due
-                    )));
-                }
-                if !org_settings.finance.allow_partial_payments && amount < fee.balance_due {
-                    return Err(DomainError::Validation(format!(
-                        "Partial payments are not permitted by organization policy. Full balance of {} is required.",
-                        fee.balance_due
-                    )));
-                }
-                student_resolved_id = Some(fee.student_id);
-                enrollment_resolved_id = fee.enrollment_id;
-                fee.apply_payment(amount);
-                self.student_fee_repo.save(&fee).await?;
-
-                if let Some(template) = self
-                    .fee_template_repo
-                    .find_by_id(fee.fee_template_id)
-                    .await?
-                {
-                    if template.org_id != org_id {
-                        return Err(DomainError::Unauthorized(
-                            "Fee template belongs to another organization".into(),
-                        ));
-                    }
-                    receivable_acct = template.receivable_account_id;
-                }
+                receivable_acct = template.receivable_account_id;
             }
         }
 
@@ -754,8 +756,6 @@ impl FinanceService {
             return Err(DomainError::Validation(e));
         }
 
-        self.journal_repo.save(&entry).await?;
-
         // 6. Create Payment Record
         let payment = Payment {
             id: payment_id,
@@ -786,7 +786,15 @@ impl FinanceService {
             updated_at: now,
             org_unit_id: None,
         };
-        self.payment_repo.save(&payment).await?;
+        self.payment_repo
+            .save_payment_posting(
+                &payment,
+                &entry,
+                fee_update
+                    .as_ref()
+                    .map(|(previous, updated)| (previous, updated)),
+            )
+            .await?;
 
         // 7. Publish Events
         let _ = self
