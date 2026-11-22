@@ -56,7 +56,7 @@ function getSlotTitle(s: any): string {
 {#each slotsList as s (s.id ?? s.slot_index ?? Math.random())}
   {@const isBreak = Boolean(s.is_break)}
   <div
-    class="flex flex-col shrink-0 items-center justify-center border-e border-border/60 bg-muted/20 px-2 text-center select-none transition-colors {compact
+    class="sticky start-0 z-10 flex flex-col shrink-0 items-center justify-center border-e border-border/60 bg-muted/20 px-2 text-center select-none transition-colors {compact
       ? 'w-20'
       : 'w-28'} {className}"
   >

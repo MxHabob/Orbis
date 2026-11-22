@@ -4,7 +4,7 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
-const host = process.env.TAURI_DEV_HOST;
+const host = process.env.TAURI_DEV_HOST || "127.0.0.1";
 
 export default defineConfig(({ mode }) => {
   return {
@@ -73,7 +73,7 @@ export default defineConfig(({ mode }) => {
     },
     // Tauri expects a fixed port; fail if that port is not available
     server: {
-      port: 1520,
+      port: 4173,
       strictPort: true,
       shortcuts: false,
       host: host || undefined,
@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => {
         ? {
           protocol: "ws",
           host,
-          port: 1521,
+          port: 4174,
         }
         : undefined,
       watch: {

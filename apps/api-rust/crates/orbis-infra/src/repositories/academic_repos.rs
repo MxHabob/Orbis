@@ -33,6 +33,8 @@ impl SubjectRepository for AcademicRepoImpl {
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Subject>, DomainError> {
         let models = SubjectEntity::find()
             .filter(subject::Column::OrgId.eq(org_id))
+            .order_by_asc(subject::Column::SortOrder)
+            .order_by_asc(subject::Column::Name)
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -61,6 +63,9 @@ impl SubjectRepository for AcademicRepoImpl {
                 );
             }
         }
+        query = query
+            .order_by_asc(subject::Column::SortOrder)
+            .order_by_asc(subject::Column::Name);
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
         let page_size = pagination.page_size();
@@ -161,6 +166,9 @@ impl SectionRepository for AcademicRepoImpl {
         let models = SectionEntity::find()
             .filter(section::Column::OrgId.eq(org_id))
             .filter(section::Column::IsDeleted.eq(false))
+            .order_by_asc(section::Column::Level)
+            .order_by_asc(section::Column::Track)
+            .order_by_asc(section::Column::Code)
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -191,6 +199,10 @@ impl SectionRepository for AcademicRepoImpl {
         if let Some(ref lvl) = filter.level {
             query = query.filter(section::Column::Level.eq(lvl.clone()));
         }
+        query = query
+            .order_by_asc(section::Column::Level)
+            .order_by_asc(section::Column::Track)
+            .order_by_asc(section::Column::Code);
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
         let page_size = pagination.page_size();

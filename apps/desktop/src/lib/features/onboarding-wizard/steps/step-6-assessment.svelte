@@ -8,6 +8,7 @@ import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 let { orgId }: { orgId: string } = $props();
 const stepTasks = $derived(
@@ -16,6 +17,9 @@ const stepTasks = $derived(
 const taskStatus = $derived(stepTasks[0]?.status ?? "not_started");
 
 let activeTab = $state<"calculation" | "schemes">("calculation");
+const showYemenFramework =
+  orgContext.isSchool &&
+  String(orgContext.metadata?.country_code ?? "").toUpperCase() === "YE";
 
 async function refreshTasks() {
   await refreshOnboardingState(orgId, m.common_action_failed());
@@ -62,6 +66,7 @@ const YEMEN_STATUTORY_TIERS = [
     status={taskStatus}
   />
 
+  {#if showYemenFramework}
   <!-- Official Yemeni Assessment Architecture Overview -->
   <div class="rounded-xl border border-primary/25 bg-card/60 p-4 shadow-xs space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
@@ -82,7 +87,7 @@ const YEMEN_STATUTORY_TIERS = [
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-      {#each YEMEN_STATUTORY_TIERS as tier}
+      {#each YEMEN_STATUTORY_TIERS as tier (tier.title())}
         <div class="p-3 rounded-lg border {tier.color} flex flex-col justify-between space-y-2">
           <div>
             <div class="flex items-center justify-between gap-1 mb-1">
@@ -99,6 +104,7 @@ const YEMEN_STATUTORY_TIERS = [
       {/each}
     </div>
   </div>
+  {/if}
 
   <!-- Navigation Tabs: Calculation Policy vs Assessment Schemes -->
   <div class="flex items-center justify-between border-b border-border/70 pb-2">

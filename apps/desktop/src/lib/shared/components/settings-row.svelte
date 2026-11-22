@@ -31,8 +31,8 @@ let {
 }: Props = $props();
 </script>
 
-<div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border {last ? 'last:border-b-0' : ''} gap-4 {className}">
-  <div class="flex flex-col gap-1 text-start">
+<div class="min-w-0 px-4 py-4 sm:px-6 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,30rem)] lg:items-center border-b border-border {last ? 'last:border-b-0' : ''} gap-4 {className}">
+  <div class="min-w-0 flex flex-col gap-1 text-start">
     {#if headerSlot}
       {@render headerSlot()}
     {:else if title}
@@ -48,7 +48,7 @@ let {
   </div>
 
   {#if children}
-    <div class="w-full md:w-120 max-w-full shrink-0 flex items-center justify-end {controlClass}">
+    <div class="min-w-0 w-full max-w-full flex items-center justify-end {controlClass}">
       {@render children()}
     </div>
   {/if}

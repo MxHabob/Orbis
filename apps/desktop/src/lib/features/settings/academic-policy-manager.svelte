@@ -31,6 +31,7 @@ import type {
 } from "$lib/api";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 interface InputEditor {
   name: string;
@@ -298,6 +299,18 @@ const YEMENI_POLICY_PRESETS: PolicyPreset[] = [
   },
 ];
 
+const visiblePolicyPresets = $derived(
+  YEMENI_POLICY_PRESETS.filter((preset) => {
+    if (preset.id === "university_credit") {
+      return orgContext.isUniversity;
+    }
+    return (
+      orgContext.isSchool &&
+      String(orgContext.metadata?.country_code ?? "").toUpperCase() === "YE"
+    );
+  }),
+);
+
 function applyPreset(preset: PolicyPreset) {
   form.scale = preset.scale;
   form.outputName = preset.outputName;
@@ -344,7 +357,7 @@ function hydrateFromSettings(settings: CalculationEngineSettings) {
   ) {
     const inputs: CalculationInput[] = plan.inputs;
     const weights = new Map(
-      weightedItems.map((item) => [
+      (weightedItems ?? []).map((item) => [
         item.node.type === "variable" ? item.node.name : "",
         String(item.weight),
       ]),
@@ -669,7 +682,8 @@ function replaceCustomPlan() {
             </CardContent>
           </Card>
         {:else}
-          <!-- Yemeni Presets Selector -->
+          {#if visiblePolicyPresets.length > 0}
+          <!-- Contextual Policy Presets Selector -->
           <div class="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
             <div class="flex items-center justify-between">
               <div>
@@ -684,7 +698,7 @@ function replaceCustomPlan() {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {#each YEMENI_POLICY_PRESETS as preset}
+              {#each visiblePolicyPresets as preset (preset.id)}
                 <button
                   type="button"
                   class="flex flex-col text-start p-3 rounded-lg border border-border/70 bg-card hover:border-primary hover:bg-card/80 transition-all cursor-pointer group shadow-xs"
@@ -705,6 +719,7 @@ function replaceCustomPlan() {
               {/each}
             </div>
           </div>
+          {/if}
 
           <!-- Core Calculation Parameters -->
           <Card class="overflow-hidden border-border/70 shadow-xs">

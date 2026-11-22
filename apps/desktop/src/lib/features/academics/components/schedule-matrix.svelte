@@ -91,10 +91,10 @@ function getLessonForClassSlot(classId: string, slotId: string) {
   </div>
   <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
     <!-- Matrix Grid -->
-    <table class="w-full border-collapse text-xs select-none">
+    <table class="w-full min-w-[700px] border-collapse text-xs select-none">
       <thead class="sticky top-0 z-20 bg-card shadow-2xs">
         <tr class="border-b border-border/60 bg-muted/20">
-          <th class="p-2 border-e border-border/60 text-start w-32 font-bold text-muted-foreground">
+          <th class="sticky start-0 z-30 p-2 border-e border-border/60 text-start w-32 min-w-32 font-bold text-muted-foreground bg-muted/20">
             {m.common_table_class()}
           </th>
           {#each enrichedSlots as slot (slot.id)}
@@ -114,7 +114,7 @@ function getLessonForClassSlot(classId: string, slotId: string) {
         {#each classes as cls (cls.id)}
           <tr class="border-b border-border/40 last:border-b-0 hover:bg-muted/10 transition-colors">
             <!-- Class Column Header -->
-            <td class="p-2 border-e border-border/60 font-bold text-foreground bg-muted/10">
+            <td class="sticky start-0 z-10 p-2 border-e border-border/60 font-bold text-foreground bg-card">
               <div class="flex items-center gap-1.5 truncate">
                 <Users size={12} class="text-primary shrink-0" />
                 <span class="truncate">{l(cls.name_ar, cls.name)}</span>

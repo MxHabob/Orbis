@@ -116,8 +116,8 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 </script>
 
 <TooltipProvider delayDuration={150}>
-	<div class="flex h-full w-12 shrink-0 flex-col items-center justify-between py-3 select-none">
-		<div class="flex flex-col items-center gap-3">
+	<div class="app-sidebar flex h-full w-12 shrink-0 flex-col items-center justify-between py-2 select-none">
+		<div class="flex min-h-0 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden scrollbar-hide pb-1">
 			<OrgSidebarSwitcher
         {orgId}
         orgName={orgNameDisplay}
@@ -126,7 +126,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
       />
 
 			<!-- Divider -->
-			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 self-center"></div>
+			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 self-center shrink-0"></div>
 
 			{#each navItems as item (item.href)}
 				<div class="flex">
@@ -154,8 +154,8 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			{/each}
 		</div>
 
-		<div class="flex flex-col gap-2 items-center w-full relative">
-			<div class="flex flex-col items-center w-8 gap-1.5">
+		<div class="flex shrink-0 flex-col gap-1 items-center w-full relative">
+			<div class="sidebar-aux flex flex-col items-center w-8 gap-1">
 				<OnboardingPopover {orgId} />
 				<GitIntegrationPopover {orgId} />
 				<UpgradeButton />
@@ -167,3 +167,18 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 		</div>
 	</div>
 </TooltipProvider>
+
+<style>
+	@media (max-height: 720px) {
+		.app-sidebar :global(.sidebar-aux) {
+			display: none;
+		}
+	}
+
+	@media (max-height: 600px) {
+		.app-sidebar {
+			padding-top: 0.25rem;
+			padding-bottom: 0.25rem;
+		}
+	}
+</style>

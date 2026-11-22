@@ -6,11 +6,9 @@ Matches the design, layout, and UX of the Rooms manager page.
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api, extractErrorMessage, type SubjectDto } from "$lib/api";
+import { extractErrorMessage, queryKeys, type SubjectDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { toast } from "@orbis/ui";
 import { formatDate, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, Search, Refresh } from "@orbis/icons";
@@ -22,34 +20,34 @@ import {
 } from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { subjectFilterFields } from "$lib/core/filter-configs";
+import { createSubjectsQuery } from "$lib/features/academics";
+import { useQueryClient } from "@tanstack/svelte-query";
 
 let { orgId }: { orgId: string } = $props();
 
 // State
-let subjects = $state<SubjectDto[]>([]);
-let isLoading = $state(true);
+const queryClient = useQueryClient();
+const subjectsQuery = createSubjectsQuery(() => orgId);
+const subjects = $derived<SubjectDto[]>(subjectsQuery.data ?? []);
+const isLoading = $derived(subjectsQuery.isLoading || subjectsQuery.isFetching);
+const loadError = $derived(
+  subjectsQuery.error ? extractErrorMessage(subjectsQuery.error) : null,
+);
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
+let editingSubject = $state<SubjectDto | null>(null);
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
   conditions: [],
   groups: [],
 });
 
-async function loadSubjects() {
-  isLoading = true;
-  try {
-    subjects = await api.listSubjects();
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isLoading = false;
-  }
+async function refreshSubjects() {
+  await queryClient.invalidateQueries({
+    queryKey: queryKeys.academic.subjects(orgId),
+  });
+  await subjectsQuery.refetch();
 }
-
-onMount(() => {
-  if (orgId) loadSubjects();
-});
 
 const gridSource = $derived(
   subjects.map((s, i) => ({
@@ -59,6 +57,7 @@ const gridSource = $derived(
     name_en: s.name || "—",
     code: s.code || "—",
     credit_hours: s.credit_hours ?? s.periods_per_week ?? 3,
+    sort_order: s.sort_order ?? i + 1,
     status: s.is_active !== false ? "active" : "inactive",
     created_at_display: s.created_at
       ? formatDate(s.created_at, "datetime")
@@ -123,6 +122,17 @@ const columns: OrbisColumnDef[] = [
     type: "number",
   },
   {
+    id: "sort_order",
+    prop: "sort_order",
+    header: "Sort",
+    name: "Sort",
+    width: 90,
+    size: 90,
+    readonly: false,
+    align: "center",
+    type: "number",
+  },
+  {
     id: "status",
     prop: "status",
     header: m.common_word_status(),
@@ -156,11 +166,15 @@ const columns: OrbisColumnDef[] = [
 ];
 
 function openCreateSheet() {
+  editingSubject = null;
   isSheetOpen = true;
 }
 
 function handleGridAction(event: GridActionEvent) {
   if (event.actionId === "dblclick" || event.actionId === "edit") {
+    editingSubject =
+      subjects.find((subject) => String(subject.id) === String(event.row.id)) ??
+      null;
     isSheetOpen = true;
   }
 }
@@ -186,7 +200,7 @@ function handleGridAction(event: GridActionEvent) {
         bind:filter={activeFilter}
         fields={subjectFilterFields}
       />
-      <Button variant="ghost" size="icon-sm" onclick={loadSubjects} class="text-muted-foreground">
+      <Button variant="ghost" size="icon-sm" onclick={refreshSubjects} class="text-muted-foreground">
         {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
       </Button>
       <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
@@ -195,6 +209,12 @@ function handleGridAction(event: GridActionEvent) {
       </Button>
     </div>
   </div>
+
+  {#if loadError}
+    <div role="alert" class="shrink-0 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+      {loadError}
+    </div>
+  {/if}
 
   <div class="flex-1 min-h-0">
     <OrbisGrid
@@ -217,5 +237,6 @@ function handleGridAction(event: GridActionEvent) {
 <SubjectCreateSheet
   bind:open={isSheetOpen}
   {orgId}
-  onSuccess={loadSubjects}
+  subject={editingSubject}
+  onSuccess={refreshSubjects}
 />

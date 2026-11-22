@@ -1,25 +1,39 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, type CreateSectionRequest, queryKeys } from "$lib/api";
+import { api, type CreateSectionRequest, type UpdateSectionRequest, type SectionDto, queryKeys } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-import { Select, SelectTrigger, SelectContent } from "@orbis/ui/select";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui/select";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
-import { classFormInputSchema } from "@orbis/schemas";
+import { classFormInputSchema, type ClassFormInput } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { untrack } from "svelte";
+
+interface ClassFormValues {
+  unit_id: string;
+  name: string;
+  name_ar: string;
+  code: string;
+  grade_level: string;
+  track: string;
+  capacity: number;
+  color: string;
+}
 
 let {
   orgId,
+  section,
   onSuccess,
   onCancel,
 }: {
   orgId: string;
+  section?: SectionDto | null;
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
@@ -32,17 +46,17 @@ const unitsQuery = createQuery(() => ({
 const units = $derived(unitsQuery.data ?? []);
 
 // Form state
-const form = new FormController({
-  initialValues: {
-    unit_id: "",
-    name: "",
-    name_ar: "",
-    code: "",
-    grade_level: "",
-    track: "",
-    capacity: 30,
-    color: "",
-  },
+const form = new FormController<ClassFormValues, ClassFormInput>({
+  initialValues: untrack(() => ({
+    unit_id: section?.unit_id ? String(section.unit_id) : "",
+    name: section?.name ?? "",
+    name_ar: section?.name_ar ?? "",
+    code: section?.code ?? "",
+    grade_level: section?.level ?? "",
+    track: section?.track ?? section?.division ?? "",
+    capacity: section?.capacity ?? 30,
+    color: section?.color ?? "",
+  })),
   schema: classFormInputSchema,
 });
 
@@ -58,7 +72,7 @@ async function handleSubmit(e: SubmitEvent) {
       throw new Error(m.shared_ui_organizational_unit_required());
     }
 
-    const request: CreateSectionRequest = {
+    const request = {
       unit_id: unitId,
       name: values.name || values.name_ar || "",
       name_ar: values.name_ar || undefined,
@@ -67,9 +81,14 @@ async function handleSubmit(e: SubmitEvent) {
       color: values.color || undefined,
       level: values.grade_level || "1",
       track: values.track || undefined,
-    };
-    await api.createSection(request);
-    toast.success(m.academics_class_toast_success());
+    } as const;
+    if (section) {
+      await api.updateSection(section.id, request as UpdateSectionRequest);
+      toast.success(m.common_account_save_success());
+    } else {
+      await api.createSection(request as CreateSectionRequest);
+      toast.success(m.academics_class_toast_success());
+    }
   });
   if (submitted) {
     form.reset();
@@ -85,7 +104,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground">
-			{m.academics_class_sheet_title()}
+			{section ? m.common_action_edit() : m.academics_class_sheet_title()}
 		</SheetTitle>
 	</SheetHeader>
 
@@ -140,7 +159,7 @@ async function handleSubmit(e: SubmitEvent) {
 							{units.find(u => String(u.id) === (form.values.unit_id || String(units[0]?.id)))?.name_ar || units.find(u => String(u.id) === (form.values.unit_id || String(units[0]?.id)))?.name || m.common_word_unit()}
 						</SelectTrigger>
 						<SelectContent class="max-h-52">
-							{#each units as u}
+							{#each units as u (u.id)}
 								<SelectItem value={String(u.id)}>
 									{u.name_ar || u.name}
 								</SelectItem>
@@ -154,7 +173,7 @@ async function handleSubmit(e: SubmitEvent) {
 		</div>
 
 		<!-- Two Columns Row -->
-		<div class="grid grid-cols-2 gap-4">
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 			<!-- Class Code -->
 			<FormField id="code" label={m.academics_class_label_code()} error={fieldError("code")}>
 				{#snippet children()}
@@ -224,7 +243,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={form.isSubmitting}
 		>
-			{form.isSubmitting ? m.common_state_saving() : m.academics_class_button_save()}
+			{form.isSubmitting ? m.common_state_saving() : m.settings_action_save_changes()}
 		</Button>
 	</div>
 </form>

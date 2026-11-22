@@ -42,7 +42,7 @@ function isActive(itemPath: string): boolean {
 
 {#if !isStandaloneWindow(page.url)}
   <nav
-    class="flex items-center gap-6 border-b border-border/20 h-10 w-full shrink-0 select-none overflow-x-auto scrollbar-hide"
+    class="flex items-center gap-3 sm:gap-5 border-b border-border/20 h-10 w-full shrink-0 select-none overflow-x-auto overflow-y-hidden scrollbar-hide px-2"
   >
     {#each items as item (item.path)}
       <a

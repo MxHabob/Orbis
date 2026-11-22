@@ -95,9 +95,9 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
 
 <div class="w-full shrink-0 border-b border-border/60 bg-card select-none">
   <!-- Top Primary Row: Perspectives + Period + Search + Actions -->
-  <div class="flex h-12 w-full items-center justify-between px-3 gap-2">
+  <div class="flex min-h-12 w-full items-center justify-between px-2 sm:px-3 py-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
     <!-- Left: Period Selector & View Mode Segmented Tabs -->
-    <div class="flex items-center gap-2 min-w-0">
+    <div class="flex items-center gap-2 min-w-max shrink-0">
       <!-- Period Select Dropdown -->
       <Select
         type="single"
@@ -126,13 +126,13 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
       <div class="h-4 w-px bg-border/60 mx-1 hidden sm:block"></div>
 
       <!-- Segmented View Tabs -->
-      <div class="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40">
+      <div class="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40 overflow-x-auto scrollbar-hide">
         {#each viewModes as mode}
           {@const Icon = mode.icon}
           {@const isActive = viewMode === mode.id}
           <button
             type="button"
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer {isActive
+            class="flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer {isActive
               ? 'bg-card text-foreground shadow-2xs font-bold'
               : 'text-muted-foreground hover:text-foreground'}"
             onclick={() => (viewMode = mode.id)}
@@ -195,7 +195,7 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
 
   <!-- Bottom Secondary Row: Contextual Resource Dropdowns & AdjustmentsHorizontal Chips -->
   {#if viewMode !== "matrix"}
-    <div class="flex h-10 w-full items-center justify-between px-3 gap-2 bg-muted/15 border-t border-border/40 text-xs">
+    <div class="flex h-10 w-full items-center justify-between px-2 sm:px-3 gap-2 bg-muted/15 border-t border-border/40 text-xs overflow-x-auto overflow-y-hidden scrollbar-hide">
       <div class="flex items-center gap-2 min-w-0 flex-1">
         <!-- Class Selector (When in Class view) -->
         {#if viewMode === "class"}
