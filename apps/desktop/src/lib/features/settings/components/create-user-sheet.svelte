@@ -684,7 +684,7 @@ async function handleSubmit() {
                         `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim(),
                       ) || m.common_ledger_entity_student()}
                     getItemSubtitle={(std: StudentDetailDto) =>
-                      `${std.student?.student_number || "—"} • ${std.enrollment?.class_name || m.ui_copy_unassigned_df62ef28()}`}
+                      std.student?.student_number || "—"}
                     getItemBadge={(std: StudentDetailDto) =>
                       std.student?.user_id ? m.ui_copy_has_account_ffd704f7() : m.ui_copy_available_eebdcd8c()}
                     onchange={handleSelectStudent}
@@ -725,7 +725,7 @@ async function handleSubmit() {
                           `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim(),
                         ) || m.common_ledger_entity_student()}
                       getItemSubtitle={(std: StudentDetailDto) =>
-                        `${std.student?.student_number || "—"} • ${std.enrollment?.class_name || ""}`}
+                        std.student?.student_number || "—"}
                       onchange={handleSelectGuardianStudent}
                     />
                     {/snippet}

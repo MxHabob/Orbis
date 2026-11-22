@@ -206,30 +206,32 @@ async function savePolicy() {
       ...latestSettings,
       academic: {
         ...latestSettings.academic,
-        passing_threshold_percentage: numericValue(
-          form.passingThreshold,
-          "Passing threshold",
-          { minimum: 0, maximum: 100 },
+        passing_threshold_percentage: String(
+          numericValue(form.passingThreshold, "Passing threshold", {
+            minimum: 0,
+            maximum: 100,
+          }),
         ),
-        honors_threshold_percentage: numericValue(
-          form.honorsThreshold,
-          "Honors threshold",
-          { minimum: 0, maximum: 100 },
+        honors_threshold_percentage: String(
+          numericValue(form.honorsThreshold, "Honors threshold", {
+            minimum: 0,
+            maximum: 100,
+          }),
         ),
-        minimum_final_exam_score: optionalNumericValue(
-          form.minimumFinalExamScore,
-          "Minimum final exam score",
-          { minimum: 0 },
-        ),
+        minimum_final_exam_score:
+          optionalNumericValue(form.minimumFinalExamScore, "Minimum final exam score", {
+            minimum: 0,
+          })?.toString() ?? null,
         max_failed_subjects_for_conditional_pass: numericValue(
           form.maxFailedSubjects,
           "Maximum failed subjects",
           { integer: true, minimum: 0 },
         ),
-        min_attendance_rate: numericValue(
-          form.minimumAttendance,
-          "Minimum attendance rate",
-          { minimum: 0, maximum: 100 },
+        min_attendance_rate: String(
+          numericValue(form.minimumAttendance, "Minimum attendance rate", {
+            minimum: 0,
+            maximum: 100,
+          }),
         ),
         ranking_enabled: form.rankingEnabled,
         ranking_scope: form.rankingScope,

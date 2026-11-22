@@ -13,7 +13,10 @@ import { api } from "$lib/api";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import { Label } from "@orbis/ui/label";
 
-type CurrencyOption = string | CurrencyDto;
+type CurrencyOption =
+  | string
+  | (Pick<CurrencyDto, "code" | "name" | "symbol"> &
+      Partial<Pick<CurrencyDto, "name_ar" | "exchange_rate" | "is_base">>);
 
 let {
   title = m.finance_ledger_currency(),

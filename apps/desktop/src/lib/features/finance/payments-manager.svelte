@@ -20,6 +20,7 @@ import {
   queryClient,
   queryKeys,
   type AccountDto,
+  type EnrollmentDto,
   type PaymentDto,
 } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -96,7 +97,7 @@ const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
 // ── State ──────────────────────────────────────────────────────────────
 let accounts = $state<AccountDto[]>([]);
 let treasuries = $state<AccountDto[]>([]);
-let students = $state<any[]>([]);
+let students = $state<EnrollmentDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
 let showAddForm = $state(false);
@@ -223,16 +224,7 @@ async function loadData(refreshPayments = true) {
     accounts = accountsList || [];
     treasuries = (accountsList || []).filter(isCashOrBankAccount);
 
-    students = (enrollmentsList || []).map((e: any) => ({
-      id: String(e.id),
-      full_name:
-        e.full_name ||
-        e.name_ar ||
-        e.name_en ||
-        e.student_number ||
-        m.finance_ui_student_number_fallback({ id: e.id }),
-      student_number: e.student_number || "",
-    }));
+    students = enrollmentsList || [];
 
     if (treasuries.length > 0 && !selectedTreasuryId) {
       selectedTreasuryId = treasuries[0].id;
@@ -439,44 +431,38 @@ async function handleSavePayment() {
 
 // ── Grid Data ─────────────────────────────────────────────────────────
 function toPaymentGridRow(p: PaymentDto, idx: number) {
-  const student = students.find(
-    (s) => String(s.id) === String(p.enrollment_id),
+  const enrollment = students.find(
+    (item) =>
+      (p.enrollment_id && item.id === p.enrollment_id) ||
+      (!p.enrollment_id && p.student_id && item.student_id === p.student_id),
   );
-  const accountName =
-    p.payer_name || p.student_name || student?.full_name || "—";
+  const accountName = p.payer_name || enrollment?.student_number || "—";
   const treasury = treasuries.find(
-    (t) => String(t.id) === String(p.account_id || p.cash_account_id),
+    (t) => String(t.id) === String(p.account_id),
   );
   const treasuryName = treasury
     ? treasury.name_ar || treasury.name || m.finance_ui_treasury()
     : m.finance_ui_main_treasury();
   const amt = Number(p.amount || 0);
-  const curr = p.currency_code || p.currency || "YER";
+  const curr = p.currency_code || "YER";
 
   return {
     ...p,
-    payment_method: p.payment_method || p.method,
+    payment_method: p.method,
     __idx: idx + 1,
     receipt_display: p.receipt_number || p.id.slice(0, 8),
-    date_display: p.paid_at
-      ? formatDate(p.paid_at)
-      : p.payment_date
-        ? formatDate(p.payment_date)
-        : p.created_at
-          ? formatDate(p.created_at)
-          : "—",
+    date_display: formatDate(p.paid_at || p.created_at) || "—",
     counter_account_display: accountName,
     treasury_display: treasuryName,
     amount_formatted: formatCurrency(amt, curr),
     currency_display: curr,
     method_display:
-      (p.method || p.payment_method) === "bank_transfer" ||
-      p.payment_method === "Bank"
+      p.method === "bank_transfer" || p.method === "Bank"
         ? m.finance_ui_payment_method_bank_transfer()
-        : p.method === "check" || p.payment_method === "Check"
+        : p.method === "check" || p.method === "Check"
           ? m.finance_ui_payment_method_check()
           : m.finance_ui_payment_method_cash(),
-    notes_display: p.notes || "—",
+    reference_display: p.reference || "—",
     status_display: m.finance_ui_receipt_status(),
   };
 }
@@ -493,29 +479,23 @@ const selectedPayments = $derived(
 );
 const paymentPrintContexts = $derived(
   selectedPayments.map((payment) => {
-    const record = payment as PaymentDto & {
-      student_name?: string;
-      fee_name?: string;
-      payment_method?: string;
-      payment_date?: string;
-    };
     return {
       receipt: {
-        number: record.receipt_number || record.id.slice(0, 8),
-        date: record.paid_at || record.payment_date || record.created_at,
-        payerName: record.payer_name || record.student_name || "",
-        studentName: record.student_name || "",
-        amount: Number(record.amount),
+        number: payment.receipt_number || payment.id.slice(0, 8),
+        date: payment.paid_at || payment.created_at,
+        payerName: payment.counter_account_display,
+        studentName: payment.counter_account_display,
+        amount: Number(payment.amount),
         amountWords: "",
-        description: record.fee_name || record.notes || "",
-        paymentMethod: record.payment_method || record.method || "",
-        referenceNumber: record.reference || "",
+        description: payment.reference || "",
+        paymentMethod: payment.method,
+        referenceNumber: payment.reference || "",
         cashierName: "",
       },
       $org: {
         name: orgContext.name,
         name_ar: orgContext.nameAr,
-        currency: record.currency_code || orgContext.baseCurrency,
+        currency: payment.currency_code || orgContext.baseCurrency,
         logo_url: orgContext.logo,
         primary_color: orgContext.primaryColor,
       },
@@ -615,10 +595,10 @@ const columns: OrbisColumnDef[] = [
     align: "center",
   },
   {
-    id: "notes_display",
-    prop: "notes_display",
-    header: m.finance_ui_description_notes(),
-    name: m.finance_ui_description_notes(),
+    id: "reference_display",
+    prop: "reference_display",
+    header: m.finance_ui_reference(),
+    name: m.finance_ui_reference(),
     width: 220,
     size: 220,
     readonly: true,
@@ -653,7 +633,7 @@ async function exportCsv() {
         payment.amount_formatted,
         payment.currency_display,
         payment.method_display,
-        payment.notes_display,
+        payment.reference_display,
         payment.status_display,
       ]);
     const csv = [
@@ -665,7 +645,7 @@ async function exportCsv() {
         m.finance_ui_amount(),
         m.finance_ui_currency(),
         m.finance_ui_payment_method(),
-        m.finance_ui_notes(),
+        m.finance_ui_reference(),
         m.finance_ui_status(),
       ],
       ...rows,
@@ -741,7 +721,7 @@ async function exportCsv() {
 
         <DateRangeFilter bind:value={dateRange} />
 
-        <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
+        <Button variant="ghost" size="icon-sm" onclick={() => { void loadData(); }} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
         </Button>
 

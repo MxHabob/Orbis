@@ -80,8 +80,8 @@ const studentFullName = $derived(
   (person?.first_name && person?.last_name
     ? `${person.first_name} ${person.last_name}`
     : "") ||
-    person?.name_ar ||
-    person?.name_en ||
+    person?.full_name_ar ||
+    person?.full_name ||
     person?.full_name ||
     "",
 );
@@ -122,9 +122,9 @@ async function handleStudentAvatarUpload(url: string) {
 }
 
 const currentClass = $derived(
-  enrollment?.class_id
+  enrollment?.section_id
     ? (classesQuery.data ?? []).find(
-        (c: any) => String(c.id) === String(enrollment.class_id),
+        (c: any) => String(c.id) === String(enrollment.section_id),
       )
     : null,
 );
@@ -188,8 +188,8 @@ async function transferClass() {
   isTransferring = true;
   try {
     await api.transferClass({
-      enrollmentId: enrollment?.id || studentId,
-      targetClassId: transferTargetClassId,
+      enrollment_id: enrollment?.id || studentId,
+      target_class_id: transferTargetClassId,
     });
     toast.success(m.common_form_success_update());
     showTransferDialog = false;
@@ -206,7 +206,8 @@ async function transferClass() {
   }
 }
 
-function getClassName(clsId: string) {
+function getClassName(clsId: string | null | undefined) {
+  if (!clsId) return m.ui_copy_unassigned_df62ef28();
   const cls = (classesQuery.data ?? []).find(
     (c: any) => String(c.id) === String(clsId),
   );

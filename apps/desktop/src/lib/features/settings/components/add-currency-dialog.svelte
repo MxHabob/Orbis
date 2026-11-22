@@ -249,7 +249,7 @@ async function handleSubmit(e: Event) {
       symbol: values.symbol,
       symbol_position: values.symbol_position,
       decimal_places: values.decimal_places,
-      exchange_rate: values.exchange_rate,
+      exchange_rate: String(values.exchange_rate),
       is_base: values.is_base,
     };
     if (currency) await api.updateCurrency(currency.code, request);

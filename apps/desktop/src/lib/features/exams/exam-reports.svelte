@@ -181,7 +181,7 @@ function handlePrintTemplate() {
     exam: {
       sessionId: selectedSessionId || null,
       sessionName:
-        session?.title_ar || session?.title || activePeriodName || "",
+        session?.name_ar || session?.name || activePeriodName || "",
       hallId: selectedRoomId || null,
       hallName: room?.name_ar || room?.name || "",
       classId: selectedSectionId || null,
@@ -282,12 +282,12 @@ function handlePrintTemplate() {
                   <Label class="text-xs font-medium text-muted-foreground">{m.exam_reports_session_label()}</Label>
                   <Select type="single" value={selectedSessionId} onValueChange={(v) => (selectedSessionId = v ?? "")}>
                     <SelectTrigger class="h-8 text-xs bg-background/50">
-                      <span>{examSessions.find((s) => String(s.id) === selectedSessionId)?.title_ar || examSessions.find((s) => String(s.id) === selectedSessionId)?.title || m.exam_reports_all_sessions()}</span>
+                      <span>{examSessions.find((s) => String(s.id) === selectedSessionId)?.name_ar || examSessions.find((s) => String(s.id) === selectedSessionId)?.name || m.exam_reports_all_sessions()}</span>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="" class="text-xs">{m.exam_reports_all_sessions()}</SelectItem>
                       {#each examSessions as sess (sess.id)}
-                        <SelectItem value={String(sess.id)} class="text-xs">{sess.title_ar || sess.title}</SelectItem>
+                        <SelectItem value={String(sess.id)} class="text-xs">{sess.name_ar || sess.name}</SelectItem>
                       {/each}
                     </SelectContent>
                   </Select>

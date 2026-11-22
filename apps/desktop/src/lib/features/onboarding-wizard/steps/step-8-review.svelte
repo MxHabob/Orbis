@@ -54,7 +54,7 @@ const completedRequiredTaskCount = $derived(
 );
 
 function getBlockingReason(task: SetupTaskDto): string {
-  let reason = l(task.blocking_reason_ar, task.blocking_reason);
+  let reason = l(task.blocking_reason_ar, task.blocking_reason) ?? "";
   for (const dependencyId of task.dependencies) {
     const dependency = tasks.find((item) => item.id === dependencyId);
     if (dependency && reason.includes(dependencyId)) {
