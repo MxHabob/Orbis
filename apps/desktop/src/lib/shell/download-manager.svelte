@@ -20,9 +20,11 @@ let shouldShowDownloadManager = $derived(
     updateManager.isDownloading ||
     updateManager.isApplying ||
     updateManager.isReadyToRestart ||
+    (updateManager.isOnline && updateManager.error !== null) ||
     (updateManager.isOnline && updateManager.updateResult?.has_update === true) ||
     solverSetup?.state === "preparing" ||
-    solverSetup?.state === "ready",
+    (updateManager.isOnline && solverSetup?.state === "failed") ||
+    (updateManager.isOnline && solverSetup?.state === "ready"),
 );
 
 onMount(() => {
@@ -34,8 +36,13 @@ onMount(() => {
     "solver-setup-status-changed",
     ({ payload }) => {
       if (payload.state === "failed") {
-        solverSetup = null;
-        isOpen = false;
+        if (updateManager.isOnline) {
+          solverSetup = payload;
+          isOpen = true;
+        } else {
+          solverSetup = null;
+          isOpen = false;
+        }
       } else {
         solverSetup = payload;
       }
@@ -60,7 +67,12 @@ onMount(() => {
       if (current.state === "preparing") {
         solverSetup = current;
       } else if (current.state === "failed") {
-        solverSetup = null;
+        if (updateManager.isOnline) {
+          solverSetup = current;
+          isOpen = true;
+        } else {
+          solverSetup = null;
+        }
       } else if (current.state === "ready") {
         solverSetup = current;
       }

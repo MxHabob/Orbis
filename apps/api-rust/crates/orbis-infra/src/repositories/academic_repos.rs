@@ -6,7 +6,7 @@ use orbis_domain::entities::{section::Section, section_subject::SectionSubject, 
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    Set,
+    QueryOrder, Set,
 };
 use uuid::Uuid;
 

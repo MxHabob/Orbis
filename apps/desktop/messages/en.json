@@ -5959,5 +5959,7 @@
   "settings_assessment_level_certificate": "Certificate",
   "settings_assessment_level_certificate_cumulative": "Cumulative Certificate",
   "settings_assessment_scope_all": "All",
+  "settings_assessment_component_weight_total_error": "Assessment component weights must total 100%.",
+  "settings_assessment_component_passing_error": "Passing score cannot exceed the component maximum score.",
   "common_period_type_annual": "Annual"
 }

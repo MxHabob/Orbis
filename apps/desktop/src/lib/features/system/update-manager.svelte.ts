@@ -71,6 +71,10 @@ class UpdateManager {
   }
 
   async downloadUpdate() {
+    if (!this.isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      this.error = null;
+      throw new Error("No internet connection");
+    }
     if (!this.updateResult?.has_update) {
       await this.checkForUpdates();
     }
@@ -112,6 +116,10 @@ class UpdateManager {
   }
 
   async retry() {
+    if (!this.isOnline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      this.error = null;
+      throw new Error("No internet connection");
+    }
     if (this.isReadyToRestart) {
       await this.installUpdate();
       return;
@@ -166,6 +174,8 @@ class UpdateManager {
       this.isOnline = false;
       this.error = null;
       this.isChecking = false;
+      this.isDownloading = false;
+      this.isApplying = false;
       this.progress = null;
     };
 

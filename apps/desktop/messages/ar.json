@@ -5959,5 +5959,7 @@
   "settings_assessment_level_certificate": "شهادة",
   "settings_assessment_level_certificate_cumulative": "شهادة تراكمية",
   "settings_assessment_scope_all": "الكل",
+  "settings_assessment_component_weight_total_error": "يجب أن يساوي مجموع أوزان مكونات التقييم 100٪.",
+  "settings_assessment_component_passing_error": "لا يمكن أن تتجاوز درجة النجاح الدرجة القصوى للمكوّن.",
   "common_period_type_annual": "سنوي"
 }

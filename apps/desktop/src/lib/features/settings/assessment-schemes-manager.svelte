@@ -193,6 +193,23 @@ function toAssessmentComponents(
 async function saveSchemeComponents(components: SchemeComponent[]) {
   if (!selectedScheme) return;
 
+  if (components.length > 0) {
+    const totalWeight = components.reduce(
+      (sum, component) => sum + (Number(component.weight) || 0),
+      0,
+    );
+    if (Math.abs(totalWeight - 100) > 0.001) {
+      throw new Error(m.settings_assessment_component_weight_total_error());
+    }
+    const invalidPassingScore = components.find(
+      (component) =>
+        Number(component.passing_score) > Number(component.max_score),
+    );
+    if (invalidPassingScore) {
+      throw new Error(m.settings_assessment_component_passing_error());
+    }
+  }
+
   const request: {
     components: AssessmentComponent[];
     formula?: unknown;
