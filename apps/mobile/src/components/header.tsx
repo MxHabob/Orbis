@@ -17,7 +17,14 @@ import {
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useRouter } from "expo-router";
 import type React from "react";
-import { Platform, Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
+import {
+  Platform,
+  Pressable,
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";

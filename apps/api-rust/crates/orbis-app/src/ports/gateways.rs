@@ -2,6 +2,7 @@ use crate::context::RequestContext;
 use async_trait::async_trait;
 use orbis_domain::entities::ai::{AiMessage, AiToolDefinition, LlmChatOutput};
 use orbis_domain::errors::DomainError;
+use uuid::Uuid;
 
 #[async_trait]
 pub trait LlmGatewayPort: Send + Sync {
@@ -48,6 +49,7 @@ pub trait PaymentGatewayPort: Send + Sync {
         amount: f64,
         currency: &str,
         source: &str,
+        idempotency_key: Uuid,
     ) -> Result<String, DomainError>;
 }
 

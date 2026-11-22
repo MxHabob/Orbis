@@ -2126,6 +2126,7 @@ export type ProcessPaymentRequest = {
   amount: string;
   enrollment_id?: string | null;
   fee_id?: string | null;
+  idempotency_key?: string | null;
   method: string;
   notes?: string | null;
   payer_name?: string | null;
@@ -2328,7 +2329,6 @@ export type RegisterStudentRequest = {
   avatar_url?: string | null;
   birth_date?: string | null;
   blood_type?: string | null;
-  bypass_capacity_check?: boolean | null;
   date_of_birth?: string | null;
   display_name?: string | null;
   email?: string | null;

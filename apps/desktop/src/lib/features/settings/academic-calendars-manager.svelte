@@ -12,7 +12,7 @@ import {
   createacademicCalendarsQuery,
   createPeriodsQuery,
 } from "$lib/features/academics/queries";
-import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
+import type { AcademicPeriodDto, AcademicCalendarDto } from "@orbis/sdk";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { LoadingIndicator, toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
@@ -65,7 +65,7 @@ let expandedYears = $state<Record<string, boolean>>({});
 
 // Sheet Controls
 let isSheetOpen = $state(false);
-let editingYear = $state<academicCalendarDto | null>(null);
+let editingYear = $state<AcademicCalendarDto | null>(null);
 
 // Auto expand active year if not yet set
 $effect(() => {
@@ -137,12 +137,12 @@ function openCreateSheet() {
   isSheetOpen = true;
 }
 
-function openEditSheet(year: academicCalendarDto) {
+function openEditSheet(year: AcademicCalendarDto) {
   editingYear = year;
   isSheetOpen = true;
 }
 
-async function handleActivate(year: academicCalendarDto) {
+async function handleActivate(year: AcademicCalendarDto) {
   if (year.status === "active") return;
 
   const confirmed = await confirmStore.prompt({
@@ -164,7 +164,7 @@ async function handleActivate(year: academicCalendarDto) {
   }
 }
 
-async function handleClose(year: academicCalendarDto) {
+async function handleClose(year: AcademicCalendarDto) {
   const confirmed = await confirmStore.prompt({
     title: m.academic_calendars_close_confirm_title(),
     description: `${m.academic_calendars_close_confirm_desc()} (${year.name_ar || year.name})`,
@@ -184,7 +184,7 @@ async function handleClose(year: academicCalendarDto) {
   }
 }
 
-async function handleArchive(year: academicCalendarDto) {
+async function handleArchive(year: AcademicCalendarDto) {
   const confirmed = await confirmStore.prompt({
     title: m.academic_calendars_archive_confirm_title(),
     description: `${m.academic_calendars_archive_confirm_desc()} (${year.name_ar || year.name})`,
@@ -206,7 +206,7 @@ async function handleArchive(year: academicCalendarDto) {
 
 let isApplyingTemplate = $state(false);
 
-async function handleApplyTemplate(year: academicCalendarDto) {
+async function handleApplyTemplate(year: AcademicCalendarDto) {
   isApplyingTemplate = true;
   try {
     await api.applyCalendarTemplate(year.id, { template_code: "YE-1447-1448" });

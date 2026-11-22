@@ -7,36 +7,38 @@ pub async fn acquire_organization_quota_lock(
     organization_id: Uuid,
 ) -> Result<(), DomainError> {
     let backend = transaction.get_database_backend();
-    let insert_sql = match backend {
+    match backend {
         DatabaseBackend::Postgres => {
-            "INSERT INTO license_quota_locks (org_id) VALUES ($1) ON CONFLICT (org_id) DO NOTHING"
+            let organization = transaction
+                .query_one(Statement::from_sql_and_values(
+                    backend,
+                    "SELECT id FROM organizations WHERE id = $1 FOR UPDATE",
+                    [organization_id.into()],
+                ))
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if organization.is_none() {
+                return Err(DomainError::NotFound("Organization not found".into()));
+            }
         }
-        DatabaseBackend::Sqlite => "INSERT OR IGNORE INTO license_quota_locks (org_id) VALUES (?)",
+        DatabaseBackend::Sqlite => {
+            let result = transaction
+                .execute(Statement::from_sql_and_values(
+                    backend,
+                    "UPDATE organizations SET id = id WHERE id = ?",
+                    [organization_id.into()],
+                ))
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if result.rows_affected() == 0 {
+                return Err(DomainError::NotFound("Organization not found".into()));
+            }
+        }
         _ => {
             return Err(DomainError::Internal(
                 "License quota locking is not supported by this database backend".to_string(),
             ));
         }
-    };
-
-    transaction
-        .execute(Statement::from_sql_and_values(
-            backend,
-            insert_sql,
-            [organization_id.into()],
-        ))
-        .await
-        .map_err(|error| DomainError::Internal(error.to_string()))?;
-
-    if backend == DatabaseBackend::Postgres {
-        transaction
-            .query_one(Statement::from_sql_and_values(
-                backend,
-                "SELECT org_id FROM license_quota_locks WHERE org_id = $1 FOR UPDATE",
-                [organization_id.into()],
-            ))
-            .await
-            .map_err(|error| DomainError::Internal(error.to_string()))?;
     }
 
     Ok(())

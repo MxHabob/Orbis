@@ -289,10 +289,11 @@ pub async fn workflow_get_override(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OverrideRequestDto>, String> {
+    let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let item = state
         .workflow_service
-        .get_override(uid)
+        .get_override(ctx.tenant_id, uid)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Override request not found".to_string())?;

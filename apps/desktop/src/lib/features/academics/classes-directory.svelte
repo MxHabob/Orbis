@@ -20,7 +20,7 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import { BookOpen, Plus, Users, Refresh } from "@orbis/icons";
+import { BookOpen, Plus, Users, Refresh, Pencil } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n/locale";
 import { fade } from "svelte/transition";
@@ -31,14 +31,6 @@ let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
 
 let userSelectedPeriodId = $state<string | null>(null);
-const activePeriodId = $derived(
-  userSelectedPeriodId ||
-    String(
-      periods.find((period) => period.status === "active")?.id ||
-        periods[0]?.id ||
-        "",
-    ),
-);
 
 const classesQuery = createQuery(() => ({
   queryKey: queryKeys.academic.classes(orgId),
@@ -56,6 +48,15 @@ const periodsQuery = createQuery(() => ({
 
 const periods = $derived(
   (periodsQuery.data as AcademicPeriodDto[] | undefined) ?? [],
+);
+
+const activePeriodId = $derived(
+  userSelectedPeriodId ||
+    String(
+      periods.find((period) => period.status === "active")?.id ||
+        periods[0]?.id ||
+        "",
+    ),
 );
 
 const enrollmentsQuery = createQuery(() => ({
@@ -97,6 +98,7 @@ const error = $derived(
 
 // Sheet trigger state
 let isModalOpen = $state(false);
+let editingSection = $state<SectionDto | null>(null);
 
 function refetchAll() {
   classesQuery.refetch();
@@ -104,11 +106,24 @@ function refetchAll() {
   enrollmentsQuery.refetch();
 }
 
-function getClassMetric(classId: string): { active_students: number } {
+function getClassMetric(cls: SectionDto): {
+  active_students: number;
+  capacity: number;
+  utilization_rate: number;
+  attendance_rate: number;
+  subject_count: number;
+} {
   const count = currentEnrollments.filter(
-    (e) => String(e.section_id) === String(classId),
+    (e) => String(e.section_id) === String(cls.id),
   ).length;
-  return { active_students: count };
+  const capacity = Number(cls.capacity ?? 0);
+  return {
+    active_students: count,
+    capacity,
+    utilization_rate: capacity > 0 ? Math.round((count / capacity) * 100) : 0,
+    attendance_rate: 0,
+    subject_count: 0,
+  };
 }
 
 // Compute statistics
@@ -217,7 +232,10 @@ const classMenuActions = $derived([
 					menuLabel={m.operations_ui_actions()}
 					icon={Plus}
 					actions={classMenuActions}
-					onprimary={() => (isModalOpen = true)}
+					onprimary={() => {
+						editingSection = null;
+						isModalOpen = true;
+					}}
 					disabled={pageLoading}
 				/>
 			</CardAction>
@@ -262,7 +280,10 @@ const classMenuActions = $derived([
 					<Button
 						variant="default"
 						class="text-xs mt-2"
-						onclick={() => (isModalOpen = true)}
+						onclick={() => {
+							editingSection = null;
+							isModalOpen = true;
+						}}
 					>
 						{m.common_classes_add_class()}
 					</Button>
@@ -274,19 +295,20 @@ const classMenuActions = $derived([
 					in:fade={{ duration: 250 }}
 				>
 					{#each classes as cls (cls.id)}
-						{@const metric = getClassMetric(String(cls.id))}
+						{@const metric = getClassMetric(cls)}
 						{@const displayName =
 							l(cls.name_ar, cls.name) ||
 							m.common_classes_value_unavailable()}
 						{@const count = Number(metric?.active_students || 0)}
 						{@const limit = Number(metric?.capacity || cls.capacity || 0)}
 						{@const ratio = Number(metric?.utilization_rate || 0)}
-						<a
-							href={localizeHref(
-								`/${orgId}/academics/sections/${cls.id}`,
-							)}
-							class="no-underline group select-none block"
-						>
+						<div class="relative group select-none">
+							<a
+								href={localizeHref(
+									`/${orgId}/academics/sections/${cls.id}`,
+								)}
+								class="no-underline block h-full"
+							>
 							<Card class="flex min-h-40 min-w-0 flex-col justify-between hover:border-primary/50 transition-colors h-full">
 								<!-- Class Header -->
 								<CardHeader class="py-2.5 px-3.5 flex flex-row items-start justify-between">
@@ -381,7 +403,23 @@ const classMenuActions = $derived([
 									{/if}
 								</CardFooter>
 							</Card>
-						</a>
+							</a>
+							<Button
+								variant="outline"
+								size="icon-xs"
+								class="absolute end-2 bottom-2 z-10 h-7 w-7 opacity-100 shadow-sm bg-background md:opacity-0 md:group-hover:opacity-100"
+								onclick={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									editingSection = cls;
+									isModalOpen = true;
+								}}
+								title={m.common_action_edit()}
+								aria-label={m.common_action_edit()}
+							>
+								<Pencil size={12} />
+							</Button>
+						</div>
 					{/each}
 				</div>
 			{/if}
@@ -393,6 +431,7 @@ const classMenuActions = $derived([
 <ClassCreateSheet
 	bind:open={isModalOpen}
 	{orgId}
+	section={editingSection}
 	onSuccess={() =>
 		queryClient.invalidateQueries({
 			queryKey: queryKeys.academic.classes(orgId),

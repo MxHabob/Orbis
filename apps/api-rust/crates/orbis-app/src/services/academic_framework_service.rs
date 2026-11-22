@@ -447,7 +447,7 @@ impl AcademicFrameworkService {
             practical_hours: None,
             assessment_config: None,
             grade_groups: None,
-            capacity: None,
+            capacity: capacity.map(|value| value as i32),
             status: "draft".to_string(),
             is_active: true,
             created_at: Some(now),
@@ -507,7 +507,7 @@ impl AcademicFrameworkService {
         let enrollment = Enrollment {
             id: Uuid::new_v4(),
             org_id,
-            period_id: Uuid::nil(),
+            period_id: offering.period_id,
             student_id,
             section_id: Some(offering_id),
             attempt_number: attempt_number as i32,

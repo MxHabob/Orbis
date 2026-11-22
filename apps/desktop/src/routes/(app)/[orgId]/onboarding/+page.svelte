@@ -8,6 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
 import { effectiveContext, systemStore } from "$lib/stores";
@@ -43,7 +44,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 
-const orgId = $derived(page.params.orgId);
+const orgId = $derived(page.params.orgId!);
 const isArabic = $derived(getLocale().startsWith("ar"));
 
 // Filter States
@@ -67,14 +68,14 @@ async function loadState() {
   }
 }
 
-const state = $derived(systemStore.onboardingState);
+const onboardingState = $derived(systemStore.onboardingState);
 const tasks = $derived(systemStore.onboardingTasks);
 const steps = $derived(
   deriveSteps(tasks, (permission) =>
     effectiveContext.hasPermission(permission),
   ),
 );
-const categories = $derived(state?.categories ?? []);
+const categories = $derived(onboardingState?.categories ?? []);
 
 // Category label translations
 function getCategoryLabel(cat: string) {
@@ -176,7 +177,9 @@ const filteredTasks = $derived.by(() => {
 async function handleNavigate(task: SetupTaskDto) {
   const step = findStepForTask(steps, task.id);
   if (!isTaskAccessible(steps, task.id)) return;
-  await goto(resolve(localizeHref(`/${orgId}/onboarding/${step.route}`)));
+  await goto(
+    resolve(localizeHref(`/${orgId}/onboarding/${step.route}`) as Pathname),
+  );
 }
 
 async function startGuidedSetup() {
@@ -184,7 +187,9 @@ async function startGuidedSetup() {
     findNextIncompleteStep(steps) ??
     steps.find((step) => step.id === "review" && step.isAccessible);
   if (!target) return;
-  await goto(resolve(localizeHref(`/${orgId}/onboarding/${target.route}`)));
+  await goto(
+    resolve(localizeHref(`/${orgId}/onboarding/${target.route}`) as Pathname),
+  );
 }
 </script>
 
@@ -255,13 +260,13 @@ async function startGuidedSetup() {
               {m.ui_onboarding_progress_overall_readiness()}
             </span>
             <span class="text-sm font-mono font-medium text-primary">
-              {state?.progress_percentage ?? 0}%
+              {onboardingState?.progress_percentage ?? 0}%
             </span>
           </div>
           <p class="text-xs text-muted-foreground">
             {m.shared_ui_onboarding_tasks_completed({
-              completed: state?.completed_tasks ?? 0,
-              total: state?.total_tasks ?? 0,
+              completed: onboardingState?.completed_tasks ?? 0,
+              total: onboardingState?.total_tasks ?? 0,
             })}
           </p>
         </div>
@@ -269,17 +274,17 @@ async function startGuidedSetup() {
         <div class="flex items-center flex-wrap gap-2 text-xs">
           <Badge variant="outline" class="font-normal">
             {m.ui_onboarding_progress_required()}
-            <span class="font-medium ms-1 font-mono">{state?.required_completed ?? 0}/{state?.required_tasks ?? 0}</span>
+            <span class="font-medium ms-1 font-mono">{onboardingState?.required_completed ?? 0}/{onboardingState?.required_tasks ?? 0}</span>
           </Badge>
 
-          {#if (state?.blocked_tasks ?? 0) > 0}
+          {#if (onboardingState?.blocked_tasks ?? 0) > 0}
             <Badge variant="secondary" class="font-normal text-muted-foreground">
               {m.ui_onboarding_progress_blocked_2()}
-              <span class="font-medium ms-1 font-mono">{state?.blocked_tasks}</span>
+              <span class="font-medium ms-1 font-mono">{onboardingState?.blocked_tasks}</span>
             </Badge>
           {/if}
 
-          {#if state?.is_institution_ready}
+          {#if onboardingState?.is_institution_ready}
             <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 font-normal">
               {m.ui_onboarding_progress_ready_for_operations()}
             </Badge>
@@ -291,13 +296,13 @@ async function startGuidedSetup() {
         </div>
       </div>
 
-      <Progress value={state?.progress_percentage ?? 0} max={100} class="h-1.5" />
+      <Progress value={onboardingState?.progress_percentage ?? 0} max={100} class="h-1.5" />
     </CardContent>
   </Card>
 
   <!-- Recommended Next Action (Subtle Notice) -->
-  {#if state?.recommended_next_task && isTaskAccessible(steps, state.recommended_next_task.id)}
-    {@const next = state.recommended_next_task}
+  {#if onboardingState?.recommended_next_task && isTaskAccessible(steps, onboardingState.recommended_next_task.id)}
+    {@const next = onboardingState.recommended_next_task}
     <div class="rounded-xl border border-border/80 bg-muted/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="space-y-0.5">
         <span class="text-[11px] font-medium text-muted-foreground">

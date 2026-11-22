@@ -209,6 +209,11 @@ impl IdentityProvisioningService {
             .ok_or_else(|| {
                 DomainError::NotFound(format!("Person {} not found", input.person_id))
             })?;
+        if person.org_id != Some(org_id) {
+            return Err(DomainError::Unauthorized(
+                "Person belongs to another organization".into(),
+            ));
+        }
 
         // 2. Check if user already exists for this person
         let existing_users = self.user_repo.find_by_org(org_id).await?;

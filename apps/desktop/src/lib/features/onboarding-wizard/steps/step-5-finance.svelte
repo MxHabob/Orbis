@@ -241,7 +241,7 @@ async function handleCreateDiscount() {
       name: discountName.trim() || discountNameAr.trim(),
       name_ar: discountNameAr.trim() || undefined,
       discount_type: discountType,
-      value: discountValue,
+      value: String(discountValue),
       is_active: true,
     });
 

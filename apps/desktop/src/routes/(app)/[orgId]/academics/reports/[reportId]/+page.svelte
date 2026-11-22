@@ -3,4 +3,4 @@ import { page } from "$app/state";
 import DataReportViewer from "$lib/features/reporting/components/data-report-viewer.svelte";
 </script>
 
-<DataReportViewer definitionId={page.params.reportId} />
+<DataReportViewer definitionId={page.params.reportId!} />

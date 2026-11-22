@@ -72,7 +72,7 @@ let {
             {#if isPeriodLocked}
               <Lock size={12} /> {m.common_phase_locked()}
             {:else}
-              <Unlock size={12} /> {m.common_control_cycle_unlocked()}
+              <CheckCircle size={12} /> {m.common_control_cycle_unlocked()}
             {/if}
           </span>
         </div>
@@ -121,7 +121,7 @@ let {
             {#if isPeriodActionLoading}
               <LoadingIndicator   size={14} />
             {:else}
-              <Unlock size={14} />
+              <CheckCircle size={14} />
             {/if}
             {m.common_control_unlock_period()}
           </Button>

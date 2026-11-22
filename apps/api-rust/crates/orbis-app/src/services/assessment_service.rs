@@ -34,6 +34,79 @@ use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
 
+fn validate_assessment_components(
+    scheme_max_score: Decimal,
+    components: &[AssessmentComponent],
+) -> Result<(), DomainError> {
+    if components.is_empty() {
+        return Ok(());
+    }
+
+    let mut codes = std::collections::HashSet::new();
+    let mut sort_orders = std::collections::HashSet::new();
+    let mut total_weight = Decimal::ZERO;
+    let mut total_max_score = Decimal::ZERO;
+
+    for component in components {
+        if component.code.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Assessment component code is required".into(),
+            ));
+        }
+        if component.name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Assessment component name is required".into(),
+            ));
+        }
+        if !codes.insert(component.code.trim().to_string()) {
+            return Err(DomainError::Validation(
+                "Assessment component codes must be unique".into(),
+            ));
+        }
+        if component.sort_order <= 0 {
+            return Err(DomainError::Validation(
+                "Assessment component sort order must be positive".into(),
+            ));
+        }
+        if !sort_orders.insert(component.sort_order) {
+            return Err(DomainError::Validation(
+                "Assessment component sort orders must be unique".into(),
+            ));
+        }
+        if component.max_score <= Decimal::ZERO {
+            return Err(DomainError::Validation(
+                "Assessment component maximum score must be positive".into(),
+            ));
+        }
+        if component.weight < Decimal::ZERO {
+            return Err(DomainError::Validation(
+                "Assessment component weight cannot be negative".into(),
+            ));
+        }
+        if let Some(min_score) = component.min_score {
+            if min_score < Decimal::ZERO || min_score > component.max_score {
+                return Err(DomainError::Validation(
+                    "Assessment component passing score must be within the component score range"
+                        .into(),
+                ));
+            }
+        }
+        total_weight += component.weight;
+        total_max_score += component.max_score;
+    }
+
+    let weighted_sum_valid = (total_weight - Decimal::ONE).abs() <= Decimal::new(1, 3);
+    let raw_score_sum_valid = (total_max_score - scheme_max_score).abs() <= Decimal::new(1, 3);
+
+    if !weighted_sum_valid && !raw_score_sum_valid {
+        return Err(DomainError::Validation(
+            "Assessment components must use a normalized weight sum of 1.0 or a maximum-score sum matching the scheme"
+                .into(),
+        ));
+    }
+    Ok(())
+}
+
 pub struct BatchGradeItem {
     pub period_id: Uuid,
     pub student_id: Uuid,
@@ -183,6 +256,81 @@ impl AssessmentService {
     }
 
     /// Record or update a student grade
+    async fn validate_grade_context(
+        &self,
+        org_id: Uuid,
+        period_id: Uuid,
+        student_id: Uuid,
+        section_subject_id: Uuid,
+        enrollment_id: Option<Uuid>,
+    ) -> Result<Uuid, DomainError> {
+        if let Some(period_repo) = &self.period_repo {
+            let period = period_repo
+                .find_by_id(period_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
+            if period.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Academic period belongs to another organization".into(),
+                ));
+            }
+        }
+
+        if let Some(student_repo) = &self.student_repo {
+            let student = student_repo
+                .find_by_id(student_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+            if student.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Student belongs to another organization".into(),
+                ));
+            }
+        }
+
+        let section_subject = self
+            .section_subject_repo
+            .find_by_id(section_subject_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
+        if section_subject.org_id != org_id || section_subject.period_id != period_id {
+            return Err(DomainError::Unauthorized(
+                "Section subject is not valid for this organization and period".into(),
+            ));
+        }
+
+        if let Some(enrollment_repo) = &self.enrollment_repo {
+            let enrollment = if let Some(enrollment_id) = enrollment_id {
+                enrollment_repo
+                    .find_by_id(enrollment_id)
+                    .await?
+                    .ok_or_else(|| DomainError::NotFound("Enrollment not found".into()))?
+            } else {
+                enrollment_repo
+                    .find_by_student(student_id)
+                    .await?
+                    .into_iter()
+                    .find(|item| item.period_id == period_id)
+                    .ok_or_else(|| {
+                        DomainError::NotFound("Active enrollment not found for this period".into())
+                    })?
+            };
+
+            if enrollment.org_id != org_id
+                || enrollment.student_id != student_id
+                || enrollment.period_id != period_id
+                || enrollment.section_id != Some(section_subject.section_id)
+            {
+                return Err(DomainError::Unauthorized(
+                    "Enrollment does not match the student, period, and section".into(),
+                ));
+            }
+            return Ok(enrollment.id);
+        }
+
+        Ok(Uuid::nil())
+    }
+
     pub async fn record_grade(
         &self,
         ctx: &RequestContext,
@@ -206,6 +354,10 @@ impl AssessmentService {
             )));
         }
 
+        let enrollment_id = self
+            .validate_grade_context(org_id, period_id, student_id, section_subject_id, None)
+            .await?;
+
         let now = Utc::now();
         let grade_id = Uuid::new_v4();
 
@@ -214,7 +366,7 @@ impl AssessmentService {
             org_id,
             period_id,
             student_id,
-            enrollment_id: None,
+            enrollment_id: Some(enrollment_id).filter(|id| *id != Uuid::nil()),
             section_subject_id,
             component_id,
             score,
@@ -275,13 +427,23 @@ impl AssessmentService {
                 )));
             }
 
+            let enrollment_id = self
+                .validate_grade_context(
+                    org_id,
+                    item.period_id,
+                    item.student_id,
+                    item.section_subject_id,
+                    item.enrollment_id,
+                )
+                .await?;
+
             let grade_id = Uuid::new_v4();
             grades.push(Grade {
                 id: grade_id,
                 org_id,
                 period_id: item.period_id,
                 student_id: item.student_id,
-                enrollment_id: item.enrollment_id,
+                enrollment_id: Some(enrollment_id).filter(|id| *id != Uuid::nil()),
                 section_subject_id: item.section_subject_id,
                 component_id: item.component_id,
                 score: item.score,
@@ -965,6 +1127,8 @@ impl AssessmentService {
             .check(ctx, Permission::AssessmentWrite)
             .await?;
 
+        validate_assessment_components(max_score, components.as_deref().unwrap_or_default())?;
+
         let now = Utc::now();
         let scheme_id = Uuid::new_v4();
         let scheme = AssessmentScheme {
@@ -1039,6 +1203,10 @@ impl AssessmentService {
 
         if scheme.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+        let effective_max_score = max_score.unwrap_or(scheme.max_score);
+        if let Some(ref components) = components {
+            validate_assessment_components(effective_max_score, components)?;
         }
 
         if let Some(n) = name {

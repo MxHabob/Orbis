@@ -131,6 +131,25 @@ impl WorkflowService {
                 DomainError::NotFound(format!("Override Request {} not found", request_id))
             })?;
 
+        if req.org_id != ctx.tenant_id {
+            return Err(DomainError::Unauthorized(
+                "Override request belongs to another organization".into(),
+            ));
+        }
+        if req.status != OverrideStatus::Pending {
+            return Err(DomainError::Validation(
+                "Override request has already been resolved".into(),
+            ));
+        }
+        if req
+            .expires_at
+            .is_some_and(|expires_at| expires_at <= Utc::now())
+        {
+            return Err(DomainError::Validation(
+                "Override request has expired".into(),
+            ));
+        }
+
         let now = Utc::now();
 
         // Advance approval chain
@@ -202,6 +221,25 @@ impl WorkflowService {
                 DomainError::NotFound(format!("Override Request {} not found", request_id))
             })?;
 
+        if req.org_id != ctx.tenant_id {
+            return Err(DomainError::Unauthorized(
+                "Override request belongs to another organization".into(),
+            ));
+        }
+        if req.status != OverrideStatus::Pending {
+            return Err(DomainError::Validation(
+                "Override request has already been resolved".into(),
+            ));
+        }
+        if req
+            .expires_at
+            .is_some_and(|expires_at| expires_at <= Utc::now())
+        {
+            return Err(DomainError::Validation(
+                "Override request has expired".into(),
+            ));
+        }
+
         let now = Utc::now();
         req.status = OverrideStatus::Rejected;
         req.resolved_by = Some(rejecter_id);
@@ -237,8 +275,10 @@ impl WorkflowService {
     /// Get override request by ID
     pub async fn get_override(
         &self,
+        org_id: Uuid,
         id: Uuid,
     ) -> Result<Option<AcademicOverrideRequest>, DomainError> {
-        self.override_repo.find_by_id(id).await
+        let req = self.override_repo.find_by_id(id).await?;
+        Ok(req.filter(|item| item.org_id == org_id))
     }
 }

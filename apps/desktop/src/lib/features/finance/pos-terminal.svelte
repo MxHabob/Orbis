@@ -10,17 +10,22 @@ import { onMount } from "svelte";
 import { slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/core/i18n";
+import { formatCurrency, formatDate, l } from "$lib/core/i18n";
 import {
   createCashAccountsQuery,
   createStudentFeesQuery,
   createPaymentsQuery,
+  createFeeTemplatesQuery,
   createProcessPaymentMutation,
   createAvailablePaymentMethodsQuery,
+} from "$lib/features/finance";
+import {
+  api,
+  extractErrorMessage,
+  type StudentDto,
   type StudentFeeDto,
   type PaymentDto,
-} from "$lib/features/finance";
-import { api, extractErrorMessage, type StudentDto } from "$lib/api";
+} from "$lib/api";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
@@ -38,6 +43,7 @@ import {
   DocumentPage,
   Keyboard,
   Printer,
+  Search,
   XMark,
   ArrowPath,
 } from "@orbis/icons";
@@ -76,6 +82,8 @@ const activeAccountId = $derived(formAccountId || cashAccounts[0]?.id || "");
 
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
 const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
+const feeTemplatesQuery = createFeeTemplatesQuery(() => orgId);
+const feeTemplates = $derived(feeTemplatesQuery.data ?? []);
 const selectedPaymentMethodObj = $derived(
   availablePaymentMethods.find((m) => m.id === formMethod) ||
     availablePaymentMethods[0],
@@ -83,7 +91,7 @@ const selectedPaymentMethodObj = $derived(
 
 const studentFeesQuery = createStudentFeesQuery(
   () => orgId,
-  () => (selectedStudent ? { studentId: selectedStudent.id } : undefined),
+  () => (selectedStudent ? { student_id: selectedStudent.id } : undefined),
   () => Boolean(selectedStudent?.id),
 );
 const activeStudentFees = $derived(
@@ -94,13 +102,20 @@ const activeStudentFees = $derived(
 
 const recentPaymentsQuery = createPaymentsQuery(
   () => orgId,
-  () => (selectedStudent ? { studentId: selectedStudent.id } : undefined),
+  () => (selectedStudent ? { student_id: selectedStudent.id } : undefined),
 );
 const activeStudentPayments = $derived(
   (recentPaymentsQuery.data ?? []).slice(0, 5),
 );
 
 const processPaymentMutation = createProcessPaymentMutation();
+
+function getFeeTemplateName(feeTemplateId: string): string {
+  const template = feeTemplates.find((item) => item.id === feeTemplateId);
+  return template
+    ? l(template.name_ar, template.name) || template.name
+    : m.finance_ui_tuition_fees();
+}
 
 // ── Student Search Logic ──────────────────────────────────────────────
 
@@ -119,8 +134,11 @@ function handleSearchInput(query: string) {
   searchDebounceTimer = setTimeout(async () => {
     isSearchingStudents = true;
     try {
-      const results = await api.listStudents({ query: query.trim() });
-      searchedStudents = (results || []).slice(0, 8);
+      const results = await api.listStudents({
+        search: query.trim(),
+        page_size: 8,
+      });
+      searchedStudents = results.items.map((detail) => detail.student);
       highlightedIndex = searchedStudents.length > 0 ? 0 : -1;
     } catch {
       searchedStudents = [];
@@ -178,7 +196,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       fee_id: formFeeId || undefined,
       student_id: selectedStudent.id,
       account_id: activeAccountId,
-      amount: Number(formAmount),
+      amount: String(formAmount),
       method: formMethod,
       reference: referenceNumber.trim() || undefined,
       source: sourceToken.trim() || undefined,
@@ -463,12 +481,9 @@ const rtl = $derived(getLocale() === "ar");
                         {/if}
                       </div>
                       <div>
-                        <div class="font-semibold text-foreground text-xs">{fee.notes || m.finance_ui_tuition_fees()}</div>
+                        <div class="font-semibold text-foreground text-xs">{getFeeTemplateName(fee.fee_template_id)}</div>
                         <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
                           {m.finance_ui_due_date_label()} {formatDate(fee.due_date) || "—"}
-                          {#if fee.installment_number}
-                            • {m.finance_ui_installment_number({ number: fee.installment_number })}
-                          {/if}
                         </div>
                       </div>
                     </div>
@@ -537,7 +552,7 @@ const rtl = $derived(getLocale() === "ar");
           <!-- Empty Search State -->
           <div class="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
             <div class="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground/60 mb-3">
-              <MagnifyingGlass size={28} />
+              <Search size={28} />
             </div>
             <h3 class="text-sm font-bold text-foreground">{m.finance_ui_select_student_to_collect()}</h3>
             <p class="text-[11px] text-muted-foreground max-w-sm mt-1">

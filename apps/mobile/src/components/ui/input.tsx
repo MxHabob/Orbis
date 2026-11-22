@@ -12,7 +12,13 @@
  */
 
 import React, { useState } from "react";
-import { View, TextInput, type TextInputProps, Pressable, type ViewStyle } from "react-native";
+import {
+  View,
+  TextInput,
+  type TextInputProps,
+  Pressable,
+  type ViewStyle,
+} from "react-native";
 import { Eye, EyeSlash } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";

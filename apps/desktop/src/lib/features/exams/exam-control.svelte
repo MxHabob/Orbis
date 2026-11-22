@@ -118,7 +118,9 @@ async function loadInitialData() {
     subjects = subjectList;
 
     // Resolve the monthly-period scheme and extract its components
-    const monthlyScheme = findMonthlyScheme(schemes as Record<string, unknown>[]);
+    const monthlyScheme = findMonthlyScheme(
+      schemes as Record<string, unknown>[],
+    );
     if (monthlyScheme) {
       schemeComponents = extractSchemeComponents(monthlyScheme);
     }
@@ -184,13 +186,25 @@ async function loadGradeMatrix() {
         }))
       : [
           // Legacy fallback when no scheme is configured
-          { code: "monthly", name: "Monthly", name_ar: "العملية", max: 20, sort_order: 1 },
-          { code: "final", name: "Final", name_ar: "الاختبار", max: 30, sort_order: 2 },
+          {
+            code: "monthly",
+            name: "Monthly",
+            name_ar: "العملية",
+            max: 20,
+            sort_order: 1,
+          },
+          {
+            code: "final",
+            name: "Final",
+            name_ar: "الاختبار",
+            max: 30,
+            sort_order: 2,
+          },
         ];
     const assessmentTypes = assessmentConfigs.map((c) => c.code);
 
     const students: GradeMatrixStudent[] = studentItems.map((st) => {
-      const studentId = st.student?.id ?? st.id;
+      const studentId = st.student.id;
       const matchingGrades = gradeItems.filter(
         (grade) =>
           String(grade.student_id) === String(studentId) &&
@@ -199,17 +213,16 @@ async function loadGradeMatrix() {
       const cells: GradeCell[] = assessmentConfigs.map(({ code, max }) => {
         // Match grade by component_id (component code) or fall back to is_final for legacy data
         const grade = hasSchemeComponents
-          ? matchingGrades.find(
+          ? (matchingGrades.find(
               (item) =>
                 String(item.component_id ?? "") === code ||
                 // Fallback: match by component_id containing the code
-                (item.component_id &&
-                  String(item.component_id).includes(code)),
+                (item.component_id && String(item.component_id).includes(code)),
             ) ??
             // Last-resort legacy match for old 2-column data
             (code === "final" || code === "written_test" || code === "term_exam"
               ? matchingGrades.find((item) => Boolean(item.is_final))
-              : null)
+              : null))
           : matchingGrades.find(
               (item) => Boolean(item.is_final) === (code === "final"),
             );
@@ -354,12 +367,14 @@ async function handleSaveAll() {
 let isCalculatingRankings = $state(false);
 
 async function handleCalculateRankings() {
-  if (!selectedPeriodId) return;
+  if (!selectedPeriodId || !matrixData?.students.length) return;
   isCalculatingRankings = true;
   try {
     await api.calculateRankings({
-      period_id: selectedPeriodId,
-      class_id: selectedClassId || undefined,
+      items: matrixData.students.map(({ student_id, total }) => ({
+        id: student_id,
+        score: String(total),
+      })),
     });
     toast.success(m.exams_control_rankings_calculated());
     await loadGradeMatrix();

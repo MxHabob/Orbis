@@ -5,7 +5,16 @@ Manages assessment schemes (weighted grade composition structures).
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n/locale";
-import { api, extractErrorMessage, type AssessmentComponent } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type AssessmentComponent,
+  type AssessmentSchemeDto,
+} from "$lib/api";
+import type {
+  AssessmentSchemeInput,
+  AssessmentComponentInput,
+} from "@orbis/schemas";
 import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
 import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
@@ -84,7 +93,7 @@ const schemeComponents = $derived.by<SchemeComponent[]>(() => {
   const schemeMaxScore = Number(selectedScheme.max_score) || 100;
 
   const usedIds: string[] = [];
-  return components.map((component, index) => {
+  return (components as unknown[]).map((component: unknown, index: number) => {
     const value =
       typeof component === "object" && component !== null
         ? (component as Record<string, unknown>)
@@ -192,6 +201,23 @@ function toAssessmentComponents(
 async function saveSchemeComponents(components: SchemeComponent[]) {
   if (!selectedScheme) return;
 
+  if (components.length > 0) {
+    const totalWeight = components.reduce(
+      (sum, component) => sum + (Number(component.weight) || 0),
+      0,
+    );
+    if (Math.abs(totalWeight - 100) > 0.001) {
+      throw new Error(m.settings_assessment_component_weight_total_error());
+    }
+    const invalidPassingScore = components.find(
+      (component) =>
+        Number(component.passing_score) > Number(component.max_score),
+    );
+    if (invalidPassingScore) {
+      throw new Error(m.settings_assessment_component_passing_error());
+    }
+  }
+
   const request: {
     components: AssessmentComponent[];
     formula?: unknown;
@@ -226,29 +252,51 @@ const totalWeight = $derived(
 
 // ── Create Scheme Dialog ─────────────────────────────────────
 let showCreateDialog = $state(false);
-let newSchemeName = $state("");
-let newSchemeDesc = $state("");
+let editingScheme = $state<AssessmentSchemeDto | null>(null);
 let isCreating = $state(false);
 
-async function handleCreateScheme() {
-  if (!newSchemeName.trim()) return;
+function openCreateScheme() {
+  editingScheme = null;
+  showCreateDialog = true;
+}
+
+function openEditScheme(scheme: AssessmentSchemeDto) {
+  editingScheme = scheme;
+  showCreateDialog = true;
+}
+
+async function handleSaveScheme(payload: AssessmentSchemeInput) {
   isCreating = true;
   try {
-    const created = await api.createAssessmentScheme({
-      name: newSchemeName.trim(),
-      description: newSchemeDesc.trim() || null,
-      max_score: 100,
-      formula: {
-        type: "weighted_average",
-        components: [],
-      },
-    });
-    toast.success(m.settings_ui_assessment_scheme_created());
-    activeSchemeId = created.id;
+    if (editingScheme) {
+      await api.updateAssessmentScheme(editingScheme.id, {
+        name: payload.name || payload.name_ar,
+        name_ar: payload.name_ar || null,
+        description: payload.description || null,
+        max_score: String(payload.max_score),
+        level: payload.level,
+        institution_scope: payload.institution_scope,
+        is_default: payload.is_default,
+      });
+      toast.success(m.common_action_update());
+      activeSchemeId = editingScheme.id;
+    } else {
+      const created = await api.createAssessmentScheme({
+        name: payload.name || payload.name_ar,
+        name_ar: payload.name_ar || null,
+        description: payload.description || null,
+        max_score: String(payload.max_score),
+        level: payload.level,
+        institution_scope: payload.institution_scope,
+        is_default: payload.is_default,
+        formula: { type: "weighted_average", components: [] },
+      });
+      toast.success(m.settings_ui_assessment_scheme_created());
+      activeSchemeId = created.id;
+    }
     await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
     showCreateDialog = false;
-    newSchemeName = "";
-    newSchemeDesc = "";
+    editingScheme = null;
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
   } finally {
@@ -259,23 +307,11 @@ async function handleCreateScheme() {
 // ── Create Component Dialog ──────────────────────────────────
 let showComponentDialog = $state(false);
 let editingComponentId = $state<string | null>(null);
-let componentForm = $state({
-  name: "",
-  component_type: "exam",
-  weight: 30,
-  max_score: 100,
-  passing_score: 50,
-});
+let editingComponent = $state<AssessmentComponentInput | null>(null);
 
 function resetComponentForm() {
   editingComponentId = null;
-  componentForm = {
-    name: "",
-    component_type: "exam",
-    weight: 30,
-    max_score: 100,
-    passing_score: 50,
-  };
+  editingComponent = null;
 }
 
 function openAddComponent() {
@@ -285,20 +321,24 @@ function openAddComponent() {
 
 function openEditComponent(c: SchemeComponent) {
   editingComponentId = c.id;
-  componentForm = {
+  editingComponent = {
+    code: c.code,
     name: c.name,
+    name_ar: c.name_ar ?? "",
     component_type: c.component_type,
     weight: c.weight,
     max_score: c.max_score,
     passing_score: c.passing_score ?? 50,
+    sort_order: c.sort_order,
+    is_required: c.is_required,
   };
   showComponentDialog = true;
 }
 
 let isSavingComponent = $state(false);
 
-async function handleSaveComponent() {
-  if (!componentForm.name.trim() || !selectedScheme) return;
+async function handleSaveComponent(payload: AssessmentComponentInput) {
+  if (!selectedScheme) return;
   isSavingComponent = true;
   try {
     const current = [...schemeComponents];
@@ -307,29 +347,33 @@ async function handleSaveComponent() {
       if (idx >= 0) {
         current[idx] = {
           ...current[idx],
-          name: componentForm.name.trim(),
-          component_type: componentForm.component_type,
-          weight: Number(componentForm.weight) || 0,
-          max_score: Number(componentForm.max_score) || 100,
-          passing_score: Number(componentForm.passing_score) || 50,
+          code: payload.code || current[idx].code,
+          name: payload.name || payload.name_ar,
+          name_ar: payload.name_ar || null,
+          component_type: payload.component_type,
+          weight: payload.weight,
+          max_score: payload.max_score,
+          passing_score: payload.passing_score,
+          sort_order: payload.sort_order,
+          is_required: payload.is_required,
         };
       }
     } else {
       const id = `comp-${Date.now()}`;
       const newComp: SchemeComponent = {
         id,
-        code: id,
-        name: componentForm.name.trim(),
-        name_ar: null,
-        component_type: componentForm.component_type,
-        weight: Number(componentForm.weight) || 0,
-        max_score: Number(componentForm.max_score) || 100,
-        passing_score: Number(componentForm.passing_score) || 50,
-        sort_order: current.length + 1,
-        is_required: true,
+        code: payload.code || id,
+        name: payload.name || payload.name_ar,
+        name_ar: payload.name_ar || null,
+        component_type: payload.component_type,
+        weight: payload.weight,
+        max_score: payload.max_score,
+        passing_score: payload.passing_score,
+        sort_order: payload.sort_order,
+        is_required: payload.is_required,
         stored_weight: null,
         stored_component_type: null,
-        displayed_weight: Number(componentForm.weight) || 0,
+        displayed_weight: payload.weight,
       };
       current.push(newComp);
     }
@@ -428,7 +472,7 @@ const componentTypes = [
       <Button
         size="sm"
         class="px-4 h-8 text-xs cursor-pointer gap-1.5"
-        onclick={() => (showCreateDialog = true)}
+        onclick={openCreateScheme}
       >
         <Plus size={14} />
         {m.settings_ui_assessment_scheme_add()}
@@ -467,6 +511,16 @@ const componentTypes = [
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
                   <button
+                    class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      openEditScheme(scheme);
+                    }}
+                    title={m.common_action_edit()}
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
                     class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     onclick={(e) => {
                       e.stopPropagation();
@@ -501,6 +555,14 @@ const componentTypes = [
               </div>
               <CardAction>
                 <div class="flex items-center gap-2">
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title={m.common_action_edit()}
+                    onclick={() => openEditScheme(selectedScheme)}
+                  >
+                    <Pencil size={12} />
+                  </Button>
                   <Badge
                     variant={totalWeight === 100 ? "default" : "destructive"}
                     class="text-[10px] font-mono"
@@ -639,15 +701,14 @@ const componentTypes = [
 
 <AssessmentSchemeDialog
   bind:open={showCreateDialog}
-  bind:name={newSchemeName}
-  bind:description={newSchemeDesc}
+  scheme={editingScheme}
   {isCreating}
-  onsubmit={handleCreateScheme}
+  onsubmit={handleSaveScheme}
 />
 
 <AssessmentComponentDialog
   bind:open={showComponentDialog}
-  form={componentForm}
+  component={editingComponent}
   editingId={editingComponentId}
   {componentTypes}
   isSaving={isSavingComponent}

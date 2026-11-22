@@ -139,7 +139,7 @@ let filteredPeriods = $derived(
     const matchesStatus =
       selectedStatusFilters.length === 0 ||
       (selectedStatusFilters.includes("active") && p.status === "active") ||
-      (selectedStatusFilters.includes("locked") && p.is_locked === 1);
+      (selectedStatusFilters.includes("locked") && p.is_locked);
 
     const matchesType =
       selectedTypeFilters.length === 0 ||

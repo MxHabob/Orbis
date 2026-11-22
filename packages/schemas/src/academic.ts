@@ -10,8 +10,16 @@ const hasName = (value: { name?: string; name_ar?: string }) =>
 
 export const createSubjectInputSchema = localizedName
   .extend({
+    name: z.string().trim().default(""),
+    name_ar: z.string().trim().default(""),
     code: z.string().trim().min(1),
     color: z.string().trim().nullable().optional(),
+    description: z.string().trim().default(""),
+    credit_hours: z.number().int().positive().max(20).default(3),
+    sort_order: z.number().int().positive().max(1000).default(1),
+    is_core: z.boolean().default(true),
+    is_elective: z.boolean().default(false),
+    is_lab_required: z.boolean().default(false),
   })
   .refine(hasName, { path: ["name"], message: "Name is required" });
 
@@ -48,6 +56,48 @@ export const createAssessmentInputSchema = z
     message: "Title is required",
   });
 
+export const assessmentSchemeInputSchema = z
+  .object({
+    name: z.string().trim().default(""),
+    name_ar: z.string().trim().default(""),
+    description: z.string().trim().default(""),
+    max_score: z.number().positive().max(1000).default(100),
+    level: z.enum([
+      "monthly_period",
+      "term",
+      "annual",
+      "coursework",
+      "midterm",
+      "final",
+      "module_assessment",
+      "certificate",
+      "certificate_cumulative",
+    ]),
+    institution_scope: z.enum(["school", "university", "institute", "all"]),
+    is_default: z.boolean().default(false),
+  })
+  .refine((value) => Boolean(value.name || value.name_ar), {
+    path: ["name"],
+    message: "Name is required",
+  });
+
+export const assessmentComponentInputSchema = z
+  .object({
+    code: z.string().trim().default(""),
+    name: z.string().trim().default(""),
+    name_ar: z.string().trim().default(""),
+    component_type: z.string().trim().min(1),
+    weight: z.number().min(0).max(100),
+    max_score: z.number().positive().max(1000),
+    passing_score: z.number().min(0).max(1000),
+    sort_order: z.number().int().positive(),
+    is_required: z.boolean().default(true),
+  })
+  .refine((value) => Boolean(value.name || value.name_ar), {
+    path: ["name"],
+    message: "Name is required",
+  });
+
 const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time");
 
 export const createTimeSlotInputSchema = z
@@ -69,13 +119,14 @@ export const createTimeSlotInputSchema = z
 
 export const classFormInputSchema = z
   .object({
-    name: z.string().trim().optional(),
-    name_ar: z.string().trim().optional(),
-    code: z.string().trim().max(50).optional(),
-    grade_level: z.string().trim().max(50).optional(),
-    track: z.string().trim().max(50).optional(),
+    unit_id: z.string().trim().default(""),
+    name: z.string().trim().default(""),
+    name_ar: z.string().trim().default(""),
+    code: z.string().trim().max(50).default(""),
+    grade_level: z.string().trim().max(50).default(""),
+    track: z.string().trim().max(50).default(""),
     capacity: z.number().int().min(1).max(100),
-    color: z.string().trim().optional(),
+    color: z.string().trim().default(""),
   })
   .refine((value) => Boolean(value.name || value.name_ar), {
     path: ["name"],
@@ -102,6 +153,10 @@ export const lessonFormInputSchema = z.object({
 export type CreateRoomInput = z.infer<typeof createRoomInputSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectInputSchema>;
 export type CreateAssessmentInput = z.infer<typeof createAssessmentInputSchema>;
+export type AssessmentSchemeInput = z.infer<typeof assessmentSchemeInputSchema>;
+export type AssessmentComponentInput = z.infer<
+  typeof assessmentComponentInputSchema
+>;
 export type CreateTimeSlotInput = z.infer<typeof createTimeSlotInputSchema>;
 export type ClassFormInput = z.infer<typeof classFormInputSchema>;
 export type ClassSubjectFormInput = z.infer<typeof classSubjectFormInputSchema>;

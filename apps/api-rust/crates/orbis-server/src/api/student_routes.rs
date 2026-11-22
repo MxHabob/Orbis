@@ -157,7 +157,6 @@ pub struct RegisterStudentRequest {
     pub initial_period_id: Option<Uuid>,
     pub initial_section_id: Option<Uuid>,
     pub study_mode: Option<String>,
-    pub bypass_capacity_check: Option<bool>,
     #[serde(default)]
     pub is_draft: bool,
 }
@@ -446,7 +445,6 @@ pub async fn register_student(
         initial_period_id: p.initial_period_id,
         initial_section_id: p.initial_section_id,
         study_mode,
-        bypass_capacity_check: p.bypass_capacity_check,
         is_draft: p.is_draft,
     };
 
@@ -765,7 +763,6 @@ pub async fn bulk_register_students(
             initial_period_id: item.registration.initial_period_id,
             initial_section_id: item.registration.initial_section_id,
             study_mode,
-            bypass_capacity_check: item.registration.bypass_capacity_check,
             is_draft: item.registration.is_draft,
         };
 

@@ -80,8 +80,8 @@ const studentFullName = $derived(
   (person?.first_name && person?.last_name
     ? `${person.first_name} ${person.last_name}`
     : "") ||
-    person?.name_ar ||
-    person?.name_en ||
+    person?.full_name_ar ||
+    person?.full_name ||
     person?.full_name ||
     "",
 );
@@ -122,9 +122,9 @@ async function handleStudentAvatarUpload(url: string) {
 }
 
 const currentClass = $derived(
-  enrollment?.class_id
+  enrollment?.section_id
     ? (classesQuery.data ?? []).find(
-        (c: any) => String(c.id) === String(enrollment.class_id),
+        (c: any) => String(c.id) === String(enrollment.section_id),
       )
     : null,
 );
@@ -188,8 +188,8 @@ async function transferClass() {
   isTransferring = true;
   try {
     await api.transferClass({
-      enrollmentId: enrollment?.id || studentId,
-      targetClassId: transferTargetClassId,
+      enrollment_id: enrollment?.id || studentId,
+      target_class_id: transferTargetClassId,
     });
     toast.success(m.common_form_success_update());
     showTransferDialog = false;
@@ -206,7 +206,8 @@ async function transferClass() {
   }
 }
 
-function getClassName(clsId: string) {
+function getClassName(clsId: string | null | undefined) {
+  if (!clsId) return m.ui_copy_unassigned_df62ef28();
   const cls = (classesQuery.data ?? []).find(
     (c: any) => String(c.id) === String(clsId),
   );
@@ -270,19 +271,16 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "print_cert",
               label: m.ui_copy_print_enrollment_certificate_d360ef39(),
-              icon: Printer,
               onclick: () => (showPrintCertificate = true),
             },
             {
               id: "print_academic_cert",
               label: m.student_layout_print_official_academic_certificate(),
-              icon: DocumentCheck,
               onclick: () => (showPrintAcademicCertificate = true),
             },
             {
               id: "transfer_class",
               label: m.common_student_layout_transfer_class(),
-              icon: ArrowsRightLeft,
               onclick: () => (showTransferDialog = true),
             },
             ...(currentClass?.id
@@ -290,7 +288,6 @@ const relatedActionGroups = $derived<ActionGroup[]>(
                   {
                     id: "class_curriculum",
                     label: m.ui_copy_class_curriculum_8b6731cd(),
-                    icon: BookOpen,
                     href: `/${orgId}/academics/sections/${currentClass.id}/curriculum`,
                   },
                 ]
@@ -306,19 +303,16 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "record_payment",
               label: m.ui_copy_record_payment_2d05fe8e(),
-              icon: Banknotes,
               href: `/${orgId}/finance/payments?studentId=${actualStudentId}`,
             },
             {
               id: "account_statement",
               label: m.ui_copy_account_statement_6b810b21(),
-              icon: Document,
               href: `/${orgId}/finance/statement?studentId=${actualStudentId}`,
             },
             {
               id: "student_fees",
               label: m.students_detail_tab_fees(),
-              icon: DocumentPage,
               href: `/${orgId}/students/${studentId}/fees`,
             },
           ],

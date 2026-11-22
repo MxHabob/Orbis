@@ -13,7 +13,10 @@ import { api } from "$lib/api";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import { Label } from "@orbis/ui/label";
 
-type CurrencyOption = string | CurrencyDto;
+type CurrencyOption =
+  | string
+  | (Pick<CurrencyDto, "code" | "name" | "symbol"> &
+      Partial<Pick<CurrencyDto, "name_ar" | "exchange_rate" | "is_base">>);
 
 let {
   title = m.finance_ledger_currency(),
@@ -118,7 +121,7 @@ function handleChange(val: string | null) {
         searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
         emptyText={m.shared_ui_no_matching_currencies()}
         showAllOption={includeAll}
-        {allLabel}
+        allOptionLabel={allLabel}
         disabled={disabled || isLoading}
         getItemValue={getCurrencyValue}
         getItemLabel={getCurrencyLabel}
@@ -139,7 +142,7 @@ function handleChange(val: string | null) {
         searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
         emptyText={m.shared_ui_no_matching_currencies()}
         showAllOption={includeAll}
-        {allLabel}
+        allOptionLabel={allLabel}
         disabled={disabled || isLoading}
         getItemValue={getCurrencyValue}
         getItemLabel={getCurrencyLabel}

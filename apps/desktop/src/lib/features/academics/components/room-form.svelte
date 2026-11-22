@@ -108,10 +108,7 @@ async function handleSubmit(e: SubmitEvent) {
         room_type: payload.room_type || "classroom",
         is_exam_hall: payload.is_exam_hall,
         org_unit_id: payload.org_unit_id || null,
-        floor:
-          payload.floor != null && payload.floor !== ""
-            ? Number(payload.floor)
-            : undefined,
+        floor: payload.floor ?? undefined,
       });
       toast.success(m.common_rooms_update_success());
     } else {
@@ -122,10 +119,7 @@ async function handleSubmit(e: SubmitEvent) {
         room_type: payload.room_type || "classroom",
         is_exam_hall: payload.is_exam_hall,
         org_unit_id: payload.org_unit_id || undefined,
-        floor:
-          payload.floor != null && payload.floor !== ""
-            ? Number(payload.floor)
-            : undefined,
+        floor: payload.floor ?? undefined,
       });
       toast.success(m.common_rooms_create_success());
     }

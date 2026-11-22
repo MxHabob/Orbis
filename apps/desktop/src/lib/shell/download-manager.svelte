@@ -20,11 +20,12 @@ let shouldShowDownloadManager = $derived(
     updateManager.isDownloading ||
     updateManager.isApplying ||
     updateManager.isReadyToRestart ||
-    updateManager.error !== null ||
-    updateManager.updateResult?.has_update === true ||
+    (updateManager.isOnline && updateManager.error !== null) ||
+    (updateManager.isOnline &&
+      updateManager.updateResult?.has_update === true) ||
     solverSetup?.state === "preparing" ||
-    solverSetup?.state === "failed" ||
-    solverSetup?.state === "ready",
+    (updateManager.isOnline && solverSetup?.state === "failed") ||
+    (updateManager.isOnline && solverSetup?.state === "ready"),
 );
 
 onMount(() => {
@@ -35,8 +36,18 @@ onMount(() => {
   const listenerPromise = listen<SolverSetupStatusDto>(
     "solver-setup-status-changed",
     ({ payload }) => {
-      solverSetup = payload;
-      if (payload.state === "preparing" || payload.state === "failed") {
+      if (payload.state === "failed") {
+        if (updateManager.isOnline) {
+          solverSetup = payload;
+          isOpen = true;
+        } else {
+          solverSetup = null;
+          isOpen = false;
+        }
+      } else {
+        solverSetup = payload;
+      }
+      if (payload.state === "preparing") {
         isOpen = true;
       } else if (payload.state === "ready") {
         isOpen = true;
@@ -54,7 +65,16 @@ onMount(() => {
     unlistenSetup = unlisten;
     try {
       const current = await api.getSolverSetupStatus();
-      if (current.state === "preparing" || current.state === "failed") {
+      if (current.state === "preparing") {
+        solverSetup = current;
+      } else if (current.state === "failed") {
+        if (updateManager.isOnline) {
+          solverSetup = current;
+          isOpen = true;
+        } else {
+          solverSetup = null;
+        }
+      } else if (current.state === "ready") {
         solverSetup = current;
       }
     } catch (error) {
@@ -81,9 +101,16 @@ async function retry() {
 
 async function retrySolverSetup() {
   try {
+    if (!navigator.onLine) {
+      solverSetup = null;
+      isOpen = false;
+      return;
+    }
     solverSetup = await api.startSolverSetup();
   } catch (error) {
     console.error("Failed to restart solver setup", error);
+    solverSetup = null;
+    isOpen = false;
   }
 }
 </script>

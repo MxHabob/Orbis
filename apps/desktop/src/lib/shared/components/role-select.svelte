@@ -52,10 +52,6 @@ function getRoleLabel(r: RoleDto): string {
   return l(r.name_ar, r.name) || r.name || String(r.id || "");
 }
 
-function getRoleSubtitle(r: RoleDto): string | undefined {
-  return r.description || undefined;
-}
-
 function getRoleBadge(r: RoleDto): string | undefined {
   return String(r.id || "");
 }
@@ -75,13 +71,12 @@ function handleChange(val: string | null) {
   searchPlaceholder={m.shared_ui_search_roles_placeholder()}
   emptyText={m.shared_ui_no_matching_roles()}
   showAllOption={allowAll}
-  {allLabel}
+  allOptionLabel={allLabel}
   disabled={disabled || rolesQuery.isLoading}
   {size}
   {id}
   getItemValue={getRoleValue}
   getItemLabel={getRoleLabel}
-  getItemSubtitle={getRoleSubtitle}
   getItemBadge={getRoleBadge}
   onchange={handleChange}
   class={className}

@@ -8,7 +8,8 @@ use orbis_domain::entities::section_subject::SectionSubject;
 use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -565,6 +566,68 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     }
 
     async fn save_enrollment(&self, enrollment: &Enrollment) -> Result<(), DomainError> {
+        let offering_id = enrollment.section_id.ok_or_else(|| {
+            DomainError::Validation("A course offering is required for enrollment".into())
+        })?;
+        let transaction = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        crate::repositories::enrollment_capacity::acquire_capacity_lock(
+            &transaction,
+            enrollment.org_id,
+            offering_id,
+            crate::repositories::enrollment_capacity::CapacityLockTarget::CourseOffering,
+        )
+        .await?;
+
+        let offering = SectionSubjectEntity::find_by_id(offering_id)
+            .filter(section_subject::Column::OrgId.eq(enrollment.org_id))
+            .one(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
+            .ok_or_else(|| DomainError::NotFound("Course offering not found".into()))?;
+        if offering.status != "open" {
+            return Err(DomainError::BusinessRule(
+                "Course offering is not open for enrollment".into(),
+            ));
+        }
+        if offering.period_id != enrollment.period_id {
+            return Err(DomainError::Validation(
+                "Enrollment period does not match the course offering".into(),
+            ));
+        }
+
+        let existing_attempt = EnrollmentEntity::find()
+            .filter(enrollment::Column::OrgId.eq(enrollment.org_id))
+            .filter(enrollment::Column::SectionId.eq(Some(offering_id)))
+            .filter(enrollment::Column::StudentId.eq(enrollment.student_id))
+            .filter(enrollment::Column::AttemptNumber.eq(enrollment.attempt_number))
+            .one(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if existing_attempt.is_some() {
+            return Err(DomainError::Conflict(
+                "This learner already has a record for the specified course attempt".into(),
+            ));
+        }
+
+        if let Some(capacity) = offering.capacity {
+            let active_count = EnrollmentEntity::find()
+                .filter(enrollment::Column::OrgId.eq(enrollment.org_id))
+                .filter(enrollment::Column::SectionId.eq(Some(offering_id)))
+                .filter(enrollment::Column::Status.eq("active"))
+                .count(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if active_count >= capacity.max(0) as u64 {
+                return Err(DomainError::BusinessRule(
+                    "Course offering capacity has been reached".into(),
+                ));
+            }
+        }
+
         let active = enrollment::ActiveModel {
             id: Set(enrollment.id),
             org_id: Set(enrollment.org_id),
@@ -587,13 +650,14 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             created_at: Set(enrollment.created_at.into()),
             updated_at: Set(enrollment.updated_at.into()),
         };
-        save_active_model!(
-            self,
-            EnrollmentEntity,
-            active,
-            enrollment.id,
-            enrollment.org_id
-        );
+        active
+            .insert(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
         Ok(())
     }
 }

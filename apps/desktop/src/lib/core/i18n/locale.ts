@@ -4,7 +4,10 @@ import { getLocale } from "$lib/paraglide/runtime";
  * Returns the localized value based on the current locale.
  * Fallbacks to the other language if the current locale's value is missing.
  */
-export function l<T>(arValue: T, enValue: T): T {
+export function l<Arabic, English>(
+  arValue: Arabic,
+  enValue: English,
+): Arabic | English {
   const isArabic = getLocale() === "ar";
   if (isArabic) {
     return arValue !== undefined && arValue !== null && (arValue as any) !== ""

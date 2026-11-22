@@ -8,6 +8,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
@@ -307,7 +308,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
   {:else if groupQuery.error || !group}
     <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
       <p class="text-xs text-destructive font-semibold">{extractErrorMessage(groupQuery.error) || "Group not found"}</p>
-      <Button variant="outline" size="sm" class="text-xs" onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups`)))}>
+      <Button variant="outline" size="sm" class="text-xs" onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups`) as Pathname))}>
         {m.ui_copy_back_to_groups_f1d6a091()}
       </Button>
     </div>
@@ -318,7 +319,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
           variant="ghost"
           size="icon-sm"
           class="shrink-0 text-muted-foreground"
-          onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups`)))}
+          onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups`) as Pathname))}
           title={m.ui_copy_back_to_groups_f1d6a091()}
           aria-label={m.ui_copy_back_to_groups_f1d6a091()}
         >

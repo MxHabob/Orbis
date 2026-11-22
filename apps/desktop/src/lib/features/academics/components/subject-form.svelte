@@ -1,7 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
-import { createSubjectInputSchema } from "@orbis/schemas";
+import { api, type SubjectDto } from "$lib/api";
+import {
+  createSubjectInputSchema,
+  type CreateSubjectInput,
+} from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -11,48 +14,76 @@ import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { untrack } from "svelte";
+import { Checkbox } from "@orbis/ui/checkbox";
 
 type SubjectDraft = {
   name: string;
   name_ar: string;
   code: string;
   credit_hours: number;
-  color: string | null;
+  color: string;
+  description: string;
+  sort_order: number;
+  is_core: boolean;
+  is_elective: boolean;
+  is_lab_required: boolean;
 };
 
-const form = new FormController<SubjectDraft>({
-  initialValues: {
-    name: "",
-    name_ar: "",
-    code: "",
-    credit_hours: 3,
-    color: null,
-  },
+let {
+  orgId,
+  subject,
+  onSuccess,
+  onCancel,
+}: {
+  orgId: string;
+  subject?: SubjectDto | null;
+  onSuccess: () => void;
+  onCancel: () => void;
+} = $props();
+
+const form = new FormController<SubjectDraft, CreateSubjectInput>({
+  initialValues: untrack(() => ({
+    name: subject?.name ?? "",
+    name_ar: subject?.name_ar ?? "",
+    code: subject?.code ?? "",
+    credit_hours: Number(subject?.credit_hours ?? 3),
+    color: subject?.color ?? "",
+    description: subject?.description ?? "",
+    sort_order: subject?.sort_order ?? 1,
+    is_core: subject?.is_core ?? true,
+    is_elective: subject?.is_elective ?? false,
+    is_lab_required: subject?.is_lab_required ?? false,
+  })),
   schema: createSubjectInputSchema,
 });
 
 function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];
 }
-let {
-  onSuccess,
-  onCancel,
-}: {
-  orgId: string;
-  onSuccess: () => void;
-  onCancel: () => void;
-} = $props();
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (draft) => {
-    await api.createSubject({
+    const request = {
       code: draft.code,
       name: draft.name || draft.name_ar || "",
       name_ar: draft.name_ar || draft.name || undefined,
       credit_hours: String(draft.credit_hours ?? 3),
-      is_core: true,
-    });
+      description: draft.description || undefined,
+      color: draft.color || undefined,
+      sort_order: draft.sort_order,
+      is_core: draft.is_core,
+      is_elective: draft.is_elective,
+      is_lab_required: draft.is_lab_required,
+    };
+    if (subject) {
+      await api.updateSubject(subject.id, request);
+      toast.success(m.common_account_save_success());
+    } else {
+      await api.createSubject(request);
+      toast.success(m.common_subject_toast_success());
+    }
   });
   if (submitted) {
     form.reset();
@@ -68,7 +99,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-xl font-bold text-foreground">
-      {m.common_subject_sheet_title()}
+      {subject ? m.common_action_edit() : m.common_subject_sheet_title()}
     </SheetTitle>
   </SheetHeader>
 
@@ -137,6 +168,43 @@ async function handleSubmit(e: SubmitEvent) {
         max="20"
       />
     </div>
+
+    <FormField id="sub_sort_order" label={m.common_sort_order()} required>
+      {#snippet children()}
+        <Input
+          id="sub_sort_order"
+          type="number"
+          bind:value={form.values.sort_order}
+          min="1"
+          max="1000"
+        />
+      {/snippet}
+    </FormField>
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <label class="flex items-center gap-2 text-xs text-foreground">
+        <Checkbox checked={form.values.is_core} onCheckedChange={(value) => (form.values.is_core = value)} />
+        {m.common_core_subject()}
+      </label>
+      <label class="flex items-center gap-2 text-xs text-foreground">
+        <Checkbox checked={form.values.is_elective} onCheckedChange={(value) => (form.values.is_elective = value)} />
+        {m.common_elective_subject()}
+      </label>
+      <label class="flex items-center gap-2 text-xs text-foreground">
+        <Checkbox checked={form.values.is_lab_required} onCheckedChange={(value) => (form.values.is_lab_required = value)} />
+        {m.common_lab_required_subject()}
+      </label>
+    </div>
+
+    <FormField id="sub_description" label={m.common_description()}>
+      {#snippet children()}
+        <Input
+          id="sub_description"
+          type="text"
+          bind:value={form.values.description}
+        />
+      {/snippet}
+    </FormField>
   </div>
 
   <!-- Form Actions -->

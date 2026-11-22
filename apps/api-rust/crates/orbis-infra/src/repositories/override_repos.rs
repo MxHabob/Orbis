@@ -74,32 +74,7 @@ impl OverrideRequestRepository for OverrideRepoImpl {
     }
 
     async fn save(&self, r: &AcademicOverrideRequest) -> Result<(), DomainError> {
-        let chain_json = serde_json::to_value(&r.approval_chain).unwrap_or_default();
-        let active = override_request::ActiveModel {
-            id: Set(r.id),
-            org_id: Set(r.org_id),
-            override_type: Set(r.override_type.to_string()),
-            risk_level: Set(r.risk_level.to_string()),
-            entity_type: Set(r.entity_type.clone()),
-            entity_id: Set(r.entity_id),
-            field_name: Set(r.field_name.clone()),
-            old_value: Set(r.old_value.clone()),
-            new_value: Set(r.new_value.clone()),
-            reason: Set(r.reason.clone()),
-            requested_by: Set(r.requested_by),
-            requested_by_name: Set(r.requested_by_name.clone()),
-            status: Set(r.status.to_string()),
-            current_approver_role: Set(r.current_approver_role.clone()),
-            approval_chain: Set(chain_json),
-            resolved_by: Set(r.resolved_by),
-            resolved_by_name: Set(r.resolved_by_name.clone()),
-            resolved_at: Set(r.resolved_at),
-            resolution_notes: Set(r.resolution_notes.clone()),
-            expires_at: Set(r.expires_at),
-            metadata: Set(Some(r.metadata.clone())),
-            created_at: Set(r.created_at),
-            updated_at: Set(r.updated_at),
-        };
+        let active = override_to_active_model(r)?;
 
         if OverrideEntity::find_by_id(r.id)
             .one(&self.db)
@@ -119,6 +94,38 @@ impl OverrideRequestRepository for OverrideRepoImpl {
         }
         Ok(())
     }
+}
+
+pub(crate) fn override_to_active_model(
+    r: &AcademicOverrideRequest,
+) -> Result<override_request::ActiveModel, DomainError> {
+    let chain_json = serde_json::to_value(&r.approval_chain)
+        .map_err(|error| DomainError::Internal(error.to_string()))?;
+    Ok(override_request::ActiveModel {
+        id: Set(r.id),
+        org_id: Set(r.org_id),
+        override_type: Set(r.override_type.to_string()),
+        risk_level: Set(r.risk_level.to_string()),
+        entity_type: Set(r.entity_type.clone()),
+        entity_id: Set(r.entity_id),
+        field_name: Set(r.field_name.clone()),
+        old_value: Set(r.old_value.clone()),
+        new_value: Set(r.new_value.clone()),
+        reason: Set(r.reason.clone()),
+        requested_by: Set(r.requested_by),
+        requested_by_name: Set(r.requested_by_name.clone()),
+        status: Set(r.status.to_string()),
+        current_approver_role: Set(r.current_approver_role.clone()),
+        approval_chain: Set(chain_json),
+        resolved_by: Set(r.resolved_by),
+        resolved_by_name: Set(r.resolved_by_name.clone()),
+        resolved_at: Set(r.resolved_at),
+        resolution_notes: Set(r.resolution_notes.clone()),
+        expires_at: Set(r.expires_at),
+        metadata: Set(Some(r.metadata.clone())),
+        created_at: Set(r.created_at),
+        updated_at: Set(r.updated_at),
+    })
 }
 
 fn map_model_to_domain(m: override_request::Model) -> AcademicOverrideRequest {

@@ -525,6 +525,7 @@ pub struct BootstrapService {
     pub account_repo: Arc<dyn AccountRepository>,
     pub password_hasher: Arc<dyn PasswordHasher>,
     pub event_bus: Arc<dyn EventBus>,
+    bootstrap_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl BootstrapService {
@@ -555,6 +556,7 @@ impl BootstrapService {
             account_repo,
             password_hasher,
             event_bus,
+            bootstrap_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -621,6 +623,8 @@ impl BootstrapService {
     /// If only an organization exists (no admin), it will complete the
     /// bootstrap by creating the admin — this handles crash recovery.
     pub async fn execute(&self, req: BootstrapRequest) -> Result<BootstrapResult, DomainError> {
+        let _bootstrap_guard = self.bootstrap_lock.lock().await;
+        let _database_guard = self.system_repo.acquire_bootstrap_lock().await?;
         // ── Step 1: Validate request ──────────────────────────
         self.validate_request(&req)?;
 

@@ -246,25 +246,10 @@ async function handleReverse(entry: JournalEntryDto) {
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   journalEntries.map((e, idx) => {
-    const debitAcc = e.debit_account_id
-      ? getAccountName(e.debit_account_id)
-      : e.lines && e.lines.length > 0
-        ? getAccountName(e.lines[0].account_id)
-        : "—";
-
-    const creditAcc = e.credit_account_id
-      ? getAccountName(e.credit_account_id)
-      : e.lines && e.lines.length > 1
-        ? getAccountName(e.lines[1].account_id)
-        : "—";
-
-    const amt = Number(
-      e.amount ||
-        (e.lines && e.lines.length > 0
-          ? e.lines[0].debit || e.lines[0].credit
-          : 0),
-    );
-    const curr = e.currency_code || e.currency || "YER";
+    const debitAcc = getAccountName(e.debit_account_id);
+    const creditAcc = getAccountName(e.credit_account_id);
+    const amt = Number(e.amount);
+    const curr = e.currency_code;
 
     return {
       ...e,
@@ -276,9 +261,12 @@ const gridSource = $derived(
       debit_account_display: debitAcc,
       credit_account_display: creditAcc,
       notes_display: e.description_ar || e.description || "—",
-      status_display: e.is_posted
-        ? m.finance_ui_posted_status()
-        : m.finance_ui_draft_status(),
+      status_display:
+        e.status === "posted" || e.status === "reconciled"
+          ? m.finance_ui_posted_status()
+          : e.status === "draft"
+            ? m.finance_ui_draft_status()
+            : e.status,
     };
   }),
 );

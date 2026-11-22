@@ -81,11 +81,33 @@ impl AutopilotEngine {
             return Ok(task);
         }
 
-        // Transition to Executing
+        let expected_status = task.status;
+        if !matches!(
+            expected_status,
+            TaskStatus::Pending | TaskStatus::Suggested | TaskStatus::Failed
+        ) {
+            return Err(DomainError::Conflict(format!(
+                "Autopilot task cannot execute from the '{}' state",
+                expected_status.as_str()
+            )));
+        }
+        if !self
+            .task_repo
+            .claim_task(task.id, task.org_id, expected_status)
+            .await?
+        {
+            return Err(DomainError::Conflict(
+                "Autopilot task was already claimed or its state changed".into(),
+            ));
+        }
+
         task.status = TaskStatus::Executing;
-        task.attempts += 1;
+        task.attempts = if expected_status == TaskStatus::Failed {
+            1
+        } else {
+            task.attempts + 1
+        };
         task.updated_at = Utc::now();
-        self.task_repo.save_task(&task).await?;
 
         let execution_result = self.dispatch_task(ctx, &task).await;
 

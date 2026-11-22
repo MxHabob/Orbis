@@ -60,7 +60,7 @@ const years = $derived(yearsQuery.data ?? academicContext.allYears ?? []);
 const sections = $derived(sectionsQuery.data ?? []);
 const periods = $derived(periodsQuery.data ?? []);
 const progressionJobs = $derived(progressionJobsQuery.data ?? []);
-const teachersCount = $derived(teachersQuery.data?.length ?? 0);
+const teachersCount = $derived(teachersQuery.data?.items.length ?? 0);
 
 // Find active year: check query data first, then academicContext, then fallback to first available
 const currentYear = $derived(

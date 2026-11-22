@@ -5,7 +5,7 @@ import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import {
   api,
-  type academicCalendarDto,
+  type AcademicCalendarDto,
   type AcademicPeriodDto,
   type CalendarDefaultsDto,
 } from "$lib/api";
@@ -37,7 +37,7 @@ let isSubmittingPeriod = $state(false);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
-let years = $state<academicCalendarDto[]>([]);
+let years = $state<AcademicCalendarDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 let backendDefaults = $state<CalendarDefaultsDto | null>(null);
 
@@ -491,7 +491,7 @@ async function handleApplyOfficialTemplate(templateCode: string) {
   }
 }
 
-function startYearEdit(year: academicCalendarDto) {
+function startYearEdit(year: AcademicCalendarDto) {
   editingYearId = String(year.id);
   editingYearName = year.name;
   editingYearNameAr = year.name_ar ?? "";
@@ -504,7 +504,7 @@ function cancelYearEdit() {
   editingYearId = null;
 }
 
-async function saveYearEdit(year: academicCalendarDto) {
+async function saveYearEdit(year: AcademicCalendarDto) {
   if (!editingYearName.trim() && !editingYearNameAr.trim()) {
     toast.error(m.onboarding_step3_year_err_name());
     return;
@@ -540,7 +540,7 @@ async function saveYearEdit(year: academicCalendarDto) {
 }
 
 async function transitionYear(
-  year: academicCalendarDto,
+  year: AcademicCalendarDto,
   action: "activate" | "close" | "archive",
 ) {
   isSubmittingYear = true;
@@ -640,7 +640,7 @@ async function deletePeriod(period: AcademicPeriodDto) {
   await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
-async function deleteYear(year: academicCalendarDto) {
+async function deleteYear(year: AcademicCalendarDto) {
   const deleted = await api.deleteacademicCalendar(String(year.id));
   if (!deleted) throw new Error(m.common_action_failed());
   years = years.filter((item) => item.id !== year.id);

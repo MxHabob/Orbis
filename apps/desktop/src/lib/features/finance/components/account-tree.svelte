@@ -90,7 +90,7 @@ function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
   const res: AccountNode[] = [];
   for (const node of nodes) {
     const nameAr = (node.name_ar || "").toLowerCase();
-    const nameEn = (node.name_en || node.name || "").toLowerCase();
+    const nameEn = (node.name || "").toLowerCase();
     const nameMatch = nameAr.includes(q) || nameEn.includes(q);
     const codeMatch = (node.code || "").toLowerCase().includes(q);
     const matchingChildren = node.children

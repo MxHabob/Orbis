@@ -495,6 +495,7 @@ impl FinanceService {
         receipt_number: Option<String>,
         payment_date: Option<NaiveDate>,
         notes: Option<String>,
+        idempotency_key: Option<Uuid>,
     ) -> Result<Payment, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ProcessPayment)
@@ -526,8 +527,20 @@ impl FinanceService {
         } else {
             now
         };
+        let requires_gateway = matches!(
+            method,
+            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
+        );
+        let payment_id = match idempotency_key {
+            Some(id) => id,
+            None if requires_gateway => {
+                return Err(DomainError::Validation(
+                    "Electronic payments require an idempotency_key UUID".into(),
+                ));
+            }
+            None => Uuid::new_v4(),
+        };
         let journal_entry_id = Uuid::new_v4();
-        let payment_id = Uuid::new_v4();
 
         // 1. Fetch org settings to determine base currency
         let org_settings = self.policy_repo.get_settings(org_id).await?;
@@ -539,12 +552,45 @@ impl FinanceService {
             .find_by_id(account_id)
             .await?
             .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
+        if account.org_id != org_id {
+            return Err(DomainError::Unauthorized(
+                "Payment account belongs to another organization".into(),
+            ));
+        }
         if !is_cash_or_bank_treasury(&account, org_id) {
             return Err(DomainError::Validation(
                 "Payment account must be an active cash or bank treasury account".into(),
             ));
         }
         let transaction_currency = account.currency_code;
+
+        if let Some(existing) = self.payment_repo.find_by_id(payment_id).await? {
+            if existing.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Payment idempotency key belongs to another organization".into(),
+                ));
+            }
+            let request_matches = existing.created_by == ctx.user_id()
+                && existing.fee_id == fee_id
+                && existing.account_id == account_id
+                && existing.amount == amount
+                && existing.method == method
+                && existing.currency_code == transaction_currency
+                && student_id.map_or(true, |id| existing.student_id == Some(id))
+                && enrollment_id.map_or(true, |id| existing.enrollment_id == Some(id))
+                && payer_name == existing.payer_name
+                && payer_phone == existing.payer_phone
+                && notes == existing.notes
+                && receipt_number.as_ref().map_or(true, |number| {
+                    existing.receipt_number.as_ref() == Some(number)
+                });
+            if request_matches {
+                return Ok(existing);
+            }
+            return Err(DomainError::ConcurrencyConflict(
+                "Idempotency key was already used with a different payment request".into(),
+            ));
+        }
 
         if receivable_account_id.is_some() && fee_id.is_some() {
             return Err(DomainError::Validation(
@@ -568,6 +614,11 @@ impl FinanceService {
                         receivable_id
                     ))
                 })?;
+            if receivable.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Receivable account belongs to another organization".into(),
+                ));
+            }
             if !is_receivable_account(&receivable, org_id, &transaction_currency) {
                 return Err(DomainError::Validation(
                     "Receivable account must be an active, non-treasury account in the same organization and currency".into(),
@@ -594,59 +645,74 @@ impl FinanceService {
             }
         }
 
-        // 3. Electronic Gateway Processing if applicable
-        let mut final_reference = reference.clone();
-        if matches!(
-            method,
-            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
-        ) {
-            if let Some(src) = source {
-                let amount_f64 = rust_decimal::prelude::ToPrimitive::to_f64(&amount).unwrap_or(0.0);
-                let gateway_ref = self
-                    .payment_gateway
-                    .process_payment(ctx, amount_f64, &transaction_currency, &src)
-                    .await?;
-                final_reference = Some(gateway_ref);
-            } else {
-                return Err(DomainError::Validation(format!(
-                    "Payment method '{}' requires a source token",
-                    method
-                )));
-            }
-        }
-
-        // 4. Update StudentFee if fee_id is provided
+        // 3. Validate and prepare StudentFee update if fee_id is provided
         let mut receivable_acct = direct_receivable_account.unwrap_or(account_id);
         let mut student_resolved_id = student_id;
         let mut enrollment_resolved_id = enrollment_id;
+        let mut fee_update = None;
 
         if let Some(f_id) = fee_id {
-            if let Some(mut fee) = self.student_fee_repo.find_by_id(f_id).await? {
-                if amount > fee.balance_due {
-                    return Err(DomainError::Validation(format!(
-                        "Payment amount ({}) exceeds fee balance due ({})",
-                        amount, fee.balance_due
-                    )));
-                }
-                if !org_settings.finance.allow_partial_payments && amount < fee.balance_due {
-                    return Err(DomainError::Validation(format!(
-                        "Partial payments are not permitted by organization policy. Full balance of {} is required.",
-                        fee.balance_due
-                    )));
-                }
-                student_resolved_id = Some(fee.student_id);
-                enrollment_resolved_id = fee.enrollment_id;
-                fee.apply_payment(amount);
-                self.student_fee_repo.save(&fee).await?;
-
-                if let Some(template) = self
-                    .fee_template_repo
-                    .find_by_id(fee.fee_template_id)
-                    .await?
-                {
-                    receivable_acct = template.receivable_account_id;
-                }
+            let mut fee = self
+                .student_fee_repo
+                .find_by_id(f_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", f_id)))?;
+            if fee.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Fee belongs to another organization".into(),
+                ));
             }
+            if amount > fee.balance_due {
+                return Err(DomainError::Validation(format!(
+                    "Payment amount ({}) exceeds fee balance due ({})",
+                    amount, fee.balance_due
+                )));
+            }
+            if !org_settings.finance.allow_partial_payments && amount < fee.balance_due {
+                return Err(DomainError::Validation(format!(
+                    "Partial payments are not permitted by organization policy. Full balance of {} is required.",
+                    fee.balance_due
+                )));
+            }
+            student_resolved_id = Some(fee.student_id);
+            enrollment_resolved_id = fee.enrollment_id;
+            let previous_fee = fee.clone();
+            fee.apply_payment(amount);
+            fee_update = Some((previous_fee, fee.clone()));
+
+            if let Some(template) = self
+                .fee_template_repo
+                .find_by_id(fee.fee_template_id)
+                .await?
+            {
+                if template.org_id != org_id {
+                    return Err(DomainError::Unauthorized(
+                        "Fee template belongs to another organization".into(),
+                    ));
+                }
+                receivable_acct = template.receivable_account_id;
+            }
+        }
+
+        let mut final_reference = reference.clone();
+        if requires_gateway {
+            let src = source.ok_or_else(|| {
+                DomainError::Validation(format!(
+                    "Payment method '{}' requires a source token",
+                    method
+                ))
+            })?;
+            let amount_f64 =
+                rust_decimal::prelude::ToPrimitive::to_f64(&amount).ok_or_else(|| {
+                    DomainError::Validation(
+                        "Payment amount cannot be represented by the gateway".into(),
+                    )
+                })?;
+            let gateway_ref = self
+                .payment_gateway
+                .process_payment(ctx, amount_f64, &transaction_currency, &src, payment_id)
+                .await?;
+            final_reference = Some(gateway_ref);
         }
 
         let base_amount = amount * exchange_rate_value;
@@ -731,8 +797,6 @@ impl FinanceService {
             return Err(DomainError::Validation(e));
         }
 
-        self.journal_repo.save(&entry).await?;
-
         // 6. Create Payment Record
         let payment = Payment {
             id: payment_id,
@@ -763,7 +827,15 @@ impl FinanceService {
             updated_at: now,
             org_unit_id: None,
         };
-        self.payment_repo.save(&payment).await?;
+        self.payment_repo
+            .save_payment_posting(
+                &payment,
+                &entry,
+                fee_update
+                    .as_ref()
+                    .map(|(previous, updated)| (previous, updated)),
+            )
+            .await?;
 
         // 7. Publish Events
         let _ = self

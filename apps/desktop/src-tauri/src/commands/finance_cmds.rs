@@ -549,6 +549,7 @@ pub struct FeeFilterInput {
 
 #[derive(Deserialize, Debug)]
 pub struct ProcessPaymentInput {
+    pub idempotency_key: Option<String>,
     pub fee_id: Option<String>,
     pub student_id: Option<String>,
     pub enrollment_id: Option<String>,
@@ -1107,6 +1108,7 @@ pub async fn finance_process_payment(
     let enrollment_id = parse_optional_uuid(request.enrollment_id, "enrollment_id")?;
     let receivable_account_id =
         parse_optional_uuid(request.receivable_account_id, "receivable_account_id")?;
+    let idempotency_key = parse_optional_uuid(request.idempotency_key, "idempotency_key")?;
     let account_id = Uuid::parse_str(&request.account_id).map_err(|_| "Invalid account_id")?;
     let payment_date = request
         .payment_date
@@ -1144,6 +1146,7 @@ pub async fn finance_process_payment(
             request.receipt_number,
             payment_date,
             request.notes,
+            idempotency_key,
         )
         .await
         .map_err(|e| e.to_string())?;

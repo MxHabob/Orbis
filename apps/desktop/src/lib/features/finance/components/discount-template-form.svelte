@@ -97,11 +97,11 @@ async function handleSubmit(e: SubmitEvent) {
       await api.createDiscountTemplate({
         code: request.code || undefined,
         name: request.name,
-        discountType: request.item_type || "manual",
-        value: request.value,
-        isApprovalRequired: Boolean(payload.requires_approval),
-        isAutoApply: Boolean(payload.is_auto_apply),
-        isStackable: Boolean(payload.is_stackable),
+        discount_type: request.item_type || "manual",
+        value: String(request.value),
+        is_approval_required: Boolean(payload.requires_approval),
+        is_auto_apply: Boolean(payload.is_auto_apply),
+        is_stackable: Boolean(payload.is_stackable),
         priority: payload.priority ?? undefined,
       });
       toast.success(m.common_dt_create_success());

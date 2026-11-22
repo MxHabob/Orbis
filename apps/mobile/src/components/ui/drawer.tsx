@@ -16,7 +16,17 @@ import {
   useRef,
   useState,
 } from "react";
-import { Keyboard, Modal, Platform, Pressable, ScrollView, type ScrollViewProps, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Keyboard,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  type ScrollViewProps,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import {
   Gesture,
   GestureDetector,

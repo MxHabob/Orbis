@@ -17,8 +17,7 @@ export function ThemedStatusBar({ style }: ThemedStatusBarProps) {
       ? isDark
         ? "dark-content"
         : "light-content"
-      : resolvedStyle === "light" ||
-          (resolvedStyle === "auto" && isDark)
+      : resolvedStyle === "light" || (resolvedStyle === "auto" && isDark)
         ? "light-content"
         : "dark-content";
 

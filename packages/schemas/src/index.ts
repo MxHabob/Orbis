@@ -1,4 +1,6 @@
 export type {
+  AssessmentSchemeInput,
+  AssessmentComponentInput,
   ClassFormInput,
   ClassSubjectFormInput,
   CreateAssessmentInput,
@@ -8,6 +10,8 @@ export type {
   LessonFormInput,
 } from "./academic.js";
 export {
+  assessmentSchemeInputSchema,
+  assessmentComponentInputSchema,
   classFormInputSchema,
   classSubjectFormInputSchema,
   createAssessmentInputSchema,

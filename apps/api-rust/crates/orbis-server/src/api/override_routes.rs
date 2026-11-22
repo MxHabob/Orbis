@@ -215,13 +215,13 @@ pub async fn list_overrides(
     responses((status = 200, body = OverrideRequestDto)),
     security(("bearer" = [])), tag = "Workflow")]
 pub async fn get_override(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
     let req = state
         .workflow_service
-        .get_override(id)
+        .get_override(ctx.tenant_id, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Override request {} not found", id)))?;
     Ok(ApiResponse::ok(req.into()))

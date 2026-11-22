@@ -5,7 +5,7 @@ import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { api, queryKeys } from "$lib/api";
-import { authStore, systemStore } from "$lib/stores";
+import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -77,9 +77,7 @@ onMount(async () => {
   try {
     isLoading = true;
     const org =
-      (await api.getCurrentOrg()) ||
-      systemStore.onboardingState?.organization ||
-      authStore.currentOrg;
+      (await api.getCurrentOrg()) || systemStore.onboardingState?.organization;
     if (org) {
       name = org.name || name;
       nameAr = org.name_ar || nameAr;
@@ -106,9 +104,6 @@ onMount(async () => {
           : "";
       regionName =
         typeof metadata.region_name === "string" ? metadata.region_name : "";
-    }
-    if (!name && authStore.currentOrg?.name) {
-      name = authStore.currentOrg.name;
     }
   } catch (err: any) {
     console.error("Failed to load organization profile:", err);

@@ -8,6 +8,8 @@ The customer supplies and operates PostgreSQL; no package creates a database or 
 
 The database must already contain the Orbis schema and required migrations. The API intentionally refuses to start against an uninitialized or incompatible schema. Back up the database before applying migrations or upgrading the API.
 
+On first startup with a configured database, the API generates independent cryptographically random JWT and MFA-encryption keys and stores them in the protected `server.json`. No secret environment variables are needed for a single server installation, and these keys are never sent to Desktop clients. Keep the configuration file private and include it in protected backups. Existing valid `JWT_SECRET` and `MFA_ENCRYPTION_KEY` environment variables override the stored values; clustered deployments must provide the same stable overrides to every instance. Rotating the JWT key invalidates existing sessions. Rotating the MFA key makes previously encrypted integration credentials unreadable unless they are re-encrypted with the replacement key.
+
 ## Supported packages
 
 - Linux x64 and ARM64: install with `sudo ./install.sh`, then start with `sudo systemctl enable --now orbis-api.service`. If `server.json` is missing, the API creates it and exits; set `database_url`, then restart the service. Stop with `sudo systemctl stop orbis-api.service`.
@@ -15,7 +17,7 @@ The database must already contain the Orbis schema and required migrations. The 
 - macOS Apple Silicon: the API executable is not signed or notarized, so Gatekeeper may block it. Install and run it only if your administrator's security policy permits unsigned software. Install with `sudo ./install.sh` to register the launchd service. Start it with `sudo launchctl bootstrap system /Library/LaunchDaemons/com.orbis.api.plist`; if the config is missing, the API creates it and exits. Set `database_url` and restart the service. Stop it with `sudo launchctl bootout system /Library/LaunchDaemons/com.orbis.api.plist`.
 - Docker: use the included Compose bundle and follow `docker/README.md`.
 
-Installers register the service but do not create the server configuration or start the API. Keep the API behind a TLS reverse proxy for public access, restrict firewall rules to intended clients, and do not expose PostgreSQL to the public internet.
+Installers register the service but do not configure the database or start the API. The API creates the protected server configuration when first started. Keep the API behind a TLS reverse proxy for public access, restrict firewall rules to intended clients, and do not expose PostgreSQL to the public internet.
 
 ## Upgrade and rollback
 

@@ -24,7 +24,7 @@ const sectionId = $derived(
   data.sectionId || String(page.params.sectionId || ""),
 );
 const SectionSubjectId = $derived(
-  data.SectionSubjectId || String(page.params.SectionSubjectId || ""),
+  data.SectionSubjectId || String(page.params.classSubjectId || ""),
 );
 
 let showConfigSheet = $state(false);

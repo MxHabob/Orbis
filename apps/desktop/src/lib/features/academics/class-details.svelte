@@ -123,20 +123,16 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "class_roster",
               label: m.ui_copy_class_roster_students_7c634c5e(),
-              icon: Users,
               href: `/${orgId}/academics/sections/${classId}/students`,
-              badge: students.length,
             },
             {
               id: "class_curriculum",
               label: m.ui_copy_curriculum_subjects_70041ea1(),
-              icon: BookOpen,
               href: `/${orgId}/academics/sections/${classId}/curriculum`,
             },
             {
               id: "class_schedule",
               label: m.ui_copy_weekly_schedule_e30b8a34(),
-              icon: Calendar,
               href: `/${orgId}/academics/schedule?classId=${classId}`,
             },
           ],
@@ -150,13 +146,11 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "daily_attendance",
               label: m.ui_copy_daily_attendance_cc39a674(),
-              icon: CheckSquare,
               href: `/${orgId}/academics/attendance?classId=${classId}`,
             },
             {
               id: "grades_exams",
               label: m.ui_copy_grades_assessment_entry_53bbff49(),
-              icon: DocumentPage,
               href: `/${orgId}/academics/exams?classId=${classId}`,
             },
           ],

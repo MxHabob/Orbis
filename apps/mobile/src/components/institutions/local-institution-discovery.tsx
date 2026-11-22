@@ -1,7 +1,13 @@
 import { Refresh } from "@orbis/icons/native";
 import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, TurboModuleRegistry, View, type TurboModule } from "react-native";
+import {
+  Platform,
+  Pressable,
+  TurboModuleRegistry,
+  View,
+  type TurboModule,
+} from "react-native";
 import Zeroconf, { useZeroconf } from "react-native-zeroconf";
 import {
   InstitutionCard,

@@ -58,7 +58,9 @@ export const InstitutionCard = memo(function InstitutionCard({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${name}, ${
-        isLauncher ? t("auth_institution_server_available") : institution.deployment_name
+        isLauncher
+          ? t("auth_institution_server_available")
+          : institution.deployment_name
       }`}
       accessibilityState={{
         disabled: disabled || isCurrent,
@@ -129,7 +131,9 @@ export const InstitutionCard = memo(function InstitutionCard({
             numberOfLines={1}
             className={`text-start text-xs leading-4 text-muted-foreground ${isLauncher ? "" : "mt-1"}`}
           >
-            {isLauncher ? institution.endpoint_url : institution.deployment_name}
+            {isLauncher
+              ? institution.endpoint_url
+              : institution.deployment_name}
           </Text>
           {!isLauncher && isCurrent && currentLabel ? (
             <Text className="mt-1 text-start text-xs font-medium text-primary">

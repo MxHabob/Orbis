@@ -447,6 +447,14 @@ impl AuthService {
         _role: Option<String>,
         org_id: Option<Uuid>,
     ) -> Result<User, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::UserWrite)
+            .await?;
+        if _role.is_some() {
+            self.permission_checker
+                .check(ctx, Permission::UserRoleWrite)
+                .await?;
+        }
         let actual_org_id = org_id.unwrap_or(ctx.tenant_id);
 
         if let Some(ref e) = email {

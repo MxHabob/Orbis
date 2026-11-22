@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::autopilot::engine::AutopilotEngine;
 use crate::autopilot::evaluator::AutopilotEvaluator;
-use crate::context::RequestContext;
+use crate::context::{ActionSource, RequestContext};
 use crate::ports::gateways::NotificationPort;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{AutopilotTaskRepository, PolicyRepository};
@@ -25,6 +25,33 @@ pub struct AutopilotDiagnostics {
     pub pending_tasks_count: u64,
     pub completed_tasks_count: u64,
     pub failed_tasks_count: u64,
+}
+
+fn can_access_org(ctx: &RequestContext, org_id: Uuid) -> bool {
+    (ctx.actor.is_system() && matches!(&ctx.source, ActionSource::System | ActionSource::Autopilot))
+        || ctx.tenant_id == org_id
+}
+
+fn require_org_scope(ctx: &RequestContext, org_id: Uuid) -> Result<(), DomainError> {
+    if can_access_org(ctx, org_id) {
+        Ok(())
+    } else {
+        Err(DomainError::Forbidden(
+            "The requested Autopilot data belongs to another organization".into(),
+        ))
+    }
+}
+
+fn require_task_scope(ctx: &RequestContext, task: &AutopilotTask) -> Result<(), DomainError> {
+    if can_access_org(ctx, task.org_id) {
+        Ok(())
+    } else {
+        Err(DomainError::NotFound("Autopilot task not found".into()))
+    }
+}
+
+fn is_manually_executable(status: TaskStatus) -> bool {
+    matches!(status, TaskStatus::Pending | TaskStatus::Suggested)
 }
 
 pub struct AutopilotService {
@@ -67,6 +94,7 @@ impl AutopilotService {
         org_id: Uuid,
         dry_run: bool,
     ) -> Result<Vec<AutopilotTask>, DomainError> {
+        require_org_scope(ctx, org_id)?;
         self.permission_checker
             .check(ctx, Permission::OrganizationWrite)
             .await?;
@@ -173,6 +201,7 @@ impl AutopilotService {
         limit: u64,
         offset: u64,
     ) -> Result<(Vec<AutopilotTask>, u64), DomainError> {
+        require_org_scope(ctx, org_id)?;
         self.permission_checker
             .check(ctx, Permission::OrganizationRead)
             .await?;
@@ -190,7 +219,13 @@ impl AutopilotService {
         self.permission_checker
             .check(ctx, Permission::OrganizationRead)
             .await?;
-        self.task_repo.find_by_id(task_id).await
+        let task = self.task_repo.find_by_id(task_id).await?;
+        if let Some(task) = task.as_ref() {
+            if !can_access_org(ctx, task.org_id) {
+                return Ok(None);
+            }
+        }
+        Ok(task)
     }
 
     /// Manually execute an Autopilot task (e.g. from UI confirmation or AI tool)
@@ -206,6 +241,13 @@ impl AutopilotService {
         let task = self.task_repo.find_by_id(task_id).await?.ok_or_else(|| {
             DomainError::NotFound(format!("Autopilot task {} not found", task_id))
         })?;
+        require_task_scope(ctx, &task)?;
+        if !is_manually_executable(task.status) {
+            return Err(DomainError::Conflict(format!(
+                "Autopilot task cannot be executed from the '{}' state",
+                task.status.as_str()
+            )));
+        }
 
         self.engine.process_task(ctx, task).await
     }
@@ -223,12 +265,16 @@ impl AutopilotService {
         let mut task = self.task_repo.find_by_id(task_id).await?.ok_or_else(|| {
             DomainError::NotFound(format!("Autopilot task {} not found", task_id))
         })?;
+        require_task_scope(ctx, &task)?;
+        if task.status != TaskStatus::Failed {
+            return Err(DomainError::Conflict(format!(
+                "Only failed Autopilot tasks can be retried; current state is '{}'",
+                task.status.as_str()
+            )));
+        }
 
-        task.attempts = 0;
-        task.status = TaskStatus::Pending;
         task.error_log = None;
         task.updated_at = Utc::now();
-        self.task_repo.save_task(&task).await?;
 
         self.engine.process_task(ctx, task).await
     }
@@ -246,6 +292,16 @@ impl AutopilotService {
         let mut task = self.task_repo.find_by_id(task_id).await?.ok_or_else(|| {
             DomainError::NotFound(format!("Autopilot task {} not found", task_id))
         })?;
+        require_task_scope(ctx, &task)?;
+        if task.status == TaskStatus::Cancelled {
+            return Ok(task);
+        }
+        if !is_manually_executable(task.status) {
+            return Err(DomainError::Conflict(format!(
+                "Autopilot task cannot be dismissed from the '{}' state",
+                task.status.as_str()
+            )));
+        }
 
         task.status = TaskStatus::Cancelled;
         task.updated_at = Utc::now();
@@ -260,6 +316,7 @@ impl AutopilotService {
         ctx: &RequestContext,
         org_id: Uuid,
     ) -> Result<AutopilotDiagnostics, DomainError> {
+        require_org_scope(ctx, org_id)?;
         self.permission_checker
             .check(ctx, Permission::OrganizationRead)
             .await?;
@@ -304,5 +361,52 @@ impl AutopilotService {
             completed_tasks_count: completed_count,
             failed_tasks_count: failed_count,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use orbis_domain::iam::actor::Actor;
+
+    fn context(tenant_id: Uuid, actor: Actor, source: ActionSource) -> RequestContext {
+        RequestContext {
+            tenant_id,
+            actor,
+            request_id: "test-request".into(),
+            source,
+            org_unit_path: None,
+        }
+    }
+
+    #[test]
+    fn user_cannot_access_another_organizations_autopilot_tasks() {
+        let ctx = context(
+            Uuid::new_v4(),
+            Actor::User(Uuid::new_v4()),
+            ActionSource::Api,
+        );
+
+        assert!(require_org_scope(&ctx, Uuid::new_v4()).is_err());
+    }
+
+    #[test]
+    fn system_actor_requires_an_internal_execution_source_for_cross_org_access() {
+        let org_id = Uuid::new_v4();
+        let internal = context(Uuid::nil(), Actor::System, ActionSource::Autopilot);
+        let transport = context(Uuid::nil(), Actor::System, ActionSource::TauriIpc);
+
+        assert!(require_org_scope(&internal, org_id).is_ok());
+        assert!(require_org_scope(&transport, org_id).is_err());
+    }
+
+    #[test]
+    fn only_pending_or_suggested_tasks_can_be_manually_executed() {
+        assert!(is_manually_executable(TaskStatus::Pending));
+        assert!(is_manually_executable(TaskStatus::Suggested));
+        assert!(!is_manually_executable(TaskStatus::Executing));
+        assert!(!is_manually_executable(TaskStatus::Completed));
+        assert!(!is_manually_executable(TaskStatus::Failed));
+        assert!(!is_manually_executable(TaskStatus::Cancelled));
     }
 }

@@ -340,10 +340,7 @@ export function extractSchemeComponents(
       : Array.isArray(
             (scheme.formula as Record<string, unknown> | null)?.components,
           )
-        ? (
-            (scheme.formula as Record<string, unknown>)
-              .components as unknown[]
-          )
+        ? ((scheme.formula as Record<string, unknown>).components as unknown[])
         : [];
 
   if (raw.length === 0) return [];
@@ -363,10 +360,8 @@ export function extractSchemeComponents(
             : typeof comp.nameAr === "string"
               ? comp.nameAr
               : null,
-        max_score:
-          Number(comp.max_score ?? comp.maxScore) || 0,
-        sort_order:
-          Number(comp.sort_order ?? comp.sortOrder) || i + 1,
+        max_score: Number(comp.max_score ?? comp.maxScore) || 0,
+        sort_order: Number(comp.sort_order ?? comp.sortOrder) || i + 1,
       } satisfies AssessmentColumnConfig;
     })
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -384,8 +379,7 @@ export function findMonthlyScheme(
   return (
     schemes.find(
       (s) =>
-        String(s.level) === "monthly_period" ||
-        String(s.level) === "monthly",
+        String(s.level) === "monthly_period" || String(s.level) === "monthly",
     ) ??
     schemes.find((s) => s.is_default === true) ??
     schemes[0] ??

@@ -26,31 +26,43 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const params: any = {};
+    const params: { class_id?: string; period_id?: string } = {};
     if (selectedClass !== "all") params.class_id = selectedClass;
-    if (selectedTerm !== "all") params.cycle_id = selectedTerm;
+    if (selectedTerm !== "all") params.period_id = selectedTerm;
 
-    const enrollments = await api.listEnrollments(params);
-    if (enrollments && enrollments.length > 0) {
-      let female = 0;
-      let male = 0;
-      for (const e of enrollments) {
-        const sex = String(e.sex || "").toLowerCase();
-        if (sex.startsWith("f") || sex === m.common_form_female()) {
-          female++;
-        } else {
-          // Default to male or check
-          male++;
-        }
-      }
-      femaleCount = female;
-      maleCount = male;
-      totalCount = female + male;
-    } else {
-      femaleCount = 0;
-      maleCount = 0;
-      totalCount = 0;
+    const pageSize = 300;
+    const firstPage = await api.listStudents({
+      ...params,
+      page: 1,
+      page_size: pageSize,
+    });
+    const students = [...firstPage.items];
+    for (let page = 2; page <= firstPage.total_pages; page++) {
+      const result = await api.listStudents({
+        ...params,
+        page,
+        page_size: firstPage.page_size,
+      });
+      students.push(...result.items);
     }
+
+    let female = 0;
+    let male = 0;
+    const femaleLabel = m.common_form_female().toLowerCase();
+    const maleLabel = m.common_form_male().toLowerCase();
+    for (const student of students) {
+      const gender = String(student.person.gender || "")
+        .trim()
+        .toLowerCase();
+      if (gender.startsWith("f") || gender === femaleLabel) {
+        female++;
+      } else if (gender.startsWith("m") || gender === maleLabel) {
+        male++;
+      }
+    }
+    femaleCount = female;
+    maleCount = male;
+    totalCount = female + male;
   } catch (e) {
     console.error("Error loading gender distribution:", e);
     femaleCount = 0;

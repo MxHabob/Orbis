@@ -164,7 +164,7 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
   <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
     <!-- Header Row (Sticky top) -->
     <div class="sticky top-0 z-20 flex min-w-[700px] border-b border-border/60 bg-card shadow-2xs">
-      <div class="h-10 shrink-0 border-e border-border/60 bg-muted/20 flex items-center justify-center {compact ? 'w-20' : 'w-28'} text-muted-foreground/60">
+      <div class="sticky start-0 z-30 h-10 shrink-0 border-e border-border/60 bg-muted/20 flex items-center justify-center {compact ? 'w-20' : 'w-28'} text-muted-foreground/60">
         <ClockRotateRight size={13} />
       </div>
       <CalendarHeader {weekdays} {lessonsByDay} {locale} />

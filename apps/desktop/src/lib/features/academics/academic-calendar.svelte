@@ -12,7 +12,7 @@ import {
   createacademicCalendarsQuery,
   createPeriodsQuery,
 } from "$lib/features/academics/queries";
-import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
+import type { AcademicPeriodDto, AcademicCalendarDto } from "@orbis/sdk";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { LoadingIndicator, toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
@@ -65,7 +65,7 @@ $effect(() => {
 
 // Sheets
 let isYearSheetOpen = $state(false);
-let editingYear = $state<academicCalendarDto | null>(null);
+let editingYear = $state<AcademicCalendarDto | null>(null);
 let isPeriodSheetOpen = $state(false);
 let editingPeriod = $state<any>(null);
 
@@ -172,7 +172,7 @@ function openEditPeriod(period: any) {
   isPeriodSheetOpen = true;
 }
 
-function openEditYear(year: academicCalendarDto) {
+function openEditYear(year: AcademicCalendarDto) {
   editingYear = year;
   isYearSheetOpen = true;
 }
@@ -402,7 +402,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
                 {@const children = getChildren(root.id)}
                 {@const rootPos = calculateTimelinePosition(root.start_date, root.end_date)}
                 {@const isRootActive = root.status === "active"}
-                {@const isRootLocked = root.is_locked === 1}
+                {@const isRootLocked = root.is_locked}
 
                 <div class="flex flex-col gap-1 p-2.5 rounded-lg border border-border/40 bg-background/40 hover:bg-background/70 transition-colors">
                   <!-- Term Title Bar -->
@@ -475,7 +475,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
         {#each rootPeriods as root (root.id)}
           {@const children = getChildren(root.id)}
           {@const isRootActive = root.status === "active"}
-          {@const isRootLocked = root.is_locked === 1}
+          {@const isRootLocked = root.is_locked}
 
           <div class="p-3.5 rounded-lg border border-border/60 bg-card/40 flex flex-col justify-between gap-3">
             <div class="flex flex-col gap-1.5">

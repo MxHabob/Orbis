@@ -39,9 +39,7 @@ const visiblePage = $derived(
 
 const startIndex = $derived((visiblePage - 1) * layout.itemsPerSheet);
 
-const sheetAspectRatio = $derived(
-  layout.sheetWidthMm / layout.sheetHeightMm,
-);
+const sheetAspectRatio = $derived(layout.sheetWidthMm / layout.sheetHeightMm);
 
 const cutLines = $derived.by(() => {
   if (cutLineWidthMm <= 0) return [];
@@ -63,36 +61,31 @@ const cutLines = $derived.by(() => {
     );
     if (!leftSlot || !rightSlot) continue;
 
-    const centerMm =
-      (leftSlot.xMm + leftSlot.widthMm + rightSlot.xMm) / 2;
+    const centerMm = (leftSlot.xMm + leftSlot.widthMm + rightSlot.xMm) / 2;
     lines.push({
       id: `vertical-${col}`,
       xMm: centerMm - cutLineWidthMm / 2,
       yMm: sheetMargins.top / 2,
       widthMm: cutLineWidthMm,
       heightMm:
-        layout.sheetHeightMm -
-        (sheetMargins.top + sheetMargins.bottom) / 2,
+        layout.sheetHeightMm - (sheetMargins.top + sheetMargins.bottom) / 2,
     });
   }
 
   for (let row = 1; row < layout.rows; row++) {
     const topSlot =
-      layout.slots.find(
-        (slot) => slot.row === row - 1 && slot.col === 0,
-      ) ?? layout.slots.find((slot) => slot.row === row - 1);
+      layout.slots.find((slot) => slot.row === row - 1 && slot.col === 0) ??
+      layout.slots.find((slot) => slot.row === row - 1);
     const bottomSlot = layout.slots.find((slot) => slot.row === row);
     if (!topSlot || !bottomSlot) continue;
 
-    const centerMm =
-      (topSlot.yMm + topSlot.heightMm + bottomSlot.yMm) / 2;
+    const centerMm = (topSlot.yMm + topSlot.heightMm + bottomSlot.yMm) / 2;
     lines.push({
       id: `horizontal-${row}`,
       xMm: sheetMargins.left / 2,
       yMm: centerMm - cutLineWidthMm / 2,
       widthMm:
-        layout.sheetWidthMm -
-        (sheetMargins.left + sheetMargins.right) / 2,
+        layout.sheetWidthMm - (sheetMargins.left + sheetMargins.right) / 2,
       heightMm: cutLineWidthMm,
     });
   }

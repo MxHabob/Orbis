@@ -126,16 +126,10 @@ const lateStudents = $derived.by(() => {
     if (remaining <= 0) continue;
 
     const enrollment = enrollments.find((e) => e.id === f.enrollment_id);
-    const studentName = enrollment
-      ? enrollment.full_name ||
-        enrollment.name_ar ||
-        enrollment.name_en ||
-        enrollment.student_number ||
-        "—"
-      : "—";
+    const studentName = enrollment?.student_number || "—";
     const studentNum = enrollment ? enrollment.student_number : "—";
-    const avatar = enrollment ? enrollment.avatar : null;
-    const classId = enrollment ? enrollment.class_id : null;
+    const avatar = null;
+    const classId = enrollment?.section_id ?? null;
 
     const cls = classId ? classes.find((c) => c.id === classId) : null;
     const className = cls ? cls.name_ar || cls.name : "—";
@@ -162,22 +156,15 @@ const lateStudents = $derived.by(() => {
 
 // ── Recent Payments ──────────────────────────────────────────────────────
 const recentPayments = $derived.by(() => {
-  const sorted = [...payments].sort((a: any, b: any) => {
-    const dateA = new Date(a.payment_date || a.created_at);
-    const dateB = new Date(b.payment_date || b.created_at);
+  const sorted = [...payments].sort((a, b) => {
+    const dateA = new Date(a.paid_at || a.created_at);
+    const dateB = new Date(b.paid_at || b.created_at);
     return dateB.getTime() - dateA.getTime();
   });
 
-  return sorted.slice(0, 5).map((p: any) => {
+  return sorted.slice(0, 5).map((p) => {
     const enrollment = enrollments.find((e) => e.id === p.enrollment_id);
-    const studentName =
-      p.student_name ||
-      (enrollment
-        ? enrollment.full_name ||
-          enrollment.name_ar ||
-          enrollment.name_en ||
-          "—"
-        : "—");
+    const studentName = p.payer_name || enrollment?.student_number || "—";
 
     return {
       ...p,

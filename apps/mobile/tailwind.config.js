@@ -68,16 +68,16 @@ const tokenNames = [
 ];
 
 const colors = Object.fromEntries(
-  tokenNames.map((name) => [
-    name,
-    `rgb(var(--${name}) / <alpha-value>)`,
-  ]),
+  tokenNames.map((name) => [name, `rgb(var(--${name}) / <alpha-value>)`]),
 );
 
 colors.overlay = "rgb(var(--overlay) / 0.1)";
 
 module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}", "../../packages/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "../../packages/**/*.{js,jsx,ts,tsx}",
+  ],
   presets: [require("nativewind/preset")],
   darkMode: "class",
   theme: {

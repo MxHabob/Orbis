@@ -5,7 +5,12 @@
  */
 
 import React from "react";
-import { StyleSheet, useWindowDimensions, View, type ViewStyle } from "react-native";
+import {
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
+} from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";

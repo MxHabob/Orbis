@@ -5,7 +5,7 @@ import { SectionSubjectResults } from "$lib/features/academics";
 
 const orgId = $derived(page.params.orgId || "");
 const sectionId = $derived(page.params.sectionId || "");
-const SectionSubjectId = $derived(page.params.SectionSubjectId || "");
+const SectionSubjectId = $derived(page.params.classSubjectId || "");
 </script>
 
 <svelte:head>

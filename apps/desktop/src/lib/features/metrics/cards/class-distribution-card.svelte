@@ -28,10 +28,6 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const params: any = {};
-    if (selectedClass !== "all") params.class_id = selectedClass;
-    if (selectedTerm !== "all") params.cycle_id = selectedTerm;
-
     const sections = await api.listSections();
     const filteredSections = sections.filter((section) => {
       if (selectedClass !== "all" && section.id !== selectedClass) return false;
@@ -44,7 +40,9 @@ async function loadData() {
       data = filteredSections
         .map((c) => ({
           name:
-            getLocale() === "ar" ? c.name_ar || c.name : c.name || c.name_ar,
+            (getLocale() === "ar"
+              ? c.name_ar || c.name
+              : c.name || c.name_ar) || String(c.id),
           count: c.current_students || 0,
         }))
         .sort((a, b) => b.count - a.count)

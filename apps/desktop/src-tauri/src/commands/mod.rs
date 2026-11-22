@@ -39,7 +39,10 @@ pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::Re
     let session = state.get_active_session();
     let (tenant_id, actor) = match session {
         Some(s) => (s.org_id, orbis_domain::iam::actor::Actor::User(s.user_id)),
-        None => (uuid::Uuid::nil(), orbis_domain::iam::actor::Actor::System),
+        None => (
+            uuid::Uuid::nil(),
+            orbis_domain::iam::actor::Actor::User(uuid::Uuid::nil()),
+        ),
     };
     orbis_app::context::RequestContext {
         tenant_id,
@@ -60,6 +63,13 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
             .state_ref()
             .try_get::<crate::state::AppState>()
         {
+            if state.get_active_session().is_none() && !is_allowed_before_auth(&command) {
+                invoke
+                    .resolver
+                    .reject("Authentication is required to execute this operation.".to_string());
+                return true;
+            }
+
             let snapshot = state.license_runtime.current_snapshot();
             if !snapshot.state.is_operational() && !is_allowed_without_operational_license(&command)
             {
@@ -111,6 +121,37 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_get_release_notes_state"
                 | "system_acknowledge_release_notes"
                 | "api_distribution_verify_manifest"
+                | "system_check_for_updates"
+                | "system_download_update"
+                | "system_install_update"
+                | "bootstrap_detect_environment"
+                | "bootstrap_generate_slug"
+                | "bootstrap_get_status"
+                | "bootstrap_execute"
+        )
+}
+
+fn is_allowed_before_auth(command: &str) -> bool {
+    command.starts_with("auth_")
+        || command.starts_with("connection_")
+        || command.starts_with("window_")
+        || matches!(
+            command,
+            "license_get_state"
+                | "license_activate_key"
+                | "license_start_trial"
+                | "license_deactivate"
+                | "license_refresh"
+                | "license_check_feature"
+                | "license_get_installation_id"
+                | "system_health"
+                | "system_has_organization"
+                | "system_get_readiness"
+                | "system_get_entitlement"
+                | "system_get_app_info"
+                | "system_get_changelog"
+                | "system_get_release_notes_state"
+                | "system_acknowledge_release_notes"
                 | "system_check_for_updates"
                 | "system_download_update"
                 | "system_install_update"

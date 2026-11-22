@@ -19,12 +19,19 @@ class UpdateManager {
 
   private hasChecked = false;
   private listenerPromise: Promise<UnlistenFn> | null = null;
+  private networkCleanup: (() => void) | null = null;
+  isOnline = $state(typeof navigator === "undefined" ? true : navigator.onLine);
 
   async initialize() {
     if (!isDesktopApp) return;
 
     try {
+      this.bindNetworkEvents();
       await this.ensureProgressListener();
+      if (!this.isOnline) {
+        this.error = null;
+        return;
+      }
       if (
         !this.hasChecked &&
         !this.isChecking &&
@@ -34,7 +41,7 @@ class UpdateManager {
         await this.checkForUpdates();
       }
     } catch (error) {
-      this.error = this.getErrorMessage(error);
+      this.error = this.isOnline ? this.getErrorMessage(error) : null;
     }
   }
 
@@ -43,6 +50,12 @@ class UpdateManager {
       throw new Error("An update operation is already in progress.");
     }
     this.error = null;
+    if (
+      !this.isOnline ||
+      (typeof navigator !== "undefined" && !navigator.onLine)
+    ) {
+      throw new Error("No internet connection");
+    }
     this.isChecking = true;
 
     try {
@@ -51,7 +64,7 @@ class UpdateManager {
       this.hasChecked = true;
       return result;
     } catch (error) {
-      this.error = this.getErrorMessage(error);
+      this.error = this.isOnline ? this.getErrorMessage(error) : null;
       throw error;
     } finally {
       this.isChecking = false;
@@ -59,6 +72,13 @@ class UpdateManager {
   }
 
   async downloadUpdate() {
+    if (
+      !this.isOnline ||
+      (typeof navigator !== "undefined" && !navigator.onLine)
+    ) {
+      this.error = null;
+      throw new Error("No internet connection");
+    }
     if (!this.updateResult?.has_update) {
       await this.checkForUpdates();
     }
@@ -74,7 +94,7 @@ class UpdateManager {
       await api.systemDownloadUpdate();
       this.isReadyToRestart = true;
     } catch (error) {
-      this.error = this.getErrorMessage(error);
+      this.error = this.isOnline ? this.getErrorMessage(error) : null;
       throw error;
     } finally {
       this.isDownloading = false;
@@ -93,13 +113,20 @@ class UpdateManager {
     try {
       await api.systemInstallUpdate();
     } catch (error) {
-      this.error = this.getErrorMessage(error);
+      this.error = this.isOnline ? this.getErrorMessage(error) : null;
       this.isApplying = false;
       throw error;
     }
   }
 
   async retry() {
+    if (
+      !this.isOnline ||
+      (typeof navigator !== "undefined" && !navigator.onLine)
+    ) {
+      this.error = null;
+      throw new Error("No internet connection");
+    }
     if (this.isReadyToRestart) {
       await this.installUpdate();
       return;
@@ -132,6 +159,39 @@ class UpdateManager {
 
   private getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
+  }
+
+  private bindNetworkEvents() {
+    if (this.networkCleanup || typeof window === "undefined") return;
+
+    const handleOnline = () => {
+      this.isOnline = true;
+      if (
+        !this.hasChecked &&
+        !this.isChecking &&
+        !this.isDownloading &&
+        !this.isApplying
+      ) {
+        void this.checkForUpdates().catch(() => {
+          this.error = null;
+        });
+      }
+    };
+    const handleOffline = () => {
+      this.isOnline = false;
+      this.error = null;
+      this.isChecking = false;
+      this.isDownloading = false;
+      this.isApplying = false;
+      this.progress = null;
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    this.networkCleanup = () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }
 }
 
