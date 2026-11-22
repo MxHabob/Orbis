@@ -21,8 +21,16 @@ impl DbPermissionChecker {
 #[async_trait]
 impl PermissionCheckerPort for DbPermissionChecker {
     async fn check(&self, ctx: &RequestContext, permission: Permission) -> Result<(), DomainError> {
-        // System and Autopilot bypass permission checks.
-        if ctx.actor.is_system() {
+        // System and Autopilot actors may bypass transport IAM only for explicitly
+        // internal execution sources. API, Tauri, and integration requests must
+        // use authenticated user or agent actors.
+        if ctx.actor.is_system()
+            && matches!(
+                &ctx.source,
+                orbis_app::context::ActionSource::System
+                    | orbis_app::context::ActionSource::Autopilot
+            )
+        {
             return Ok(());
         }
 

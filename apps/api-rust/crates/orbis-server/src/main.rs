@@ -208,7 +208,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let event_bus = Arc::new(MemoryEventBus::new());
     let jwt_secret = std::env::var("JWT_SECRET")
-        .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
+        .ok()
+        .map(|value| value.trim().to_owned())
+        .filter(|value| value.len() >= 32)
+        .filter(|value| {
+            value != "orbis_dev_super_secret_jwt_key_2026_educational_platform"
+                && value != "change-me"
+                && value != "changeme"
+        })
+        .ok_or_else(|| {
+            "JWT_SECRET is required and must contain at least 32 characters; the development fallback is forbidden"
+        })?;
     let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
         Ok(key) if !key.trim().is_empty() => key,
         _ if std::env::var("APP_ENV")

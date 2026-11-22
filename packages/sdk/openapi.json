@@ -12407,7 +12407,6 @@
             "nullable": true
           },
           "blood_type": { "type": "string", "nullable": true },
-          "bypass_capacity_check": { "type": "boolean", "nullable": true },
           "date_of_birth": {
             "type": "string",
             "format": "date",

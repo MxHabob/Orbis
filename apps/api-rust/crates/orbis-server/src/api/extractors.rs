@@ -19,8 +19,7 @@ use crate::state::AppState;
 ///
 /// - **Authenticated path**: reads `Authorization: Bearer <token>`, validates JWT via
 ///   `AppState::token_service`, and populates `tenant_id` + `actor` from claims.
-/// - **Fallback (dev-only)**: if no token is provided and the `ORBIS_DEV_MODE` env var
-///   is set, produces a system context (useful for Swagger/testing).
+/// - **Unauthenticated path**: rejected unconditionally.
 pub struct AuthContext(pub RequestContext);
 
 impl std::ops::Deref for AuthContext {
@@ -89,24 +88,6 @@ impl FromRequestParts<AppState> for AuthContext {
                 }))
             }
             None => {
-                // Allow unauthenticated access in dev mode for Swagger testing
-                if std::env::var("ORBIS_DEV_MODE").is_ok() {
-                    let dev_org_id = parts
-                        .headers
-                        .get("x-org-id")
-                        .and_then(|v| v.to_str().ok())
-                        .and_then(|v| Uuid::parse_str(v).ok())
-                        .unwrap_or_default();
-
-                    return Ok(AuthContext(RequestContext {
-                        tenant_id: dev_org_id,
-                        actor: Actor::System,
-                        request_id: request_id.to_string(),
-                        source: orbis_app::context::ActionSource::Api,
-                        org_unit_path: None,
-                    }));
-                }
-
                 Err(ApiError::unauthorized("Missing Authorization header")
                     .with_request_id(request_id.to_string()))
             }

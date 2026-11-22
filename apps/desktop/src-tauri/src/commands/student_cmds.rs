@@ -502,7 +502,6 @@ pub async fn student_register_student(
         initial_period_id,
         initial_section_id: initial_class_id,
         study_mode,
-        bypass_capacity_check: None,
         is_draft: request.is_draft,
     };
 
@@ -998,7 +997,6 @@ pub async fn student_bulk_register(
                 .as_deref()
                 .and_then(|id| Uuid::parse_str(id).ok()),
             study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
-            bypass_capacity_check: None,
             is_draft: item.registration.is_draft,
         };
 

@@ -43,6 +43,7 @@ pub struct StudentService {
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
     license_runtime: Option<Arc<dyn LicenseRuntime>>,
+    enrollment_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -73,7 +74,6 @@ pub struct RegisterStudentInput {
     pub initial_period_id: Option<Uuid>,
     pub initial_section_id: Option<Uuid>,
     pub study_mode: Option<StudyMode>,
-    pub bypass_capacity_check: Option<bool>,
     #[serde(default)]
     pub is_draft: bool,
 }
@@ -204,6 +204,7 @@ impl StudentService {
             event_bus,
             permission_checker,
             license_runtime: None,
+            enrollment_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -304,6 +305,7 @@ impl StudentService {
         org_id: Uuid,
         input: RegisterStudentInput,
     ) -> Result<RegisterStudentResult, DomainError> {
+        let _enrollment_guard = self.enrollment_lock.lock().await;
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
@@ -503,7 +505,7 @@ impl StudentService {
                     admission_policy.max_class_capacity
                 };
 
-                if active_count >= max_cap && input.bypass_capacity_check != Some(true) {
+                if active_count >= max_cap {
                     // Capacity breach: Create CapacityOverride request and hold enrollment
                     let req_id = Uuid::new_v4();
                     let override_req = AcademicOverrideRequest {
@@ -1290,6 +1292,7 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        let _enrollment_guard = self.enrollment_lock.lock().await;
 
         let is_atomic = input.atomic.unwrap_or(true);
         let is_dry_run = input.dry_run.unwrap_or(false);
@@ -1456,9 +1459,7 @@ impl StudentService {
                     let allocated = class_allocated_count.entry(class_id).or_insert(0);
                     *allocated += 1;
 
-                    if (current_active + *allocated) > max_cap
-                        && item.registration.bypass_capacity_check != Some(true)
-                    {
+                    if (current_active + *allocated) > max_cap {
                         if is_atomic && !admission_policy.allow_waitlist {
                             pre_errors.insert(row, format!(
                             "Class capacity exceeded ({}/{} max). Total active: {}, requested in batch: {}",

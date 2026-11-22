@@ -13,6 +13,7 @@ use super::employee_routes::AccountProvisioningResultDto;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
+use orbis_domain::iam::permission::Permission;
 
 #[derive(Serialize, Deserialize, ToSchema, Clone, Debug)]
 pub struct LinkedDependentDto {
@@ -356,6 +357,16 @@ async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserWrite)
+        .await?;
+    if payload.role.is_some() {
+        state
+            .permission_checker
+            .check(&ctx.0, Permission::UserRoleWrite)
+            .await?;
+    }
     let user = state
         .auth_service
         .register_user(
@@ -369,8 +380,18 @@ async fn register_user(
         .await?;
 
     if let Some(role) = payload.role {
-        use orbis_infra::models::user_role_assignment;
-        use sea_orm::{ActiveModelTrait, Set};
+        use orbis_infra::models::{role, user_role_assignment};
+        use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+
+        let tenant_role = role::Entity::find()
+            .filter(role::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role::Column::Id.eq(&role))
+            .one(&state.db)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
+        if tenant_role.as_ref().map(|item| item.is_system).unwrap_or(true) {
+            return Err(ApiError::bad_request("Role does not belong to this organization"));
+        }
         let model = user_role_assignment::ActiveModel {
             id: Set(Uuid::new_v4()),
             user_id: Set(user.id),
@@ -381,7 +402,10 @@ async fn register_user(
             assigned_by: Set(None),
             created_at: Set(chrono::Utc::now()),
         };
-        let _ = model.insert(&state.db).await;
+        model
+            .insert(&state.db)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
@@ -414,6 +438,17 @@ async fn provision_user(
     use orbis_app::services::identity_provisioning_service::ProvisionAccountInput;
     use orbis_domain::entities::identity_provisioning::{ActorType, DeliveryChannel};
 
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserWrite)
+        .await?;
+    if !payload.roles.is_empty() {
+        state
+            .permission_checker
+            .check(&ctx.0, Permission::UserRoleWrite)
+            .await?;
+    }
+
     // 1. Resolve Person ID & Actor Type
     let mut resolved_person_id = payload.person_id;
     let mut actor_type = payload
@@ -428,6 +463,9 @@ async fn provision_user(
             .find_by_id(emp_id)
             .await?
             .ok_or_else(|| ApiError::not_found(format!("Employee {} not found", emp_id)))?;
+        if emp.org_id != ctx.tenant_id {
+            return Err(ApiError::forbidden("Employee belongs to another organization"));
+        }
         resolved_person_id = Some(emp.person_id);
         actor_type = ActorType::Employee;
     } else if let Some(std_id) = payload.student_id {
@@ -436,6 +474,9 @@ async fn provision_user(
             .find_by_id(std_id)
             .await?
             .ok_or_else(|| ApiError::not_found(format!("Student {} not found", std_id)))?;
+        if std.org_id != ctx.tenant_id {
+            return Err(ApiError::forbidden("Student belongs to another organization"));
+        }
         resolved_person_id = Some(std.person_id);
         actor_type = ActorType::Student;
     } else if let Some(g_id) = payload.guardian_id {
@@ -582,6 +623,10 @@ async fn get_user(
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserWrite)
+        .await?;
     let user = state
         .user_repo
         .find_by_id(id)
@@ -591,6 +636,42 @@ async fn get_user(
     // Tenant isolation
     if user.org_id != ctx.tenant_id && !ctx.actor.is_system() {
         return Err(ApiError::forbidden("Access denied to this user"));
+    }
+
+    let requires_profile_or_status_update =
+        p.full_name.is_some()
+            || p.full_name_ar.is_some()
+            || p.phone.is_some()
+            || p.national_id.is_some()
+            || p.gender.is_some()
+            || p.birth_date.is_some()
+            || p.address.is_some()
+            || p.avatar_url.is_some()
+            || p.is_active.is_some()
+            || p.status.is_some();
+    if requires_profile_or_status_update {
+        state
+            .permission_checker
+            .check(&ctx.0, Permission::UserWrite)
+            .await?;
+    }
+
+    let requires_profile_or_status_update =
+        p.full_name.is_some()
+            || p.full_name_ar.is_some()
+            || p.phone.is_some()
+            || p.national_id.is_some()
+            || p.gender.is_some()
+            || p.birth_date.is_some()
+            || p.address.is_some()
+            || p.avatar_url.is_some()
+            || p.is_active.is_some()
+            || p.status.is_some();
+    if requires_profile_or_status_update {
+        state
+            .permission_checker
+            .check(&ctx.0, Permission::UserWrite)
+            .await?;
     }
 
     let person = state.person_repo.find_by_id(user.person_id).await?;
@@ -715,8 +796,26 @@ pub async fn update_user(
 
     // Roles updates
     if let Some(new_roles) = p.roles {
-        use orbis_infra::models::user_role_assignment;
+        state
+            .permission_checker
+            .check(&ctx.0, Permission::UserRoleWrite)
+            .await?;
+        use orbis_infra::models::{role, user_role_assignment};
         use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+
+        for role_id in &new_roles {
+            let tenant_role = role::Entity::find()
+                .filter(role::Column::OrgId.eq(ctx.tenant_id))
+                .filter(role::Column::Id.eq(role_id))
+                .one(&state.db)
+                .await
+                .map_err(|e| ApiError::internal(e.to_string()))?;
+            if tenant_role.as_ref().map(|item| item.is_system).unwrap_or(true) {
+                return Err(ApiError::bad_request(
+                    "Role does not belong to this organization",
+                ));
+            }
+        }
 
         let _ = user_role_assignment::Entity::delete_many()
             .filter(user_role_assignment::Column::UserId.eq(user.id))
@@ -764,6 +863,15 @@ pub async fn reset_user_password(
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<Json<ApiResponse<AccountProvisioningResultDto>>, ApiError> {
     use orbis_domain::entities::identity_provisioning::DeliveryChannel;
+
+    let target = state
+        .user_repo
+        .find_by_id(id)
+        .await?
+        .ok_or_else(|| ApiError::not_found(format!("User {} not found", id)))?;
+    if target.org_id != ctx.tenant_id {
+        return Err(ApiError::forbidden("User belongs to another organization"));
+    }
 
     let res = state
         .identity_provisioning_service
@@ -843,6 +951,11 @@ pub async fn save_role(
     use orbis_infra::models::{role, role_permission};
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserRoleWrite)
+        .await?;
+
     let role_id = request.id.clone();
     let now = chrono::Utc::now();
 
@@ -854,6 +967,10 @@ pub async fn save_role(
         .map_err(|e| ApiError::internal(e.to_string()))?;
 
     let is_system = existing.as_ref().map(|e| e.is_system).unwrap_or(false);
+
+    if is_system {
+        return Err(ApiError::bad_request("Cannot modify system roles"));
+    }
 
     if let Some(existing_model) = existing {
         let mut active: role::ActiveModel = existing_model.into();
@@ -927,6 +1044,11 @@ pub async fn delete_role(
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
     use orbis_infra::models::{role, role_permission, user_role_assignment};
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserRoleWrite)
+        .await?;
 
     // Prevent deletion of system roles
     if let Ok(Some(r)) = role::Entity::find()
@@ -1018,11 +1140,27 @@ pub async fn save_permissions(
     State(state): State<AppState>,
     Json(request): Json<Vec<PermissionRuleDto>>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    use orbis_infra::models::role_permission;
+    use orbis_infra::models::{role, role_permission};
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserRoleWrite)
+        .await?;
 
     let now = chrono::Utc::now();
     for rule in request {
+        let tenant_role = role::Entity::find()
+            .filter(role::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role::Column::Id.eq(&rule.role))
+            .one(&state.db)
+            .await
+            .map_err(|e| ApiError::internal(e.to_string()))?;
+        if tenant_role.as_ref().map(|item| item.is_system).unwrap_or(true) {
+            return Err(ApiError::bad_request(
+                "Permissions can only be assigned to editable tenant roles",
+            ));
+        }
         let _ = role_permission::Entity::delete_many()
             .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
             .filter(role_permission::Column::RoleId.eq(&rule.role))

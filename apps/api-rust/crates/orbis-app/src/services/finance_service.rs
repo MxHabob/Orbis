@@ -390,6 +390,7 @@ pub struct FinanceService {
     pub payment_gateway: Arc<dyn PaymentGatewayPort>,
     pub notification_gateway: Arc<dyn NotificationPort>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    payment_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -473,6 +474,7 @@ impl FinanceService {
             payment_gateway,
             notification_gateway,
             permission_checker,
+            payment_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -499,6 +501,7 @@ impl FinanceService {
         self.permission_checker
             .check(ctx, Permission::ProcessPayment)
             .await?;
+        let _payment_guard = self.payment_lock.lock().await;
 
         if amount <= Decimal::ZERO {
             return Err(DomainError::Validation(
@@ -539,6 +542,11 @@ impl FinanceService {
             .find_by_id(account_id)
             .await?
             .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
+        if account.org_id != org_id {
+            return Err(DomainError::Unauthorized(
+                "Payment account belongs to another organization".into(),
+            ));
+        }
         if !is_cash_or_bank_treasury(&account, org_id) {
             return Err(DomainError::Validation(
                 "Payment account must be an active cash or bank treasury account".into(),
@@ -568,6 +576,11 @@ impl FinanceService {
                         receivable_id
                     ))
                 })?;
+            if receivable.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Receivable account belongs to another organization".into(),
+                ));
+            }
             if !is_receivable_account(&receivable, org_id, &transaction_currency) {
                 return Err(DomainError::Validation(
                     "Receivable account must be an active, non-treasury account in the same organization and currency".into(),
@@ -622,6 +635,11 @@ impl FinanceService {
 
         if let Some(f_id) = fee_id {
             if let Some(mut fee) = self.student_fee_repo.find_by_id(f_id).await? {
+                if fee.org_id != org_id {
+                    return Err(DomainError::Unauthorized(
+                        "Fee belongs to another organization".into(),
+                    ));
+                }
                 if amount > fee.balance_due {
                     return Err(DomainError::Validation(format!(
                         "Payment amount ({}) exceeds fee balance due ({})",
@@ -644,6 +662,11 @@ impl FinanceService {
                     .find_by_id(fee.fee_template_id)
                     .await?
                 {
+                    if template.org_id != org_id {
+                        return Err(DomainError::Unauthorized(
+                            "Fee template belongs to another organization".into(),
+                        ));
+                    }
                     receivable_acct = template.receivable_account_id;
                 }
             }

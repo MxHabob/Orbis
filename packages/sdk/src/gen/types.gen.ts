@@ -2328,7 +2328,6 @@ export type RegisterStudentRequest = {
   avatar_url?: string | null;
   birth_date?: string | null;
   blood_type?: string | null;
-  bypass_capacity_check?: boolean | null;
   date_of_birth?: string | null;
   display_name?: string | null;
   email?: string | null;
