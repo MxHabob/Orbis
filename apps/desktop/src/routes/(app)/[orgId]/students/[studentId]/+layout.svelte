@@ -271,19 +271,16 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "print_cert",
               label: m.ui_copy_print_enrollment_certificate_d360ef39(),
-              icon: Printer,
               onclick: () => (showPrintCertificate = true),
             },
             {
               id: "print_academic_cert",
               label: m.student_layout_print_official_academic_certificate(),
-              icon: DocumentCheck,
               onclick: () => (showPrintAcademicCertificate = true),
             },
             {
               id: "transfer_class",
               label: m.common_student_layout_transfer_class(),
-              icon: ArrowsRightLeft,
               onclick: () => (showTransferDialog = true),
             },
             ...(currentClass?.id
@@ -291,7 +288,6 @@ const relatedActionGroups = $derived<ActionGroup[]>(
                   {
                     id: "class_curriculum",
                     label: m.ui_copy_class_curriculum_8b6731cd(),
-                    icon: BookOpen,
                     href: `/${orgId}/academics/sections/${currentClass.id}/curriculum`,
                   },
                 ]
@@ -307,19 +303,16 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "record_payment",
               label: m.ui_copy_record_payment_2d05fe8e(),
-              icon: Banknotes,
               href: `/${orgId}/finance/payments?studentId=${actualStudentId}`,
             },
             {
               id: "account_statement",
               label: m.ui_copy_account_statement_6b810b21(),
-              icon: Document,
               href: `/${orgId}/finance/statement?studentId=${actualStudentId}`,
             },
             {
               id: "student_fees",
               label: m.students_detail_tab_fees(),
-              icon: DocumentPage,
               href: `/${orgId}/students/${studentId}/fees`,
             },
           ],

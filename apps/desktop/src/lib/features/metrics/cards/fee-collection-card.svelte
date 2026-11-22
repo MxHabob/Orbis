@@ -24,14 +24,49 @@ let data = $state<{ month: string; amount: number; lastYearAmount: number }[]>(
   [],
 );
 let isLoading = $state(true);
+let loadSequence = 0;
 
 async function loadData() {
+  const sequence = ++loadSequence;
   isLoading = true;
   try {
-    const payments = await api.listPayments(10000, 0, {
-      class_id: selectedClass === "all" ? null : selectedClass,
-      period_id: selectedTerm === "all" ? null : selectedTerm,
-    });
+    const needsEnrollmentFilter =
+      selectedClass !== "all" || selectedTerm !== "all";
+    const enrollmentFilter: { class_id?: string; period_id?: string } = {};
+    if (selectedClass !== "all") enrollmentFilter.class_id = selectedClass;
+    if (selectedTerm !== "all") enrollmentFilter.period_id = selectedTerm;
+
+    const [payments, fees, enrollments] = await Promise.all([
+      api.listPayments(),
+      needsEnrollmentFilter
+        ? api.listStudentFees(
+            selectedTerm === "all" ? undefined : { period_id: selectedTerm },
+          )
+        : [],
+      needsEnrollmentFilter ? api.listEnrollments(enrollmentFilter) : [],
+    ]);
+
+    if (sequence !== loadSequence) return;
+
+    const enrollmentIds = new Set(enrollments.map((enrollment) => enrollment.id));
+    const feeIds = new Set(
+      fees
+        .filter(
+          (fee) =>
+            selectedClass === "all" ||
+            (fee.enrollment_id != null &&
+              enrollmentIds.has(fee.enrollment_id)),
+        )
+        .map((fee) => fee.id),
+    );
+    const filteredPayments = needsEnrollmentFilter
+      ? payments.filter((payment) =>
+          payment.fee_id
+            ? feeIds.has(payment.fee_id)
+            : payment.enrollment_id != null &&
+              enrollmentIds.has(payment.enrollment_id),
+        )
+      : payments;
 
     // Setup localized short names for 12 months (Jan to Dec)
     const months: { label: string; index: number }[] = [];
@@ -48,14 +83,12 @@ async function loadData() {
     const thisYearMap = Array(12).fill(0) as number[];
     const lastYearMap = Array(12).fill(0) as number[];
 
-    for (const payment of payments ?? []) {
-      const dateString = String(
-        (payment as any).payment_date ?? payment.created_at ?? "",
-      );
+    for (const payment of filteredPayments) {
+      const dateString = payment.paid_at ?? payment.created_at ?? "";
       const date = new Date(dateString);
       if (!dateString || Number.isNaN(date.getTime())) continue;
 
-      const amount = Number((payment as any).amount ?? 0);
+      const amount = Number(payment.amount ?? 0);
       if (!Number.isFinite(amount)) continue;
 
       if (date.getFullYear() === currentYear) {
@@ -72,9 +105,9 @@ async function loadData() {
     }));
   } catch (e) {
     console.error("Error loading finance revenue trends:", e);
-    data = [];
+    if (sequence === loadSequence) data = [];
   } finally {
-    isLoading = false;
+    if (sequence === loadSequence) isLoading = false;
   }
 }
 

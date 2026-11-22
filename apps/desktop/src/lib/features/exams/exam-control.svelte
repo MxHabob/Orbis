@@ -190,7 +190,7 @@ async function loadGradeMatrix() {
     const assessmentTypes = assessmentConfigs.map((c) => c.code);
 
     const students: GradeMatrixStudent[] = studentItems.map((st) => {
-      const studentId = st.student?.id ?? st.id;
+      const studentId = st.student.id;
       const matchingGrades = gradeItems.filter(
         (grade) =>
           String(grade.student_id) === String(studentId) &&
@@ -354,12 +354,14 @@ async function handleSaveAll() {
 let isCalculatingRankings = $state(false);
 
 async function handleCalculateRankings() {
-  if (!selectedPeriodId) return;
+  if (!selectedPeriodId || !matrixData?.students.length) return;
   isCalculatingRankings = true;
   try {
     await api.calculateRankings({
-      period_id: selectedPeriodId,
-      class_id: selectedClassId || undefined,
+      items: matrixData.students.map(({ student_id, total }) => ({
+        id: student_id,
+        score: String(total),
+      })),
     });
     toast.success(m.exams_control_rankings_calculated());
     await loadGradeMatrix();

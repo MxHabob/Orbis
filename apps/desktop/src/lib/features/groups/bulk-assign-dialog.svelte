@@ -54,7 +54,7 @@ let selectedUserIds = $state<Set<string>>(new Set());
 // Query all employees with accounts
 const employeesQuery = createEmployeesQuery(
   () => orgId,
-  () => ({ limit: 300 }),
+  () => ({ page_size: 300 }),
 );
 const bulkAssignMutation = createBulkAssignGroupMutation();
 

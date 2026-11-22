@@ -113,7 +113,7 @@ const className = $derived(() => {
 						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.common_filter_all_classes()}</DropdownMenuRadioItem>
 						{#each terms as term (term.id)}
 							<DropdownMenuRadioItem value={term.id} class="text-xs cursor-pointer">
-								{getLocale() === "ar" && term.name_ar ? term.name_ar : (term.name || term.name_en || term.name_ar || '')}
+								{getLocale() === "ar" && term.name_ar ? term.name_ar : (term.name || term.name_ar || '')}
 							</DropdownMenuRadioItem>
 						{/each}
 					</DropdownMenuRadioGroup>
@@ -130,7 +130,7 @@ const className = $derived(() => {
 						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.common_filter_all_classes()}</DropdownMenuRadioItem>
 						{#each classes as c (c.id)}
 							<DropdownMenuRadioItem value={c.id} class="text-xs cursor-pointer">
-								{getLocale() === "ar" && c.name_ar ? c.name_ar : (c.name || c.name_en || c.name_ar || '')}
+								{getLocale() === "ar" && c.name_ar ? c.name_ar : (c.name || c.name_ar || '')}
 							</DropdownMenuRadioItem>
 						{/each}
 					</DropdownMenuRadioGroup>

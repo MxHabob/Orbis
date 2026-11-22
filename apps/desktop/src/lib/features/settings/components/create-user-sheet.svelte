@@ -128,7 +128,7 @@ let showGroupsSection = $state(false);
 // ── TanStack Queries ─────────────────────────────────────────────────
 const employeesQuery = createEmployeesQuery(
   () => orgId,
-  () => ({ limit: 300 }),
+  () => ({ page_size: 300 }),
 );
 const studentsQuery = createStudentsQuery(
   () => orgId,
