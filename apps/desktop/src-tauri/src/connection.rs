@@ -124,6 +124,15 @@ impl Default for DatabaseSettings {
     }
 }
 
+impl DatabaseSettings {
+    pub fn enforce_autopilot(&mut self) {
+        self.auto_backup_enabled = true;
+        self.integrity_check_on_startup = true;
+        self.auto_backup_interval_hours = self.auto_backup_interval_hours.clamp(1, 168);
+        self.max_backup_files = self.max_backup_files.clamp(1, 100);
+    }
+}
+
 /// Connection validation result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionValidation {
@@ -179,9 +188,10 @@ impl ConnectionConfig {
                 Ok(contents) => match serde_json::from_str::<ConnectionConfig>(&contents) {
                     Ok(mut config) => {
                         info!("Loaded connection config from {:?}", path);
-                        if !config.settings.auto_backup_enabled {
-                            config.settings.auto_backup_enabled = true;
-                            tracing::info!("Backup autopilot migrated to enabled");
+                        let was_autopilot_disabled = !config.settings.auto_backup_enabled;
+                        config.settings.enforce_autopilot();
+                        if was_autopilot_disabled {
+                            tracing::info!("Backup autopilot policy enforced at startup");
                         }
                         if let Ok(normalized) = serde_json::to_string_pretty(&config) {
                             if normalized != contents {
@@ -480,6 +490,26 @@ mod tests {
         assert!(config.local.is_some());
         assert_eq!(config.local.unwrap().db_filename, "orbis.db");
         assert!(config.settings.auto_backup_enabled);
+    }
+
+    #[test]
+    fn test_backup_autopilot_policy_is_always_enforced() {
+        let mut settings = DatabaseSettings {
+            auto_backup_enabled: false,
+            auto_backup_interval_hours: 0,
+            backup_dir: None,
+            max_backup_files: 500,
+            last_backup_timestamp: None,
+            last_backup_path: None,
+            integrity_check_on_startup: false,
+        };
+
+        settings.enforce_autopilot();
+
+        assert!(settings.auto_backup_enabled);
+        assert!(settings.integrity_check_on_startup);
+        assert_eq!(settings.auto_backup_interval_hours, 1);
+        assert_eq!(settings.max_backup_files, 100);
     }
 
     #[test]

@@ -73,12 +73,6 @@ let customBackupPath = $state("");
 let restoreFilePath = $state("");
 
 // Settings state
-let autoBackup = $state(true);
-let backupInterval = $state(24);
-let maxBackups = $state(10);
-let customBackupDir = $state("");
-let integrityOnStartup = $state(true);
-
 onMount(async () => {
   await controller.init();
   syncFormValues();
@@ -108,13 +102,6 @@ function syncFormValues() {
     }
   }
 
-  if (controller.settings) {
-    autoBackup = true;
-    backupInterval = controller.settings.auto_backup_interval_hours;
-    maxBackups = controller.settings.max_backup_files;
-    customBackupDir = controller.settings.backup_dir || "";
-    integrityOnStartup = controller.settings.integrity_check_on_startup ?? true;
-  }
 }
 
 function formatDuration(durationMs: number): string {
@@ -236,13 +223,6 @@ async function handleBrowseBackupDest() {
   }
 }
 
-async function handleBrowseAutoBackupDir() {
-  const folder = await controller.pickFolder();
-  if (folder) {
-    customBackupDir = folder;
-  }
-}
-
 async function handleTriggerBackup() {
   await controller.triggerBackup(
     customBackupPath.trim() ? customBackupPath.trim() : undefined,
@@ -279,39 +259,6 @@ async function handleExecuteRestore() {
     syncFormValues();
   } else if (controller.operationError) {
     toast.error(controller.operationError);
-  }
-}
-
-async function handleSaveSettings() {
-  try {
-    const intervalHours = Math.round(backupInterval);
-    const retainedFiles = Math.round(maxBackups);
-    if (
-      !Number.isFinite(intervalHours) ||
-      intervalHours < 1 ||
-      intervalHours > 168
-    ) {
-      throw new Error(m.ui_copy_interval_hours_23ad5bfc());
-    }
-    if (
-      !Number.isFinite(retainedFiles) ||
-      retainedFiles < 1 ||
-      retainedFiles > 100
-    ) {
-      throw new Error(m.ui_copy_max_retained_files_02a1c239());
-    }
-    await controller.saveSettings({
-      auto_backup_enabled: true,
-      auto_backup_interval_hours: intervalHours,
-      max_backup_files: retainedFiles,
-      backup_dir: customBackupDir.trim() ? customBackupDir.trim() : undefined,
-      integrity_check_on_startup: integrityOnStartup,
-      last_backup_timestamp: controller.settings?.last_backup_timestamp,
-      last_backup_path: controller.settings?.last_backup_path,
-    });
-    toast.success(m.ui_copy_backup_policies_saved_successfully_78b2a35b());
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : String(e));
   }
 }
 

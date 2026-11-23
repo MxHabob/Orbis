@@ -404,24 +404,16 @@ pub async fn database_update_settings(
         .clone();
 
     require_local_sqlite(&config)?;
-    if !(1..=168).contains(&settings.auto_backup_interval_hours) {
-        return Err("Automatic backup interval must be between 1 and 168 hours".to_string());
-    }
-    if !(1..=100).contains(&settings.max_backup_files) {
-        return Err("Maximum retained backup files must be between 1 and 100".to_string());
-    }
-    settings.auto_backup_enabled = true;
+    settings.enforce_autopilot();
     settings.backup_dir = settings
         .backup_dir
         .take()
         .map(|directory| directory.trim().to_string())
         .filter(|directory| !directory.is_empty());
-    if settings.auto_backup_enabled {
-        if let Some(directory) = &settings.backup_dir {
-            std::fs::create_dir_all(directory).map_err(|error| {
-                format!("Failed to create automatic backup directory {directory:?}: {error}")
-            })?;
-        }
+    if let Some(directory) = &settings.backup_dir {
+        std::fs::create_dir_all(directory).map_err(|error| {
+            format!("Failed to create automatic backup directory {directory:?}: {error}")
+        })?;
     }
     config.settings = settings.clone();
     config.save(&conn_state.app_data_dir)?;
