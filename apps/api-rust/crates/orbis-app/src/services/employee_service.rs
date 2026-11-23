@@ -328,6 +328,17 @@ impl EmployeeService {
             }
         };
 
+        if let Some(existing_employee) = self
+            .employee_repo
+            .find_by_person_id(org_id, person_id)
+            .await?
+        {
+            return Err(DomainError::Conflict(format!(
+                "An employee profile already exists for this person (Employee number '{}')",
+                existing_employee.employee_number
+            )));
+        }
+
         // 3. Create Employee Profile
         let employee_id = Uuid::new_v4();
         let hire_date = input.hire_date.unwrap_or_else(|| now.date_naive());
@@ -836,6 +847,25 @@ impl EmployeeService {
                     continue;
                 }
                 seen_nids.insert(nid.to_string(), row);
+
+                if let Ok(Some(existing_person)) =
+                    self.person_repo.find_by_national_id(Some(org_id), nid).await
+                {
+                    if let Ok(Some(existing_employee)) = self
+                        .employee_repo
+                        .find_by_person_id(org_id, existing_person.id)
+                        .await
+                    {
+                        pre_errors.insert(
+                            row,
+                            format!(
+                                "An employee profile already exists for National ID '{}' (Employee number '{}')",
+                                nid, existing_employee.employee_number
+                            ),
+                        );
+                        continue;
+                    }
+                }
             }
 
             // 3. Intra-Batch Duplicate Passport Check

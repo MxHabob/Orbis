@@ -681,7 +681,7 @@ function handleDirectPrint() {
   <!-- Main Body: Full-Width Workspace Canvas -->
   <div class="flex flex-1 min-h-0 min-w-0 w-full overflow-hidden">
     <!-- Central Schedule Workspace Canvas -->
-    <main class="flex flex-1 min-h-0 min-w-0 flex-col p-3 gap-2 overflow-hidden">
+    <main class="flex flex-1 min-h-0 min-w-0 flex-col p-1.5 sm:p-2 md:p-3 gap-2 overflow-hidden">
       {#if isLoading}
         <div class="flex flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-card">
           <div class="flex h-12 shrink-0 items-center gap-3 border-b border-border/60 px-4">
@@ -739,19 +739,19 @@ function handleDirectPrint() {
       {:else}
         <!-- Contextual Header Info Banner (For Teacher Workload / Room Occupancy) -->
         {#if teacherWorkload}
-          <div class="flex items-center justify-between px-3 py-2 rounded-lg border border-blue-500/20 bg-blue-500/5 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-2 sm:px-3 py-2 rounded-lg border border-blue-500/20 bg-blue-500/5 text-xs">
             <div class="flex items-center gap-2">
               <User size={14} class="text-blue-500" />
               <span class="font-bold text-foreground">{getTeacherName(selectedTeacherId)}</span>
             </div>
-            <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
               <span>{m.common_schedule_teaching_load()}: <strong class="text-foreground">{teacherWorkload.teachingCount}</strong></span>
               <span>{m.common_schedule_free_periods()}: <strong class="text-emerald-600 dark:text-emerald-400">{teacherWorkload.freeCount}</strong></span>
               <span>{m.common_search_group_rooms()}: <strong class="text-foreground">{teacherWorkload.assignedRooms}</strong></span>
             </div>
           </div>
         {:else if roomOccupancy}
-          <div class="flex items-center justify-between px-3 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-2 sm:px-3 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs">
             <div class="flex items-center gap-2">
               <Pin size={14} class="text-emerald-500" />
               <span class="font-bold text-foreground">{getRoomName(selectedRoomId)}</span>
@@ -759,7 +759,7 @@ function handleDirectPrint() {
                 <Badge variant="outline" class="h-4 text-[9px]">{m.academics_class_label_capacity()}: {roomOccupancy.capacity}</Badge>
               {/if}
             </div>
-            <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
               <span>{m.common_schedule_occupied_periods()}: <strong class="text-foreground">{roomOccupancy.occupiedCount}</strong></span>
               <span>{m.common_schedule_occupancy_rate()}: <strong class="text-primary">{roomOccupancy.occupancyRate}%</strong></span>
             </div>

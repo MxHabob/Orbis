@@ -939,6 +939,28 @@ pub struct BulkRegisterItemCommandResultDto {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BulkTransferStudentCommandItem {
+    pub enrollment_id: String,
+    pub target_section_id: String,
+    pub reason: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BulkTransferStudentCommandItemResult {
+    pub enrollment_id: String,
+    pub success: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BulkTransferStudentCommandResultDto {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub items: Vec<BulkTransferStudentCommandItemResult>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BulkRegisterJobDto {
     pub id: String,
     pub status: String,
@@ -1136,6 +1158,50 @@ pub async fn student_get_bulk_register_job(
 ) -> Result<ApiResponse<Option<BulkRegisterJobDto>>, String> {
     let job = jobs.jobs.read().await.get(&job_id).cloned();
     Ok(ok(job))
+}
+
+#[tauri::command]
+pub async fn student_bulk_transfer_classes(
+    items: Vec<BulkTransferStudentCommandItem>,
+    atomic: Option<bool>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<BulkTransferStudentCommandResultDto>, String> {
+    let ctx = make_ctx(&state);
+    let domain_items = items
+        .iter()
+        .map(|item| {
+            Ok(
+                orbis_app::services::student_service::BulkTransferStudentItem {
+                    enrollment_id: Uuid::parse_str(&item.enrollment_id)
+                        .map_err(|_| "Invalid enrollment ID".to_string())?,
+                    target_section_id: Uuid::parse_str(&item.target_section_id)
+                        .map_err(|_| "Invalid target class ID".to_string())?,
+                    reason: item.reason.clone(),
+                },
+            )
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+
+    let result = state
+        .student_service
+        .bulk_transfer_classes(&ctx, ctx.tenant_id, domain_items, atomic.unwrap_or(true))
+        .await
+        .map_err(|error| error.to_string())?;
+
+    Ok(ok(BulkTransferStudentCommandResultDto {
+        total: result.total,
+        succeeded: result.succeeded,
+        failed: result.failed,
+        items: result
+            .items
+            .into_iter()
+            .map(|item| BulkTransferStudentCommandItemResult {
+                enrollment_id: item.enrollment_id.to_string(),
+                success: item.success,
+                error: item.error,
+            })
+            .collect(),
+    }))
 }
 
 #[tauri::command]

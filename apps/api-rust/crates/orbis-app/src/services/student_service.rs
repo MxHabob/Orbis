@@ -219,6 +219,28 @@ pub struct BulkRegisterStudentResult {
     pub items: Vec<BulkRegisterItemResult>,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BulkTransferStudentItem {
+    pub enrollment_id: Uuid,
+    pub target_section_id: Uuid,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BulkTransferStudentItemResult {
+    pub enrollment_id: Uuid,
+    pub success: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BulkTransferStudentResult {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub items: Vec<BulkTransferStudentItemResult>,
+}
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct UpdateStudentProfileInput {
     pub first_name: Option<String>,
@@ -507,6 +529,15 @@ impl StudentService {
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", person_id)))?;
 
+        if let Some(existing_student) = self.student_repo.find_by_person_id(person_id).await? {
+            if existing_student.org_id == org_id {
+                return Err(DomainError::Conflict(format!(
+                    "A student profile already exists for this person (Student number '{}')",
+                    existing_student.student_number
+                )));
+            }
+        }
+
         // 4. Create Student profile
         let student_id = Uuid::new_v4();
         let student = Student {
@@ -572,6 +603,24 @@ impl StudentService {
         };
 
         if let Some(period_id) = resolved_period_id.filter(|_| !is_draft) {
+            if let Ok(Some(period)) = self.period_repo.find_by_id(period_id).await {
+                let now = Utc::now();
+                let window_open = period.is_enrollment_open
+                    && period
+                        .enrollment_starts_at
+                        .is_none_or(|started| started <= now)
+                    && period
+                        .enrollment_ends_at
+                        .is_none_or(|ends| ends >= now);
+                let late_allowed =
+                    org_settings.academic.allow_late_enrollment
+                        || admission_policy.allow_late_enrollment;
+                if !window_open && !late_allowed {
+                    return Err(DomainError::Validation(
+                        "Enrollment is outside the configured period window".into(),
+                    ));
+                }
+            }
             let mode = input.study_mode.unwrap_or(StudyMode::Regular);
             let mut enrollment_status = EnrollmentStatus::Active;
 
@@ -612,8 +661,9 @@ impl StudentService {
                 .enrollment_repo
                 .save_with_capacity(
                     &mut enrollment,
-                    admission_policy.max_class_capacity,
-                    true,
+                    org_settings.enrollment.max_class_size_default.max(0),
+                    org_settings.enrollment.allow_waitlist
+                        || admission_policy.allow_waitlist,
                     capacity_override,
                     admission_override,
                 )
@@ -979,13 +1029,190 @@ impl StudentService {
 
         let settings = self.settings_repo.get_settings(enrollment.org_id).await?;
         let default_capacity = settings.enrollment.max_class_size_default.max(0);
+        let allow_waitlist =
+            settings.enrollment.allow_waitlist
+                || settings.admission.policy.allow_waitlist;
+        let target_section = self
+            .section_repo
+            .find_by_id(target_section_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Target class not found".into()))?;
+        if target_section.org_id != ctx.tenant_id
+            || target_section.is_deleted
+            || !target_section.is_active
+        {
+            return Err(DomainError::Validation(
+                "Target class is not active in this organization".into(),
+            ));
+        }
         enrollment.section_id = Some(target_section_id);
         enrollment.updated_at = Utc::now();
+        let capacity_override = Some(capacity_override_request(
+            enrollment.org_id,
+            enrollment.student_id,
+            target_section_id,
+            ctx.user_id().unwrap_or(enrollment.student_id),
+            Utc::now(),
+        ));
 
         self.enrollment_repo
-            .save_with_capacity(&mut enrollment, default_capacity, false, None, None)
+            .save_with_capacity(
+                &mut enrollment,
+                target_section.capacity.unwrap_or(default_capacity).max(0),
+                allow_waitlist,
+                capacity_override,
+                None,
+            )
             .await?;
         Ok(enrollment)
+    }
+
+    pub async fn bulk_transfer_classes(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        items: Vec<BulkTransferStudentItem>,
+        atomic: bool,
+    ) -> Result<BulkTransferStudentResult, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::StudentUpdate)
+            .await?;
+
+        let mut pre_errors: HashMap<Uuid, String> = HashMap::new();
+        let mut target_counts: HashMap<Uuid, i32> = HashMap::new();
+
+        for item in &items {
+            let _enrollment = match self.enrollment_repo.find_by_id(item.enrollment_id).await? {
+                Some(enrollment) if enrollment.org_id == org_id => enrollment,
+                _ => {
+                    pre_errors.insert(
+                        item.enrollment_id,
+                        "Enrollment not found in this organization".to_string(),
+                    );
+                    continue;
+                }
+            };
+            let target = match self.section_repo.find_by_id(item.target_section_id).await? {
+                Some(section)
+                    if section.org_id == org_id
+                        && section.is_active
+                        && !section.is_deleted =>
+                {
+                    section
+                }
+                _ => {
+                    pre_errors.insert(
+                        item.enrollment_id,
+                        "Target class is invalid for this organization and period".to_string(),
+                    );
+                    continue;
+                }
+            };
+
+            let settings = self
+                .settings_repo
+                .get_settings(org_id)
+                .await
+                .unwrap_or_default();
+            let capacity = target
+                .capacity
+                .unwrap_or(settings.enrollment.max_class_size_default)
+                .max(0);
+            let allow_waitlist =
+                settings.enrollment.allow_waitlist
+                    || settings.admission.policy.allow_waitlist;
+            let active_count = self
+                .enrollment_repo
+                .find_by_section(item.target_section_id)
+                .await?
+                .into_iter()
+                .filter(|record| record.status == EnrollmentStatus::Active)
+                .count() as i32;
+            let allocated = target_counts.entry(item.target_section_id).or_insert(0);
+            *allocated += 1;
+            if active_count + *allocated > capacity && !allow_waitlist {
+                pre_errors.insert(
+                    item.enrollment_id,
+                    format!(
+                        "Target class capacity exceeded ({}/{})",
+                        active_count + *allocated,
+                        capacity
+                    ),
+                );
+            }
+        }
+
+        if atomic && !pre_errors.is_empty() {
+            let items = items
+                .iter()
+                .map(|item| BulkTransferStudentItemResult {
+                    enrollment_id: item.enrollment_id,
+                    success: false,
+                    error: pre_errors
+                        .get(&item.enrollment_id)
+                        .cloned()
+                        .or_else(|| {
+                            Some(
+                                "Batch transfer aborted by another row's validation".to_string(),
+                            )
+                        }),
+                })
+                .collect::<Vec<_>>();
+            return Ok(BulkTransferStudentResult {
+                total: items.len(),
+                succeeded: 0,
+                failed: items.len(),
+                items,
+            });
+        }
+
+        let mut results = Vec::with_capacity(items.len());
+        let mut succeeded = 0usize;
+        let mut failed = 0usize;
+        for item in items {
+            if let Some(error) = pre_errors.get(&item.enrollment_id) {
+                failed += 1;
+                results.push(BulkTransferStudentItemResult {
+                    enrollment_id: item.enrollment_id,
+                    success: false,
+                    error: Some(error.clone()),
+                });
+                continue;
+            }
+            match self
+                .transfer_class(
+                    ctx,
+                    item.enrollment_id,
+                    item.target_section_id,
+                    item.reason,
+                )
+                .await
+            {
+                Ok(_) => {
+                    succeeded += 1;
+                    results.push(BulkTransferStudentItemResult {
+                        enrollment_id: item.enrollment_id,
+                        success: true,
+                        error: None,
+                    });
+                }
+                Err(error) => {
+                    failed += 1;
+                    results.push(BulkTransferStudentItemResult {
+                        enrollment_id: item.enrollment_id,
+                        success: false,
+                        error: Some(error.to_string()),
+                    });
+                }
+            }
+        }
+
+        Ok(BulkTransferStudentResult {
+            total: succeeded + failed,
+            succeeded,
+            failed,
+            items: results,
+        })
     }
 
     /// Change study mode for an enrollment
@@ -1282,6 +1509,8 @@ impl StudentService {
             .await
             .unwrap_or_default();
         let admission_policy = org_settings.admission.policy.clone();
+        let allow_waitlist =
+            org_settings.enrollment.allow_waitlist || admission_policy.allow_waitlist;
 
         // ─────────────────────────────────────────────────────────────────
         // STAGE 1: INTRA-BATCH INTEGRITY & CONFLICT PRE-VALIDATION
@@ -1326,8 +1555,27 @@ impl StudentService {
                 }
                 seen_nids.insert(nid.to_string(), row);
 
-                // DB Conflict Check if duplicates not allowed
-                if is_atomic && !admission_policy.allow_duplicate_national_id {
+                if let Ok(Some(existing_person)) =
+                    self.person_repo.find_by_national_id(Some(org_id), nid).await
+                {
+                    if let Ok(Some(existing_student)) =
+                        self.student_repo.find_by_person_id(existing_person.id).await
+                    {
+                        if existing_student.org_id == org_id {
+                            pre_errors.insert(
+                                row,
+                                format!(
+                                    "A student profile already exists for National ID '{}' (Student number '{}')",
+                                    nid, existing_student.student_number
+                                ),
+                            );
+                            continue;
+                        }
+                    }
+                }
+
+                // Preserve the configured policy for duplicate person identities.
+                if !admission_policy.allow_duplicate_national_id {
                     if let Ok(Some(existing_person)) = self
                         .person_repo
                         .find_by_national_id(Some(org_id), nid)
@@ -1380,8 +1628,7 @@ impl StudentService {
                 }
                 seen_student_nums.insert(sn.to_string(), row);
 
-                if is_atomic
-                    && let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await
+                if let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await
                 {
                     pre_errors.insert(
                         row,
@@ -1409,6 +1656,29 @@ impl StudentService {
 
             // 6. Cumulative Class Capacity & Multi-Enrollment Simulation
             if !item.registration.is_draft {
+                if let Some(period_id) = item.registration.initial_period_id {
+                    if let Ok(Some(period)) = self.period_repo.find_by_id(period_id).await {
+                        let now = Utc::now();
+                        let window_open = period.is_enrollment_open
+                            && period
+                                .enrollment_starts_at
+                                .is_none_or(|started| started <= now)
+                            && period
+                                .enrollment_ends_at
+                                .is_none_or(|ends| ends >= now);
+                        let late_allowed =
+                            org_settings.enrollment.allow_late_enrollment
+                                || org_settings.academic.allow_late_enrollment
+                                || admission_policy.allow_late_enrollment;
+                        if !window_open && !late_allowed {
+                            pre_errors.insert(
+                                row,
+                                "Enrollment is outside the configured period window".to_string(),
+                            );
+                            continue;
+                        }
+                    }
+                }
                 if let Some(class_id) = item.registration.initial_section_id {
                     let (current_active, max_cap) = if let Some(cached) =
                         class_capacity_cache.get(&class_id)
@@ -1439,7 +1709,7 @@ impl StudentService {
                     *allocated += 1;
 
                     if (current_active + *allocated) > max_cap {
-                        if is_atomic && !admission_policy.allow_waitlist {
+                        if !allow_waitlist {
                             pre_errors.insert(row, format!(
                             "Class capacity exceeded ({}/{} max). Total active: {}, requested in batch: {}",
                             current_active + *allocated, max_cap, current_active, *allocated
@@ -1556,6 +1826,7 @@ impl StudentService {
                 Ok(reg_res) => {
                     let stu_id = reg_res.student.student.id;
                     let stu_num = reg_res.student.student.student_number.clone();
+                    let mut guardian_error: Option<String> = None;
 
                     // Optional guardian linkage if provided
                     if let Some(ref g_name) = item.guardian_name {
@@ -1605,32 +1876,55 @@ impl StudentService {
                                     created_at: now,
                                     updated_at: now,
                                 };
-                                let _ = self.person_repo.save(&g_person).await;
-                                new_pid
+                                match self.person_repo.save(&g_person).await {
+                                    Ok(()) => new_pid,
+                                    Err(error) => {
+                                        guardian_error =
+                                            Some(format!("Guardian provisioning failed: {error}"));
+                                        Uuid::nil()
+                                    }
+                                }
                             };
 
-                            let sg = StudentGuardian {
-                                id: Uuid::new_v4(),
-                                student_id: stu_id,
-                                guardian_id: g_pid,
-                                relationship: item
-                                    .guardian_relationship
-                                    .unwrap_or_else(|| "guardian".to_string()),
-                                relationship_ar: None,
-                                is_primary: true,
-                                is_emergency_contact: true,
-                                is_authorized_pickup: true,
-                                is_payer: true,
-                                payment_share_percent: None,
-                                occupation: None,
-                                employer: None,
-                                work_phone: None,
-                                notes: None,
-                                created_at: Utc::now(),
-                                updated_at: Utc::now(),
-                            };
-                            let _ = self.guardian_repo.save(&sg).await;
+                            if guardian_error.is_none() {
+                                let sg = StudentGuardian {
+                                    id: Uuid::new_v4(),
+                                    student_id: stu_id,
+                                    guardian_id: g_pid,
+                                    relationship: item
+                                        .guardian_relationship
+                                        .unwrap_or_else(|| "guardian".to_string()),
+                                    relationship_ar: None,
+                                    is_primary: true,
+                                    is_emergency_contact: true,
+                                    is_authorized_pickup: true,
+                                    is_payer: true,
+                                    payment_share_percent: None,
+                                    occupation: None,
+                                    employer: None,
+                                    work_phone: None,
+                                    notes: None,
+                                    created_at: Utc::now(),
+                                    updated_at: Utc::now(),
+                                };
+                                if let Err(error) = self.guardian_repo.save(&sg).await {
+                                    guardian_error =
+                                        Some(format!("Guardian linkage failed: {error}"));
+                                }
+                            }
                         }
+                    }
+
+                    if let Some(reason) = guardian_error {
+                        failed += 1;
+                        results.push(BulkRegisterItemResult {
+                            row_index: row_idx,
+                            success: false,
+                            student_id: Some(stu_id),
+                            student_number: Some(stu_num),
+                            error: Some(reason),
+                        });
+                        continue;
                     }
 
                     succeeded += 1;

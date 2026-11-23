@@ -579,6 +579,7 @@ export const employeeImportProfile: BulkImportProfile<
           middle_name_ar: namePartsAr.middleName,
           last_name_ar: namePartsAr.lastName,
           display_name: fullNameAr,
+          employee_number: row.employee_number?.trim() || undefined,
           national_id: row.national_id?.trim() || undefined,
           gender: row.gender || "male",
           marital_status: row.marital_status || undefined,

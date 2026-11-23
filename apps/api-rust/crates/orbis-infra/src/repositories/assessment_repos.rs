@@ -9,7 +9,7 @@ use orbis_domain::entities::grade::Grade as DomainGrade;
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    Set,
+    Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -348,9 +348,58 @@ impl GradeRepository for AssessmentRepoImpl {
     }
 
     async fn save_batch(&self, grades: &[DomainGrade]) -> Result<(), DomainError> {
-        for g in grades {
-            GradeRepository::save(self, g).await?;
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        for grade in grades {
+            let active = grade::ActiveModel {
+                id: Set(grade.id),
+                org_id: Set(grade.org_id),
+                period_id: Set(Some(grade.period_id)),
+                student_id: Set(grade.student_id),
+                enrollment_id: Set(grade.enrollment_id),
+                section_subject_id: Set(grade.section_subject_id),
+                component_id: Set(grade.component_id),
+                score: Set(grade.score),
+                max_score: Set(Some(grade.max_score)),
+                weight: Set(grade.weight),
+                letter_grade: Set(grade.letter_grade.clone()),
+                is_final: Set(Some(grade.is_final)),
+                is_excused: Set(grade.is_excused),
+                is_exempt: Set(Some(grade.is_exempt)),
+                is_absent: Set(grade.is_absent),
+                change_reason: Set(grade.change_reason.clone()),
+                recorded_by: Set(grade.recorded_by),
+                updated_by: Set(grade.updated_by),
+                notes: Set(grade.notes.clone()),
+                created_at: Set(grade.created_at),
+                updated_at: Set(grade.updated_at),
+            };
+
+            if GradeEntity::find_by_id(grade.id)
+                .one(&txn)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?
+                .is_some()
+            {
+                active
+                    .update(&txn)
+                    .await
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+            } else {
+                active
+                    .insert(&txn)
+                    .await
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+            }
         }
+
+        txn.commit()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 

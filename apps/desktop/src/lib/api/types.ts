@@ -479,6 +479,25 @@ export interface BulkRegisterJobDto {
   error?: string;
 }
 
+export interface BulkTransferStudentCommandItem {
+  enrollment_id: string;
+  target_section_id: string;
+  reason?: string;
+}
+
+export interface BulkTransferStudentCommandItemResult {
+  enrollment_id: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface BulkTransferStudentCommandResultDto {
+  total: number;
+  succeeded: number;
+  failed: number;
+  items: BulkTransferStudentCommandItemResult[];
+}
+
 export interface BulkRegisterEmployeeJobDto {
   id: string;
   status: "running" | "completed" | "failed";
@@ -1997,6 +2016,10 @@ export interface OrbisApiClient {
     options?: { atomic?: boolean; dryRun?: boolean },
   ): Promise<BulkRegisterJobDto>;
   getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null>;
+  bulkTransferStudents(
+    items: BulkTransferStudentCommandItem[],
+    options?: { atomic?: boolean },
+  ): Promise<BulkTransferStudentCommandResultDto>;
 
   // ── Employee Affairs ────────────────────────────────────────
   registerEmployee(

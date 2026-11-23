@@ -231,6 +231,8 @@ import type {
   BulkRegisterJobDto,
   BulkRegisterEmployeeCommandItem,
   BulkRegisterEmployeeJobDto,
+  BulkTransferStudentCommandItem,
+  BulkTransferStudentCommandResultDto,
   ProvisionUserRequest,
   AccountProvisioningResultDto,
   UpdateStudentStatusInput,
@@ -1165,6 +1167,33 @@ export class RemoteClient implements OrbisApiClient {
     jobId: string,
   ): Promise<BulkRegisterEmployeeJobDto | null> {
     return this.employeeBulkJobs.get(jobId) ?? null;
+  }
+
+  async bulkTransferStudents(
+    items: BulkTransferStudentCommandItem[],
+    options?: { atomic?: boolean },
+  ): Promise<BulkTransferStudentCommandResultDto> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/enrollments/bulk-transfer`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        },
+        body: JSON.stringify({
+          items,
+          atomic: options?.atomic ?? true,
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new ApiRequestError(response.status, await response.text());
+    }
+    const payload = (await response.json()) as {
+      data: BulkTransferStudentCommandResultDto;
+    };
+    return payload.data;
   }
 
   // ── User Groups ─────────────────────────────────────────────

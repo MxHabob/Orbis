@@ -233,6 +233,8 @@ import type {
   AutopilotTaskDto,
   BulkRegisterEmployeeCommandItem,
   BulkRegisterEmployeeJobDto,
+  BulkTransferStudentCommandItem,
+  BulkTransferStudentCommandResultDto,
   GoogleAuthRequest,
   ListTasksResponse,
   MfaChallengeRequest,
@@ -628,6 +630,17 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<BulkRegisterJobDto | null> {
     return unwrap(
       await invoke("student_get_bulk_register_job", { jobId }),
+    );
+  }
+  async bulkTransferStudents(
+    items: BulkTransferStudentCommandItem[],
+    options?: { atomic?: boolean },
+  ): Promise<BulkTransferStudentCommandResultDto> {
+    return unwrap(
+      await invoke("student_bulk_transfer_classes", {
+        items,
+        atomic: options?.atomic ?? true,
+      }),
     );
   }
 

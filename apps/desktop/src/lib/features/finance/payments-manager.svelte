@@ -58,6 +58,7 @@ import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import type { CurrencyDto } from "$lib/api/types";
 
 import { createAvailablePaymentMethodsQuery } from "$lib/features/finance";
 import { isCashOrBankAccount } from "./queries";
@@ -97,6 +98,7 @@ const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
 // ── State ──────────────────────────────────────────────────────────────
 let accounts = $state<AccountDto[]>([]);
 let treasuries = $state<AccountDto[]>([]);
+let currencies = $state<CurrencyDto[]>([]);
 let students = $state<EnrollmentDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
@@ -106,22 +108,43 @@ let showAddForm = $state(false);
 let receiptNumber = $state("");
 let paymentDate = $state(getLocalDateInputValue());
 let selectedTreasuryId = $state("");
+let selectedCurrency = $state(orgContext.baseCurrency || "");
 let paymentMethod = $state("cash");
 let sourceToken = $state("");
 let receiptLines = $state<ReceiptLine[]>([createReceiptLine()]);
 const paymentAttemptKeys = new SvelteMap<number, SvelteMap<string, string>>();
-const selectedCurrency = $derived(
-  treasuries.find(
-    (account) => String(account.id) === String(selectedTreasuryId),
-  )?.currency || "YER",
-);
 const availableCurrencies = $derived([
-  ...new Set(
-    treasuries
-      .map((account) => account.currency)
-      .filter((currency) => Boolean(currency)),
-  ),
+  ...currencies,
+  ...Array.from(
+    new Set(
+      treasuries
+        .map((account) => account.currency)
+        .filter((currency) => Boolean(currency))
+        .filter(
+          (currency) =>
+            !currencies.some(
+              (option) =>
+                option.code.toUpperCase() === currency.toUpperCase(),
+            ),
+          ),
+    ),
+  ).map((currency) => ({
+    code: currency,
+    name: currency,
+    name_ar: null,
+    symbol: currency,
+    symbol_position: "after",
+    decimal_places: 2,
+    exchange_rate: "1",
+  } as CurrencyDto)),
 ]);
+const treasuryAccountsForCurrency = $derived(
+  treasuries.filter(
+    (account) =>
+      String(account.currency).toUpperCase() ===
+      String(selectedCurrency).toUpperCase(),
+  ),
+);
 const receivableAccounts = $derived(
   accounts.filter(
     (account) =>
@@ -214,20 +237,34 @@ onMount(async () => {
 async function loadData(refreshPayments = true) {
   isLoading = true;
   try {
-    const [accountsList, enrollmentsList] = await Promise.all([
+    const [accountsList, enrollmentsList, currenciesList] = await Promise.all([
       api.listAccounts().catch(() => []),
       api.listEnrollments
         ? api.listEnrollments().catch(() => [])
         : Promise.resolve([]),
+      api.listCurrencies().catch(() => []),
     ]);
 
     accounts = accountsList || [];
     treasuries = (accountsList || []).filter(isCashOrBankAccount);
+    currencies = currenciesList || [];
 
     students = enrollmentsList || [];
 
-    if (treasuries.length > 0 && !selectedTreasuryId) {
-      selectedTreasuryId = treasuries[0].id;
+    if (treasuries.length > 0) {
+      const selectedTreasury = treasuries.find(
+        (account) => String(account.id) === String(selectedTreasuryId),
+      );
+      const matchingTreasury =
+        selectedTreasury ||
+        treasuries.find(
+          (account) =>
+            String(account.currency).toUpperCase() ===
+            String(selectedCurrency).toUpperCase(),
+        ) ||
+        treasuries[0];
+      selectedTreasuryId = String(matchingTreasury.id);
+      selectedCurrency = matchingTreasury.currency || selectedCurrency;
     }
     if (refreshPayments) {
       await queryClient.invalidateQueries({
@@ -244,10 +281,17 @@ async function loadData(refreshPayments = true) {
 
 function handleCurrencyChange(currency: string | undefined) {
   if (!currency || currency === selectedCurrency) return;
+  selectedCurrency = currency.toUpperCase();
   const matchingTreasury = treasuries.find(
-    (account) => account.currency === currency,
+    (account) =>
+      String(account.currency).toUpperCase() ===
+      String(currency).toUpperCase(),
   );
   if (matchingTreasury) handleTreasuryChange(String(matchingTreasury.id));
+  else {
+    selectedTreasuryId = "";
+    for (const line of receiptLines) line.accountId = "";
+  }
 }
 
 function handleTreasuryChange(accountId: string) {
@@ -255,6 +299,7 @@ function handleTreasuryChange(accountId: string) {
   const currency = treasuries.find(
     (account) => String(account.id) === accountId,
   )?.currency;
+  if (currency) selectedCurrency = currency.toUpperCase();
   for (const line of receiptLines) {
     const receivableAccount = accounts.find(
       (account) => String(account.id) === line.accountId,
@@ -765,7 +810,7 @@ async function exportCsv() {
                 <AccountSearchInput
                   value={selectedTreasuryId}
                   placeholder={m.finance_ui_treasury_select_placeholder()}
-                  accounts={treasuries}
+                  accounts={treasuryAccountsForCurrency}
                   onchange={(value) => handleTreasuryChange(value ?? "")}
                   disabled={isSubmitting}
                   class="h-9 w-full text-xs"
@@ -799,7 +844,7 @@ async function exportCsv() {
                   currentCurrency={selectedCurrency}
                   currencyOptions={availableCurrencies}
                   onchange={handleCurrencyChange}
-                  disabled={isSubmitting || availableCurrencies.length < 2}
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
             </div>

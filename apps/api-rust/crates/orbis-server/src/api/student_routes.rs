@@ -380,6 +380,34 @@ pub struct BulkRegisterStudentsResponse {
     pub items: Vec<BulkRegisterItemResultDto>,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct BulkTransferClassItem {
+    pub enrollment_id: Uuid,
+    pub target_section_id: Uuid,
+    pub reason: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct BulkTransferClassesRequest {
+    pub items: Vec<BulkTransferClassItem>,
+    pub atomic: Option<bool>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct BulkTransferClassItemResult {
+    pub enrollment_id: Uuid,
+    pub success: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct BulkTransferClassesResponse {
+    pub total: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub items: Vec<BulkTransferClassItemResult>,
+}
+
 // ── Helpers ──────────────────────────────────────────────────────
 
 fn parse_study_mode(mode_str: Option<&str>) -> StudyMode {
@@ -1067,6 +1095,46 @@ pub async fn check_duplicate(
     }))
 }
 
+#[utoipa::path(post, path = "/api/v1/enrollments/bulk-transfer", request_body = BulkTransferClassesRequest,
+    responses((status = 200, body = BulkTransferClassesResponse)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn bulk_transfer_classes(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(request): Json<BulkTransferClassesRequest>,
+) -> Result<Json<ApiResponse<BulkTransferClassesResponse>>, ApiError> {
+    let items = request
+        .items
+        .into_iter()
+        .map(
+            |item| orbis_app::services::student_service::BulkTransferStudentItem {
+                enrollment_id: item.enrollment_id,
+                target_section_id: item.target_section_id,
+                reason: item.reason,
+            },
+        )
+        .collect();
+    let result = state
+        .student_service
+        .bulk_transfer_classes(&ctx, ctx.tenant_id, items, request.atomic.unwrap_or(true))
+        .await?;
+
+    Ok(ApiResponse::ok(BulkTransferClassesResponse {
+        total: result.total,
+        succeeded: result.succeeded,
+        failed: result.failed,
+        items: result
+            .items
+            .into_iter()
+            .map(|item| BulkTransferClassItemResult {
+                enrollment_id: item.enrollment_id,
+                success: item.success,
+                error: item.error,
+            })
+            .collect(),
+    }))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route(
@@ -1105,6 +1173,10 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/enrollments/:id/transfer-class",
             post(transfer_class),
+        )
+        .route(
+            "/api/v1/enrollments/bulk-transfer",
+            post(bulk_transfer_classes),
         )
         .route(
             "/api/v1/student-guardians",

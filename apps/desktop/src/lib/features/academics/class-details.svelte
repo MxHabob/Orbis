@@ -126,6 +126,11 @@ const relatedActionGroups = $derived<ActionGroup[]>(
               href: `/${orgId}/academics/sections/${classId}/students`,
             },
             {
+              id: "class_transfer",
+              label: m.common_student_layout_transfer_class(),
+              href: `/${orgId}/academics/sections/${classId}/students`,
+            },
+            {
               id: "class_curriculum",
               label: m.ui_copy_curriculum_subjects_70041ea1(),
               href: `/${orgId}/academics/sections/${classId}/curriculum`,

@@ -256,6 +256,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         student_cmds::student_restore_student,
         student_cmds::student_start_bulk_register_job,
         student_cmds::student_get_bulk_register_job,
+        student_cmds::student_bulk_transfer_classes,
         // ── Employee Affairs ────────────────────────────────────
         employee_cmds::employee_register_employee,
         employee_cmds::employee_list_employees,

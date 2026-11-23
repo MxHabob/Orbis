@@ -2,6 +2,7 @@ import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
 import type { BulkRegisterJobDto } from "$lib/api/types";
 import type { BulkRegisterEmployeeJobDto } from "$lib/api/types";
 import type { BulkProfileId } from "$lib/features/bulk-entry/types";
+import type { BulkTransferStudentCommandResultDto } from "$lib/api/types";
 import type { ChunkProgress } from "$lib/features/bulk-entry/types";
 
 export type OperationStatus =
@@ -12,7 +13,7 @@ export type OperationStatus =
 
 export type AppOperation = {
   id: string;
-  kind: "bulk-import";
+  kind: "bulk-import" | "student-transfer";
   jobId?: string;
   jobProfile?: BulkProfileId;
   title: string;
@@ -34,7 +35,9 @@ function readOperations(): AppOperation[] {
     ) as AppOperation[];
     return parsed
       .filter(
-        (item) => item.kind === "bulk-import" && item.status !== "completed",
+        (item) =>
+          (item.kind === "bulk-import" || item.kind === "student-transfer") &&
+          item.status !== "completed",
       )
       .map((item) =>
         item.status === "running"
@@ -58,10 +61,14 @@ class OperationStore {
     }
   }
 
-  start(title: string, total: number): AppOperation {
+  start(
+    title: string,
+    total: number,
+    kind: AppOperation["kind"] = "bulk-import",
+  ): AppOperation {
     const operation: AppOperation = {
       id: crypto.randomUUID(),
-      kind: "bulk-import",
+      kind,
       title,
       status: "running",
       processed: 0,
@@ -93,6 +100,26 @@ class OperationStore {
             total: result.totalRows,
             committed: result.committedCount,
             failed: result.failedCount,
+            updatedAt: Date.now(),
+          }
+        : operation,
+    );
+    this.persist();
+  }
+
+  finishTransfer(id: string, result: BulkTransferStudentCommandResultDto) {
+    this.operations = this.operations.map((operation) =>
+      operation.id === id
+        ? {
+            ...operation,
+            status:
+              result.failed > 0
+                ? ("failed" as const)
+                : ("completed" as const),
+            processed: result.total,
+            total: result.total,
+            committed: result.succeeded,
+            failed: result.failed,
             updatedAt: Date.now(),
           }
         : operation,

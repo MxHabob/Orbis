@@ -262,6 +262,7 @@ impl AssessmentService {
         period_id: Uuid,
         student_id: Uuid,
         section_subject_id: Uuid,
+        component_id: Option<Uuid>,
         enrollment_id: Option<Uuid>,
     ) -> Result<Uuid, DomainError> {
         if let Some(period_repo) = &self.period_repo {
@@ -297,6 +298,31 @@ impl AssessmentService {
             return Err(DomainError::Unauthorized(
                 "Section subject is not valid for this organization and period".into(),
             ));
+        }
+
+        if section_subject.scheme_id.is_some() {
+            let scheme_id = section_subject.scheme_id.expect("checked above");
+            let scheme = self
+                .scheme_repo
+                .find_by_id(scheme_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Assessment scheme not found".into()))?;
+            if scheme.org_id != org_id {
+                return Err(DomainError::Unauthorized(
+                    "Assessment scheme belongs to another organization".into(),
+                ));
+            }
+            if let Some(component_id) = component_id {
+                if scheme.components.is_empty()
+                    || !scheme.components.iter().any(|component| {
+                        component.code.trim().eq_ignore_ascii_case(&component_id.to_string())
+                    })
+                {
+                    return Err(DomainError::Validation(
+                        "The assessment component is not defined by the section subject's assessment scheme".into(),
+                    ));
+                }
+            }
         }
 
         if let Some(enrollment_repo) = &self.enrollment_repo {
@@ -355,7 +381,7 @@ impl AssessmentService {
         }
 
         let enrollment_id = self
-            .validate_grade_context(org_id, period_id, student_id, section_subject_id, None)
+            .validate_grade_context(org_id, period_id, student_id, section_subject_id, component_id, None)
             .await?;
 
         let now = Utc::now();
@@ -417,6 +443,10 @@ impl AssessmentService {
 
         let now = Utc::now();
         let mut grades = Vec::with_capacity(items.len());
+        let mut existing_by_key = std::collections::HashMap::<
+            (Uuid, Uuid, Uuid, Option<Uuid>),
+            Grade,
+        >::new();
 
         for item in items {
             let max_score = item.max_score.unwrap_or_else(|| Decimal::from(100));
@@ -433,12 +463,49 @@ impl AssessmentService {
                     item.period_id,
                     item.student_id,
                     item.section_subject_id,
+                    item.component_id,
                     item.enrollment_id,
                 )
                 .await?;
 
-            let grade_id = Uuid::new_v4();
-            grades.push(Grade {
+            let key = (
+                item.student_id,
+                item.period_id,
+                item.section_subject_id,
+                item.component_id,
+            );
+            if !existing_by_key.contains_key(&key) {
+                for existing in self
+                    .grade_repo
+                    .find_by_org_student_and_subject(org_id, item.student_id, item.section_subject_id)
+                    .await?
+                {
+                    if existing.period_id == item.period_id
+                        && existing.section_subject_id == item.section_subject_id
+                        && existing.component_id == item.component_id
+                    {
+                        existing_by_key.insert(
+                            (
+                                existing.student_id,
+                                existing.period_id,
+                                existing.section_subject_id,
+                                existing.component_id,
+                            ),
+                            existing,
+                        );
+                    }
+                }
+            }
+            let existing = existing_by_key.get(&key).cloned();
+            let grade_id = existing
+                .as_ref()
+                .map(|grade| grade.id)
+                .unwrap_or_else(Uuid::new_v4);
+            let created_at = existing
+                .as_ref()
+                .map(|grade| grade.created_at)
+                .unwrap_or(now);
+            let grade = Grade {
                 id: grade_id,
                 org_id,
                 period_id: item.period_id,
@@ -455,12 +522,17 @@ impl AssessmentService {
                 is_exempt: item.is_exempt,
                 is_absent: item.is_absent,
                 change_reason: None,
-                recorded_by: ctx.user_id(),
-                updated_by: None,
+                recorded_by: existing
+                    .as_ref()
+                    .and_then(|grade| grade.recorded_by)
+                    .or_else(|| ctx.user_id()),
+                updated_by: ctx.user_id(),
                 notes: item.notes,
-                created_at: now,
+                created_at,
                 updated_at: now,
-            });
+            };
+            existing_by_key.insert(key, grade.clone());
+            grades.push(grade);
         }
 
         self.grade_repo.save_batch(&grades).await?;
