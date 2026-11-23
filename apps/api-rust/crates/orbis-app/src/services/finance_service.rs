@@ -20,10 +20,7 @@ use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{PaginatedList, PaymentFilter, StudentFeeFilter};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 use uuid::Uuid;
 
 fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
@@ -1610,35 +1607,20 @@ impl FinanceService {
         &self,
         org_id: Uuid,
     ) -> Result<Vec<StudentFeeSummary>, DomainError> {
-        let (fees, templates) = tokio::try_join!(
-            self.student_fee_repo.find_by_org(org_id),
-            self.fee_template_repo.find_by_org(org_id)
-        )?;
-        let currencies: HashMap<_, _> = templates
-            .into_iter()
-            .map(|template| (template.id, template.currency_code))
-            .collect();
-        let mut totals: BTreeMap<String, StudentFeeSummary> = BTreeMap::new();
-
-        for fee in fees {
-            let currency = currencies
-                .get(&fee.fee_template_id)
-                .cloned()
-                .unwrap_or_default();
-            let total = totals
-                .entry(currency.clone())
-                .or_insert_with(|| StudentFeeSummary {
-                    currency,
-                    due: Decimal::ZERO,
-                    paid: Decimal::ZERO,
-                    balance: Decimal::ZERO,
-                });
-            total.due += fee.net_amount;
-            total.paid += fee.paid_amount;
-            total.balance += fee.balance_due;
-        }
-
-        Ok(totals.into_values().collect())
+        self.student_fee_repo
+            .summarize_by_currency(org_id)
+            .await
+            .map(|summaries| {
+                summaries
+                    .into_iter()
+                    .map(|summary| StudentFeeSummary {
+                        currency: summary.currency,
+                        due: summary.due,
+                        paid: summary.paid,
+                        balance: summary.balance,
+                    })
+                    .collect()
+            })
     }
 
     /// List payments

@@ -14,13 +14,15 @@ use orbis_domain::entities::journal_entry::{
     JournalEntry as DomainJournalEntry, JournalPostingStatus,
 };
 use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
-use orbis_domain::entities::student_fee::{FeeStatus, StudentFee as DomainStudentFee};
+use orbis_domain::entities::student_fee::{
+    FeeStatus, StudentFee as DomainStudentFee, StudentFeeCurrencySummary,
+};
 use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, EntityTrait,
-    Order, PaginatorTrait, QueryFilter, QueryOrder, Set, TransactionTrait,
+    Order, PaginatorTrait, QueryFilter, QueryOrder, Set, Statement, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -763,6 +765,64 @@ impl StudentFeeRepository for FinanceRepoImpl {
             page,
             page_size,
         ))
+    }
+
+    async fn summarize_by_currency(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<StudentFeeCurrencySummary>, DomainError> {
+        let backend = self.db.get_database_backend();
+        let org_id_placeholder = match backend {
+            sea_orm::DatabaseBackend::Postgres => "$1",
+            _ => "?",
+        };
+        let sql = format!(
+            "SELECT COALESCE(ft.currency_code, '') AS currency, \
+                    CAST(COALESCE(SUM(sf.net_amount), 0) AS TEXT) AS due, \
+                    CAST(COALESCE(SUM(COALESCE(sf.paid_amount, 0)), 0) AS TEXT) AS paid, \
+                    CAST(COALESCE(SUM(COALESCE(sf.balance_due, \
+                        sf.net_amount - COALESCE(sf.paid_amount, 0))), 0) AS TEXT) AS balance \
+             FROM student_fees sf \
+             LEFT JOIN fee_templates ft \
+               ON ft.id = sf.fee_template_id AND ft.org_id = sf.org_id \
+             WHERE sf.org_id = {org_id_placeholder} \
+             GROUP BY ft.currency_code \
+             ORDER BY ft.currency_code"
+        );
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                backend,
+                sql,
+                vec![org_id.into()],
+            ))
+            .await
+            .map_err(|error| {
+                DomainError::Internal(format!("Student fee summary query failed: {error}"))
+            })?;
+
+        rows.into_iter()
+            .map(|row| {
+                let parse_total = |column| -> Result<Decimal, DomainError> {
+                    let value: String = row
+                        .try_get("", column)
+                        .map_err(|error| DomainError::Internal(error.to_string()))?;
+                    value.parse().map_err(|error| {
+                        DomainError::Internal(format!(
+                            "Invalid student fee summary {column}: {error}"
+                        ))
+                    })
+                };
+                Ok(StudentFeeCurrencySummary {
+                    currency: row
+                        .try_get("", "currency")
+                        .map_err(|error| DomainError::Internal(error.to_string()))?,
+                    due: parse_total("due")?,
+                    paid: parse_total("paid")?,
+                    balance: parse_total("balance")?,
+                })
+            })
+            .collect()
     }
 
     async fn save(&self, fee: &DomainStudentFee) -> Result<(), DomainError> {
@@ -1531,6 +1591,81 @@ mod tests {
             assert!(values.contains("%receipt-7%"), "query values: {values}");
             assert!(values.contains(&org_id.to_string()));
         }
+    }
+
+    #[tokio::test]
+    async fn student_fee_summary_aggregates_by_currency_in_database() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE student_fees (
+                org_id TEXT NOT NULL,
+                fee_template_id TEXT NOT NULL,
+                net_amount DECIMAL NOT NULL,
+                paid_amount DECIMAL,
+                balance_due DECIMAL
+            )",
+        )
+        .await
+        .unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE fee_templates (
+                id TEXT NOT NULL,
+                org_id TEXT NOT NULL,
+                currency_code TEXT NOT NULL
+            )",
+        )
+        .await
+        .unwrap();
+
+        let org_id = Uuid::new_v4();
+        let other_org_id = Uuid::new_v4();
+        let yer_template_id = Uuid::new_v4();
+        let sar_template_id = Uuid::new_v4();
+        let backend = db.get_database_backend();
+        for (template_id, currency) in [(yer_template_id, "YER"), (sar_template_id, "SAR")] {
+            db.execute(Statement::from_sql_and_values(
+                backend,
+                "INSERT INTO fee_templates (id, org_id, currency_code) VALUES (?, ?, ?)",
+                vec![template_id.into(), org_id.into(), currency.into()],
+            ))
+            .await
+            .unwrap();
+        }
+        for (fee_org_id, template_id, due, paid, balance) in [
+            (org_id, yer_template_id, 100, 25, 75),
+            (org_id, yer_template_id, 50, 10, 40),
+            (org_id, sar_template_id, 200, 80, 120),
+            (other_org_id, yer_template_id, 1000, 0, 1000),
+        ] {
+            db.execute(Statement::from_sql_and_values(
+                backend,
+                "INSERT INTO student_fees
+                    (org_id, fee_template_id, net_amount, paid_amount, balance_due)
+                    VALUES (?, ?, ?, ?, ?)",
+                vec![
+                    fee_org_id.into(),
+                    template_id.into(),
+                    Decimal::from(due).into(),
+                    Decimal::from(paid).into(),
+                    Decimal::from(balance).into(),
+                ],
+            ))
+            .await
+            .unwrap();
+        }
+
+        let repo = FinanceRepoImpl { db };
+        let summary = repo.summarize_by_currency(org_id).await.unwrap();
+
+        assert_eq!(summary.len(), 2);
+        assert_eq!(summary[0].currency, "SAR");
+        assert_eq!(summary[0].due, Decimal::from(200));
+        assert_eq!(summary[0].paid, Decimal::from(80));
+        assert_eq!(summary[0].balance, Decimal::from(120));
+        assert_eq!(summary[1].currency, "YER");
+        assert_eq!(summary[1].due, Decimal::from(150));
+        assert_eq!(summary[1].paid, Decimal::from(35));
+        assert_eq!(summary[1].balance, Decimal::from(115));
     }
 
     #[tokio::test]

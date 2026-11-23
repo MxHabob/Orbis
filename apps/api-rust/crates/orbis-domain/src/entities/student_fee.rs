@@ -50,6 +50,14 @@ pub struct StudentFee {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone)]
+pub struct StudentFeeCurrencySummary {
+    pub currency: String,
+    pub due: Decimal,
+    pub paid: Decimal,
+    pub balance: Decimal,
+}
+
 impl StudentFee {
     pub fn apply_payment(&mut self, payment_amount: Decimal) {
         self.paid_amount += payment_amount;

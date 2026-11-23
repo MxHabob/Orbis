@@ -50,6 +50,7 @@ use orbis_domain::{
         settings::OrganizationSettings,
         student::{Student, StudentDetail},
         student_fee::StudentFee,
+        student_fee::StudentFeeCurrencySummary,
         student_guardian::StudentGuardian,
         subject::Subject,
         time_slot::TimeSlot,
@@ -742,6 +743,10 @@ pub trait StudentFeeRepository: Send + Sync {
         org_id: Uuid,
         filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<PaginatedList<StudentFee>, DomainError>;
+    async fn summarize_by_currency(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<StudentFeeCurrencySummary>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }

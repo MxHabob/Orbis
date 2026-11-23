@@ -7,16 +7,16 @@ recent transactions, and treasury balances. Inline action buttons are placed
 directly inside the cards' headers.
 -->
 <script lang="ts">
+import { createQuery } from "@tanstack/svelte-query";
 import * as m from "$lib/paraglide/messages";
-import { Skeleton } from "@orbis/ui/skeleton";
-import { Grid, InfoCircle } from "@orbis/icons";
 
-import { extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import type { StudentDetailDto } from "$lib/api/types";
+import { l } from "$lib/core/i18n/locale";
 
 import {
   createStudentFeesQuery,
   createCashAccountsQuery,
-  createPaymentsQuery,
 } from "$lib/features/finance";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
@@ -25,7 +25,6 @@ import LateStudentsCard from "$lib/features/finance/components/late-students-car
 import CollectionRateCard from "$lib/features/finance/components/collection-rate-card.svelte";
 import RecentPaymentsCard from "$lib/features/finance/components/recent-payments-card.svelte";
 import AccountBalancesCard from "$lib/features/finance/components/account-balances-card.svelte";
-import { Button } from "@orbis/ui";
 import { FinanceSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 import { fade } from "svelte/transition";
@@ -33,20 +32,52 @@ import { fade } from "svelte/transition";
 let { orgId }: { orgId: string } = $props();
 
 // TanStack Queries
-const feesQuery = createStudentFeesQuery(() => orgId);
-const paymentsQuery = createPaymentsQuery(() => orgId);
+const feesQuery = createStudentFeesQuery(() => orgId, {
+  is_overdue: true,
+  sort_by: "balance_due",
+  sort_dir: "desc",
+});
+const feeSummaryQuery = createQuery(() => ({
+  queryKey: queryKeys.finance.studentFeeSummary(orgId),
+  queryFn: () => api.getStudentFeeSummary(),
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
+const paymentsFilter = {
+  page: 1,
+  page_size: 5,
+  sort_by: "paid_at",
+  sort_dir: "desc",
+};
+const paymentsQuery = createQuery(() => ({
+  queryKey: queryKeys.finance.payments(orgId, paymentsFilter),
+  queryFn: async () =>
+    (
+      await api.listPaymentsPaginated(paymentsFilter)
+    ).items,
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
 const treasuriesQuery = createCashAccountsQuery(() => orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 
 const fees = $derived(feesQuery.data ?? []);
+const feeSummary = $derived(feeSummaryQuery.data ?? []);
 const payments = $derived(paymentsQuery.data ?? []);
 const treasuries = $derived(treasuriesQuery.data ?? []);
 const enrollments = $derived(enrollmentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
+const enrollmentsById = $derived(
+  new Map(enrollments.map((enrollment) => [enrollment.id, enrollment])),
+);
+const classesById = $derived(
+  new Map(classes.map((classItem) => [classItem.id, classItem])),
+);
 
 const isLoading = $derived(
   feesQuery.isLoading ||
+    feeSummaryQuery.isLoading ||
     paymentsQuery.isLoading ||
     treasuriesQuery.isLoading ||
     enrollmentsQuery.isLoading ||
@@ -55,6 +86,7 @@ const isLoading = $derived(
 
 const error = $derived(
   feesQuery.error ||
+    feeSummaryQuery.error ||
     paymentsQuery.error ||
     treasuriesQuery.error ||
     enrollmentsQuery.error ||
@@ -63,116 +95,167 @@ const error = $derived(
 
 function refetchAll() {
   feesQuery.refetch();
+  feeSummaryQuery.refetch();
   paymentsQuery.refetch();
   treasuriesQuery.refetch();
   enrollmentsQuery.refetch();
   classesQuery.refetch();
+  studentDetailsQuery.refetch();
+}
+
+function toAmount(value: string | number | null | undefined): number {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? amount : 0;
 }
 
 // ── Financial KPI Computations ───────────────────────────────────────────
 const totalFees = $derived(
-  fees.reduce(
-    (sum, f) => sum + Number(f.net_amount || f.original_amount || 0),
-    0,
-  ),
+  feeSummary.reduce((sum, item) => sum + toAmount(item.due), 0),
 );
 
 const totalPaid = $derived(
-  payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+  feeSummary.reduce((sum, item) => sum + toAmount(item.paid), 0),
 );
-
-const balanceDue = $derived(Math.max(0, totalFees - totalPaid));
 
 const collectionRate = $derived(
   totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0,
 );
 
-const treasuryAssets = $derived(
-  treasuries.reduce(
-    (sum, t: any) => sum + Number(t.balances?.[t.currency] || 0),
-    0,
-  ),
-);
+const overdueDebtors = $derived.by(() => {
+  const grouped = new Map<
+    string,
+    {
+      studentId: string;
+      studentNumber: string | null;
+      className: string;
+      remaining: number;
+      daysLate: number;
+      dueDate: string;
+    }
+  >();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-// ── Payments grouping mapping for Fee paid amounts ──────────────────────
-const feePaymentsMap = $derived.by(() => {
-  const map = new Map<string, number>();
-  for (const p of payments) {
-    if (p.fee_id) {
-      const id = String(p.fee_id);
-      map.set(id, (map.get(id) || 0) + Number(p.amount || 0));
+  for (const fee of fees) {
+    if (fee.status === "paid") continue;
+    const dueDate = new Date(`${fee.due_date.slice(0, 10)}T00:00:00`);
+    const remaining = toAmount(fee.balance_due);
+    if (Number.isNaN(dueDate.getTime()) || remaining <= 0) continue;
+
+    const daysLate = Math.floor(
+      (today.getTime() - dueDate.getTime()) / 86_400_000,
+    );
+    if (daysLate <= 0) continue;
+
+    const enrollment = fee.enrollment_id
+      ? enrollmentsById.get(fee.enrollment_id)
+      : undefined;
+    const studentId = fee.student_id || enrollment?.student_id;
+    if (!studentId) continue;
+
+    const classItem = enrollment?.section_id
+      ? classesById.get(enrollment.section_id)
+      : undefined;
+    const className = classItem
+      ? l(classItem.name_ar, classItem.name) || "—"
+      : "—";
+    const existing = grouped.get(studentId);
+
+    if (existing) {
+      existing.remaining += remaining;
+      if (daysLate > existing.daysLate) {
+        existing.daysLate = daysLate;
+        existing.dueDate = fee.due_date;
+        existing.className = className;
+      }
+    } else {
+      grouped.set(studentId, {
+        studentId,
+        studentNumber: enrollment?.student_number ?? null,
+        className,
+        remaining,
+        daysLate,
+        dueDate: fee.due_date,
+      });
     }
   }
-  return map;
+
+  return [...grouped.values()].sort((a, b) => b.remaining - a.remaining);
 });
+const topLateDebtors = $derived(overdueDebtors.slice(0, 3));
+const studentDetailIds = $derived.by(() => {
+  return topLateDebtors.map((student) => student.studentId).sort();
+});
+const studentDetailsQuery = createQuery(() => {
+  const studentIds = studentDetailIds;
+  return {
+    queryKey: [
+      ...queryKeys.student.all,
+      "finance-overview-details",
+      orgId,
+      studentIds,
+    ],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        studentIds.map((studentId) => api.getStudent(studentId)),
+      );
+      const profiles: Record<string, StudentDetailDto> = {};
 
-const getFeePaidAmount = (fId: string, status: string, netAmount: number) => {
-  if (status === "paid") return netAmount;
-  const fromPayments = feePaymentsMap.get(fId) || 0;
-  if (status === "unpaid" && fromPayments === 0) return 0;
-  return fromPayments;
-};
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          profiles[studentIds[index]!] = result.value;
+        } else {
+          console.error(
+            "Failed to load student details for finance overview",
+            result.reason,
+          );
+        }
+      });
 
-// ── Late-Paying Students ──────────────────────────────────────────────────
-const lateStudents = $derived.by(() => {
-  const list = [];
-  for (const f of fees) {
-    if (f.status === "paid") continue;
+      return profiles;
+    },
+    enabled: !!orgId && studentIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  };
+});
+const studentProfiles = $derived(studentDetailsQuery.data ?? {});
 
-    const netAmt = Number(f.net_amount || f.original_amount || 0);
-    const paidAmt = getFeePaidAmount(f.id, f.status, netAmt);
-    const remaining = Math.max(0, netAmt - paidAmt);
-
-    if (remaining <= 0) continue;
-
-    const enrollment = enrollments.find((e) => e.id === f.enrollment_id);
-    const studentName = enrollment?.student_number || "—";
-    const studentNum = enrollment ? enrollment.student_number : "—";
-    const avatar = null;
-    const classId = enrollment?.section_id ?? null;
-
-    const cls = classId ? classes.find((c) => c.id === classId) : null;
-    const className = cls ? cls.name_ar || cls.name : "—";
-
-    const dueDate = new Date(f.due_date);
-    const diffTime = new Date().getTime() - dueDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    list.push({
-      feeId: f.id,
-      studentName,
-      studentNum,
-      avatar,
-      className,
-      remaining,
-      dueDate: f.due_date,
-      daysLate: diffDays > 0 ? diffDays : 0,
-    });
+function getStudentName(
+  studentId: string | undefined,
+  studentNumber: string | null | undefined,
+): string {
+  const profile = studentId ? studentProfiles[studentId] : undefined;
+  if (profile) {
+    const name = l(
+      profile.person.full_name_ar || profile.student.name_ar,
+      profile.person.full_name || profile.student.full_name,
+    );
+    if (typeof name === "string" && name.trim()) return name.trim();
   }
+  return studentNumber || "—";
+}
 
-  // Sort by remaining due balance descending, take top 5
-  return list.sort((a, b) => b.remaining - a.remaining).slice(0, 5);
-});
-
-// ── Recent Payments ──────────────────────────────────────────────────────
-const recentPayments = $derived.by(() => {
-  const sorted = [...payments].sort((a, b) => {
-    const dateA = new Date(a.paid_at || a.created_at);
-    const dateB = new Date(b.paid_at || b.created_at);
-    return dateB.getTime() - dateA.getTime();
-  });
-
-  return sorted.slice(0, 5).map((p) => {
-    const enrollment = enrollments.find((e) => e.id === p.enrollment_id);
-    const studentName = p.payer_name || enrollment?.student_number || "—";
-
+const lateStudents = $derived(
+  topLateDebtors.map((student) => ({
+    ...student,
+    studentName: getStudentName(student.studentId, student.studentNumber),
+  })),
+);
+const recentPayments = $derived(
+  payments.map((payment) => {
+    const enrollment = payment.enrollment_id
+      ? enrollmentsById.get(payment.enrollment_id)
+      : undefined;
     return {
-      ...p,
-      studentName,
-      receiptNumber: p.receipt_number || p.id.slice(0, 8),
+      ...payment,
+      studentName:
+        payment.payer_name?.trim() ||
+        enrollment?.student_number ||
+        "—",
+      receiptNumber: payment.receipt_number || payment.id.slice(0, 8),
     };
-  });
-});
+  }),
+);
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide p-6 flex flex-col gap-6 font-sans">
