@@ -1994,6 +1994,8 @@
   "finance_overview_btn_manage_cash_accounts": "Manage Accounts",
   "finance_overview_btn_new_payment": "New Receipt",
   "finance_overview_btn_statement": "Statement",
+  "finance_overview_branch_receivables": "Overdue by branch",
+  "finance_overview_current_branch": "All branches",
   "finance_overview_cash_accounts_list": "Cash and Bank Balances",
   "finance_overview_collection_trend": "Cash Flow and Collection Trend",
   "finance_overview_days_overdue": "{days} days overdue",

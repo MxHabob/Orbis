@@ -500,282 +500,276 @@ function handleReset() {
   }}
 />
 
-<div class="h-full flex flex-col bg-background text-foreground">
-  <!-- Minimal Settings-Style Top Bar -->
-  <div class="px-4 py-2.5 border-b border-border flex items-center justify-between gap-3 flex-wrap">
-    <!-- Profile Selection / Mode Tabs -->
-    <div class="flex items-center gap-1.5 flex-wrap">
-      {#if !hideProfileSelector}
-        <div class="flex items-center bg-muted/70 p-0.5 rounded-lg border border-border/60">
-          {#each Object.entries(BULK_PROFILES) as [id, prof] (id)}
-            <button
-              type="button"
-              onclick={() => handleProfileChange(id as BulkProfileId)}
-              class="px-3 py-1 rounded-md text-xs font-semibold transition-all {selectedProfileId === id ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground'}"
-            >
-              {getBulkEntryProfileName(id as BulkProfileId)}
-            </button>
-          {/each}
-        </div>
-      {/if}
-
-      {#if rawRows.length > 0}
-        <Badge variant="outline" class="text-xs px-2 py-0.5">
-          {rawRows.length} {m.common_students_count_suffix()}
-        </Badge>
-      {/if}
-    </div>
-
-    <!-- Actions Toolbar -->
-    <div class="flex items-center gap-1.5 flex-wrap">
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={isLoadingRefData}
-        onclick={() => handleAddBlankRows(1)}
-        class="h-8 gap-1.5 px-3 text-xs"
-      >
-        <Plus size={14} />
-        <span>{m.bulk_entry_add_row()}</span>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isLoadingRefData}
-        onclick={handlePasteFromClipboard}
-        class="h-8 gap-1 text-xs"
-        title={m.bulk_entry_paste_from_clipboard()}
-      >
-        <Clipboard size={14} />
-        <span>{m.bulk_entry_paste()}</span>
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={isLoadingRefData}
-        onclick={handleDownloadTemplate}
-        class="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowDownTray size={14} />
-        <span>{m.bulk_entry_template()}</span>
-      </Button>
-
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={isLoadingRefData}
-        onclick={handlePickFile}
-        class="h-8 gap-1 text-xs"
-      >
-        <FolderOpen size={14} />
-        <span>{m.bulk_entry_import_file()}</span>
-      </Button>
-    </div>
-  </div>
-
-  {#if referenceDataError}
-    <div class="mx-4 mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center justify-between gap-3" role="alert">
-      <span class="text-xs text-destructive">{referenceDataError}</span>
-      <Button variant="outline" size="sm" onclick={() => refDataQuery.refetch()}>
-        {m.common_retry()}
-      </Button>
-    </div>
-  {/if}
-
-  {#if commitResult}
-    <!-- Completion View -->
-    <div class="flex-1 overflow-y-auto p-6 flex items-center justify-center">
-      <ImportResultSummary
-        result={commitResult}
-        onreset={handleReset}
-        onretryfailed={() => {
-          commitResult = null;
-          filterMode = "errors";
-        }}
-        onexportreport={handleExportCorrected}
-      />
-    </div>
-  {:else if rawRows.length === 0}
-    <!-- Minimal Settings-Style Empty Area -->
-    <div
-      class="flex-1 m-4 rounded-xl border border-dashed border-border/80 bg-muted/10 flex flex-col items-center justify-center p-6 text-center transition-all {isDraggingFile ? 'border-primary bg-primary/5' : ''}"
-      ondragover={(e) => { e.preventDefault(); isDraggingFile = true; }}
-      ondragleave={() => { isDraggingFile = false; }}
-      ondrop={handleDropFile}
-      role="region"
-      aria-label={m.bulk_entry_file_drop_area()}
-    >
-      <div class="flex flex-col items-center max-w-sm">
-        <div class="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground mb-3">
-          <FolderOpen size={20} />
-        </div>
-        <p class="text-xs font-semibold text-foreground">{m.bulk_entry_empty_title()}</p>
-        <p class="text-[11px] text-muted-foreground mt-0.5 mb-4">
-          {m.bulk_entry_empty_description()}
-        </p>
-
-        <div class="flex items-center gap-2 flex-wrap justify-center">
-          <Button
-            variant="default"
-            size="sm"
-            onclick={() => handleAddBlankRows(1)}
-            disabled={isLoadingRefData}
-            class="h-8 gap-1.5 px-3 text-xs font-semibold shadow-sm"
-          >
-            <Plus size={14} />
-            <span>{m.bulk_entry_add_row()}</span>
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            onclick={handlePickFile}
-            disabled={isLoadingRefData}
-            class="h-8 gap-1 text-xs"
-          >
-            <FolderOpen size={14} />
-            <span>{m.bulk_entry_choose_file()}</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onclick={handleDownloadTemplate}
-            disabled={isLoadingRefData}
-            class="h-8 gap-1 text-xs text-muted-foreground"
-          >
-            <ArrowDownTray size={14} />
-            <span>{m.bulk_entry_download_template()}</span>
-          </Button>
-        </div>
-      </div>
-    </div>
-  {:else}
-    <!-- Sub-Filter Bar -->
-    <div class="px-4 py-1.5 border-b border-border/80 bg-muted/15 flex items-center justify-between gap-2 flex-wrap text-xs">
-      <div class="flex items-center gap-1.5">
-        <button
-          type="button"
-          onclick={() => (filterMode = "all")}
-          class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'all' ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:text-foreground'}"
-        >
-          {m.bulk_entry_filter_all({ count: rawRows.length })}
-        </button>
-
-        {#if errorCount > 0}
-          <button
-            type="button"
-            onclick={() => (filterMode = "errors")}
-            class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'errors' ? 'bg-destructive text-destructive-foreground' : 'bg-destructive/10 text-destructive'}"
-          >
-            {m.bulk_entry_filter_errors({ count: errorCount })}
-          </button>
+<div class="flex h-full min-h-0 flex-col bg-background p-4 text-foreground sm:p-6">
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <!-- Minimal Settings-Style Top Bar -->
+    <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
+      <!-- Profile Selection / Mode Tabs -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        {#if !hideProfileSelector}
+          <div class="flex items-center rounded-lg border border-border/60 bg-muted/70 p-0.5">
+            {#each Object.entries(BULK_PROFILES) as [id, prof] (id)}
+              <button
+                type="button"
+                onclick={() => handleProfileChange(id as BulkProfileId)}
+                class="rounded-md px-3 py-1 text-xs font-semibold transition-all {selectedProfileId === id ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground'}"
+              >
+                {getBulkEntryProfileName(id as BulkProfileId)}
+              </button>
+            {/each}
+          </div>
         {/if}
 
-        {#if warningCount > 0}
-          <button
-            type="button"
-            onclick={() => (filterMode = "warnings")}
-            class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'warnings' ? 'bg-amber-500 text-white' : 'bg-amber-500/10 text-amber-600'}"
-          >
-            {m.bulk_entry_filter_warnings({ count: warningCount })}
-          </button>
+        {#if rawRows.length > 0}
+          <Badge variant="outline" class="px-2 py-0.5 text-xs">
+            {rawRows.length} {m.common_students_count_suffix()}
+          </Badge>
         {/if}
-
-        <button
-          type="button"
-          onclick={() => (filterMode = "valid")}
-          class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all {filterMode === 'valid' ? 'bg-emerald-600 text-white' : 'bg-emerald-500/10 text-emerald-600'}"
-        >
-          {m.bulk_entry_filter_valid({ count: validCount })}
-        </button>
       </div>
 
-      <div class="flex items-center gap-1.5">
-        {#if errorCount > 0}
-          <Button
-            variant="ghost"
-            size="sm"
-            onclick={handleNextError}
-            class="h-7 px-2 text-[11px] text-destructive gap-1"
-            title={m.bulk_entry_next_error_shortcut()}
-          >
-            <span>{m.bulk_entry_next_error()}</span>
-            <span class="font-mono text-[9px] px-1 rounded bg-muted">F8</span>
-          </Button>
-        {/if}
+      <!-- Actions Toolbar -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isLoadingRefData}
+          onclick={() => handleAddBlankRows(1)}
+          class="h-8 gap-1.5 px-3 text-xs"
+        >
+          <Plus size={14} />
+          <span>{m.bulk_entry_add_row()}</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isLoadingRefData}
+          onclick={handlePasteFromClipboard}
+          class="h-8 gap-1 text-xs"
+          title={m.bulk_entry_paste_from_clipboard()}
+        >
+          <Clipboard size={14} />
+          <span>{m.bulk_entry_paste()}</span>
+        </Button>
 
         <Button
           variant="ghost"
           size="sm"
-          onclick={handleClearEmptyRows}
-          class="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-          title={m.bulk_entry_clear_empty_rows()}
+          disabled={isLoadingRefData}
+          onclick={handleDownloadTemplate}
+          class="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <Trash size={12} />
-          <span>{m.bulk_entry_clear_empty()}</span>
+          <ArrowDownTray size={14} />
+          <span>{m.bulk_entry_template()}</span>
         </Button>
-      </div>
-    </div>
-
-    <!-- Central OrbisGrid Workspace -->
-    <div class="flex-1 min-h-0 min-w-0 w-full overflow-hidden bg-background relative">
-      <OrbisGrid
-        columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields).map((column) => ({
-          ...column,
-          ...(!column.readonly ? { type: "text" as const, options: undefined } : {}),
-          sortable: false,
-          sort: false,
-        }))}
-        source={gridSource}
-        rtl={true}
-        height="100%"
-        clientQuery
-        range={true}
-        clipboard={true}
-        showAddRow={true}
-        createEmptyRow={() => createBlankRow(rawRows.length + 1).data}
-        oncelledit={handleCellEdit}
-        onrowschange={handleGridRowsChange}
-      />
-    </div>
-
-    <!-- Minimal Settings Footer -->
-    <div class="px-4 py-2 border-t border-border bg-card/50 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-1.5">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={handleExportCorrected}
-          class="h-8 text-xs gap-1"
-        >
-          <ArrowUpTray size={13} />
-          <span>{m.bulk_entry_export()}</span>
-        </Button>
-      </div>
-
-      <div class="flex items-center gap-2.5">
-        {#if errorCount > 0}
-          <span class="text-xs text-destructive font-medium">
-            {m.bulk_entry_error_count({ count: errorCount })}
-          </span>
-        {/if}
 
         <Button
-          variant="default"
+          variant="secondary"
           size="sm"
-          disabled={validCount === 0}
-          onclick={handleReviewImpact}
-          class="h-8 text-xs gap-1.5 shadow-xs"
+          disabled={isLoadingRefData}
+          onclick={handlePickFile}
+          class="h-8 gap-1 text-xs"
         >
-          <CheckCircle size={14} />
-          <span>{m.bulk_entry_commit_and_save({ count: validCount })}</span>
+          <FolderOpen size={14} />
+          <span>{m.bulk_entry_import_file()}</span>
         </Button>
       </div>
     </div>
-  {/if}
+
+    {#if referenceDataError}
+      <div class="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center justify-between gap-3" role="alert">
+        <span class="text-xs text-destructive">{referenceDataError}</span>
+        <Button variant="outline" size="sm" onclick={() => refDataQuery.refetch()}>
+          {m.common_retry()}
+        </Button>
+      </div>
+    {/if}
+
+    {#if commitResult}
+      <!-- Completion View -->
+      <div class="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+        <ImportResultSummary
+          result={commitResult}
+          onreset={handleReset}
+          onretryfailed={() => {
+            commitResult = null;
+            filterMode = "errors";
+          }}
+          onexportreport={handleExportCorrected}
+        />
+      </div>
+    {:else if rawRows.length === 0}
+      <!-- Minimal Settings-Style Empty Area -->
+      <div
+        class="my-4 flex-1 rounded-xl border border-dashed border-border/80 bg-muted/10 flex flex-col items-center justify-center p-6 text-center transition-all {isDraggingFile ? 'border-primary bg-primary/5' : ''}"
+        ondragover={(e) => { e.preventDefault(); isDraggingFile = true; }}
+        ondragleave={() => { isDraggingFile = false; }}
+        ondrop={handleDropFile}
+        role="region"
+        aria-label={m.bulk_entry_file_drop_area()}
+      >
+        <div class="flex flex-col items-center max-w-sm">
+          <div class="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground mb-3">
+            <FolderOpen size={20} />
+          </div>
+          <p class="text-xs font-semibold text-foreground">{m.bulk_entry_empty_title()}</p>
+          <p class="text-[11px] text-muted-foreground mt-0.5 mb-4">
+            {m.bulk_entry_empty_description()}
+          </p>
+
+          <div class="flex items-center gap-2 flex-wrap justify-center">
+            <Button
+              variant="default"
+              size="sm"
+              onclick={() => handleAddBlankRows(1)}
+              disabled={isLoadingRefData}
+              class="h-8 gap-1.5 px-3 text-xs font-semibold shadow-sm"
+            >
+              <Plus size={14} />
+              <span>{m.bulk_entry_add_row()}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onclick={handlePickFile}
+              disabled={isLoadingRefData}
+              class="h-8 gap-1 text-xs"
+            >
+              <FolderOpen size={14} />
+              <span>{m.bulk_entry_choose_file()}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onclick={handleDownloadTemplate}
+              disabled={isLoadingRefData}
+              class="h-8 gap-1 text-xs text-muted-foreground"
+            >
+              <ArrowDownTray size={14} />
+              <span>{m.bulk_entry_download_template()}</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    {:else}
+      <!-- Central OrbisGrid Workspace -->
+      <div class="flex-1 min-h-0 min-w-0 w-full overflow-hidden bg-background relative">
+        <OrbisGrid
+          columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields).map((column) => ({
+            ...column,
+            ...(!column.readonly ? { type: "text" as const, options: undefined } : {}),
+            sortable: false,
+            sort: false,
+          }))}
+          source={gridSource}
+          rtl={true}
+          height="100%"
+          clientQuery
+          range={true}
+          clipboard={true}
+          showAddRow={true}
+          createEmptyRow={() => createBlankRow(rawRows.length + 1).data}
+          oncelledit={handleCellEdit}
+          onrowschange={handleGridRowsChange}
+        />
+      </div>
+
+      <!-- Minimal Settings Footer -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3">
+        <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onclick={() => (filterMode = "all")}
+            class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-all {filterMode === 'all' ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:text-foreground'}"
+          >
+            {m.bulk_entry_filter_all({ count: rawRows.length })}
+          </button>
+
+          {#if errorCount > 0}
+            <button
+              type="button"
+              onclick={() => (filterMode = "errors")}
+              class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-all {filterMode === 'errors' ? 'bg-destructive text-destructive-foreground' : 'bg-destructive/10 text-destructive'}"
+            >
+              {m.bulk_entry_filter_errors({ count: errorCount })}
+            </button>
+          {/if}
+
+          {#if warningCount > 0}
+            <button
+              type="button"
+              onclick={() => (filterMode = "warnings")}
+              class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-all {filterMode === 'warnings' ? 'bg-amber-500 text-white' : 'bg-amber-500/10 text-amber-600'}"
+            >
+              {m.bulk_entry_filter_warnings({ count: warningCount })}
+            </button>
+          {/if}
+
+          <button
+            type="button"
+            onclick={() => (filterMode = "valid")}
+            class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-all {filterMode === 'valid' ? 'bg-emerald-600 text-white' : 'bg-emerald-500/10 text-emerald-600'}"
+          >
+            {m.bulk_entry_filter_valid({ count: validCount })}
+          </button>
+
+          {#if errorCount > 0}
+            <Button
+              variant="ghost"
+              size="sm"
+              onclick={handleNextError}
+              class="h-7 gap-1 px-2 text-[11px] text-destructive"
+              title={m.bulk_entry_next_error_shortcut()}
+            >
+              <span>{m.bulk_entry_next_error()}</span>
+              <span class="rounded bg-muted px-1 font-mono text-[9px]">F8</span>
+            </Button>
+          {/if}
+          <Button
+            variant="ghost"
+            size="sm"
+            onclick={handleClearEmptyRows}
+            class="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+            title={m.bulk_entry_clear_empty_rows()}
+          >
+            <Trash size={12} />
+            <span>{m.bulk_entry_clear_empty()}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={handleExportCorrected}
+            class="h-8 gap-1 text-xs"
+          >
+            <ArrowUpTray size={13} />
+            <span>{m.bulk_entry_export()}</span>
+          </Button>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          {#if errorCount > 0}
+            <span class="text-xs font-medium text-destructive">
+              {m.bulk_entry_error_count({ count: errorCount })}
+            </span>
+          {/if}
+
+          <Button
+            variant="default"
+            size="sm"
+            disabled={validCount === 0}
+            onclick={handleReviewImpact}
+            class="h-8 gap-1.5 text-xs shadow-xs"
+          >
+            <CheckCircle size={14} />
+            <span>{m.bulk_entry_commit_and_save({ count: validCount })}</span>
+          </Button>
+        </div>
+      </div>
+    {/if}
+  </div>
 </div>
 
 <!-- Impact Preview Modal -->

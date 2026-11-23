@@ -447,11 +447,13 @@ pub struct SettleGatewayPayoutRequest {
     pub accounting_date: Option<NaiveDate>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::IntoParams)]
 pub struct FeeQuery {
     pub enrollment_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub currency_code: Option<String>,
     pub from_date: Option<NaiveDate>,
     pub to_date: Option<NaiveDate>,
     pub status: Option<String>,
@@ -468,6 +470,8 @@ pub struct PaymentQuery {
     pub fee_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
     pub enrollment_id: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    pub currency_code: Option<String>,
     pub method: Option<String>,
     pub from_date: Option<NaiveDate>,
     pub to_date: Option<NaiveDate>,
@@ -875,6 +879,8 @@ pub async fn list_fees(
         enrollment_id: q.enrollment_id,
         fee_template_id: None,
         period_id: q.period_id,
+        org_unit_id: q.org_unit_id,
+        currency_code: q.currency_code,
         from_date: q.from_date,
         to_date: q.to_date,
         status: q.status,
@@ -921,15 +927,25 @@ pub async fn list_fees(
     Ok(ApiResponse::ok(result))
 }
 
-#[utoipa::path(get, path = "/api/v1/student-fees/summary",
+#[utoipa::path(get, path = "/api/v1/student-fees/summary", params(FeeQuery),
     responses((status = 200, body = Vec<StudentFeeSummaryDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn summarize_student_fees(
     ctx: AuthContext,
     State(state): State<AppState>,
+    Query(q): Query<FeeQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentFeeSummaryDto>>>, ApiError> {
     let summary = state
         .finance_service
-        .summarize_student_fees(ctx.tenant_id)
+        .summarize_student_fees(
+            ctx.tenant_id,
+            orbis_domain::queries::filters::StudentFeeFilter {
+                org_unit_id: q.org_unit_id,
+                currency_code: q.currency_code,
+                from_date: q.from_date,
+                to_date: q.to_date,
+                ..Default::default()
+            },
+        )
         .await?;
     Ok(ApiResponse::ok(
         summary
@@ -1034,6 +1050,7 @@ pub async fn list_payments(
         student_id: q.student_id,
         enrollment_id: q.enrollment_id,
         fee_id: q.fee_id,
+        org_unit_id: q.org_unit_id,
         method,
         from_date: q
             .from_date

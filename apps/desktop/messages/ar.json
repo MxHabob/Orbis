@@ -1994,6 +1994,8 @@
   "finance_overview_btn_manage_cash_accounts": "إدارة الحسابات",
   "finance_overview_btn_new_payment": "سند جديد",
   "finance_overview_btn_statement": "كشف حساب",
+  "finance_overview_branch_receivables": "المتأخرات حسب الفرع",
+  "finance_overview_current_branch": "كل الفروع",
   "finance_overview_cash_accounts_list": "أرصدة الحسابات النقدية والبنكية",
   "finance_overview_collection_trend": "مخطط التدفق المالي وحصيلة الرسوم",
   "finance_overview_days_overdue": "متأخر {days} يوم",

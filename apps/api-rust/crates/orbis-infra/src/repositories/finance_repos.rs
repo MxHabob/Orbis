@@ -490,6 +490,35 @@ fn build_student_fee_list_query(
     if let Some(student_id) = filter.student_id {
         query = query.filter(student_fee::Column::StudentId.eq(student_id));
     }
+    if let Some(org_unit_id) = filter.org_unit_id {
+        query = query.filter(Expr::cust_with_values(
+            format!(
+                "EXISTS (SELECT 1 FROM students s \
+             WHERE s.id = student_fees.student_id \
+               AND s.org_id = student_fees.org_id \
+               AND s.org_unit_id = {})",
+                placeholder(1)
+            ),
+            [org_unit_id],
+        ));
+    }
+    if let Some(currency_code) = filter
+        .currency_code
+        .as_deref()
+        .map(str::trim)
+        .filter(|currency| !currency.is_empty())
+    {
+        query = query.filter(Expr::cust_with_values(
+            format!(
+                "EXISTS (SELECT 1 FROM fee_templates ft \
+                 WHERE ft.id = student_fees.fee_template_id \
+                   AND ft.org_id = student_fees.org_id \
+                   AND ft.currency_code = {})",
+                placeholder(1)
+            ),
+            [currency_code.to_string()],
+        ));
+    }
     if let Some(period_id) = filter.period_id {
         query = query.filter(student_fee::Column::PeriodId.eq(Some(period_id)));
     }
@@ -586,6 +615,17 @@ fn build_payment_list_query(
     let mut query = PaymentEntity::find().filter(payment::Column::OrgId.eq(org_id));
     if let Some(student_id) = filter.student_id {
         query = query.filter(payment::Column::StudentId.eq(student_id));
+    }
+    if let Some(org_unit_id) = filter.org_unit_id {
+        query = query.filter(payment::Column::OrgUnitId.eq(Some(org_unit_id)));
+    }
+    if let Some(currency_code) = filter
+        .currency_code
+        .as_deref()
+        .map(str::trim)
+        .filter(|currency| !currency.is_empty())
+    {
+        query = query.filter(payment::Column::CurrencyCode.eq(currency_code));
     }
     if let Some(fee_id) = filter.fee_id {
         query = query.filter(payment::Column::FeeId.eq(fee_id));
@@ -770,11 +810,70 @@ impl StudentFeeRepository for FinanceRepoImpl {
     async fn summarize_by_currency(
         &self,
         org_id: Uuid,
+        filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<Vec<StudentFeeCurrencySummary>, DomainError> {
         let backend = self.db.get_database_backend();
-        let org_id_placeholder = match backend {
-            sea_orm::DatabaseBackend::Postgres => "$1",
-            _ => "?",
+        let mut values = vec![org_id.into()];
+        let mut conditions = vec!["sf.org_id = $1".to_string()];
+        let mut add_value = |value: sea_orm::Value| {
+            values.push(value);
+            match backend {
+                sea_orm::DatabaseBackend::Postgres => format!("${}", values.len()),
+                _ => "?".to_string(),
+            }
+        };
+        if let Some(from_date) = filter.from_date {
+            let placeholder = add_value(from_date.into());
+            conditions.push(format!("sf.due_date >= {placeholder}"));
+        }
+        if let Some(to_date) = filter.to_date {
+            let placeholder = add_value(to_date.into());
+            conditions.push(format!("sf.due_date <= {placeholder}"));
+        }
+        if let Some(org_unit_id) = filter.org_unit_id {
+            let placeholder = add_value(org_unit_id.into());
+            conditions.push(format!(
+                "EXISTS (SELECT 1 FROM students s \
+                 WHERE s.id = sf.student_id AND s.org_id = sf.org_id \
+                   AND s.org_unit_id = {placeholder})"
+            ));
+        }
+        if let Some(currency_code) = filter
+            .currency_code
+            .as_deref()
+            .map(str::trim)
+            .filter(|currency| !currency.is_empty())
+        {
+            let placeholder = add_value(currency_code.to_string().into());
+            conditions.push(format!("COALESCE(ft.currency_code, '') = {placeholder}"));
+        }
+        let filter_clause = if backend == sea_orm::DatabaseBackend::Postgres {
+            conditions.join(" AND ")
+        } else {
+            let mut sqlite_conditions = vec!["sf.org_id = ?".to_string()];
+            if filter.from_date.is_some() {
+                sqlite_conditions.push("sf.due_date >= ?".to_string());
+            }
+            if filter.to_date.is_some() {
+                sqlite_conditions.push("sf.due_date <= ?".to_string());
+            }
+            if filter.org_unit_id.is_some() {
+                sqlite_conditions.push(
+                    "EXISTS (SELECT 1 FROM students s \
+                     WHERE s.id = sf.student_id AND s.org_id = sf.org_id \
+                       AND s.org_unit_id = ?)"
+                        .to_string(),
+                );
+            }
+            if filter
+                .currency_code
+                .as_deref()
+                .map(str::trim)
+                .is_some_and(|currency| !currency.is_empty())
+            {
+                sqlite_conditions.push("COALESCE(ft.currency_code, '') = ?".to_string());
+            }
+            sqlite_conditions.join(" AND ")
         };
         let sql = format!(
             "SELECT COALESCE(ft.currency_code, '') AS currency, \
@@ -785,17 +884,13 @@ impl StudentFeeRepository for FinanceRepoImpl {
              FROM student_fees sf \
              LEFT JOIN fee_templates ft \
                ON ft.id = sf.fee_template_id AND ft.org_id = sf.org_id \
-             WHERE sf.org_id = {org_id_placeholder} \
+             WHERE {filter_clause} \
              GROUP BY ft.currency_code \
              ORDER BY ft.currency_code"
         );
         let rows = self
             .db
-            .query_all(Statement::from_sql_and_values(
-                backend,
-                sql,
-                vec![org_id.into()],
-            ))
+            .query_all(Statement::from_sql_and_values(backend, sql, values))
             .await
             .map_err(|error| {
                 DomainError::Internal(format!("Student fee summary query failed: {error}"))
@@ -1522,8 +1617,11 @@ mod tests {
     fn student_fee_query_applies_organization_period_and_unpaid_filters() {
         let org_id = Uuid::new_v4();
         let period_id = Uuid::new_v4();
+        let org_unit_id = Uuid::new_v4();
         let filter = orbis_domain::queries::filters::StudentFeeFilter {
             period_id: Some(period_id),
+            org_unit_id: Some(org_unit_id),
+            currency_code: Some("SAR".to_string()),
             from_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 11, 1).unwrap()),
             to_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 11, 30).unwrap()),
             only_unpaid: Some(true),
@@ -1539,10 +1637,14 @@ mod tests {
             assert!(statement.sql.contains("org_id"));
             assert!(statement.sql.contains("period_id"));
             assert!(statement.sql.contains("due_date"));
+            assert!(statement.sql.contains("org_unit_id"));
+            assert!(statement.sql.contains("fee_templates"));
             assert!(statement.sql.contains("balance_due"));
             assert!(values.contains("partially_paid"));
             assert!(values.contains(&org_id.to_string()));
             assert!(values.contains(&period_id.to_string()));
+            assert!(values.contains(&org_unit_id.to_string()));
+            assert!(values.contains("SAR"));
         }
     }
 
@@ -1571,7 +1673,10 @@ mod tests {
     #[test]
     fn payment_query_applies_search_and_method_filters_before_pagination() {
         let org_id = Uuid::new_v4();
+        let org_unit_id = Uuid::new_v4();
         let filter = orbis_domain::queries::filters::PaymentFilter {
+            org_unit_id: Some(org_unit_id),
+            currency_code: Some("SAR".to_string()),
             method: Some(PaymentMethod::Cash),
             search: Some("receipt-7".to_string()),
             ..Default::default()
@@ -1585,10 +1690,14 @@ mod tests {
             let values = format!("{:?}", statement.values);
 
             assert!(statement.sql.contains("payments.method"));
+            assert!(statement.sql.contains("org_unit_id"));
+            assert!(statement.sql.contains("currency_code"));
             assert!(statement.sql.contains("payments.receipt_number"));
             assert!(statement.sql.contains("students"));
             assert!(values.contains("cash"));
             assert!(values.contains("%receipt-7%"), "query values: {values}");
+            assert!(values.contains(&org_unit_id.to_string()));
+            assert!(values.contains("SAR"));
             assert!(values.contains(&org_id.to_string()));
         }
     }
@@ -1655,7 +1764,13 @@ mod tests {
         }
 
         let repo = FinanceRepoImpl { db };
-        let summary = repo.summarize_by_currency(org_id).await.unwrap();
+        let summary = repo
+            .summarize_by_currency(
+                org_id,
+                orbis_domain::queries::filters::StudentFeeFilter::default(),
+            )
+            .await
+            .unwrap();
 
         assert_eq!(summary.len(), 2);
         assert_eq!(summary[0].currency, "SAR");

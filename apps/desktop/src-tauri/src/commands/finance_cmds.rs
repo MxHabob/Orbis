@@ -536,6 +536,8 @@ pub struct FeeFilterInput {
     pub student_id: Option<String>,
     pub enrollment_id: Option<String>,
     pub fee_template_id: Option<String>,
+    pub org_unit_id: Option<String>,
+    pub currency_code: Option<String>,
     pub from_date: Option<String>,
     pub to_date: Option<String>,
     pub status: Option<String>,
@@ -571,6 +573,8 @@ pub struct PaymentFilterInput {
     pub fee_id: Option<String>,
     pub student_id: Option<String>,
     pub enrollment_id: Option<String>,
+    pub org_unit_id: Option<String>,
+    pub currency_code: Option<String>,
     pub method: Option<String>,
     pub from_date: Option<String>,
     pub to_date: Option<String>,
@@ -1003,6 +1007,8 @@ pub async fn finance_list_student_fees(
         enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
         fee_template_id: parse_optional_uuid(f.fee_template_id, "fee_template_id")?,
         period_id: parse_optional_uuid(f.period_id, "period_id")?,
+        org_unit_id: parse_optional_uuid(f.org_unit_id, "org_unit_id")?,
+        currency_code: f.currency_code,
         from_date: f
             .from_date
             .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
@@ -1050,6 +1056,8 @@ pub async fn finance_list_student_fees_paginated(
         enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
         fee_template_id: parse_optional_uuid(f.fee_template_id, "fee_template_id")?,
         period_id: parse_optional_uuid(f.period_id, "period_id")?,
+        org_unit_id: parse_optional_uuid(f.org_unit_id, "org_unit_id")?,
+        currency_code: f.currency_code,
         from_date: f
             .from_date
             .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
@@ -1086,12 +1094,30 @@ pub async fn finance_list_student_fees_paginated(
 
 #[tauri::command]
 pub async fn finance_get_student_fee_summary(
+    filter: Option<FeeFilterInput>,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<orbis_app::services::finance_service::StudentFeeSummary>>, String> {
     let ctx = make_ctx(&state);
+    let filter = filter.unwrap_or_default();
     state
         .finance_service
-        .summarize_student_fees(ctx.tenant_id)
+        .summarize_student_fees(
+            ctx.tenant_id,
+            StudentFeeFilter {
+                org_unit_id: parse_optional_uuid(filter.org_unit_id, "org_unit_id")?,
+                from_date: filter
+                    .from_date
+                    .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
+                    .transpose()
+                    .map_err(|error| format!("Invalid from_date: {error}"))?,
+                to_date: filter
+                    .to_date
+                    .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d"))
+                    .transpose()
+                    .map_err(|error| format!("Invalid to_date: {error}"))?,
+                ..Default::default()
+            },
+        )
         .await
         .map(ok)
         .map_err(|error| error.to_string())
@@ -1192,6 +1218,8 @@ pub async fn finance_list_payments(
         student_id: parse_optional_uuid(f.student_id, "student_id")?,
         enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
         fee_id: parse_optional_uuid(f.fee_id, "fee_id")?,
+        org_unit_id: parse_optional_uuid(f.org_unit_id, "org_unit_id")?,
+        currency_code: f.currency_code,
         method,
         from_date,
         to_date,
@@ -1254,6 +1282,8 @@ pub async fn finance_list_payments_paginated(
         student_id: parse_optional_uuid(f.student_id, "student_id")?,
         enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
         fee_id: parse_optional_uuid(f.fee_id, "fee_id")?,
+        org_unit_id: parse_optional_uuid(f.org_unit_id, "org_unit_id")?,
+        currency_code: f.currency_code,
         method,
         from_date,
         to_date,

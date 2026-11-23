@@ -11,44 +11,90 @@ import { createQuery } from "@tanstack/svelte-query";
 import * as m from "$lib/paraglide/messages";
 
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
-import type { StudentDetailDto } from "$lib/api/types";
+import type { FeeTemplateDto, StudentDetailDto } from "$lib/api/types";
 import { l } from "$lib/core/i18n/locale";
+import { formatCurrency } from "$lib/core/i18n";
 
 import {
   createStudentFeesQuery,
   createCashAccountsQuery,
+  createFeeTemplatesQuery,
 } from "$lib/features/finance";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
+import { createOrgUnitsQuery } from "$lib/features/settings/queries";
 import CashFlowTrendCard from "$lib/features/metrics/cards/cash-flow-trend-card.svelte";
 import LateStudentsCard from "$lib/features/finance/components/late-students-card.svelte";
-import CollectionRateCard from "$lib/features/finance/components/collection-rate-card.svelte";
 import RecentPaymentsCard from "$lib/features/finance/components/recent-payments-card.svelte";
 import AccountBalancesCard from "$lib/features/finance/components/account-balances-card.svelte";
+import BranchReceivablesCard from "$lib/features/finance/components/branch-receivables-card.svelte";
 import { FinanceSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
+import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
+import {
+  getDateRangeForPreset,
+  type DateRangeFilterValue,
+} from "$lib/shared/components/date-range";
+import { Card, CardContent } from "@orbis/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
+let dateRange = $state<DateRangeFilterValue>(
+  getDateRangeForPreset("year_to_date"),
+);
+let selectedBranchId = $state("all");
+let selectedCurrency = $state("");
 
 // TanStack Queries
-const feesQuery = createStudentFeesQuery(() => orgId, {
-  is_overdue: true,
-  sort_by: "balance_due",
-  sort_dir: "desc",
+const orgUnitsQuery = createOrgUnitsQuery(() => orgId);
+const orgUnitFilter = $derived(
+  selectedBranchId === "all" ? undefined : selectedBranchId,
+);
+const dateFilter = $derived({
+  from_date: dateRange.fromDate,
+  to_date: dateRange.toDate,
+  org_unit_id: orgUnitFilter,
 });
 const feeSummaryQuery = createQuery(() => ({
-  queryKey: queryKeys.finance.studentFeeSummary(orgId),
-  queryFn: () => api.getStudentFeeSummary(),
+  queryKey: [...queryKeys.finance.studentFeeSummary(orgId), dateFilter],
+  queryFn: () => api.getStudentFeeSummary(dateFilter),
   enabled: !!orgId,
   staleTime: 2 * 60 * 1000,
 }));
-const paymentsFilter = {
+const feeSummary = $derived(feeSummaryQuery.data ?? []);
+const availableCurrencies = $derived(
+  [...new Set(feeSummary.map((item) => item.currency).filter(Boolean))].sort(),
+);
+const activeCurrency = $derived(
+  availableCurrencies.includes(selectedCurrency)
+    ? selectedCurrency
+    : (availableCurrencies[0] ?? ""),
+);
+const selectedSummary = $derived(
+  feeSummary.find((item) => item.currency === activeCurrency),
+);
+const feesQuery = createStudentFeesQuery(() => orgId, () => ({
+  from_date: dateRange.fromDate,
+  to_date: dateRange.toDate,
+  currency_code: activeCurrency || undefined,
+  is_overdue: true,
+  sort_by: "balance_due",
+  sort_dir: "desc",
+}));
+const paymentsFilter = $derived({
+  ...dateFilter,
+  currency_code: activeCurrency || undefined,
   page: 1,
-  page_size: 5,
+  page_size: 20,
   sort_by: "paid_at",
   sort_dir: "desc",
-};
+});
 const paymentsQuery = createQuery(() => ({
   queryKey: queryKeys.finance.payments(orgId, paymentsFilter),
   queryFn: async () =>
@@ -61,13 +107,21 @@ const paymentsQuery = createQuery(() => ({
 const treasuriesQuery = createCashAccountsQuery(() => orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
+const templatesQuery = createFeeTemplatesQuery(() => orgId);
 
 const fees = $derived(feesQuery.data ?? []);
-const feeSummary = $derived(feeSummaryQuery.data ?? []);
 const payments = $derived(paymentsQuery.data ?? []);
 const treasuries = $derived(treasuriesQuery.data ?? []);
 const enrollments = $derived(enrollmentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
+const orgUnits = $derived(orgUnitsQuery.data ?? []);
+const feeTemplates = $derived(templatesQuery.data ?? []);
+const templatesById = $derived(
+  new Map(feeTemplates.map((template) => [template.id, template])),
+);
+const branchUnits = $derived(
+  orgUnits.filter((unit) => unit.unit_type === "branch"),
+);
 const enrollmentsById = $derived(
   new Map(enrollments.map((enrollment) => [enrollment.id, enrollment])),
 );
@@ -77,29 +131,35 @@ const classesById = $derived(
 
 const isLoading = $derived(
   feesQuery.isLoading ||
+  orgUnitsQuery.isLoading ||
     feeSummaryQuery.isLoading ||
     paymentsQuery.isLoading ||
     treasuriesQuery.isLoading ||
     enrollmentsQuery.isLoading ||
-    classesQuery.isLoading,
+  classesQuery.isLoading ||
+  templatesQuery.isLoading,
 );
 
 const error = $derived(
   feesQuery.error ||
+    orgUnitsQuery.error ||
     feeSummaryQuery.error ||
     paymentsQuery.error ||
     treasuriesQuery.error ||
     enrollmentsQuery.error ||
-    classesQuery.error,
+    classesQuery.error ||
+    templatesQuery.error,
 );
 
 function refetchAll() {
   feesQuery.refetch();
+  orgUnitsQuery.refetch();
   feeSummaryQuery.refetch();
   paymentsQuery.refetch();
   treasuriesQuery.refetch();
   enrollmentsQuery.refetch();
   classesQuery.refetch();
+  templatesQuery.refetch();
   studentDetailsQuery.refetch();
 }
 
@@ -110,11 +170,15 @@ function toAmount(value: string | number | null | undefined): number {
 
 // ── Financial KPI Computations ───────────────────────────────────────────
 const totalFees = $derived(
-  feeSummary.reduce((sum, item) => sum + toAmount(item.due), 0),
+  toAmount(selectedSummary?.due),
 );
 
 const totalPaid = $derived(
-  feeSummary.reduce((sum, item) => sum + toAmount(item.paid), 0),
+  toAmount(selectedSummary?.paid),
+);
+
+const totalBalance = $derived(
+  toAmount(selectedSummary?.balance),
 );
 
 const collectionRate = $derived(
@@ -138,6 +202,12 @@ const overdueDebtors = $derived.by(() => {
 
   for (const fee of fees) {
     if (fee.status === "paid") continue;
+    if (
+      activeCurrency &&
+      templatesById.get(fee.fee_template_id)?.currency !== activeCurrency
+    ) {
+      continue;
+    }
     const dueDate = new Date(`${fee.due_date.slice(0, 10)}T00:00:00`);
     const remaining = toAmount(fee.balance_due);
     if (Number.isNaN(dueDate.getTime()) || remaining <= 0) continue;
@@ -156,6 +226,12 @@ const overdueDebtors = $derived.by(() => {
     const classItem = enrollment?.section_id
       ? classesById.get(enrollment.section_id)
       : undefined;
+    if (
+      selectedBranchId !== "all" &&
+      String(classItem?.unit_id ?? "") !== selectedBranchId
+    ) {
+      continue;
+    }
     const className = classItem
       ? l(classItem.name_ar, classItem.name) || "—"
       : "—";
@@ -183,6 +259,37 @@ const overdueDebtors = $derived.by(() => {
   return [...grouped.values()].sort((a, b) => b.remaining - a.remaining);
 });
 const topLateDebtors = $derived(overdueDebtors.slice(0, 3));
+
+const branchReceivables = $derived.by(() => {
+  const balances = new Map<string, number>();
+  for (const fee of fees) {
+    if (
+      activeCurrency &&
+      templatesById.get(fee.fee_template_id)?.currency !== activeCurrency
+    ) {
+      continue;
+    }
+    const enrollment = fee.enrollment_id
+      ? enrollmentsById.get(fee.enrollment_id)
+      : undefined;
+    const classItem = enrollment?.section_id
+      ? classesById.get(enrollment.section_id)
+      : undefined;
+    const branchId = String(classItem?.unit_id ?? "");
+    const remaining = toAmount(fee.balance_due);
+    if (!branchId || remaining <= 0) continue;
+    balances.set(branchId, (balances.get(branchId) ?? 0) + remaining);
+  }
+
+  return branchUnits
+    .map((unit) => ({
+      id: String(unit.id),
+      name: l(unit.name_ar, unit.name) || "—",
+      balance: balances.get(String(unit.id)) ?? 0,
+    }))
+    .filter((branch) => branch.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+});
 const studentDetailIds = $derived.by(() => {
   return topLateDebtors.map((student) => student.studentId).sort();
 });
@@ -242,7 +349,13 @@ const lateStudents = $derived(
   })),
 );
 const recentPayments = $derived(
-  payments.map((payment) => {
+  payments
+    .filter(
+      (payment) =>
+        !activeCurrency || payment.currency_code === activeCurrency,
+    )
+    .slice(0, 5)
+    .map((payment) => {
     const enrollment = payment.enrollment_id
       ? enrollmentsById.get(payment.enrollment_id)
       : undefined;
@@ -254,7 +367,12 @@ const recentPayments = $derived(
         "—",
       receiptNumber: payment.receipt_number || payment.id.slice(0, 8),
     };
-  }),
+    }),
+);
+const visibleTreasuries = $derived(
+  activeCurrency
+    ? treasuries.filter((account) => account.currency === activeCurrency)
+    : treasuries,
 );
 </script>
 
@@ -268,21 +386,122 @@ const recentPayments = $derived(
       onRetry={refetchAll} 
     />
   {:else}
-    <!-- Main Content Grid -->
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
-      <!-- 1. Full-Width SVG Cash Flow Trend Chart at the very top -->
-      <CashFlowTrendCard {orgId} />
-
-      <!-- 2. Middle Section: Late Paying Students Grid & Donut Analytics -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <LateStudentsCard {lateStudents} {orgId} />
-        <CollectionRateCard {collectionRate} {totalFees} {totalPaid} {orgId} />
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-card p-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span>{m.common_header_org_branch()}</span>
+            <Select type="single" bind:value={selectedBranchId}>
+              <SelectTrigger class="h-8 min-w-36 text-xs">
+                {selectedBranchId === "all"
+                  ? m.finance_overview_current_branch()
+                  : branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name_ar ||
+                    branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name ||
+                    m.common_header_org_branch()}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{m.finance_overview_current_branch()}</SelectItem>
+                {#each branchUnits as unit (unit.id)}
+                  <SelectItem value={String(unit.id)}>
+                    {l(unit.name_ar, unit.name)}
+                  </SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+          {#if availableCurrencies.length > 1}
+            <div class="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <span>{m.finance_ui_currency()}</span>
+              <Select
+                type="single"
+                value={activeCurrency}
+                onValueChange={(value) => {
+                  if (value) selectedCurrency = value;
+                }}
+              >
+                <SelectTrigger class="h-8 min-w-24 text-xs">
+                  {activeCurrency || m.finance_ui_currency_select_placeholder()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each availableCurrencies as currency (currency)}
+                    <SelectItem value={currency}>{currency}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+          {:else if activeCurrency}
+            <span class="rounded-md border border-border/60 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground">
+              {activeCurrency}
+            </span>
+          {/if}
+          <DateRangeFilter bind:value={dateRange} />
+        </div>
       </div>
 
-      <!-- 3. Bottom Section: Recent Payments & Treasuries list -->
+      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Card class="shadow-sm">
+          <CardContent class="p-4">
+            <p class="text-xs font-medium text-muted-foreground">
+              {m.finance_overview_trend_invoiced()}
+            </p>
+            <p class="mt-2 truncate font-mono text-lg font-bold text-foreground">
+              {formatCurrency(totalFees, activeCurrency || "YER")}
+            </p>
+          </CardContent>
+        </Card>
+        <Card class="shadow-sm">
+          <CardContent class="p-4">
+            <p class="text-xs font-medium text-muted-foreground">
+              {m.finance_overview_trend_collected()}
+            </p>
+            <p class="mt-2 truncate font-mono text-lg font-bold text-emerald-600">
+              {formatCurrency(totalPaid, activeCurrency || "YER")}
+            </p>
+          </CardContent>
+        </Card>
+        <Card class="shadow-sm">
+          <CardContent class="p-4">
+            <p class="text-xs font-medium text-muted-foreground">
+              {m.finance_ui_current_balance()}
+            </p>
+            <p class="mt-2 truncate font-mono text-lg font-bold text-foreground">
+              {formatCurrency(totalBalance, activeCurrency || "YER")}
+            </p>
+          </CardContent>
+        </Card>
+        <Card class="shadow-sm">
+          <CardContent class="p-4">
+            <p class="text-xs font-medium text-muted-foreground">
+              {m.finance_ui_collection_rate()}
+            </p>
+            <p class="mt-2 font-mono text-lg font-bold text-primary">
+              {collectionRate}%
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <CashFlowTrendCard
+        {orgId}
+        {dateRange}
+        branchId={orgUnitFilter}
+        selectedCurrency={activeCurrency}
+        {feeTemplates}
+      />
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <BranchReceivablesCard
+          branches={branchReceivables}
+          {selectedBranchId}
+          currency={activeCurrency || "YER"}
+          onSelect={(branchId) => (selectedBranchId = branchId)}
+        />
+        <LateStudentsCard {lateStudents} {orgId} />
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <RecentPaymentsCard {recentPayments} {orgId} />
-        <AccountBalancesCard {treasuries} {orgId} />
+        <AccountBalancesCard treasuries={visibleTreasuries} {orgId} />
       </div>
     </div>
   {/if}

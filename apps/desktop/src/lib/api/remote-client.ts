@@ -1940,9 +1940,19 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.generateFee({ client: this.client, body: req }));
   }
 
-  async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
-    return this.fetchApi<StudentFeeSummaryDto[]>(
-      "/api/v1/student-fees/summary",
+  async getStudentFeeSummary(
+    filter?: Pick<
+      StudentFeeFilterParams,
+      "org_unit_id" | "from_date" | "to_date" | "currency_code"
+    >,
+  ): Promise<StudentFeeSummaryDto[]> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filter ?? {})) {
+      if (value) query.set(key, value);
+    }
+    const queryString = query.toString();
+    return this.fetchApi(
+      `/api/v1/student-fees/summary${queryString ? `?${queryString}` : ""}`,
     );
   }
 

@@ -572,6 +572,8 @@ export interface StudentFeeFilterParams {
   student_id?: string;
   enrollment_id?: string;
   feeTemplate_id?: string;
+  org_unit_id?: string;
+  currency_code?: string;
   from_date?: string;
   to_date?: string;
   status?: string;
@@ -594,6 +596,8 @@ export interface PaymentFilterParams {
   fee_id?: string;
   student_id?: string;
   enrollment_id?: string;
+  org_unit_id?: string;
+  currency_code?: string;
   method?: string;
   from_date?: string;
   to_date?: string;
@@ -2155,7 +2159,12 @@ export interface OrbisApiClient {
   deleteFeeTemplate(id: string): Promise<boolean>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
-  getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]>;
+  getStudentFeeSummary(
+    filter?: Pick<
+      StudentFeeFilterParams,
+      "org_unit_id" | "from_date" | "to_date" | "currency_code"
+    >,
+  ): Promise<StudentFeeSummaryDto[]>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
   listStudentFeesPaginated(
     filter?: StudentFeeFilterParams,

@@ -746,6 +746,7 @@ pub trait StudentFeeRepository: Send + Sync {
     async fn summarize_by_currency(
         &self,
         org_id: Uuid,
+        filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<Vec<StudentFeeCurrencySummary>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;

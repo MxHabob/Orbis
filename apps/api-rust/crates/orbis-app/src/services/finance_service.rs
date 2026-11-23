@@ -1606,9 +1606,10 @@ impl FinanceService {
     pub async fn summarize_student_fees(
         &self,
         org_id: Uuid,
+        filter: StudentFeeFilter,
     ) -> Result<Vec<StudentFeeSummary>, DomainError> {
         self.student_fee_repo
-            .summarize_by_currency(org_id)
+            .summarize_by_currency(org_id, filter)
             .await
             .map(|summaries| {
                 summaries

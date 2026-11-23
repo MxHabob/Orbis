@@ -1255,8 +1255,13 @@ export class LocalClient implements OrbisApiClient {
       }),
     );
   }
-  async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
-    return unwrap(await invoke("finance_get_student_fee_summary"));
+  async getStudentFeeSummary(
+    filter?: Pick<
+      StudentFeeFilterParams,
+      "org_unit_id" | "from_date" | "to_date" | "currency_code"
+    >,
+  ): Promise<StudentFeeSummaryDto[]> {
+    return unwrap(await invoke("finance_get_student_fee_summary", { filter }));
   }
   async deleteStudentFee(id: string): Promise<boolean> {
     return unwrap(await invoke("finance_delete_student_fee", { id }));
