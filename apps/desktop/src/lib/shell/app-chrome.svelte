@@ -20,6 +20,7 @@ Follows GitButler's "Chrome Shell" pattern:
 <script lang="ts">
 import AppSidebar from "./app-sidebar.svelte";
 import LicenseBanner from "./license-banner.svelte";
+import JobsBanner from "./jobs-banner.svelte";
 import { licenseStore, uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
@@ -121,6 +122,7 @@ function handleKeyDown(e: KeyboardEvent) {
 	<div class="flex flex-1 flex-col overflow-hidden relative">
 		{#if !standalone}
 			<LicenseBanner />
+			<JobsBanner />
 		{/if}
 		<div
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"

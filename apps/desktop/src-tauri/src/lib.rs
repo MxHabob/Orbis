@@ -105,6 +105,10 @@ pub fn run() {
                     }
                 }
             }
+            tauri::async_runtime::spawn(features::database_manager::run_auto_backup_scheduler(
+                app.handle().clone(),
+            ));
+
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
             // Clone app_handle before it gets moved into closures

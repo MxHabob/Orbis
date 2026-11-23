@@ -24,6 +24,7 @@ import type {
   BulkCellIssue,
   BulkPreviewSummary,
   StudentPreviewDetails,
+  ChunkProgress,
 } from "../types";
 
 export interface StudentRowData {
@@ -690,15 +691,15 @@ export const studentImportProfile: BulkImportProfile<
       (sum, t) => sum + (Number((t.meta as any)?.default_amount) || 0),
       0,
     );
+    const enabledColumns = studentColumnMetadata.filter(
+      (column) =>
+        column.id === "full_name_ar" ||
+        column.id === "class_name" ||
+        refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]
+          ?.active !== false,
+    );
 
     for (const [rowIndex, row] of rows.entries()) {
-      const enabledColumns = studentColumnMetadata.filter(
-        (column) =>
-          column.id === "full_name_ar" ||
-          column.id === "class_name" ||
-          refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]
-            ?.active !== false,
-      );
       const hasErrors =
         enabledColumns.some(
           (column) =>
@@ -756,8 +757,9 @@ export const studentImportProfile: BulkImportProfile<
 
   async commitChunk(
     rows: StudentRowData[],
-    _orgId: string,
+    orgId: string,
     refData: BulkReferenceData,
+    onProgress?: (progress: ChunkProgress) => void,
   ) {
     const items: BulkRegisterStudentCommandItem[] = [];
 
@@ -848,7 +850,19 @@ export const studentImportProfile: BulkImportProfile<
     }
 
     try {
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: 0,
+        committedRows: 0,
+        failedRows: 0,
+        isFinished: false,
+        hasErrors: false,
+      });
       const bulkRes = await api.bulkRegisterStudents(items, { atomic: false });
+
       const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
       const warnings: Array<{ rowNumber: number; reason: string }> = [];
 
@@ -867,6 +881,9 @@ export const studentImportProfile: BulkImportProfile<
       const succeededItems = bulkRes.items.filter(
         (item) => item.success && item.student_id,
       );
+      const rowsByNumber = new Map(
+        rows.map((row, index) => [row.rowNumber ?? index + 1, row]),
+      );
       let accounts: Awaited<ReturnType<typeof api.listAccounts>> | undefined;
       let accountListError: string | undefined;
       if (succeededItems.length > 0) {
@@ -881,9 +898,7 @@ export const studentImportProfile: BulkImportProfile<
         const batch = succeededItems.slice(offset, offset + 10);
         const artifactResults = await Promise.all(
           batch.map(async (item) => {
-            const row = rows.find(
-              (candidate) => candidate.rowNumber === item.row_index,
-            );
+            const row = rowsByNumber.get(item.row_index);
             const studentId = item.student_id;
             if (!studentId) return { rowNumber: item.row_index, errors: [] };
             const name =

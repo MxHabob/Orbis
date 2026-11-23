@@ -434,6 +434,15 @@ export const teacherSubjectImportProfile: BulkImportProfile<
 
   async commitChunk(rows, _orgId, refData) {
     const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
+    const assignments: Array<{
+      rowNumber: number;
+      classId: string;
+      subjectId: string;
+      periodId: string;
+      teacherId: string;
+      weeklyHours?: number;
+    }> = [];
+
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index]!;
       const classItem = resolveUnique(refData.classes, row.class_code);
@@ -484,27 +493,50 @@ export const teacherSubjectImportProfile: BulkImportProfile<
         continue;
       }
 
-      try {
-        const weeklyHoursText = String(row.weekly_hours ?? "").trim();
-        await api.assignSectionSubject({
-          section_id: classItem.id,
-          subject_id: subjectItem.id,
-          period_id: periodItem.id,
-          instructor_id: teacherItem.id,
-          weekly_hours: weeklyHoursText ? Number(weeklyHoursText) : undefined,
-        });
-        refData.existingSectionSubjectAssignments.push({
-          classId: classItem.id,
-          subjectId: subjectItem.id,
-          periodId: periodItem.id,
-          teacherId: teacherItem.id,
-        });
-      } catch (error) {
-        rowErrors.push({
-          rowNumber,
-          reason: error instanceof Error ? error.message : String(error),
-        });
-      }
+      const weeklyHoursText = String(row.weekly_hours ?? "").trim();
+      assignments.push({
+        rowNumber,
+        classId: classItem.id,
+        subjectId: subjectItem.id,
+        periodId: periodItem.id,
+        teacherId: teacherItem.id,
+        weeklyHours: weeklyHoursText ? Number(weeklyHoursText) : undefined,
+      });
+    }
+
+    for (let offset = 0; offset < assignments.length; offset += 20) {
+      const batch = assignments.slice(offset, offset + 20);
+      const results = await Promise.all(
+        batch.map(async (assignment) => {
+          try {
+            await api.assignSectionSubject({
+              section_id: assignment.classId,
+              subject_id: assignment.subjectId,
+              period_id: assignment.periodId,
+              instructor_id: assignment.teacherId,
+              weekly_hours: assignment.weeklyHours,
+            });
+            refData.existingSectionSubjectAssignments.push({
+              classId: assignment.classId,
+              subjectId: assignment.subjectId,
+              periodId: assignment.periodId,
+              teacherId: assignment.teacherId,
+            });
+            return null;
+          } catch (error) {
+            return {
+              rowNumber: assignment.rowNumber,
+              reason: error instanceof Error ? error.message : String(error),
+            };
+          }
+        }),
+      );
+      rowErrors.push(
+        ...results.filter(
+          (result): result is { rowNumber: number; reason: string } =>
+            result !== null,
+        ),
+      );
     }
 
     return {

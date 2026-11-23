@@ -116,7 +116,7 @@ const navGroups = $derived([
     {#snippet middle()}
       <div class="h-full w-full flex flex-col overflow-hidden">
         <ArchivedBanner />
-        <div class="flex-1 overflow-hidden">
+        <div class="min-h-0 flex-1 overflow-hidden">
           {@render children()}
         </div>
       </div>

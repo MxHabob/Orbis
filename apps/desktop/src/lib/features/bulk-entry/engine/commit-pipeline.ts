@@ -87,7 +87,12 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
 
     try {
       const plainChunk = chunkRows.map((r) => r.data as T);
-      const res = await profile.commitChunk(plainChunk, orgId, refData);
+      const res = await profile.commitChunk(
+        plainChunk,
+        orgId,
+        refData,
+        onProgress,
+      );
       warnings.push(...(res.warnings ?? []));
 
       if (res.success) {

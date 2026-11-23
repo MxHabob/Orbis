@@ -9,12 +9,16 @@
 //! - Migration execution & version tracking
 //! - Thread-safe concurrency locking for mutation operations
 
+use crate::commands::connection_cmds::ConnectionState;
 use crate::connection::{ConnectionConfig, ConnectionMode};
+use crate::state::AppState;
 use orbis_infra::migration::Migrator;
 use sea_orm::{ConnectionTrait, Database, DatabaseBackend, DatabaseConnection, Statement};
 use sea_orm_migration::MigratorTrait;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
+use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
@@ -594,8 +598,12 @@ pub async fn execute_backup(
         }
     };
 
-    if let Some(parent) = backup_path.parent() {
-        let _ = std::fs::create_dir_all(parent);
+    if let Some(parent) = backup_path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create backup directory {parent:?}: {error}"))?;
     }
 
     if backup_path.exists() {
@@ -642,12 +650,6 @@ pub async fn execute_backup(
     let duration_ms = start_time.elapsed().as_millis() as u64;
     let timestamp_str = chrono::Utc::now().to_rfc3339();
 
-    // Update settings with last backup info
-    let mut updated_config = config.clone();
-    updated_config.settings.last_backup_timestamp = Some(timestamp_str.clone());
-    updated_config.settings.last_backup_path = Some(backup_path.to_string_lossy().to_string());
-    let _ = updated_config.save(app_data_dir);
-
     Ok(BackupResultDto {
         success: true,
         backup_path: backup_path.to_string_lossy().to_string(),
@@ -658,6 +660,185 @@ pub async fn execute_backup(
         integrity_verified: true,
         message: "Database backup completed and verified successfully".to_string(),
     })
+}
+
+fn auto_backup_is_due(
+    last_backup_timestamp: Option<&str>,
+    interval_hours: u32,
+    now: chrono::DateTime<chrono::Utc>,
+) -> bool {
+    let Some(last_backup_timestamp) = last_backup_timestamp else {
+        return true;
+    };
+    let Ok(last_backup) = chrono::DateTime::parse_from_rfc3339(last_backup_timestamp) else {
+        return true;
+    };
+
+    now.signed_duration_since(last_backup.with_timezone(&chrono::Utc))
+        >= chrono::Duration::hours(i64::from(interval_hours.max(1)))
+}
+
+fn prune_automatic_backups(backup_dir: &Path, max_backup_files: u32) -> Result<(), String> {
+    let entries = std::fs::read_dir(backup_dir)
+        .map_err(|error| format!("Failed to read backup directory {backup_dir:?}: {error}"))?;
+    let mut backups = Vec::new();
+    for entry in entries {
+        let entry =
+            entry.map_err(|error| format!("Failed to read backup directory entry: {error}"))?;
+        if !entry
+            .file_type()
+            .map_err(|error| format!("Failed to inspect backup file {:?}: {error}", entry.path()))?
+            .is_file()
+            || !entry
+                .file_name()
+                .to_string_lossy()
+                .starts_with("orbis_backup_")
+            || entry
+                .path()
+                .extension()
+                .map_or(true, |extension| extension != "db")
+        {
+            continue;
+        }
+
+        let modified = entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .map_err(|error| {
+                format!("Failed to inspect backup file {:?}: {error}", entry.path())
+            })?;
+        backups.push((modified, entry.path()));
+    }
+
+    backups.sort_by(|left, right| right.0.cmp(&left.0));
+    for (_, old_backup) in backups.into_iter().skip(max_backup_files.max(1) as usize) {
+        std::fs::remove_file(&old_backup)
+            .map_err(|error| format!("Failed to remove old backup {old_backup:?}: {error}"))?;
+    }
+
+    Ok(())
+}
+
+async fn active_db_matches_local_config(
+    app_data_dir: &Path,
+    config: &ConnectionConfig,
+    db: &DatabaseConnection,
+) -> Result<bool, String> {
+    let expected_path = config
+        .resolve_local_db_path(app_data_dir)
+        .ok_or_else(|| "Local database path is not configured".to_string())?;
+    let row = db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "PRAGMA database_list",
+        ))
+        .await
+        .map_err(|error| format!("Failed to inspect active SQLite database: {error}"))?
+        .ok_or_else(|| "SQLite did not return an active database path".to_string())?;
+    let active_path = row
+        .try_get_by_index::<String>(2)
+        .map_err(|error| format!("Failed to read active SQLite database path: {error}"))?;
+
+    let active_path = PathBuf::from(active_path);
+    if active_path == expected_path {
+        return Ok(true);
+    }
+
+    match (active_path.canonicalize(), expected_path.canonicalize()) {
+        (Ok(active), Ok(expected)) => Ok(active == expected),
+        _ => Ok(false),
+    }
+}
+
+pub async fn run_auto_backup_scheduler(app: AppHandle) {
+    let mut timer = tokio::time::interval(Duration::from_secs(60));
+
+    loop {
+        timer.tick().await;
+
+        let Some(connection_state) = app.try_state::<ConnectionState>() else {
+            continue;
+        };
+        let (config, app_data_dir) = match connection_state.config.read() {
+            Ok(config) => (config.clone(), connection_state.app_data_dir.clone()),
+            Err(error) => {
+                warn!("Automatic database backup skipped: connection config lock failed: {error}");
+                continue;
+            }
+        };
+        drop(connection_state);
+
+        if config.mode != ConnectionMode::Local
+            || !config.settings.auto_backup_enabled
+            || !auto_backup_is_due(
+                config.settings.last_backup_timestamp.as_deref(),
+                config.settings.auto_backup_interval_hours,
+                chrono::Utc::now(),
+            )
+        {
+            continue;
+        }
+
+        let Some(database_state) = app.try_state::<AppState>() else {
+            continue;
+        };
+        let db = database_state.db.clone();
+        drop(database_state);
+
+        match active_db_matches_local_config(&app_data_dir, &config, &db).await {
+            Ok(true) => {}
+            Ok(false) => continue,
+            Err(error) => {
+                warn!("Automatic database backup skipped: {error}");
+                continue;
+            }
+        }
+
+        match execute_backup(&app_data_dir, &config, &db, None).await {
+            Ok(result) => {
+                let backup_dir = config
+                    .settings
+                    .backup_dir
+                    .as_deref()
+                    .filter(|directory| !directory.trim().is_empty())
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| app_data_dir.join("backups"));
+                if let Err(error) =
+                    prune_automatic_backups(&backup_dir, config.settings.max_backup_files)
+                {
+                    warn!("Automatic database backup retention failed: {error}");
+                }
+
+                if let Some(connection_state) = app.try_state::<ConnectionState>() {
+                    match connection_state.config.write() {
+                        Ok(mut current_config) => {
+                            let same_database = current_config.mode == ConnectionMode::Local
+                                && current_config.resolve_local_db_path(&app_data_dir)
+                                    == config.resolve_local_db_path(&app_data_dir);
+                            if same_database {
+                                current_config.settings.last_backup_timestamp =
+                                    Some(result.timestamp.clone());
+                                current_config.settings.last_backup_path =
+                                    Some(result.backup_path.clone());
+                                if let Err(error) = current_config.save(&app_data_dir) {
+                                    warn!("Could not persist automatic backup status: {error}");
+                                }
+                            }
+                        }
+                        Err(error) => {
+                            warn!("Could not update automatic backup status: {error}");
+                        }
+                    }
+                }
+
+                info!(
+                    "Automatic database backup completed at {}",
+                    result.backup_path
+                );
+            }
+            Err(error) => warn!("Automatic database backup failed: {error}"),
+        }
+    }
 }
 
 /// Restore a database from a validated backup file.
@@ -931,6 +1112,50 @@ mod tests {
         assert_eq!(format_size(2048), "2.0 KB");
         assert_eq!(format_size(1048576 * 5), "5.00 MB");
         assert_eq!(format_size(1073741824 * 2), "2.00 GB");
+    }
+
+    #[test]
+    fn test_automatic_backup_due_respects_interval_and_missing_timestamp() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-11-23T12:00:00Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+
+        assert!(auto_backup_is_due(None, 24, now));
+        assert!(auto_backup_is_due(Some("2026-11-22T11:59:59Z"), 24, now));
+        assert!(!auto_backup_is_due(Some("2026-11-22T12:00:01Z"), 24, now));
+        assert!(auto_backup_is_due(Some("invalid timestamp"), 24, now));
+    }
+
+    #[test]
+    fn test_backup_retention_removes_only_old_orbis_backups() {
+        let backup_dir =
+            std::env::temp_dir().join(format!("orbis_backup_retention_{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&backup_dir).unwrap();
+        for filename in [
+            "orbis_backup_1.db",
+            "orbis_backup_2.db",
+            "orbis_backup_3.db",
+            "manual_export.db",
+        ] {
+            std::fs::write(backup_dir.join(filename), b"backup").unwrap();
+        }
+
+        prune_automatic_backups(&backup_dir, 1).unwrap();
+
+        let remaining = std::fs::read_dir(&backup_dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            remaining
+                .iter()
+                .filter(|name| name.starts_with("orbis_backup_") && name.ends_with(".db"))
+                .count(),
+            1
+        );
+        assert!(remaining.iter().any(|name| name == "manual_export.db"));
+
+        std::fs::remove_dir_all(backup_dir).unwrap();
     }
 
     #[tokio::test]

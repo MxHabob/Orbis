@@ -15,6 +15,7 @@ use orbis_domain::entities::override_request::{
     AcademicOverrideRequest, OverrideStatus, OverrideType, RiskLevel,
 };
 use orbis_domain::entities::person::Person;
+use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::entities::student::{AcademicStanding, Student, StudentDetail, StudentStatus};
 use orbis_domain::entities::student_fee::{FeeStatus, StudentFee};
 use orbis_domain::entities::student_guardian::StudentGuardian;
@@ -378,29 +379,39 @@ impl StudentService {
         org_id: Uuid,
         input: RegisterStudentInput,
     ) -> Result<RegisterStudentResult, DomainError> {
-        let _enrollment_guard = self.enrollment_lock.lock().await;
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        let _enrollment_guard = self.enrollment_lock.lock().await;
+        self.register_student_unlocked(ctx, org_id, input, None)
+            .await
+    }
+
+    async fn register_student_unlocked(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        input: RegisterStudentInput,
+        known_settings: Option<&OrganizationSettings>,
+    ) -> Result<RegisterStudentResult, DomainError> {
         let max_students = if let Some(runtime) = self.license_runtime.as_ref() {
             runtime.authorize(org_id, Some("students"))?;
-            let max = runtime.get_limit("students.max");
-            if max.is_some() {
-                let current = self.student_repo.find_by_org(org_id).await?.len() as u64;
-                runtime.check_limit("students.max", current, 1)?;
-            }
-            max
+            // The repository checks the quota under a database lock when inserting.
+            runtime.get_limit("students.max")
         } else {
             None
         };
 
         let now = Utc::now();
         let is_draft = input.is_draft;
-        let org_settings = self
-            .settings_repo
-            .get_settings(org_id)
-            .await
-            .unwrap_or_default();
+        let org_settings = match known_settings {
+            Some(settings) => settings.clone(),
+            None => self
+                .settings_repo
+                .get_settings(org_id)
+                .await
+                .unwrap_or_default(),
+        };
         let admission_cfg = org_settings.admission;
         let numbering_schema = admission_cfg.numbering;
         let admission_policy = admission_cfg.policy;
@@ -1270,7 +1281,7 @@ impl StudentService {
             .get_settings(org_id)
             .await
             .unwrap_or_default();
-        let admission_policy = org_settings.admission.policy;
+        let admission_policy = org_settings.admission.policy.clone();
 
         // ─────────────────────────────────────────────────────────────────
         // STAGE 1: INTRA-BATCH INTEGRITY & CONFLICT PRE-VALIDATION
@@ -1316,7 +1327,7 @@ impl StudentService {
                 seen_nids.insert(nid.to_string(), row);
 
                 // DB Conflict Check if duplicates not allowed
-                if !admission_policy.allow_duplicate_national_id {
+                if is_atomic && !admission_policy.allow_duplicate_national_id {
                     if let Ok(Some(existing_person)) = self
                         .person_repo
                         .find_by_national_id(Some(org_id), nid)
@@ -1369,7 +1380,9 @@ impl StudentService {
                 }
                 seen_student_nums.insert(sn.to_string(), row);
 
-                if let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await {
+                if is_atomic
+                    && let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await
+                {
                     pre_errors.insert(
                         row,
                         format!("Student number '{}' already exists in organization", sn),
@@ -1536,7 +1549,10 @@ impl StudentService {
                 continue;
             }
 
-            match self.register_student(ctx, org_id, item.registration).await {
+            match self
+                .register_student_unlocked(ctx, org_id, item.registration, Some(&org_settings))
+                .await
+            {
                 Ok(reg_res) => {
                     let stu_id = reg_res.student.student.id;
                     let stu_num = reg_res.student.student.student_number.clone();

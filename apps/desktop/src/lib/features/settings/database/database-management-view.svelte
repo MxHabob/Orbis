@@ -236,6 +236,13 @@ async function handleBrowseBackupDest() {
   }
 }
 
+async function handleBrowseAutoBackupDir() {
+  const folder = await controller.pickFolder();
+  if (folder) {
+    customBackupDir = folder;
+  }
+}
+
 async function handleTriggerBackup() {
   await controller.triggerBackup(
     customBackupPath.trim() ? customBackupPath.trim() : undefined,
@@ -277,10 +284,26 @@ async function handleExecuteRestore() {
 
 async function handleSaveSettings() {
   try {
+    const intervalHours = Math.round(backupInterval);
+    const retainedFiles = Math.round(maxBackups);
+    if (
+      !Number.isFinite(intervalHours) ||
+      intervalHours < 1 ||
+      intervalHours > 168
+    ) {
+      throw new Error(m.ui_copy_interval_hours_23ad5bfc());
+    }
+    if (
+      !Number.isFinite(retainedFiles) ||
+      retainedFiles < 1 ||
+      retainedFiles > 100
+    ) {
+      throw new Error(m.ui_copy_max_retained_files_02a1c239());
+    }
     await controller.saveSettings({
       auto_backup_enabled: autoBackup,
-      auto_backup_interval_hours: backupInterval,
-      max_backup_files: maxBackups,
+      auto_backup_interval_hours: intervalHours,
+      max_backup_files: retainedFiles,
       backup_dir: customBackupDir.trim() ? customBackupDir.trim() : undefined,
       integrity_check_on_startup: integrityOnStartup,
       last_backup_timestamp: controller.settings?.last_backup_timestamp,
@@ -848,6 +871,32 @@ const connectionStatus = $derived.by(() => {
                     {/snippet}
                   </FormField>
                 </div>
+
+                <FormField id="autoBackupDirectory" label={m.database_backup_destination_label?.() || m.ui_copy_backup_destination_path_f84c9ca4()}>
+                  {#snippet children()}
+                    <div class="flex gap-2">
+                      <Input
+                        id="autoBackupDirectory"
+                        type="text"
+                        bind:value={customBackupDir}
+                        placeholder={m.database_backup_custom_dest_hint?.() || m.ui_copy_leave_blank_for_default_backups_folder_aa0c2051()}
+                        class="h-8 min-w-0 flex-1 text-xs font-mono bg-background border-input"
+                        disabled={!autoBackup}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="h-8 shrink-0 gap-1.5 border-border px-2.5 text-[11px]"
+                        onclick={handleBrowseAutoBackupDir}
+                        disabled={!autoBackup}
+                      >
+                        <FolderOpen size={13} class="text-primary" />
+                        <span>{m.database_browse_folder?.() || m.ui_copy_browse_f7b87051()}</span>
+                      </Button>
+                    </div>
+                  {/snippet}
+                </FormField>
 
                 <div class="pt-2 border-t border-border/30 flex items-center justify-between">
                   <div>

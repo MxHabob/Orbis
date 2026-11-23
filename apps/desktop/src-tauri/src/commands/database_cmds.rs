@@ -233,6 +233,9 @@ pub async fn database_backup(
             .map_err(|e| format!("Lock error: {e}"))?;
         config_guard.settings.last_backup_timestamp = Some(result.timestamp.clone());
         config_guard.settings.last_backup_path = Some(result.backup_path.clone());
+        if let Err(error) = config_guard.save(&conn_state.app_data_dir) {
+            tracing::warn!("Could not persist the last successful backup details: {error}");
+        }
     }
 
     log_db_audit(
@@ -392,7 +395,7 @@ pub async fn database_get_settings(
 #[tauri::command]
 pub async fn database_update_settings(
     conn_state: State<'_, ConnectionState>,
-    settings: DatabaseSettings,
+    mut settings: DatabaseSettings,
 ) -> Result<ApiResponse<DatabaseSettings>, String> {
     let mut config = conn_state
         .config
@@ -401,6 +404,24 @@ pub async fn database_update_settings(
         .clone();
 
     require_local_sqlite(&config)?;
+    if !(1..=168).contains(&settings.auto_backup_interval_hours) {
+        return Err("Automatic backup interval must be between 1 and 168 hours".to_string());
+    }
+    if !(1..=100).contains(&settings.max_backup_files) {
+        return Err("Maximum retained backup files must be between 1 and 100".to_string());
+    }
+    settings.backup_dir = settings
+        .backup_dir
+        .take()
+        .map(|directory| directory.trim().to_string())
+        .filter(|directory| !directory.is_empty());
+    if settings.auto_backup_enabled {
+        if let Some(directory) = &settings.backup_dir {
+            std::fs::create_dir_all(directory).map_err(|error| {
+                format!("Failed to create automatic backup directory {directory:?}: {error}")
+            })?;
+        }
+    }
     config.settings = settings.clone();
     config.save(&conn_state.app_data_dir)?;
 

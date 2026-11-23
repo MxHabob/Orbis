@@ -369,7 +369,6 @@ impl AppState {
             )
             .with_license_runtime(license_runtime.clone()),
         );
-
         let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
             progression_repo.clone(),
             student_repo.clone(),

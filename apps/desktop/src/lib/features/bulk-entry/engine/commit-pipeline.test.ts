@@ -3,6 +3,7 @@ import type {
   BulkImportProfile,
   BulkReferenceData,
   BulkRowState,
+  ChunkProgress,
 } from "../types";
 import { executeCommitPipeline } from "./commit-pipeline";
 
@@ -132,5 +133,54 @@ describe("bulk commit pipeline", () => {
     expect(result.committedCount).toBe(0);
     expect(result.failedCount).toBe(3);
     expect(result.licenseRejected).toBe(true);
+  });
+
+  test("forwards server-side job progress through the commit pipeline", async () => {
+    let reportedProgress: ChunkProgress | undefined;
+    const profile: BulkImportProfile = {
+      id: "students",
+      displayName: { ar: "طلاب", en: "Students" },
+      description: { ar: "", en: "" },
+      templateVersion: "1",
+      columnMetadata: [],
+      gridColumns: [],
+      buildReferenceData: async () => emptyReferenceData,
+      validateCell: () => null,
+      validateRow: () => [],
+      generatePreview: async () => ({
+        totalRows: 0,
+        validRowsCount: 0,
+        errorRowsCount: 0,
+        warningRowsCount: 0,
+        details: {},
+      }),
+      commitChunk: async (_chunk, _orgId, _refData, onProgress) => {
+        onProgress?.({
+          totalChunks: 1,
+          currentChunk: 1,
+          chunkSize: 1,
+          totalRows: 1,
+          processedRows: 1,
+          committedRows: 1,
+          failedRows: 0,
+          isFinished: true,
+          hasErrors: false,
+        });
+        return { success: true };
+      },
+    };
+
+    await executeCommitPipeline({
+      rows: [validRow(1)],
+      profile,
+      refData: emptyReferenceData,
+      orgId: "org-id",
+      onProgress: (progress) => {
+        if (progress.processedRows > 0) reportedProgress = progress;
+      },
+    });
+
+    expect(reportedProgress?.processedRows).toBe(1);
+    expect(reportedProgress?.committedRows).toBe(1);
   });
 });

@@ -44,6 +44,7 @@ import type {
 import CommitProgressModal from "./commit-progress-modal.svelte";
 import ImpactPreviewModal from "./impact-preview-modal.svelte";
 import ImportResultSummary from "./import-result-summary.svelte";
+import { operationStore } from "$lib/stores";
 
 let {
   initialProfileId = "students",
@@ -442,6 +443,10 @@ async function handleConfirmCommit() {
   if (!refData || rawRows.length === 0) return;
   isPreviewModalOpen = false;
   isProgressModalOpen = true;
+  const operation = operationStore.start(
+    getBulkEntryProfileName(currentProfile.id),
+    validCount,
+  );
 
   try {
     const result = await executeCommitPipeline({
@@ -449,12 +454,21 @@ async function handleConfirmCommit() {
       profile: currentProfile,
       refData,
       orgId: orgContext.orgId || "",
-      chunkSize: 50,
+      chunkSize:
+        currentProfile.id === "students"
+          ? Math.max(1, validCount)
+          : currentProfile.id === "employees"
+            ? 500
+            : currentProfile.id === "grades"
+              ? 500
+              : 100,
       onProgress: (prog) => {
         commitProgress = prog;
+        operationStore.update(operation.id, prog);
       },
     });
 
+    operationStore.finish(operation.id, result);
     commitResult = result;
     isProgressModalOpen = false;
 
@@ -470,6 +484,7 @@ async function handleConfirmCommit() {
       );
     }
   } catch (err: any) {
+    operationStore.fail(operation.id);
     isProgressModalOpen = false;
     toast.error(
       m.bulk_entry_toast_save_failed({ reason: err.message || String(err) }),

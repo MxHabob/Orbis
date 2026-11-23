@@ -21,6 +21,7 @@ export function createprogressionJobsQuery(orgId: () => string) {
     queryFn: () => api.listprogressionJobs(),
     enabled: !!orgId(),
     staleTime: 60 * 1000,
+    refetchInterval: 2 * 1000,
   }));
 }
 

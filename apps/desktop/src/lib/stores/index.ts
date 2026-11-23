@@ -23,6 +23,8 @@ export { workflowInbox } from "./workflow-inbox.svelte";
 // ── Notification Store
 export { notificationStore } from "./notification.svelte";
 
+export { operationStore } from "./operation-store.svelte";
+
 // ── Effective Context & Permissions
 export {
   effectiveContext,
