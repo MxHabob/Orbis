@@ -468,6 +468,40 @@ export interface BulkRegisterStudentCommandResultDto {
   items: BulkRegisterItemCommandResultDto[];
 }
 
+export interface BulkRegisterJobDto {
+  id: string;
+  status: "running" | "completed" | "failed";
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  result?: BulkRegisterStudentCommandResultDto;
+  error?: string;
+}
+
+export interface BulkRegisterEmployeeJobDto {
+  id: string;
+  status: "running" | "completed" | "failed";
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  result?: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    items: Array<{
+      row_index: number;
+      success: boolean;
+      employee_id?: string;
+      employee_number?: string;
+      user_id?: string;
+      error?: string;
+    }>;
+  };
+  error?: string;
+}
+
 export interface UpdateStudentStatusInput {
   student_id: string;
   status: string;
@@ -1958,10 +1992,11 @@ export interface OrbisApiClient {
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
   removeGuardian(studentId: string, guardianId: string): Promise<boolean>;
-  bulkRegisterStudents(
+  startBulkRegisterJob(
     items: BulkRegisterStudentCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterStudentCommandResultDto>;
+  ): Promise<BulkRegisterJobDto>;
+  getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null>;
 
   // ── Employee Affairs ────────────────────────────────────────
   registerEmployee(
@@ -1982,10 +2017,13 @@ export interface OrbisApiClient {
     req: ProvisionEmployeeAccountRequest,
   ): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
-  bulkRegisterEmployees(
+  startBulkRegisterEmployeeJob(
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterEmployeeCommandResultDto>;
+  ): Promise<BulkRegisterEmployeeJobDto>;
+  getBulkRegisterEmployeeJob(
+    jobId: string,
+  ): Promise<BulkRegisterEmployeeJobDto | null>;
 
   // ── User Groups ─────────────────────────────────────────────
   createGroup(req: CreateGroupRequest): Promise<GroupDetailDto>;

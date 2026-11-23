@@ -28,6 +28,7 @@ import AskOrbisSidebar from "$lib/features/ai/views/sidebar.svelte";
 import { useQueryClient } from "@tanstack/svelte-query";
 import LicenseFeatureGate from "./license-feature-gate.svelte";
 import type { EntitlementKey } from "$lib/api/types";
+import * as m from "$lib/paraglide/messages";
 
 let {
   orgId,
@@ -133,9 +134,16 @@ function handleKeyDown(e: KeyboardEvent) {
 		{/if}
 		{#if !standalone && uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
+				<button
+					type="button"
+					class="z-40 cursor-default border-0 bg-background/5"
+					style="position:absolute; inset-block:0 1.75rem; inset-inline:0;"
+					aria-label={m.ai_ui_close()}
+					onclick={() => uiStore.setAskOrbis(false)}
+				></button>
 				<div
-					class="absolute inset-s-0 inset-e-0 top-0 bottom-7 z-50"
-					style:width="{askOrbisWidth + 0.875}rem"
+					class="z-50"
+					style="position:absolute; inset-block-start:1.25rem; inset-block-end:1.25rem; inset-inline-end:0.25rem; inline-size:{askOrbisWidth + 0.875}rem;"
 				>
 					<LicenseFeatureGate
 						feature="ai_grading"

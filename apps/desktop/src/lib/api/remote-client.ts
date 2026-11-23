@@ -228,9 +228,9 @@ import type {
   MigrationResultDto,
   DatabaseSettingsDto,
   BulkRegisterStudentCommandItem,
-  BulkRegisterStudentCommandResultDto,
+  BulkRegisterJobDto,
   BulkRegisterEmployeeCommandItem,
-  BulkRegisterEmployeeCommandResultDto,
+  BulkRegisterEmployeeJobDto,
   ProvisionUserRequest,
   AccountProvisioningResultDto,
   UpdateStudentStatusInput,
@@ -333,6 +333,8 @@ export class RemoteClient implements OrbisApiClient {
   private baseUrl: string;
   private token: string | null = null;
   private orbisClient: OrbisClient;
+  private bulkRegisterJobs = new Map<string, BulkRegisterJobDto>();
+  private employeeBulkJobs = new Map<string, BulkRegisterEmployeeJobDto>();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -954,11 +956,21 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
-  async bulkRegisterStudents(
+  async startBulkRegisterJob(
     items: BulkRegisterStudentCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterStudentCommandResultDto> {
-    return this.call(
+  ): Promise<BulkRegisterJobDto> {
+    const jobId = crypto.randomUUID();
+    const job: BulkRegisterJobDto = {
+      id: jobId,
+      status: "running",
+      total: items.length,
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+    this.bulkRegisterJobs.set(jobId, job);
+    void this.call(
       sdk.bulkRegisterStudents({
         client: this.client,
         body: {
@@ -967,7 +979,42 @@ export class RemoteClient implements OrbisApiClient {
           dry_run: options?.dryRun ?? false,
         },
       }),
-    ) as any;
+    ).then(
+      (result) => {
+        const normalized = {
+          total: result.total,
+          succeeded: result.succeeded,
+          failed: result.failed,
+          items: result.items.map((item) => ({
+            row_index: item.row_index,
+            success: item.success,
+            student_id: item.student_id ?? undefined,
+            student_number: item.student_number ?? undefined,
+            error: item.error ?? undefined,
+          })),
+        };
+        this.bulkRegisterJobs.set(jobId, {
+          ...job,
+          status: "completed",
+          processed: normalized.total,
+          succeeded: normalized.succeeded,
+          failed: normalized.failed,
+          result: normalized,
+        });
+      },
+      (error) => {
+        this.bulkRegisterJobs.set(jobId, {
+          ...job,
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      },
+    );
+    return job;
+  }
+
+  async getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null> {
+    return this.bulkRegisterJobs.get(jobId) ?? null;
   }
 
   // ── Employee Affairs ────────────────────────────────────────
@@ -1058,11 +1105,21 @@ export class RemoteClient implements OrbisApiClient {
     ) as any;
   }
 
-  async bulkRegisterEmployees(
+  async startBulkRegisterEmployeeJob(
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterEmployeeCommandResultDto> {
-    return this.call(
+  ): Promise<BulkRegisterEmployeeJobDto> {
+    const jobId = crypto.randomUUID();
+    const job: BulkRegisterEmployeeJobDto = {
+      id: jobId,
+      status: "running",
+      total: items.length,
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+    this.employeeBulkJobs.set(jobId, job);
+    void this.call(
       sdk.bulkRegisterEmployees({
         client: this.client,
         body: {
@@ -1071,7 +1128,43 @@ export class RemoteClient implements OrbisApiClient {
           dry_run: options?.dryRun ?? false,
         },
       }),
-    ) as any;
+    ).then(
+      (result) => {
+        const normalized = {
+          total: result.total,
+          succeeded: result.succeeded,
+          failed: result.failed,
+          items: result.items.map((item) => ({
+            row_index: item.row_index,
+            success: item.success,
+            employee_id: item.employee_id ?? undefined,
+            employee_number: item.employee_number ?? undefined,
+            user_id: item.user_id ?? undefined,
+            error: item.error ?? undefined,
+          })),
+        };
+        this.employeeBulkJobs.set(jobId, {
+          ...job,
+          status: "completed",
+          processed: normalized.total,
+          succeeded: normalized.succeeded,
+          failed: normalized.failed,
+          result: normalized,
+        });
+      },
+      (error) => this.employeeBulkJobs.set(jobId, {
+        ...job,
+        status: "failed",
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    return job;
+  }
+
+  async getBulkRegisterEmployeeJob(
+    jobId: string,
+  ): Promise<BulkRegisterEmployeeJobDto | null> {
+    return this.employeeBulkJobs.get(jobId) ?? null;
   }
 
   // ── User Groups ─────────────────────────────────────────────

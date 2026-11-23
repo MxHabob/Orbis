@@ -22,6 +22,7 @@ import {
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { uiStore } from "$lib/stores";
+import { l } from "$lib/core/i18n";
 import {
   ensureModelCatalog,
   getModelOptions,
@@ -54,7 +55,7 @@ const switchProviderMutation = useSwitchActiveAiProvider();
 
 // Helper to find matching OrbisApp from @orbis/app-store
 function findAppForProvider(providerNameOrId: string): OrbisApp | undefined {
-  const norm = normalizeProviderName(providerNameOrId);
+  const norm = normalizeProviderName(canonicalProviderId(providerNameOrId));
   return aiApps.find((app) => {
     const identifiers = [app.id, app.adapter_name, app.name]
       .filter((identifier): identifier is string => Boolean(identifier))
@@ -72,6 +73,16 @@ function normalizeProviderName(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function canonicalProviderId(value: string): string {
+  const normalized = normalizeProviderName(value);
+  const aliases: Record<string, string> = {
+    claude: "anthropic",
+    google: "gemini-ai",
+    gemini: "gemini-ai",
+  };
+  return aliases[normalized] ?? value;
+}
+
 // Extract model options dynamically from app settings
 function getModelsForApp(app: OrbisApp): { label: string; value: string }[] {
   const modelSetting = app.settings?.find((s) => s.id === "model");
@@ -83,7 +94,7 @@ function getModelsForApp(app: OrbisApp): { label: string; value: string }[] {
       { label: String(modelSetting.value), value: String(modelSetting.value) },
     ]);
   }
-  return [];
+  return getModelOptions(app.id);
 }
 
 // FILTER: ONLY connected apps in the organization
@@ -228,7 +239,7 @@ const shortProviderName = $derived.by(() => {
   if (currentApp.id === "groq") return "Groq";
   if (currentApp.id === "mistral") return "Mistral";
   if (currentApp.id === "ollama") return "Ollama";
-  return currentApp.name_ar?.split(" ")[0] || currentApp.name;
+  return String(l(currentApp.name_ar, currentApp.name) ?? currentApp.name).split(" ")[0];
 });
 
 const shortModelName = $derived.by(() => {
@@ -264,7 +275,7 @@ async function handleSelectProviderAndModel(
         isEnabled: true,
       });
       toast.success(
-        m.ai_ui_provider_activated({ name: app.name_ar || app.name }),
+        m.ai_ui_provider_activated({ name: l(app.name_ar, app.name) }),
       );
     } catch (e) {
       toast.error(extractErrorMessage(e));
@@ -335,7 +346,7 @@ async function handleSelectProviderAndModel(
               : ""}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger
-              title={item.app.name_ar || item.app.name}
+              title={l(item.app.name_ar, item.app.name)}
               class="flex cursor-pointer items-center gap-3 rounded-md border-b border-border/60 px-3 py-2.5 text-start text-xs last:border-b-0 hover:bg-muted/40"
               onpointerenter={() =>
                 handleModelSearchFocus(item.integration.provider_name)}
@@ -349,16 +360,13 @@ async function handleSelectProviderAndModel(
                   <Sparkles size={11} />
                 {/if}
               </div>
-
               <span class="min-w-0 flex-1 truncate font-medium text-foreground">
-                {item.app.name_ar || item.app.name}
+                {l(item.app.name_ar, item.app.name)}
               </span>
-
               {#if isSelectedProvider}
                 <Check size={13} class="shrink-0 text-primary" />
               {/if}
             </DropdownMenuSubTrigger>
-
             <DropdownMenuSubContent
               side="inline-end"
               align="start"
@@ -400,9 +408,6 @@ async function handleSelectProviderAndModel(
                     class="h-8 rounded-md ps-8 text-xs"
                   />
                 </div>
-              {/if}
-
-              {#if item.models.length > 0}
                 {@const filteredModels = item.models.filter((model) =>
                   matchesModel(model, providerSearch),
                 )}

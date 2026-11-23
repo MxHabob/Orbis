@@ -17,6 +17,7 @@ import {
   provisionStudentLoginAccount,
 } from "$lib/features/students/registration-effects";
 import * as m from "$lib/paraglide/messages";
+import { operationStore } from "$lib/stores";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -861,7 +862,38 @@ export const studentImportProfile: BulkImportProfile<
         isFinished: false,
         hasErrors: false,
       });
-      const bulkRes = await api.bulkRegisterStudents(items, { atomic: false });
+      const job = await api.startBulkRegisterJob(items, { atomic: false });
+      const activeOperation = operationStore.operations.find(
+        (operation) => operation.status === "running",
+      );
+      if (activeOperation) {
+        operationStore.setJobId(activeOperation.id, job.id, "students");
+      }
+      let latestJob = job;
+      while (latestJob.status === "running") {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        const polled = await api.getBulkRegisterJob(job.id);
+        if (!polled) break;
+        latestJob = polled;
+        onProgress?.({
+          totalChunks: 1,
+          currentChunk: 1,
+          chunkSize: rows.length,
+          totalRows: latestJob.total,
+          processedRows: latestJob.processed,
+          committedRows: latestJob.succeeded,
+          failedRows: latestJob.failed,
+          isFinished: latestJob.status === "completed",
+          hasErrors: latestJob.failed > 0,
+        });
+      }
+      if (latestJob.status === "failed") {
+        throw new Error(latestJob.error || "Bulk student import failed");
+      }
+      if (!latestJob.result) {
+        throw new Error("Bulk student import did not produce a result");
+      }
+      const bulkRes = latestJob.result;
 
       const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
       const warnings: Array<{ rowNumber: number; reason: string }> = [];
@@ -881,6 +913,20 @@ export const studentImportProfile: BulkImportProfile<
       const succeededItems = bulkRes.items.filter(
         (item) => item.success && item.student_id,
       );
+      const failedItems = bulkRes.items.filter(
+        (item) => !item.success,
+      );
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: Math.min(bulkRes.items.length, rows.length),
+        committedRows: succeededItems.length,
+        failedRows: failedItems.length,
+        isFinished: false,
+        hasErrors: failedItems.length > 0,
+      });
       const rowsByNumber = new Map(
         rows.map((row, index) => [row.rowNumber ?? index + 1, row]),
       );
@@ -958,6 +1004,21 @@ export const studentImportProfile: BulkImportProfile<
             artifactErrors.map((reason) => ({ rowNumber, reason })),
           ),
         );
+        const processedArtifactRows = Math.min(
+          offset + batch.length,
+          succeededItems.length,
+        );
+        onProgress?.({
+          totalChunks: 1,
+          currentChunk: 1,
+          chunkSize: rows.length,
+          totalRows: rows.length,
+          processedRows: failedItems.length + processedArtifactRows,
+          committedRows: processedArtifactRows,
+          failedRows: failedItems.length,
+          isFinished: false,
+          hasErrors: failedItems.length > 0,
+        });
       }
 
       return {

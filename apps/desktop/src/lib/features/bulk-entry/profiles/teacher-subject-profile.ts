@@ -432,7 +432,7 @@ export const teacherSubjectImportProfile: BulkImportProfile<
     };
   },
 
-  async commitChunk(rows, _orgId, refData) {
+  async commitChunk(rows, _orgId, refData, onProgress) {
     const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
     const assignments: Array<{
       rowNumber: number;
@@ -504,6 +504,20 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       });
     }
 
+    let processedAssignments = 0;
+    let failedAssignments = 0;
+    onProgress?.({
+      totalChunks: 1,
+      currentChunk: 1,
+      chunkSize: rows.length,
+      totalRows: rows.length,
+      processedRows: 0,
+      committedRows: 0,
+      failedRows: 0,
+      isFinished: false,
+      hasErrors: false,
+    });
+
     for (let offset = 0; offset < assignments.length; offset += 20) {
       const batch = assignments.slice(offset, offset + 20);
       const results = await Promise.all(
@@ -537,6 +551,19 @@ export const teacherSubjectImportProfile: BulkImportProfile<
             result !== null,
         ),
       );
+      processedAssignments += batch.length;
+      failedAssignments += results.filter((result) => result !== null).length;
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: processedAssignments,
+        committedRows: processedAssignments - failedAssignments,
+        failedRows: failedAssignments,
+        isFinished: offset + 20 >= assignments.length,
+        hasErrors: failedAssignments > 0,
+      });
     }
 
     return {

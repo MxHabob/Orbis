@@ -15,7 +15,10 @@ use orbis_domain::queries::filters::{
     EnrollmentFilter, PaginatedList, PaginationParams, StudentFilter,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tauri::State;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
@@ -918,7 +921,7 @@ pub struct BulkRegisterStudentCommandItem {
     pub guardian_relationship: Option<String>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BulkRegisterStudentCommandResultDto {
     pub total: usize,
     pub succeeded: usize,
@@ -926,7 +929,7 @@ pub struct BulkRegisterStudentCommandResultDto {
     pub items: Vec<BulkRegisterItemCommandResultDto>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BulkRegisterItemCommandResultDto {
     pub row_index: usize,
     pub success: bool,
@@ -935,114 +938,204 @@ pub struct BulkRegisterItemCommandResultDto {
     pub error: Option<String>,
 }
 
-#[tauri::command]
-pub async fn student_bulk_register(
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BulkRegisterJobDto {
+    pub id: String,
+    pub status: String,
+    pub total: usize,
+    pub processed: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+    pub result: Option<BulkRegisterStudentCommandResultDto>,
+    pub error: Option<String>,
+}
+
+#[derive(Clone, Default)]
+pub struct BulkRegisterJobRegistry {
+    jobs: Arc<RwLock<HashMap<String, BulkRegisterJobDto>>>,
+}
+
+fn to_domain_bulk_items(
     items: Vec<BulkRegisterStudentCommandItem>,
-    atomic: Option<bool>,
-    dry_run: Option<bool>,
-    state: State<'_, AppState>,
-) -> Result<ApiResponse<BulkRegisterStudentCommandResultDto>, String> {
-    let ctx = make_ctx(&state);
-    let mut domain_items = Vec::with_capacity(items.len());
-
-    for item in items {
-        let input = orbis_app::services::student_service::RegisterStudentInput {
-            person_id: item
-                .registration
-                .person_id
-                .as_deref()
-                .and_then(|id| Uuid::parse_str(id).ok()),
-            user_id: item
-                .registration
-                .user_id
-                .as_deref()
-                .and_then(|id| Uuid::parse_str(id).ok()),
-            student_number: if item.registration.student_number.trim().is_empty() {
-                None
-            } else {
-                Some(item.registration.student_number)
-            },
-            first_name: item.registration.first_name,
-            middle_name: item.registration.middle_name,
-            last_name: item.registration.last_name,
-            first_name_ar: item.registration.first_name_ar,
-            middle_name_ar: item.registration.middle_name_ar,
-            last_name_ar: item.registration.last_name_ar,
-            display_name: item.registration.display_name,
-            national_id: item.registration.national_id,
-            passport_number: item.registration.passport_number,
-            gender: item.registration.gender,
-            birth_date: item
-                .registration
-                .birth_date
-                .as_deref()
-                .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
-            place_of_birth: item.registration.place_of_birth,
-            nationality: item.registration.nationality,
-            blood_type: item.registration.blood_type,
-            medical_notes: item.registration.medical_notes,
-            special_needs_notes: item.registration.special_needs_notes,
-            phone: item.registration.phone,
-            email: item.registration.email,
-            address: item.registration.address,
-            avatar_url: None,
-            initial_period_id: item
-                .registration
-                .initial_period_id
-                .as_deref()
-                .and_then(|id| Uuid::parse_str(id).ok()),
-            initial_section_id: item
-                .registration
-                .initial_class_id
-                .as_deref()
-                .and_then(|id| Uuid::parse_str(id).ok()),
-            study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
-            is_draft: item.registration.is_draft,
-        };
-
-        domain_items.push(
+) -> Vec<orbis_app::services::student_service::BulkRegisterItemInput> {
+    items
+        .into_iter()
+        .map(|item| {
+            let input = orbis_app::services::student_service::RegisterStudentInput {
+                person_id: item
+                    .registration
+                    .person_id
+                    .as_deref()
+                    .and_then(|id| Uuid::parse_str(id).ok()),
+                user_id: item
+                    .registration
+                    .user_id
+                    .as_deref()
+                    .and_then(|id| Uuid::parse_str(id).ok()),
+                student_number: if item.registration.student_number.trim().is_empty() {
+                    None
+                } else {
+                    Some(item.registration.student_number)
+                },
+                first_name: item.registration.first_name,
+                middle_name: item.registration.middle_name,
+                last_name: item.registration.last_name,
+                first_name_ar: item.registration.first_name_ar,
+                middle_name_ar: item.registration.middle_name_ar,
+                last_name_ar: item.registration.last_name_ar,
+                display_name: item.registration.display_name,
+                national_id: item.registration.national_id,
+                passport_number: item.registration.passport_number,
+                gender: item.registration.gender,
+                birth_date: item
+                    .registration
+                    .birth_date
+                    .as_deref()
+                    .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()),
+                place_of_birth: item.registration.place_of_birth,
+                nationality: item.registration.nationality,
+                blood_type: item.registration.blood_type,
+                medical_notes: item.registration.medical_notes,
+                special_needs_notes: item.registration.special_needs_notes,
+                phone: item.registration.phone,
+                email: item.registration.email,
+                address: item.registration.address,
+                avatar_url: None,
+                initial_period_id: item
+                    .registration
+                    .initial_period_id
+                    .as_deref()
+                    .and_then(|id| Uuid::parse_str(id).ok()),
+                initial_section_id: item
+                    .registration
+                    .initial_class_id
+                    .as_deref()
+                    .and_then(|id| Uuid::parse_str(id).ok()),
+                study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
+                is_draft: item.registration.is_draft,
+            };
             orbis_app::services::student_service::BulkRegisterItemInput {
                 row_index: item.row_index,
                 registration: input,
                 guardian_name: item.guardian_name,
                 guardian_phone: item.guardian_phone,
                 guardian_relationship: item.guardian_relationship,
-            },
-        );
-    }
-
-    let res = state
-        .student_service
-        .bulk_register_students(
-            &ctx,
-            ctx.tenant_id,
-            orbis_app::services::student_service::BulkRegisterStudentsInput {
-                items: domain_items,
-                atomic,
-                dry_run,
-            },
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let items_dto = res
-        .items
-        .into_iter()
-        .map(|it| BulkRegisterItemCommandResultDto {
-            row_index: it.row_index,
-            success: it.success,
-            student_id: it.student_id.map(|id| id.to_string()),
-            student_number: it.student_number,
-            error: it.error,
+            }
         })
-        .collect();
+        .collect()
+}
 
-    Ok(ok(BulkRegisterStudentCommandResultDto {
-        total: res.total,
-        succeeded: res.succeeded,
-        failed: res.failed,
-        items: items_dto,
-    }))
+#[tauri::command]
+pub async fn student_start_bulk_register_job(
+    items: Vec<BulkRegisterStudentCommandItem>,
+    atomic: Option<bool>,
+    dry_run: Option<bool>,
+    state: State<'_, AppState>,
+    jobs: State<'_, BulkRegisterJobRegistry>,
+) -> Result<ApiResponse<BulkRegisterJobDto>, String> {
+    let total = items.len();
+    let job_id = Uuid::new_v4().to_string();
+    let job = BulkRegisterJobDto {
+        id: job_id.clone(),
+        status: "running".to_string(),
+        total,
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        result: None,
+        error: None,
+    };
+    jobs.jobs.write().await.insert(job_id.clone(), job.clone());
+
+    let app_state = state.inner().clone();
+    let ctx = make_ctx(&app_state);
+    let registry = jobs.inner().clone();
+    let domain_items = to_domain_bulk_items(items);
+
+    tauri::async_runtime::spawn(async move {
+        let chunk_size = 100usize;
+        let mut processed = 0usize;
+        let mut succeeded = 0usize;
+        let mut failed = 0usize;
+        let mut result_items = Vec::new();
+
+        for chunk in domain_items.chunks(chunk_size) {
+            let chunk_res = app_state
+                .student_service
+                .bulk_register_students(
+                    &ctx,
+                    ctx.tenant_id,
+                    orbis_app::services::student_service::BulkRegisterStudentsInput {
+                        items: chunk.to_vec(),
+                        atomic,
+                        dry_run,
+                    },
+                )
+                .await;
+
+            match chunk_res {
+                Ok(res) => {
+                    succeeded += res.succeeded;
+                    failed += res.failed;
+                    processed += res.total;
+                    result_items.extend(res.items.into_iter().map(|it| {
+                        BulkRegisterItemCommandResultDto {
+                            row_index: it.row_index,
+                            success: it.success,
+                            student_id: it.student_id.map(|id| id.to_string()),
+                            student_number: it.student_number,
+                            error: it.error,
+                        }
+                    }));
+                }
+                Err(error) => {
+                    let reason = error.to_string();
+                    processed += chunk.len();
+                    failed += chunk.len();
+                    result_items.extend(chunk.iter().map(|item| {
+                        BulkRegisterItemCommandResultDto {
+                            row_index: item.row_index,
+                            success: false,
+                            student_id: None,
+                            student_number: None,
+                            error: Some(reason.clone()),
+                        }
+                    }));
+                }
+            }
+
+            let mut jobs = registry.jobs.write().await;
+            if let Some(current) = jobs.get_mut(&job_id) {
+                current.processed = processed;
+                current.succeeded = succeeded;
+                current.failed = failed;
+            }
+        }
+
+        let result = BulkRegisterStudentCommandResultDto {
+            total,
+            succeeded,
+            failed,
+            items: result_items,
+        };
+        let mut jobs = registry.jobs.write().await;
+        if let Some(current) = jobs.get_mut(&job_id) {
+            current.status = "completed".to_string();
+            current.processed = total;
+            current.result = Some(result);
+        }
+    });
+
+    Ok(ok(job))
+}
+
+#[tauri::command]
+pub async fn student_get_bulk_register_job(
+    job_id: String,
+    jobs: State<'_, BulkRegisterJobRegistry>,
+) -> Result<ApiResponse<Option<BulkRegisterJobDto>>, String> {
+    let job = jobs.jobs.read().await.get(&job_id).cloned();
+    Ok(ok(job))
 }
 
 #[tauri::command]

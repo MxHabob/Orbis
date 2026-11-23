@@ -636,7 +636,8 @@ function handleLinkClick(href: string) {
   bind:this={sidebarDiv}
   class={isStandalone
     ? "relative flex w-full h-full flex-col overflow-hidden"
-    : "absolute end-3.5 top-3.5 bottom-3.5 flex shrink-0 flex-col overflow-hidden shadow-2xl z-50 select-none backdrop-blur-md"}
+    : "relative flex h-full w-full shrink-0 flex-col overflow-hidden border-s border-border/40 text-card-foreground backdrop-blur-[40px] select-none"}
+  style={!isStandalone ? "background:color-mix(in srgb, var(--card) 58%, transparent); backdrop-filter:blur(40px) saturate(125%); -webkit-backdrop-filter:blur(40px) saturate(125%);" : undefined}
   style:width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:min-width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:max-width={isStandalone ? "100%" : `${preferredWidth}rem`}

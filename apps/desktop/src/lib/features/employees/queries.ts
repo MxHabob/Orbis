@@ -165,7 +165,24 @@ export function createBulkRegisterEmployeesMutation() {
     }: {
       items: any[];
       options?: { atomic?: boolean; dryRun?: boolean };
-    }) => api.bulkRegisterEmployees(items, options),
+    }) =>
+      (async () => {
+        const job = await api.startBulkRegisterEmployeeJob(items, options);
+        let latestJob = job;
+        while (latestJob.status === "running") {
+          await new Promise((resolve) => window.setTimeout(resolve, 250));
+          const polled = await api.getBulkRegisterEmployeeJob(job.id);
+          if (!polled) break;
+          latestJob = polled;
+        }
+        if (latestJob.status === "failed") {
+          throw new Error(latestJob.error || "Employee registration failed.");
+        }
+        if (!latestJob.result) {
+          throw new Error("Employee registration did not produce a result.");
+        }
+        return latestJob.result;
+      })(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });

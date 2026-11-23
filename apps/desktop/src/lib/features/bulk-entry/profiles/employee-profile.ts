@@ -1,5 +1,6 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterEmployeeCommandItem } from "$lib/api";
+import { operationStore } from "$lib/stores";
 import { splitPersonName } from "$lib/shared/utils/person-name";
 import * as m from "$lib/paraglide/messages";
 import {
@@ -608,7 +609,25 @@ export const employeeImportProfile: BulkImportProfile<
     }
 
     try {
-      const bulkRes = await api.bulkRegisterEmployees(items, { atomic: false });
+      const job = await api.startBulkRegisterEmployeeJob(items, { atomic: false });
+      const activeOperation = operationStore.operations.find(
+        (operation) => operation.status === "running",
+      );
+      if (activeOperation) operationStore.setJobId(activeOperation.id, job.id, "employees");
+      let latestJob = job;
+      while (latestJob.status === "running") {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        const polled = await api.getBulkRegisterEmployeeJob(job.id);
+        if (!polled) break;
+        latestJob = polled;
+      }
+      if (latestJob.status === "failed") {
+        throw new Error(latestJob.error || "Bulk employee import failed");
+      }
+      if (!latestJob.result) {
+        throw new Error("Bulk employee import did not produce a result");
+      }
+      const bulkRes = latestJob.result;
       const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
 
       for (const it of bulkRes.items) {

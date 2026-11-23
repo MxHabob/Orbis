@@ -19,6 +19,7 @@ import { createprogressionJobsQuery } from "$lib/features/academics/promotion-qu
 import { updateManager } from "$lib/features/system/update-manager.svelte";
 import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
 import type { SolverSetupStatusDto } from "$lib/api/types";
+import type { BulkRegisterJobDto, BulkRegisterEmployeeJobDto } from "$lib/api/types";
 import { l } from "$lib/core/i18n/locale";
 import { Progress } from "@orbis/ui/progress";
 import { Button } from "@orbis/ui/button";
@@ -61,6 +62,20 @@ function readDismissedUpdateVersion() {
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function getUpdateErrorMessage(error: unknown) {
+  const message = getErrorMessage(error).toLowerCase();
+  if (message.includes("no internet connection") || message.includes("offline")) {
+    return m.ui_update_offline();
+  }
+  if (
+    message.includes("updater does not have any endpoints set") ||
+    message.includes("updates are not configured")
+  ) {
+    return m.ui_update_unavailable();
+  }
+  return m.ui_update_check_failed();
 }
 
 let dismissedUpdateVersion = $state(readDismissedUpdateVersion());
@@ -195,6 +210,7 @@ const promotionNeedsAttention = $derived(
 );
 const showUpdate = $derived.by(() => {
   const latestVersion = updateManager.updateResult?.latest_version;
+  if (updateManager.updateResult?.status === "unavailable") return false;
   const isVisible =
     updateManager.isDownloading ||
     updateManager.isApplying ||
@@ -259,9 +275,48 @@ function scheduleSolverReadyDismissal() {
 
 onMount(() => {
   void updateManager.initialize();
-  if (!isDesktopApp) return;
-
   let disposed = false;
+  const jobPoll = window.setInterval(() => {
+    if (disposed) return;
+    for (const operation of operationStore.operations) {
+      if (
+        operation.kind !== "bulk-import" ||
+        !operation.jobId ||
+        operation.status === "completed" ||
+        operation.status === "failed"
+      ) {
+        continue;
+      }
+      const jobRequest =
+        operation.jobProfile === "employees"
+          ? api.getBulkRegisterEmployeeJob(operation.jobId)
+          : api.getBulkRegisterJob(operation.jobId);
+      void jobRequest.then((job) => {
+        if (!job) return;
+        if (operation.jobProfile === "employees") {
+          operationStore.syncEmployeeJob(
+            operation.id,
+            job as BulkRegisterEmployeeJobDto,
+          );
+        } else {
+          operationStore.syncJob(
+            operation.id,
+            job as BulkRegisterJobDto,
+          );
+        }
+      }).catch((error) => {
+        console.error("Failed to sync bulk import job", error);
+      });
+    }
+  }, 750);
+  if (!isDesktopApp) {
+    return () => {
+      disposed = true;
+      window.clearInterval(jobPoll);
+      window.clearInterval(jobPoll);
+    };
+  }
+
   const listenerPromise = listen<SolverSetupStatusDto>(
     "solver-setup-status-changed",
     ({ payload }) => {
@@ -508,7 +563,7 @@ async function retrySolverSetup() {
             {/if}
             <span class="hidden truncate md:inline">
               {activeOperation
-                ? activeOperation.title
+                ? `${activeOperation.title} · ${activeOperation.total > 0 ? Math.round((activeOperation.processed / activeOperation.total) * 100) : 0}%`
                 : visiblePromotionJob?.name ?? operationLabel}
             </span>
             {#if hasOperations}
@@ -555,6 +610,11 @@ async function retrySolverSetup() {
                     size={15}
                     class="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
                   />
+                {:else if operation.status === "interrupted"}
+                  <XMark
+                    size={15}
+                    class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+                  />
                 {:else}
                   <XMark size={15} class="mt-0.5 shrink-0 text-destructive" />
                 {/if}
@@ -570,8 +630,29 @@ async function retrySolverSetup() {
                     </span>
                   </div>
                   {#if operation.status === "running"}
+                    {#if operation.processed > 0}
+                      <div class="mt-1.5 flex items-center gap-2">
+                        <Progress
+                          value={operation.processed}
+                          max={Math.max(operation.total, 1)}
+                          class="h-1 flex-1"
+                          aria-label={m.ui_shell_status_progress()}
+                        />
+                        <span class="shrink-0 tabular-nums text-[10px] text-muted-foreground">
+                          {operation.total > 0
+                            ? Math.round((operation.processed / operation.total) * 100)
+                            : 0}%
+                        </span>
+                      </div>
+                    {:else}
+                      <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                        <div class="h-full w-1/3 rounded-full bg-primary/70 animate-pulse"></div>
+                      </div>
+                    {/if}
                     <p class="mt-1 text-[10px] text-muted-foreground">
-                      {m.ui_shell_status_running()}
+                      {operation.processed > 0
+                        ? `${operation.processed} / ${operation.total}`
+                        : m.ui_shell_status_running()}
                     </p>
                   {:else}
                     <div
@@ -586,6 +667,11 @@ async function retrySolverSetup() {
                         </span>
                       {/if}
                     </div>
+                    {#if operation.status === "interrupted"}
+                      <p class="mt-1.5 text-[10px] leading-4 text-amber-700 dark:text-amber-300">
+                        {m.ui_shell_status_interrupted_after_refresh()}
+                      </p>
+                    {/if}
                   {/if}
                 </div>
                 <div class="flex shrink-0 items-center gap-1">
@@ -666,7 +752,7 @@ async function retrySolverSetup() {
                   </div>
                   {#if updateManager.error}
                     <p class="mt-1 break-words text-[10px] text-destructive">
-                      {updateManager.error}
+                      {getUpdateErrorMessage(updateManager.error)}
                     </p>
                   {/if}
                   {#if updateManager.isDownloading}

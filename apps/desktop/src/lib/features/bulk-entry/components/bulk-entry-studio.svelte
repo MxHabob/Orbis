@@ -457,6 +457,8 @@ async function handleConfirmCommit() {
             : currentProfile.id === "grades"
               ? 500
               : 100,
+      onProgress: (progress) =>
+        operationStore.updateProgress(operation.id, progress),
     });
 
     operationStore.finish(operation.id, result);

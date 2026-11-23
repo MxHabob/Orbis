@@ -1,4 +1,8 @@
 import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
+import type { BulkRegisterJobDto } from "$lib/api/types";
+import type { BulkRegisterEmployeeJobDto } from "$lib/api/types";
+import type { BulkProfileId } from "$lib/features/bulk-entry/types";
+import type { ChunkProgress } from "$lib/features/bulk-entry/types";
 
 export type OperationStatus =
   | "running"
@@ -9,6 +13,8 @@ export type OperationStatus =
 export type AppOperation = {
   id: string;
   kind: "bulk-import";
+  jobId?: string;
+  jobProfile?: BulkProfileId;
   title: string;
   status: OperationStatus;
   processed: number;
@@ -46,7 +52,9 @@ class OperationStore {
 
   constructor() {
     if (typeof window !== "undefined") {
-      window.addEventListener("beforeunload", () => this.persist());
+      window.addEventListener("beforeunload", () => {
+        this.persist();
+      });
     }
   }
 
@@ -89,6 +97,115 @@ class OperationStore {
           }
         : operation,
     );
+    this.persist();
+  }
+
+  updateProgress(id: string, progress: ChunkProgress) {
+    this.operations = this.operations.map((operation) =>
+      operation.id === id
+        ? {
+            ...operation,
+            processed: progress.processedRows,
+            total: progress.totalRows,
+            committed: progress.committedRows,
+            failed: progress.failedRows,
+            updatedAt: Date.now(),
+          }
+        : operation,
+    );
+    this.persist();
+  }
+
+  setJobId(id: string, jobId: string, profile: BulkProfileId = "students") {
+    this.operations = this.operations.map((operation) =>
+      operation.id === id ? { ...operation, jobId, jobProfile: profile } : operation,
+    );
+    this.persist();
+  }
+
+  syncJob(id: string, job: BulkRegisterJobDto) {
+    const result: BulkCommitResult | undefined = job.result
+      ? {
+          batchId: job.id,
+          profileId: "students",
+          totalRows: job.result.total,
+          committedCount: job.result.succeeded,
+          failedCount: job.result.failed,
+          skippedCount: 0,
+          licenseRejected: false,
+          failedRowNumbers: job.result.items
+            .filter((item) => !item.success)
+            .map((item) => item.row_index),
+          errors: job.result.items
+            .filter((item) => !item.success)
+            .map((item) => ({
+              rowNumber: item.row_index,
+              reason: item.error ?? "",
+            })),
+          warnings: [],
+        }
+      : undefined;
+    this.operations = this.operations.map((operation) =>
+      operation.id === id
+        ? {
+            ...operation,
+            status:
+              job.status === "completed"
+                ? ("completed" as const)
+                : job.status === "failed"
+                  ? ("failed" as const)
+                  : ("running" as const),
+            processed: job.processed,
+            committed: job.succeeded,
+            failed: job.failed,
+            updatedAt: Date.now(),
+          }
+        : operation,
+    );
+    if (result) this.results[id] = result;
+    this.persist();
+  }
+
+  syncEmployeeJob(id: string, job: BulkRegisterEmployeeJobDto) {
+    const result: BulkCommitResult | undefined = job.result
+      ? {
+          batchId: job.id,
+          profileId: "employees",
+          totalRows: job.result.total,
+          committedCount: job.result.succeeded,
+          failedCount: job.result.failed,
+          skippedCount: 0,
+          licenseRejected: false,
+          failedRowNumbers: job.result.items
+            .filter((item) => !item.success)
+            .map((item) => item.row_index),
+          errors: job.result.items
+            .filter((item) => !item.success)
+            .map((item) => ({
+              rowNumber: item.row_index,
+              reason: item.error ?? "",
+            })),
+          warnings: [],
+        }
+      : undefined;
+    this.operations = this.operations.map((operation) =>
+      operation.id === id
+        ? {
+            ...operation,
+            status:
+              job.status === "completed"
+                ? ("completed" as const)
+                : job.status === "failed"
+                  ? ("failed" as const)
+                  : ("running" as const),
+            processed: job.processed,
+            committed: job.succeeded,
+            failed: job.failed,
+            updatedAt: Date.now(),
+          }
+        : operation,
+    );
+    if (result) this.results[id] = result;
     this.persist();
   }
 

@@ -254,7 +254,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         student_cmds::student_remove_guardian,
         student_cmds::student_delete_student,
         student_cmds::student_restore_student,
-        student_cmds::student_bulk_register,
+        student_cmds::student_start_bulk_register_job,
+        student_cmds::student_get_bulk_register_job,
         // ── Employee Affairs ────────────────────────────────────
         employee_cmds::employee_register_employee,
         employee_cmds::employee_list_employees,
@@ -266,7 +267,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         employee_cmds::employee_restore_employee,
         employee_cmds::employee_provision_account,
         employee_cmds::employee_assign_groups,
-        employee_cmds::employee_bulk_register,
+        employee_cmds::employee_start_bulk_register_job,
+        employee_cmds::employee_get_bulk_register_job,
         // ── User Groups ─────────────────────────────────────────
         group_cmds::group_create_group,
         group_cmds::group_list_groups,
