@@ -17,10 +17,6 @@ fn default_true() -> bool {
     true
 }
 
-fn default_false() -> bool {
-    false
-}
-
 fn default_timeout() -> u64 {
     5000
 }
@@ -101,7 +97,7 @@ pub struct DirectConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatabaseSettings {
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     pub auto_backup_enabled: bool,
     #[serde(default = "default_backup_interval")]
     pub auto_backup_interval_hours: u32,
@@ -117,7 +113,7 @@ pub struct DatabaseSettings {
 impl Default for DatabaseSettings {
     fn default() -> Self {
         Self {
-            auto_backup_enabled: false,
+            auto_backup_enabled: true,
             auto_backup_interval_hours: 24,
             backup_dir: None,
             max_backup_files: 10,
@@ -181,8 +177,12 @@ impl ConnectionConfig {
         if path.exists() {
             match std::fs::read_to_string(&path) {
                 Ok(contents) => match serde_json::from_str::<ConnectionConfig>(&contents) {
-                    Ok(config) => {
+                    Ok(mut config) => {
                         info!("Loaded connection config from {:?}", path);
+                        if !config.settings.auto_backup_enabled {
+                            config.settings.auto_backup_enabled = true;
+                            tracing::info!("Backup autopilot migrated to enabled");
+                        }
                         if let Ok(normalized) = serde_json::to_string_pretty(&config) {
                             if normalized != contents {
                                 if let Err(error) = std::fs::write(&path, normalized) {
@@ -479,6 +479,7 @@ mod tests {
         assert_eq!(config.mode, ConnectionMode::Local);
         assert!(config.local.is_some());
         assert_eq!(config.local.unwrap().db_filename, "orbis.db");
+        assert!(config.settings.auto_backup_enabled);
     }
 
     #[test]

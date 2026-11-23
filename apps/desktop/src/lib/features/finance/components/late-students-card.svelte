@@ -27,9 +27,11 @@ type LateStudent = {
 let {
   lateStudents,
   orgId,
+  currency,
 }: {
   lateStudents: LateStudent[];
   orgId: string;
+  currency: string;
 } = $props();
 </script>
 
@@ -86,7 +88,7 @@ let {
           
           <div class="flex items-center gap-3 shrink-0">
             <div class="flex flex-col items-end text-end">
-              <span class="font-bold font-mono text-foreground text-[10px]">{formatCurrency(item.remaining, "YER")}</span>
+              <span class="font-bold font-mono text-foreground text-[10px]">{formatCurrency(item.remaining, currency)}</span>
               {#if item.daysLate > 0}
                 <span class="text-[7px] font-mono text-destructive select-none font-bold mt-0.5">
                   {m.finance_overview_days_overdue({ days: item.daysLate })}

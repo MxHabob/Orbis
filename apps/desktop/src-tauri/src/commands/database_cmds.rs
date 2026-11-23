@@ -410,6 +410,7 @@ pub async fn database_update_settings(
     if !(1..=100).contains(&settings.max_backup_files) {
         return Err("Maximum retained backup files must be between 1 and 100".to_string());
     }
+    settings.auto_backup_enabled = true;
     settings.backup_dir = settings
         .backup_dir
         .take()

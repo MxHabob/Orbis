@@ -44,6 +44,12 @@ async function loadData() {
   isLoading = true;
   loadError = false;
 
+  if (!selectedCurrency) {
+    data = [];
+    isLoading = false;
+    return;
+  }
+
   try {
     const filter = {
       from_date: dateRange.fromDate,
@@ -219,13 +225,13 @@ function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   const rect = e.currentTarget.getBoundingClientRect();
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
-  const isRtl = document.documentElement.dir === "rtl";
-  const plotWidth = Math.max(1, rect.width - 72);
-  const plotX = isRtl ? rect.width - mouseX - 8 : mouseX - 64;
-  const colWidth = plotWidth / displayData.length;
+  const axisWidth = rect.width * 0.074;
+  const plotWidth = Math.max(1, rect.width * 0.912);
+  const plotX = mouseX - axisWidth;
+  const colWidth = plotWidth / Math.max(1, displayData.length - 1);
   const idx = Math.max(
     0,
-    Math.min(displayData.length - 1, Math.floor(plotX / colWidth)),
+    Math.min(displayData.length - 1, Math.round(plotX / colWidth)),
   );
 
   hoveredIdx = idx;
@@ -279,10 +285,9 @@ function getNiceMaximum(value: number): number {
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
-    <!-- Top Row Header + Legend -->
     <CardHeader class="py-3 px-4">
       <div class="flex items-center gap-2">
-        <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+        <CardTitle class="text-sm font-semibold tracking-tight text-foreground">
           {m.finance_overview_collection_trend()}
         </CardTitle>
         {#if isEditing}
@@ -291,13 +296,13 @@ function getNiceMaximum(value: number): number {
       </div>
 
       <CardAction>
-        <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold select-none">
+        <div class="flex items-center gap-4 text-[11px] text-muted-foreground font-medium select-none">
           <div class="flex items-center gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30 inline-block"></span>
+            <span class="h-px w-4 border-t border-dashed border-muted-foreground/70"></span>
             <span>{m.finance_overview_trend_invoiced()}</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-sm bg-foreground inline-block"></span>
+            <span class="h-0.5 w-4 rounded-full bg-primary"></span>
             <span>{m.finance_overview_trend_collected()}</span>
           </div>
         </div>
@@ -318,6 +323,12 @@ function getNiceMaximum(value: number): number {
           class="h-[220px] w-full cursor-crosshair overflow-visible"
           aria-hidden="true"
         >
+          <defs>
+            <linearGradient id="finance-collection-area" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.14" />
+              <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
           {#each [0, 1, 2, 3, 4] as i (i)}
             {@const tickVal = maxVal - (i / 4) * maxVal}
             {@const y = 22 + i * 43.5}
@@ -325,52 +336,73 @@ function getNiceMaximum(value: number): number {
               x="62"
               y={y + 3}
               text-anchor="end"
-              class="fill-muted-foreground font-mono text-[10px]"
+              fill="var(--muted-foreground)"
+              class="font-mono text-[10px]"
             >{formatVal(tickVal)}</text>
             <line
               x1="74"
               x2="990"
               y1={y}
               y2={y}
-              class="stroke-border"
+              stroke="var(--border)"
+              opacity="0.6"
               stroke-dasharray="3 5"
               stroke-width="1"
             />
           {/each}
           {#if chartPoints.length > 1}
+            {#if hoveredIdx !== null}
+              <line
+                x1={chartPoints[hoveredIdx].x}
+                x2={chartPoints[hoveredIdx].x}
+                y1="22"
+                y2="196"
+                stroke="var(--border)"
+                stroke-width="1"
+              />
+            {/if}
+            <polygon
+              points={`${collectedLine} 986,196 74,196`}
+              fill="url(#finance-collection-area)"
+            />
             <polyline
               points={invoicedLine}
               fill="none"
-              class="stroke-muted-foreground"
-              stroke-width="3"
+              stroke="var(--muted-foreground)"
+              opacity="0.7"
+              stroke-dasharray="5 5"
+              stroke-width="1.75"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
             <polyline
               points={collectedLine}
               fill="none"
-              class="stroke-emerald-600 dark:stroke-emerald-400"
-              stroke-width="3"
+              stroke="var(--primary)"
+              stroke-width="2.5"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
           {/if}
-          {#each chartPoints as point, idx (point.label)}
+          {#if hoveredIdx !== null}
+            {@const point = chartPoints[hoveredIdx]}
             <circle
               cx={point.x}
               cy={point.invoicedY}
-              r={hoveredIdx === idx ? 5 : 3}
-              class="fill-background stroke-muted-foreground"
+              r="4"
+              fill="var(--background)"
+              stroke="var(--muted-foreground)"
               stroke-width="2"
             />
             <circle
               cx={point.x}
               cy={point.collectedY}
-              r={hoveredIdx === idx ? 5 : 3}
-              class="fill-background stroke-emerald-600 dark:stroke-emerald-400"
+              r="4"
+              fill="var(--primary)"
+              stroke="var(--background)"
               stroke-width="2"
             />
-          {/each}
+          {/if}
         </svg>
         <div
           class="grid text-center text-[9px] font-mono font-bold text-muted-foreground"
@@ -385,11 +417,11 @@ function getNiceMaximum(value: number): number {
         {#if hoveredIdx !== null && tooltipPos && hasRecords}
           {@const activeBar = chartPoints[hoveredIdx]}
           <div 
-            class="absolute z-30 w-[220px] max-w-[calc(100%-16px)] p-2.5 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 text-start"
+            class="absolute z-30 w-[220px] max-w-[calc(100%-16px)] rounded-lg border border-border bg-popover p-3 text-start text-xs text-popover-foreground shadow-lg pointer-events-none flex flex-col gap-2"
             style="left: {tooltipPos.x}px; top: {tooltipPos.y}px;"
           >
-            <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
-            <div class="flex flex-col gap-0.5">
+            <span class="border-b border-border/60 pb-1 font-medium text-muted-foreground">{activeBar.label}</span>
+            <div class="flex flex-col gap-1">
               <div class="flex items-center justify-between gap-4">
                 <span class="text-muted-foreground">{m.finance_overview_trend_invoiced()}:</span>
                 <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.invoiced, selectedCurrency)}</span>

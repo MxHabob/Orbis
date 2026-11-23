@@ -25,6 +25,7 @@ import { createClassesQuery } from "$lib/features/academics";
 import { createOrgUnitsQuery } from "$lib/features/settings/queries";
 import CashFlowTrendCard from "$lib/features/metrics/cards/cash-flow-trend-card.svelte";
 import LateStudentsCard from "$lib/features/finance/components/late-students-card.svelte";
+import CollectionRateCard from "$lib/features/finance/components/collection-rate-card.svelte";
 import RecentPaymentsCard from "$lib/features/finance/components/recent-payments-card.svelte";
 import AccountBalancesCard from "$lib/features/finance/components/account-balances-card.svelte";
 import BranchReceivablesCard from "$lib/features/finance/components/branch-receivables-card.svelte";
@@ -36,6 +37,7 @@ import {
   type DateRangeFilterValue,
 } from "$lib/shared/components/date-range";
 import { Card, CardContent } from "@orbis/ui/card";
+import { Button } from "@orbis/ui/button";
 import {
   Select,
   SelectContent,
@@ -61,6 +63,7 @@ const dateFilter = $derived({
   to_date: dateRange.toDate,
   org_unit_id: orgUnitFilter,
 });
+const templatesQuery = createFeeTemplatesQuery(() => orgId);
 const feeSummaryQuery = createQuery(() => ({
   queryKey: [...queryKeys.finance.studentFeeSummary(orgId), dateFilter],
   queryFn: () => api.getStudentFeeSummary(dateFilter),
@@ -68,13 +71,20 @@ const feeSummaryQuery = createQuery(() => ({
   staleTime: 2 * 60 * 1000,
 }));
 const feeSummary = $derived(feeSummaryQuery.data ?? []);
+const feeTemplates = $derived(templatesQuery.data ?? []);
 const availableCurrencies = $derived(
-  [...new Set(feeSummary.map((item) => item.currency).filter(Boolean))].sort(),
+  [...new Set(feeTemplates.map((template) => template.currency).filter(Boolean))].sort(),
 );
 const activeCurrency = $derived(
   availableCurrencies.includes(selectedCurrency)
     ? selectedCurrency
     : (availableCurrencies[0] ?? ""),
+);
+const hasActiveFilters = $derived(
+  dateRange.preset !== "year_to_date" ||
+    selectedBranchId !== "all" ||
+    (selectedCurrency !== "" &&
+      selectedCurrency !== availableCurrencies[0]),
 );
 const selectedSummary = $derived(
   feeSummary.find((item) => item.currency === activeCurrency),
@@ -86,7 +96,7 @@ const feesQuery = createStudentFeesQuery(() => orgId, () => ({
   is_overdue: true,
   sort_by: "balance_due",
   sort_dir: "desc",
-}));
+}), () => !!activeCurrency);
 const paymentsFilter = $derived({
   ...dateFilter,
   currency_code: activeCurrency || undefined,
@@ -101,13 +111,12 @@ const paymentsQuery = createQuery(() => ({
     (
       await api.listPaymentsPaginated(paymentsFilter)
     ).items,
-  enabled: !!orgId,
+  enabled: !!orgId && !!activeCurrency,
   staleTime: 2 * 60 * 1000,
 }));
 const treasuriesQuery = createCashAccountsQuery(() => orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
-const templatesQuery = createFeeTemplatesQuery(() => orgId);
 
 const fees = $derived(feesQuery.data ?? []);
 const payments = $derived(paymentsQuery.data ?? []);
@@ -115,12 +124,18 @@ const treasuries = $derived(treasuriesQuery.data ?? []);
 const enrollments = $derived(enrollmentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const orgUnits = $derived(orgUnitsQuery.data ?? []);
-const feeTemplates = $derived(templatesQuery.data ?? []);
 const templatesById = $derived(
   new Map(feeTemplates.map((template) => [template.id, template])),
 );
 const branchUnits = $derived(
   orgUnits.filter((unit) => unit.unit_type === "branch"),
+);
+const selectedBranchName = $derived(
+  selectedBranchId === "all"
+    ? m.finance_overview_current_branch()
+    : (branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name_ar ||
+        branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name ||
+        m.common_header_org_branch()),
 );
 const enrollmentsById = $derived(
   new Map(enrollments.map((enrollment) => [enrollment.id, enrollment])),
@@ -166,6 +181,10 @@ function refetchAll() {
 function toAmount(value: string | number | null | undefined): number {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatSelectedAmount(value: number): string {
+  return activeCurrency ? formatCurrency(value, activeCurrency) : "—";
 }
 
 // ── Financial KPI Computations ───────────────────────────────────────────
@@ -387,65 +406,76 @@ const visibleTreasuries = $derived(
     />
   {:else}
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
-      <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-card p-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <span>{m.common_header_org_branch()}</span>
-            <Select type="single" bind:value={selectedBranchId}>
-              <SelectTrigger class="h-8 min-w-36 text-xs">
-                {selectedBranchId === "all"
-                  ? m.finance_overview_current_branch()
-                  : branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name_ar ||
-                    branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name ||
-                    m.common_header_org_branch()}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{m.finance_overview_current_branch()}</SelectItem>
-                {#each branchUnits as unit (unit.id)}
-                  <SelectItem value={String(unit.id)}>
-                    {l(unit.name_ar, unit.name)}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-          {#if availableCurrencies.length > 1}
-            <div class="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <span>{m.finance_ui_currency()}</span>
-              <Select
-                type="single"
-                value={activeCurrency}
-                onValueChange={(value) => {
-                  if (value) selectedCurrency = value;
-                }}
-              >
-                <SelectTrigger class="h-8 min-w-24 text-xs">
-                  {activeCurrency || m.finance_ui_currency_select_placeholder()}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each availableCurrencies as currency (currency)}
-                    <SelectItem value={currency}>{currency}</SelectItem>
-                  {/each}
-                </SelectContent>
-              </Select>
-            </div>
-          {:else if activeCurrency}
-            <span class="rounded-md border border-border/60 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground">
-              {activeCurrency}
-            </span>
-          {/if}
-          <DateRangeFilter bind:value={dateRange} />
-        </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <Select type="single" bind:value={selectedBranchId}>
+          <SelectTrigger
+            class="h-9 min-w-44 gap-2 bg-background px-3 text-xs"
+            aria-label={m.common_header_org_branch()}
+          >
+            <span class="text-muted-foreground">{m.common_header_org_branch()}</span>
+            <span class="max-w-36 truncate font-medium text-foreground">{selectedBranchName}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.finance_overview_current_branch()}</SelectItem>
+            {#each branchUnits as unit (unit.id)}
+              <SelectItem value={String(unit.id)}>
+                {l(unit.name_ar, unit.name)}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+        {#if availableCurrencies.length > 1}
+          <Select
+            type="single"
+            value={activeCurrency}
+            onValueChange={(value) => {
+              if (value) selectedCurrency = value;
+            }}
+          >
+            <SelectTrigger
+              class="h-9 min-w-28 gap-2 bg-background px-3 text-xs"
+              aria-label={m.finance_ui_currency()}
+            >
+              <span class="text-muted-foreground">{m.finance_ui_currency()}</span>
+              <span class="font-medium text-foreground">{activeCurrency}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {#each availableCurrencies as currency (currency)}
+                <SelectItem value={currency}>{currency}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
+        {:else if activeCurrency}
+          <span class="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-xs">
+            <span class="text-muted-foreground">{m.finance_ui_currency()}</span>
+            <span class="font-medium text-foreground">{activeCurrency}</span>
+          </span>
+        {/if}
+        <DateRangeFilter bind:value={dateRange} />
+        {#if hasActiveFilters}
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
+            onclick={() => {
+              dateRange = getDateRangeForPreset("year_to_date");
+              selectedBranchId = "all";
+              selectedCurrency = "";
+            }}
+          >
+            {m.finance_overview_reset_filters()}
+          </Button>
+        {/if}
       </div>
 
-      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card class="shadow-sm">
           <CardContent class="p-4">
             <p class="text-xs font-medium text-muted-foreground">
               {m.finance_overview_trend_invoiced()}
             </p>
             <p class="mt-2 truncate font-mono text-lg font-bold text-foreground">
-              {formatCurrency(totalFees, activeCurrency || "YER")}
+              {formatSelectedAmount(totalFees)}
             </p>
           </CardContent>
         </Card>
@@ -454,8 +484,8 @@ const visibleTreasuries = $derived(
             <p class="text-xs font-medium text-muted-foreground">
               {m.finance_overview_trend_collected()}
             </p>
-            <p class="mt-2 truncate font-mono text-lg font-bold text-emerald-600">
-              {formatCurrency(totalPaid, activeCurrency || "YER")}
+            <p class="mt-2 truncate font-mono text-lg font-bold text-primary">
+              {formatSelectedAmount(totalPaid)}
             </p>
           </CardContent>
         </Card>
@@ -465,17 +495,7 @@ const visibleTreasuries = $derived(
               {m.finance_ui_current_balance()}
             </p>
             <p class="mt-2 truncate font-mono text-lg font-bold text-foreground">
-              {formatCurrency(totalBalance, activeCurrency || "YER")}
-            </p>
-          </CardContent>
-        </Card>
-        <Card class="shadow-sm">
-          <CardContent class="p-4">
-            <p class="text-xs font-medium text-muted-foreground">
-              {m.finance_ui_collection_rate()}
-            </p>
-            <p class="mt-2 font-mono text-lg font-bold text-primary">
-              {collectionRate}%
+              {formatSelectedAmount(totalBalance)}
             </p>
           </CardContent>
         </Card>
@@ -489,14 +509,23 @@ const visibleTreasuries = $derived(
         {feeTemplates}
       />
 
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
         <BranchReceivablesCard
           branches={branchReceivables}
           {selectedBranchId}
-          currency={activeCurrency || "YER"}
+          currency={activeCurrency}
           onSelect={(branchId) => (selectedBranchId = branchId)}
         />
-        <LateStudentsCard {lateStudents} {orgId} />
+        <LateStudentsCard {lateStudents} {orgId} currency={activeCurrency || "YER"} />
+        {#if activeCurrency}
+          <CollectionRateCard
+            {collectionRate}
+            {totalFees}
+            {totalPaid}
+            {orgId}
+            currency={activeCurrency}
+          />
+        {/if}
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

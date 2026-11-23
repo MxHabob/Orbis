@@ -46,7 +46,9 @@ const maximumBalance = $derived(
       {#each branches as branch (branch.id)}
         <button
           type="button"
-          class="group w-full rounded-md text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          class={`group w-full rounded-md text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+            selectedBranchId === branch.id ? "bg-muted/50 ring-1 ring-primary/30" : ""
+          }`}
           aria-pressed={selectedBranchId === branch.id}
           onclick={() => onSelect(selectedBranchId === branch.id ? "all" : branch.id)}
         >

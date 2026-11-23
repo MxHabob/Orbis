@@ -8,6 +8,8 @@ import {
   CardFooter,
 } from "@orbis/ui/card";
 import { ArrowRight, Clock } from "@orbis/icons";
+import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 
@@ -16,11 +18,13 @@ let {
   totalFees,
   totalPaid,
   orgId,
+  currency,
 }: {
   collectionRate: number;
   totalFees: number;
   totalPaid: number;
   orgId: string;
+  currency: string;
 } = $props();
 </script>
 
@@ -39,8 +43,8 @@ let {
   <CardContent class="p-5 flex flex-col text-start justify-center flex-grow select-none">
     <p class="text-xs text-muted-foreground leading-relaxed">
       {m.finance_collection_rate_description({
-        totalFees: formatCurrency(totalFees, "YER"),
-        totalPaid: formatCurrency(totalPaid, "YER"),
+        totalFees: formatCurrency(totalFees, currency),
+        totalPaid: formatCurrency(totalPaid, currency),
       })}
     </p>
     <div class="text-4xl font-black text-foreground font-sans mt-5 tracking-tight">
@@ -50,7 +54,7 @@ let {
 
   <!-- Footer -->
   <CardFooter class="border-t border-border/40 py-2.5 px-4 text-[10px]">
-    <a href={localizeHref(`/${orgId}/finance/reports`)} class="flex items-center gap-1.5 hover:underline text-primary font-bold group/link">
+    <a href={resolve(localizeHref(`/${orgId}/finance/reports`) as Pathname)} class="flex items-center gap-1.5 hover:underline text-primary font-bold group/link">
       <span>{m.finance_overview_btn_statement()}</span>
       <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
     </a>

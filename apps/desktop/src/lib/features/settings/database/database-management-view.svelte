@@ -73,7 +73,7 @@ let customBackupPath = $state("");
 let restoreFilePath = $state("");
 
 // Settings state
-let autoBackup = $state(false);
+let autoBackup = $state(true);
 let backupInterval = $state(24);
 let maxBackups = $state(10);
 let customBackupDir = $state("");
@@ -109,7 +109,7 @@ function syncFormValues() {
   }
 
   if (controller.settings) {
-    autoBackup = controller.settings.auto_backup_enabled;
+    autoBackup = true;
     backupInterval = controller.settings.auto_backup_interval_hours;
     maxBackups = controller.settings.max_backup_files;
     customBackupDir = controller.settings.backup_dir || "";
@@ -301,7 +301,7 @@ async function handleSaveSettings() {
       throw new Error(m.ui_copy_max_retained_files_02a1c239());
     }
     await controller.saveSettings({
-      auto_backup_enabled: autoBackup,
+      auto_backup_enabled: true,
       auto_backup_interval_hours: intervalHours,
       max_backup_files: retainedFiles,
       backup_dir: customBackupDir.trim() ? customBackupDir.trim() : undefined,
@@ -848,75 +848,29 @@ const connectionStatus = $derived.by(() => {
                 </Button>
               </div>
 
-              <!-- Automatic Backup Policy -->
-              <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3.5">
+              <!-- Autonomous Backup Protection -->
+              <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3">
                 <div class="flex items-center justify-between pb-2 border-b border-border/30">
                   <div class="flex items-center gap-2">
-                    <ClockRotateRight size={14} class="text-indigo-500" />
-                    <span class="text-xs font-bold text-foreground">{m.ui_copy_automated_backup_policy_ecc1317b()}</span>
+                    <Sparkles size={14} class="text-primary" />
+                    <span class="text-xs font-bold text-foreground">{m.ai_ui_autopilot_engine()}</span>
                   </div>
-                  <Switch bind:checked={autoBackup} />
+                  <Badge variant="outline" class="border-emerald-500/30 text-emerald-600">{m.ui_autopilot_auto()}</Badge>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <FormField id="backupInterval" label={m.database_backup_interval_label?.() || m.ui_copy_interval_hours_23ad5bfc()}>
-                    {#snippet children()}
-                      <Input id="backupInterval" type="number" bind:value={backupInterval} min="1" max="168" class="h-8 text-xs bg-background border-input" disabled={!autoBackup} />
-                    {/snippet}
-                  </FormField>
-
-                  <FormField id="maxBackups" label={m.database_backup_max_files_label?.() || m.ui_copy_max_retained_files_02a1c239()}>
-                    {#snippet children()}
-                      <Input id="maxBackups" type="number" bind:value={maxBackups} min="1" max="100" class="h-8 text-xs bg-background border-input" disabled={!autoBackup} />
-                    {/snippet}
-                  </FormField>
-                </div>
-
-                <FormField id="autoBackupDirectory" label={m.database_backup_destination_label?.() || m.ui_copy_backup_destination_path_f84c9ca4()}>
-                  {#snippet children()}
-                    <div class="flex gap-2">
-                      <Input
-                        id="autoBackupDirectory"
-                        type="text"
-                        bind:value={customBackupDir}
-                        placeholder={m.database_backup_custom_dest_hint?.() || m.ui_copy_leave_blank_for_default_backups_folder_aa0c2051()}
-                        class="h-8 min-w-0 flex-1 text-xs font-mono bg-background border-input"
-                        disabled={!autoBackup}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        class="h-8 shrink-0 gap-1.5 border-border px-2.5 text-[11px]"
-                        onclick={handleBrowseAutoBackupDir}
-                        disabled={!autoBackup}
-                      >
-                        <FolderOpen size={13} class="text-primary" />
-                        <span>{m.database_browse_folder?.() || m.ui_copy_browse_f7b87051()}</span>
-                      </Button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="rounded-md border border-border/40 bg-background/60 p-3">
+                    <div class="text-[10px] text-muted-foreground">{m.ui_autopilot_system_backup()}</div>
+                    <div class="mt-1 text-xs font-bold text-foreground">
+                      {controller.status?.last_backup_timestamp
+                        ? new Date(controller.status.last_backup_timestamp).toLocaleString()
+                        : m.ai_ui_periodic_autopilot_operation()}
                     </div>
-                  {/snippet}
-                </FormField>
-
-                <div class="pt-2 border-t border-border/30 flex items-center justify-between">
-                  <div>
-                    <div class="text-xs font-bold text-foreground">{m.ui_copy_integrity_check_on_startup_92991c81()}</div>
-                    <p class="text-[9.5px] text-muted-foreground">{m.ui_copy_automatically_verify_database_integrity_wh_1270bffe()}</p>
                   </div>
-                  <Switch bind:checked={integrityOnStartup} />
-                </div>
-
-                <div class="pt-2 border-t border-border/30 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    class="h-7.5 px-3 text-[10.5px] font-bold border-border"
-                    onclick={handleSaveSettings}
-                    disabled={controller.isOperating}
-                  >
-                    {m.ui_copy_save_policy_5fce5a59()}
-                  </Button>
+                  <div class="rounded-md border border-border/40 bg-background/60 p-3">
+                    <div class="text-[10px] text-muted-foreground">{m.ai_ui_autopilot()}</div>
+                    <div class="mt-1 text-xs font-bold text-foreground">{m.ui_autopilot_health_check()}</div>
+                  </div>
                 </div>
               </div>
             </div>

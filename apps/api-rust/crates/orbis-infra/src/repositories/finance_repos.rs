@@ -1708,7 +1708,9 @@ mod tests {
         db.execute_unprepared(
             "CREATE TABLE student_fees (
                 org_id TEXT NOT NULL,
+                student_id TEXT NOT NULL,
                 fee_template_id TEXT NOT NULL,
+                due_date TEXT NOT NULL,
                 net_amount DECIMAL NOT NULL,
                 paid_amount DECIMAL,
                 balance_due DECIMAL
@@ -1725,12 +1727,38 @@ mod tests {
         )
         .await
         .unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE students (
+            id TEXT NOT NULL,
+            org_id TEXT NOT NULL,
+            org_unit_id TEXT
+        )",
+        )
+        .await
+        .unwrap();
 
         let org_id = Uuid::new_v4();
         let other_org_id = Uuid::new_v4();
+        let branch_one_id = Uuid::new_v4();
+        let branch_two_id = Uuid::new_v4();
         let yer_template_id = Uuid::new_v4();
         let sar_template_id = Uuid::new_v4();
+        let students = [
+            (Uuid::new_v4(), org_id, branch_one_id),
+            (Uuid::new_v4(), org_id, branch_two_id),
+            (Uuid::new_v4(), org_id, branch_one_id),
+            (Uuid::new_v4(), other_org_id, branch_one_id),
+        ];
         let backend = db.get_database_backend();
+        for (student_id, student_org_id, org_unit_id) in students {
+            db.execute(Statement::from_sql_and_values(
+                backend,
+                "INSERT INTO students (id, org_id, org_unit_id) VALUES (?, ?, ?)",
+                vec![student_id.into(), student_org_id.into(), org_unit_id.into()],
+            ))
+            .await
+            .unwrap();
+        }
         for (template_id, currency) in [(yer_template_id, "YER"), (sar_template_id, "SAR")] {
             db.execute(Statement::from_sql_and_values(
                 backend,
@@ -1740,20 +1768,54 @@ mod tests {
             .await
             .unwrap();
         }
-        for (fee_org_id, template_id, due, paid, balance) in [
-            (org_id, yer_template_id, 100, 25, 75),
-            (org_id, yer_template_id, 50, 10, 40),
-            (org_id, sar_template_id, 200, 80, 120),
-            (other_org_id, yer_template_id, 1000, 0, 1000),
+        for (fee_org_id, student, template_id, date, due, paid, balance) in [
+            (
+                org_id,
+                students[0].0,
+                yer_template_id,
+                "2026-01-15",
+                100,
+                25,
+                75,
+            ),
+            (
+                org_id,
+                students[1].0,
+                yer_template_id,
+                "2026-02-15",
+                50,
+                10,
+                40,
+            ),
+            (
+                org_id,
+                students[2].0,
+                sar_template_id,
+                "2026-02-20",
+                200,
+                80,
+                120,
+            ),
+            (
+                other_org_id,
+                students[3].0,
+                yer_template_id,
+                "2026-01-10",
+                1000,
+                0,
+                1000,
+            ),
         ] {
             db.execute(Statement::from_sql_and_values(
                 backend,
                 "INSERT INTO student_fees
-                    (org_id, fee_template_id, net_amount, paid_amount, balance_due)
-                    VALUES (?, ?, ?, ?, ?)",
+                    (org_id, student_id, fee_template_id, due_date, net_amount, paid_amount, balance_due)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)",
                 vec![
                     fee_org_id.into(),
+                    student.into(),
                     template_id.into(),
+                    date.into(),
                     Decimal::from(due).into(),
                     Decimal::from(paid).into(),
                     Decimal::from(balance).into(),
@@ -1781,6 +1843,24 @@ mod tests {
         assert_eq!(summary[1].due, Decimal::from(150));
         assert_eq!(summary[1].paid, Decimal::from(35));
         assert_eq!(summary[1].balance, Decimal::from(115));
+
+        let branch_summary = repo
+            .summarize_by_currency(
+                org_id,
+                orbis_domain::queries::filters::StudentFeeFilter {
+                    org_unit_id: Some(branch_one_id),
+                    from_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()),
+                    to_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 1, 31).unwrap()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(branch_summary.len(), 1);
+        assert_eq!(branch_summary[0].currency, "YER");
+        assert_eq!(branch_summary[0].due, Decimal::from(100));
+        assert_eq!(branch_summary[0].paid, Decimal::from(25));
+        assert_eq!(branch_summary[0].balance, Decimal::from(75));
     }
 
     #[tokio::test]

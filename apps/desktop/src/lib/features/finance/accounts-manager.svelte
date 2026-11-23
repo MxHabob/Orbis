@@ -10,10 +10,10 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api } from "$lib/api";
-import type { CurrencyDto } from "$lib/api/types";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { api, queryKeys, type AccountDto } from "$lib/api";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -51,20 +51,37 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import { accountFilterFields } from "$lib/core/filter-configs";
+import {
+  createAccountsQuery,
+  createCurrenciesQuery,
+} from "$lib/features/finance/queries";
 
 let { orgId }: { orgId: string } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
-let allAccounts = $state<AccountNode[]>([]);
-let currencies = $state<CurrencyDto[]>([]);
-let baseCurrency = $state(orgContext.baseCurrency || "");
-let isLoading = $state(true);
+const queryClient = useQueryClient();
+const accountsQuery = createAccountsQuery(() => orgId);
+const currenciesQuery = createCurrenciesQuery(() => orgId);
+const allAccounts = $derived(accountsQuery.data ?? []);
+const currencies = $derived(currenciesQuery.data ?? []);
+const baseCurrency = $derived(orgContext.baseCurrency || "");
+const isLoading = $derived(
+  accountsQuery.isLoading || currenciesQuery.isLoading,
+);
+const isRefreshing = $derived(
+  accountsQuery.isFetching || currenciesQuery.isFetching,
+);
 let isSubmitting = $state(false);
 let viewMode = $state<"tree" | "grid">("tree");
 let searchQuery = $state("");
 
 // ── Master / Selected Account Form State ──────────────────────────────
-let selectedAccount = $state<AccountNode | null>(null);
+let selectedAccountId = $state<string | null>(null);
+const selectedAccount = $derived(
+  allAccounts.find((account) => account.id === selectedAccountId) ??
+    allAccounts[0] ??
+    null,
+);
 let isAddingNew = $state(false);
 
 // Form Fields
@@ -93,36 +110,34 @@ const parentAccountIds = $derived(
   ),
 );
 
-onMount(async () => {
-  if (orgId) await loadData();
-});
-
 async function loadData() {
-  isLoading = true;
-  try {
-    const [accs, currs] = await Promise.all([
-      api.listAccounts(),
-      api.listCurrencies(),
-    ]);
-
-    allAccounts = accs;
-    currencies = currs;
-    if (orgContext.baseCurrency) {
-      baseCurrency = orgContext.baseCurrency;
-      if (!formCurrency) formCurrency = orgContext.baseCurrency;
-    }
-
-    // Auto-select first root account if none selected
-    if (!selectedAccount && allAccounts.length > 0) {
-      handleSelectAccount(allAccounts[0]);
-    }
-  } catch (e) {
-    console.error("Error loading accounts:", e);
+  const [accountsResult, currenciesResult] = await Promise.all([
+    accountsQuery.refetch(),
+    currenciesQuery.refetch(),
+  ]);
+  if (accountsResult.isError || currenciesResult.isError) {
+    console.error(
+      "Error refreshing accounts:",
+      accountsResult.error ?? currenciesResult.error,
+    );
     toast.error(m.finance_ui_accounts_load_failed());
-  } finally {
-    isLoading = false;
   }
 }
+
+$effect(() => {
+  if (baseCurrency && !formCurrency) formCurrency = baseCurrency;
+});
+
+$effect(() => {
+  if (
+    allAccounts.length > 0 &&
+    !isAddingNew &&
+    (!selectedAccountId ||
+      !allAccounts.some((account) => account.id === selectedAccountId))
+  ) {
+    handleSelectAccount(allAccounts[0]);
+  }
+});
 
 // Build authentic hierarchical tree directly from backend accounts (Root accounts -> Child accounts)
 const accountTree = $derived.by(() => {
@@ -169,7 +184,7 @@ function suggestNextChildCode(parent: AccountNode | null): string {
 
 // ── Selection & Form Preparation ───────────────────────────────────────
 function handleSelectAccount(account: AccountNode) {
-  selectedAccount = account;
+  selectedAccountId = account.id;
   isAddingNew = false;
 
   formParentId = account.parent_id ?? null;
@@ -226,6 +241,12 @@ const closingStatementLabel = $derived.by(() => {
 });
 
 // ── Account Save / Create Action ───────────────────────────────────────
+async function invalidateAccounts() {
+  await queryClient.invalidateQueries({
+    queryKey: queryKeys.finance.accounts(orgId),
+  });
+}
+
 async function handleSaveAccount() {
   if (!formNameAr.trim() && !formNameEn.trim()) {
     toast.error(m.finance_ui_account_name_required());
@@ -248,7 +269,7 @@ async function handleSaveAccount() {
       parent_id: formParentId || undefined,
     };
 
-    let result: any;
+    let result: AccountDto | undefined;
     if (!isAddingNew && selectedAccount?.id) {
       result = await api.updateAccount(selectedAccount.id, payload);
       toast.success(m.finance_ui_account_update_success());
@@ -256,10 +277,10 @@ async function handleSaveAccount() {
       result = await api.createAccount(payload);
       toast.success(m.finance_ui_account_save_success());
     }
-    await loadData();
+    await invalidateAccounts();
 
     if (result && result.id) {
-      handleSelectAccount(result as any);
+      handleSelectAccount(result);
     }
   } catch (err: any) {
     console.error("Failed to save account:", err);
@@ -288,8 +309,8 @@ async function handleDeleteAccount() {
   try {
     await api.deleteAccount(selectedAccount.id);
     toast.success(m.finance_ui_account_delete_success());
-    selectedAccount = null;
-    await loadData();
+    await invalidateAccounts();
+    selectedAccountId = null;
   } catch (err: any) {
     console.error("Failed to delete account:", err);
     toast.error(err?.message || m.finance_ui_account_delete_failed());
@@ -462,7 +483,7 @@ function exportAccountsCsv() {
 
       <div class="flex items-center gap-2">
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
-          {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
+          {#if isRefreshing}<LoadingIndicator size={14} />{:else}<Refresh size={14} />{/if}
         </Button>
 
         <Button variant="ghost" size="icon-sm" onclick={exportAccountsCsv} class="text-muted-foreground">
@@ -472,7 +493,66 @@ function exportAccountsCsv() {
     </header>
 
     <!-- Content Workspace -->
-    <div class="flex min-h-0 flex-1 overflow-hidden">
+    {#if isLoading}
+      <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-12" aria-hidden="true">
+        <div class="flex min-h-0 flex-col gap-3 rounded-xl border border-border/40 bg-card p-3 lg:col-span-5">
+          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+            <Skeleton class="h-8 w-40 rounded-md" />
+            <Skeleton class="h-8 w-20 rounded-md" />
+          </div>
+          <div class="flex flex-col gap-4 p-1">
+            {#each { length: 10 } as _, index (index)}
+              <div class="flex items-center gap-2">
+                <Skeleton class="h-3.5 w-3.5 rounded-sm" />
+                <Skeleton class="h-3.5 w-12 rounded" />
+                <Skeleton class="h-3.5 flex-1 rounded" />
+              </div>
+            {/each}
+          </div>
+        </div>
+
+        <div class="flex min-h-0 flex-col rounded-xl border border-border/50 bg-card lg:col-span-7">
+          <div class="flex h-12 items-center justify-between border-b border-border/40 px-4">
+            <Skeleton class="h-4 w-36" />
+            <Skeleton class="h-5 w-16 rounded" />
+          </div>
+          <div class="grid flex-1 content-start grid-cols-1 gap-5 p-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-2 sm:col-span-2">
+              <Skeleton class="h-3.5 w-24" />
+              <Skeleton class="h-10 w-full rounded-md" />
+            </div>
+            {#each { length: 6 } as _, index (index)}
+              <div class="flex flex-col gap-2">
+                <Skeleton class="h-3.5 w-24" />
+                <Skeleton class="h-9 w-full rounded-md" />
+              </div>
+            {/each}
+          </div>
+          <div class="flex justify-end gap-2 border-t border-border/40 bg-muted/20 p-3">
+            <Skeleton class="h-8 w-20 rounded-md" />
+            <Skeleton class="h-8 w-24 rounded-md" />
+          </div>
+        </div>
+      </div>
+    {:else if accountsQuery.isError && !accountsQuery.data}
+      <div class="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-card">
+        <div class="flex flex-col items-center gap-3 text-center">
+          <p class="text-sm text-muted-foreground">{m.finance_ui_accounts_load_failed()}</p>
+          <Button variant="outline" size="sm" onclick={loadData}>
+            {m.common_retry()}
+          </Button>
+        </div>
+      </div>
+    {:else}
+      {#if accountsQuery.isError || currenciesQuery.isError}
+        <div class="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive" role="alert">
+          <span>{m.finance_ui_accounts_load_failed()}</span>
+          <Button variant="ghost" size="sm" class="h-7" onclick={loadData}>
+            {m.common_retry()}
+          </Button>
+        </div>
+      {/if}
+      <div class="flex min-h-0 flex-1 overflow-hidden">
       {#if viewMode === "tree"}
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- Responsive Split-View Layout (Tree first, Form second)       -->
@@ -777,7 +857,7 @@ function exportAccountsCsv() {
                 fields={accountFilterFields}
               />
               <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
-                {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
+                {#if isRefreshing}<LoadingIndicator size={14} />{:else}<Refresh size={14} />{/if}
               </Button>
             </div>
           </div>
@@ -798,6 +878,7 @@ function exportAccountsCsv() {
           </div>
         </div>
       {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 </div>

@@ -2936,7 +2936,7 @@ export class RemoteClient implements OrbisApiClient {
 
   async databaseGetSettings(): Promise<DatabaseSettingsDto> {
     return {
-      auto_backup_enabled: false,
+      auto_backup_enabled: true,
       auto_backup_interval_hours: 24,
       max_backup_files: 10,
       integrity_check_on_startup: true,

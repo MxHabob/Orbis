@@ -1051,6 +1051,7 @@ pub async fn list_payments(
         enrollment_id: q.enrollment_id,
         fee_id: q.fee_id,
         org_unit_id: q.org_unit_id,
+        currency_code: q.currency_code,
         method,
         from_date: q
             .from_date
