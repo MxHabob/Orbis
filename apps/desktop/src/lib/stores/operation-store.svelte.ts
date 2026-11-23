@@ -1,3 +1,5 @@
+import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
+
 export type OperationStatus =
   | "running"
   | "completed"
@@ -25,7 +27,9 @@ function readOperations(): AppOperation[] {
       window.localStorage.getItem(STORAGE_KEY) ?? "[]",
     ) as AppOperation[];
     return parsed
-      .filter((item) => item.kind === "bulk-import")
+      .filter(
+        (item) => item.kind === "bulk-import" && item.status !== "completed",
+      )
       .map((item) =>
         item.status === "running"
           ? { ...item, status: "interrupted" as const }
@@ -38,6 +42,7 @@ function readOperations(): AppOperation[] {
 
 class OperationStore {
   operations = $state<AppOperation[]>(readOperations());
+  results = $state<Record<string, BulkCommitResult>>({});
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -58,45 +63,16 @@ class OperationStore {
       updatedAt: Date.now(),
     };
     this.operations = [operation, ...this.operations].slice(0, 5);
+    const retainedIds = new Set(this.operations.map((item) => item.id));
+    for (const id of Object.keys(this.results)) {
+      if (!retainedIds.has(id)) delete this.results[id];
+    }
     this.persist();
     return operation;
   }
 
-  update(
-    id: string,
-    progress: {
-      processedRows: number;
-      committedRows: number;
-      failedRows: number;
-      totalRows: number;
-      isFinished: boolean;
-      hasErrors: boolean;
-    },
-  ) {
-    this.operations = this.operations.map((operation) =>
-      operation.id === id
-        ? {
-            ...operation,
-            status: progress.isFinished
-              ? progress.hasErrors
-                ? ("failed" as const)
-                : ("completed" as const)
-              : ("running" as const),
-            processed: progress.processedRows,
-            total: progress.totalRows,
-            committed: progress.committedRows,
-            failed: progress.failedRows,
-            updatedAt: Date.now(),
-          }
-        : operation,
-    );
-    this.persist();
-  }
-
-  finish(
-    id: string,
-    result: { committedCount: number; failedCount: number },
-  ) {
+  finish(id: string, result: BulkCommitResult) {
+    this.results[id] = result;
     this.operations = this.operations.map((operation) =>
       operation.id === id
         ? {
@@ -105,7 +81,8 @@ class OperationStore {
               result.failedCount > 0
                 ? ("failed" as const)
                 : ("completed" as const),
-            processed: operation.total,
+            processed: result.totalRows,
+            total: result.totalRows,
             committed: result.committedCount,
             failed: result.failedCount,
             updatedAt: Date.now(),
@@ -113,9 +90,6 @@ class OperationStore {
         : operation,
     );
     this.persist();
-    if (typeof window !== "undefined") {
-      window.setTimeout(() => this.dismiss(id), 8000);
-    }
   }
 
   fail(id: string) {
@@ -130,21 +104,28 @@ class OperationStore {
         : operation,
     );
     this.persist();
-    if (typeof window !== "undefined") {
-      window.setTimeout(() => this.dismiss(id), 12000);
-    }
   }
 
   dismiss(id: string) {
     this.operations = this.operations.filter(
       (operation) => operation.id !== id,
     );
+    delete this.results[id];
     this.persist();
+  }
+
+  resultFor(id: string): BulkCommitResult | null {
+    return this.results[id] ?? null;
   }
 
   private persist() {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.operations));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        this.operations.filter((operation) => operation.status !== "completed"),
+      ),
+    );
   }
 }
 

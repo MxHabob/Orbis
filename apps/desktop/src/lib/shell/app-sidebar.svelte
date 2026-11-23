@@ -31,7 +31,6 @@ import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
 import OnboardingPopover from "$lib/features/onboarding-wizard/onboarding-popover.svelte";
-import SystemClock from "./system-clock.svelte";
 
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
@@ -162,7 +161,6 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<AutomationStatusPopover {orgId} />
         <MoreActionsDropdown orgName={orgNameDisplay} />
 			</div>
-      <SystemClock />
 			<UserSidebarMenu {orgId} />
 		</div>
 	</div>

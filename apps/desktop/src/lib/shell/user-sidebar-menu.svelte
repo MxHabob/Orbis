@@ -17,11 +17,9 @@ import {
 } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { authStore, effectiveContext } from "$lib/stores";
-import { api } from "$lib/api/client";
+import { authStore } from "$lib/stores";
 import { l } from "$lib/core/i18n/locale";
 import { resolveEntityDocumentUrl } from "$lib/features/documents/queries";
-import { onMount } from "svelte";
 
 let {
   orgId,
@@ -29,9 +27,6 @@ let {
   orgId: string;
 } = $props();
 
-let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>(
-  [],
-);
 let resolvedAvatarUrl = $state<string | undefined>();
 
 $effect(() => {
@@ -59,35 +54,12 @@ $effect(() => {
   };
 });
 
-onMount(() => {
-  api
-    .listOrgUnits()
-    .then((units) => {
-      branches = units
-        .filter((unit) => unit.is_active && unit.unit_type === "branch")
-        .map((unit) => ({
-          id: unit.id,
-          name: unit.name,
-          name_ar: unit.name_ar,
-        }));
-    })
-    .catch((error: unknown) => {
-      console.error("Failed to load organization branches:", error);
-    });
-});
-
 const displayName = $derived(
   l(authStore.user?.full_name_ar, authStore.user?.full_name ?? "") ?? "",
 );
 const userInitials = $derived(displayName.trim().charAt(0).toUpperCase());
 
 const displayEmail = $derived(authStore.user?.email ?? "");
-
-const activeBranchName = $derived.by(() => {
-  if (!effectiveContext.activeOrgUnitId) return m.shared_ui_all_branches();
-  const found = branches.find((b) => b.id === effectiveContext.activeOrgUnitId);
-  return found ? l(found.name_ar, found.name) : m.shared_ui_selected_branch();
-});
 
 const userRoleDisplay = $derived(authStore.user?.roles?.[0] ?? "");
 
@@ -122,9 +94,6 @@ async function handleLogout() {
         </TooltipTrigger>
         <TooltipContent side="inline-end" sideOffset={10} class="flex flex-col gap-0.5 text-xs">
           <div class="font-bold">{displayName}</div>
-          <div class="text-[10px] text-muted-foreground flex items-center gap-1">
-            <span class="opacity-80">🏢</span> {activeBranchName}
-          </div>
         </TooltipContent>
       </Tooltip>
     </div>
@@ -152,10 +121,6 @@ async function handleLogout() {
                 {userRoleDisplay}
               </span>
             {/if}
-            <span class="text-[9px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded font-medium flex items-center gap-1">
-              <span>🏢</span>
-              <span class="truncate max-w-[120px]">{activeBranchName}</span>
-            </span>
           </div>
         </div>
       </div>

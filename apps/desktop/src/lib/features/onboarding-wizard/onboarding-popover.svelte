@@ -193,7 +193,7 @@ function handleOpenHub() {
     </div>
 
     <!-- Steps List -->
-    <div class="max-h-[min(20rem,calc(100vh-12rem))] overflow-y-auto scrollbar-hide space-y-1 px-2 py-2">
+    <div class="max-h-[min(20rem,calc(100vh-12rem))] overflow-y-auto scrollbar-hide space-y-0.5 px-2 py-2">
       {#each steps as step (step.id)}
         {@const isCompleted = step.status === "completed"}
         {@const isActive = step.id === nextStep?.id && !isReady}
@@ -204,12 +204,12 @@ function handleOpenHub() {
           size="sm"
           disabled={!step.isAccessible}
           onclick={() => handleNavigate(step)}
-          class="group w-full flex items-start gap-3 rounded-md p-2.5 text-start transition-colors hover:bg-muted/40 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          class="group w-full flex items-center gap-2.5 rounded-md px-2.5 py-2 text-start transition-colors hover:bg-muted/40 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <!-- Status Icon / Check Indicator -->
-          <div class="size-5 shrink-0 flex items-center justify-center mt-0.5">
+          <div class="flex size-5 shrink-0 items-center justify-center">
             {#if isCompleted}
-              <Check size={15} strokeWidth={2.2} class="text-muted-foreground/60 group-hover:text-primary transition-colors" />
+              <Check size={15} strokeWidth={2.2} class="text-emerald-600 transition-colors group-hover:text-primary dark:text-emerald-400" />
             {:else if isActive}
               <span class="size-2 rounded-full bg-primary ring-4 ring-primary/20 animate-pulse"></span>
             {:else}
@@ -222,7 +222,7 @@ function handleOpenHub() {
             <div class="flex items-center justify-between gap-2">
               <span
                 class="text-xs truncate {isCompleted
-                  ? 'line-through text-muted-foreground/60 font-medium'
+                  ? 'text-muted-foreground font-medium'
                   : isActive
                   ? 'text-foreground font-bold'
                   : 'text-muted-foreground/90 font-semibold'}"
@@ -238,13 +238,10 @@ function handleOpenHub() {
               {/if}
             </div>
 
-            {#if step.description}
+            {#if isActive && step.description}
               <p
-                class="text-[11px] leading-relaxed mt-0.5 {isCompleted
-                  ? 'text-muted-foreground/40'
-                  : isActive
-                  ? 'text-muted-foreground'
-                  : 'text-muted-foreground/60'}"
+                class="mt-0.5 truncate text-[11px] leading-4 text-muted-foreground"
+                title={step.description}
               >
                 {step.description}
               </p>

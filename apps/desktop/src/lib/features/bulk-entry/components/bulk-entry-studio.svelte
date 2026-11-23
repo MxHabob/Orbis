@@ -39,9 +39,7 @@ import type {
   BulkPreviewSummary,
   BulkProfileId,
   BulkRowState,
-  ChunkProgress,
 } from "../types";
-import CommitProgressModal from "./commit-progress-modal.svelte";
 import ImpactPreviewModal from "./impact-preview-modal.svelte";
 import ImportResultSummary from "./import-result-summary.svelte";
 import { operationStore } from "$lib/stores";
@@ -89,9 +87,7 @@ let warningCount = $state(0);
 let validCount = $state(0);
 
 let isPreviewModalOpen = $state(false);
-let isProgressModalOpen = $state(false);
 let previewSummary = $state<BulkPreviewSummary<any> | null>(null);
-let commitProgress = $state<ChunkProgress | null>(null);
 let commitResult = $state<BulkCommitResult | null>(null);
 
 let isDraggingFile = $state(false);
@@ -442,7 +438,6 @@ async function handleReviewImpact() {
 async function handleConfirmCommit() {
   if (!refData || rawRows.length === 0) return;
   isPreviewModalOpen = false;
-  isProgressModalOpen = true;
   const operation = operationStore.start(
     getBulkEntryProfileName(currentProfile.id),
     validCount,
@@ -462,15 +457,10 @@ async function handleConfirmCommit() {
             : currentProfile.id === "grades"
               ? 500
               : 100,
-      onProgress: (prog) => {
-        commitProgress = prog;
-        operationStore.update(operation.id, prog);
-      },
     });
 
     operationStore.finish(operation.id, result);
     commitResult = result;
-    isProgressModalOpen = false;
 
     if (result.failedCount === 0 && result.warnings.length === 0) {
       toast.success(
@@ -485,7 +475,6 @@ async function handleConfirmCommit() {
     }
   } catch (err: any) {
     operationStore.fail(operation.id);
-    isProgressModalOpen = false;
     toast.error(
       m.bulk_entry_toast_save_failed({ reason: err.message || String(err) }),
     );
@@ -795,10 +784,4 @@ function handleReset() {
   summary={previewSummary}
   onclose={() => (isPreviewModalOpen = false)}
   onconfirm={handleConfirmCommit}
-/>
-
-<!-- Commit Progress Modal -->
-<CommitProgressModal
-  open={isProgressModalOpen}
-  progress={commitProgress}
 />

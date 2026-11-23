@@ -5,12 +5,19 @@ import type { BulkCommitResult } from "../types";
 
 interface Props {
   result: BulkCommitResult;
-  onreset: () => void;
+  onreset?: () => void;
   onretryfailed?: () => void;
   onexportreport?: () => void;
+  embedded?: boolean;
 }
 
-let { result, onreset, onretryfailed, onexportreport }: Props = $props();
+let {
+  result,
+  onreset,
+  onretryfailed,
+  onexportreport,
+  embedded = false,
+}: Props = $props();
 
 const licenseBlocked = $derived(result.licenseRejected);
 const groupedErrors = $derived.by(() => {
@@ -32,7 +39,11 @@ const remainingErrorCount = $derived(
 );
 </script>
 
-<section class="mx-auto my-6 w-full max-w-2xl overflow-hidden rounded-xl border border-border/70 bg-background shadow-lg animate-in fade-in zoom-in-95 duration-200">
+<section
+  class="mx-auto w-full overflow-hidden bg-background {embedded
+    ? 'rounded-none border-0 shadow-none'
+    : 'my-6 max-w-2xl rounded-xl border border-border/70 shadow-lg animate-in fade-in zoom-in-95 duration-200'}"
+>
   <div class="flex items-center gap-3 border-b border-border/60 px-5 py-4">
     {#if result.failedCount === 0}
       <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -105,22 +116,28 @@ const remainingErrorCount = $derived(
     </p>
   {/if}
 
-  <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-5 py-3">
-    <Button variant="outline" size="sm" onclick={onreset}>
-      {m.bulk_entry_start_new_import()}
-    </Button>
-    <div class="flex flex-wrap items-center gap-2">
-      {#if onexportreport}
-        <Button variant="secondary" size="sm" onclick={onexportreport}>
-          {m.bulk_entry_export_completion_report()}
+  {#if onreset || onretryfailed || onexportreport}
+    <footer
+      class="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-5 py-3"
+    >
+      {#if onreset}
+        <Button variant="outline" size="sm" onclick={onreset}>
+          {m.bulk_entry_start_new_import()}
         </Button>
       {/if}
+      <div class="flex flex-wrap items-center gap-2">
+        {#if onexportreport}
+          <Button variant="secondary" size="sm" onclick={onexportreport}>
+            {m.bulk_entry_export_completion_report()}
+          </Button>
+        {/if}
 
-      {#if result.failedCount > 0 && onretryfailed && !licenseBlocked}
-        <Button variant="default" size="sm" onclick={onretryfailed}>
-          {m.bulk_entry_retry_failed({ count: result.failedCount })}
-        </Button>
-      {/if}
-    </div>
-  </footer>
+        {#if result.failedCount > 0 && onretryfailed && !licenseBlocked}
+          <Button variant="default" size="sm" onclick={onretryfailed}>
+            {m.bulk_entry_retry_failed({ count: result.failedCount })}
+          </Button>
+        {/if}
+      </div>
+    </footer>
+  {/if}
 </section>

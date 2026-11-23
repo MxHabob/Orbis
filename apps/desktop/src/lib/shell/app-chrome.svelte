@@ -19,8 +19,7 @@ Follows GitButler's "Chrome Shell" pattern:
 -->
 <script lang="ts">
 import AppSidebar from "./app-sidebar.svelte";
-import LicenseBanner from "./license-banner.svelte";
-import JobsBanner from "./jobs-banner.svelte";
+import StatusBar from "./status-bar.svelte";
 import { licenseStore, uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
@@ -119,24 +118,23 @@ function handleKeyDown(e: KeyboardEvent) {
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}
-	<div class="flex flex-1 flex-col overflow-hidden relative">
-		{#if !standalone}
-			<LicenseBanner />
-			<JobsBanner />
-		{/if}
+	<div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
 		<div
-			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
+			class="flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden"
 		>
-			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
+			<div class="flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden">
 				<LicenseFeatureGate feature={requiredFeature} {licenseReady} {orgId}>
 					{@render children()}
 				</LicenseFeatureGate>
 			</div>
 		</div>
+		{#if !standalone}
+			<StatusBar />
+		{/if}
 		{#if !standalone && uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
 				<div
-					class="absolute inset-y-0 inset-e-0 z-50"
+					class="absolute inset-s-0 inset-e-0 top-0 bottom-7 z-50"
 					style:width="{askOrbisWidth + 0.875}rem"
 				>
 					<LicenseFeatureGate
