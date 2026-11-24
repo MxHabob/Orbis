@@ -1154,11 +1154,12 @@ export class RemoteClient implements OrbisApiClient {
           result: normalized,
         });
       },
-      (error) => this.employeeBulkJobs.set(jobId, {
-        ...job,
-        status: "failed",
-        error: error instanceof Error ? error.message : String(error),
-      }),
+      (error) =>
+        this.employeeBulkJobs.set(jobId, {
+          ...job,
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+        }),
     );
     return job;
   }

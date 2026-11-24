@@ -42,9 +42,9 @@ $effect(() => {
   if (!matrixElement) return;
 
   const updateLayout = () => {
-    const rootFontSize = Number.parseFloat(
-      getComputedStyle(document.documentElement).fontSize,
-    ) || 16;
+    const rootFontSize =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
     isNarrow = matrixElement!.clientWidth < 700 * (rootFontSize / 16);
   };
 

@@ -123,20 +123,22 @@ const availableCurrencies = $derived([
         .filter(
           (currency) =>
             !currencies.some(
-              (option) =>
-                option.code.toUpperCase() === currency.toUpperCase(),
+              (option) => option.code.toUpperCase() === currency.toUpperCase(),
             ),
-          ),
+        ),
     ),
-  ).map((currency) => ({
-    code: currency,
-    name: currency,
-    name_ar: null,
-    symbol: currency,
-    symbol_position: "after",
-    decimal_places: 2,
-    exchange_rate: "1",
-  } as CurrencyDto)),
+  ).map(
+    (currency) =>
+      ({
+        code: currency,
+        name: currency,
+        name_ar: null,
+        symbol: currency,
+        symbol_position: "after",
+        decimal_places: 2,
+        exchange_rate: "1",
+      }) as CurrencyDto,
+  ),
 ]);
 const treasuryAccountsForCurrency = $derived(
   treasuries.filter(
@@ -284,8 +286,7 @@ function handleCurrencyChange(currency: string | undefined) {
   selectedCurrency = currency.toUpperCase();
   const matchingTreasury = treasuries.find(
     (account) =>
-      String(account.currency).toUpperCase() ===
-      String(currency).toUpperCase(),
+      String(account.currency).toUpperCase() === String(currency).toUpperCase(),
   );
   if (matchingTreasury) handleTreasuryChange(String(matchingTreasury.id));
   else {

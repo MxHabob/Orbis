@@ -610,11 +610,14 @@ export const employeeImportProfile: BulkImportProfile<
     }
 
     try {
-      const job = await api.startBulkRegisterEmployeeJob(items, { atomic: false });
+      const job = await api.startBulkRegisterEmployeeJob(items, {
+        atomic: false,
+      });
       const activeOperation = operationStore.operations.find(
         (operation) => operation.status === "running",
       );
-      if (activeOperation) operationStore.setJobId(activeOperation.id, job.id, "employees");
+      if (activeOperation)
+        operationStore.setJobId(activeOperation.id, job.id, "employees");
       let latestJob = job;
       while (latestJob.status === "running") {
         await new Promise((resolve) => window.setTimeout(resolve, 500));

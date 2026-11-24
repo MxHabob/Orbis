@@ -86,30 +86,30 @@ function getLocalDateInputValue(date = new Date()) {
     .slice(0, 10);
 }
 
-const availableCurrencies = $derived(
-  [
-    ...currencies,
-    ...treasuries
-      .map((account) => account.currency)
-      .filter((currency) => Boolean(currency))
-      .filter(
-        (currency) =>
-          !currencies.some(
-            (option) =>
-              option.code.toUpperCase() === currency.toUpperCase(),
-          ),
-      )
-      .map((currency) => ({
-        code: currency,
-        name: currency,
-        name_ar: null,
-        symbol: currency,
-        symbol_position: "after",
-        decimal_places: 2,
-        exchange_rate: "1",
-      } as CurrencyDto)),
-  ],
-);
+const availableCurrencies = $derived([
+  ...currencies,
+  ...treasuries
+    .map((account) => account.currency)
+    .filter((currency) => Boolean(currency))
+    .filter(
+      (currency) =>
+        !currencies.some(
+          (option) => option.code.toUpperCase() === currency.toUpperCase(),
+        ),
+    )
+    .map(
+      (currency) =>
+        ({
+          code: currency,
+          name: currency,
+          name_ar: null,
+          symbol: currency,
+          symbol_position: "after",
+          decimal_places: 2,
+          exchange_rate: "1",
+        }) as CurrencyDto,
+    ),
+]);
 const treasuryAccountsForCurrency = $derived(
   treasuries.filter(
     (account) =>
@@ -163,9 +163,7 @@ async function loadData() {
     treasuries = accountsList.filter(isCashOrBankAccount);
     currencies = currenciesList;
 
-    if (
-      treasuries.length > 0
-    ) {
+    if (treasuries.length > 0) {
       const selectedTreasury = treasuries.find(
         (account) => String(account.id) === String(treasuryAccountId),
       );

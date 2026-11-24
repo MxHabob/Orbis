@@ -19,7 +19,10 @@ import { createprogressionJobsQuery } from "$lib/features/academics/promotion-qu
 import { updateManager } from "$lib/features/system/update-manager.svelte";
 import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
 import type { SolverSetupStatusDto } from "$lib/api/types";
-import type { BulkRegisterJobDto, BulkRegisterEmployeeJobDto } from "$lib/api/types";
+import type {
+  BulkRegisterJobDto,
+  BulkRegisterEmployeeJobDto,
+} from "$lib/api/types";
 import { l } from "$lib/core/i18n/locale";
 import { Progress } from "@orbis/ui/progress";
 import { Button } from "@orbis/ui/button";
@@ -66,7 +69,10 @@ function getErrorMessage(error: unknown) {
 
 function getUpdateErrorMessage(error: unknown) {
   const message = getErrorMessage(error).toLowerCase();
-  if (message.includes("no internet connection") || message.includes("offline")) {
+  if (
+    message.includes("no internet connection") ||
+    message.includes("offline")
+  ) {
     return m.ui_update_offline();
   }
   if (
@@ -123,10 +129,7 @@ const isLicenseUrgent = $derived(
 const shouldShowLicenseAlert = $derived.by(() => {
   if (!licenseStore.licenseState) return false;
   if (isLicenseUrgent) return true;
-  if (
-    licenseStore.state === "trial" &&
-    licenseStore.trialDaysRemaining <= 7
-  ) {
+  if (licenseStore.state === "trial" && licenseStore.trialDaysRemaining <= 7) {
     return true;
   }
   return (
@@ -220,8 +223,7 @@ const showUpdate = $derived.by(() => {
   return isVisible && dismissedUpdateVersion !== latestVersion;
 });
 const showSolverSetup = $derived(
-  !!solverSetup &&
-    ["preparing", "failed", "ready"].includes(solverSetup.state),
+  !!solverSetup && ["preparing", "failed", "ready"].includes(solverSetup.state),
 );
 const hasOperations = $derived(
   visibleOperations.length > 0 ||
@@ -238,25 +240,26 @@ const hasAttention = $derived(
 const operationLabel = $derived(
   hasAttention
     ? m.ui_shell_status_needs_attention()
-    : activeOperation?.title ?? visibleOperations[0]?.title ??
-      visiblePromotionJob?.name ??
-      (showUpdate
-        ? updateManager.isReadyToRestart
-          ? m.ui_download_manager_update_ready()
-          : updateManager.isDownloading
-            ? m.ui_download_manager_downloading_update()
-            : updateManager.isApplying
-              ? m.ui_download_manager_restart_to_update()
-              : m.shared_ui_update_available({
-                  version: updateManager.updateResult?.latest_version ?? "",
-                })
-        : showSolverSetup
-          ? solverSetup?.state === "preparing"
-            ? m.ai_ui_solver_download_in_progress()
-            : solverSetup?.state === "failed"
-              ? m.ai_ui_solver_download_failed()
-              : m.ai_ui_solver_download_ready()
-          : m.ui_shell_status_no_operations()),
+    : (activeOperation?.title ??
+        visibleOperations[0]?.title ??
+        visiblePromotionJob?.name ??
+        (showUpdate
+          ? updateManager.isReadyToRestart
+            ? m.ui_download_manager_update_ready()
+            : updateManager.isDownloading
+              ? m.ui_download_manager_downloading_update()
+              : updateManager.isApplying
+                ? m.ui_download_manager_restart_to_update()
+                : m.shared_ui_update_available({
+                    version: updateManager.updateResult?.latest_version ?? "",
+                  })
+          : showSolverSetup
+            ? solverSetup?.state === "preparing"
+              ? m.ai_ui_solver_download_in_progress()
+              : solverSetup?.state === "failed"
+                ? m.ai_ui_solver_download_failed()
+                : m.ai_ui_solver_download_ready()
+            : m.ui_shell_status_no_operations())),
 );
 
 function getOperationStatusLabel(status: string) {
@@ -291,22 +294,21 @@ onMount(() => {
         operation.jobProfile === "employees"
           ? api.getBulkRegisterEmployeeJob(operation.jobId)
           : api.getBulkRegisterJob(operation.jobId);
-      void jobRequest.then((job) => {
-        if (!job) return;
-        if (operation.jobProfile === "employees") {
-          operationStore.syncEmployeeJob(
-            operation.id,
-            job as BulkRegisterEmployeeJobDto,
-          );
-        } else {
-          operationStore.syncJob(
-            operation.id,
-            job as BulkRegisterJobDto,
-          );
-        }
-      }).catch((error) => {
-        console.error("Failed to sync bulk import job", error);
-      });
+      void jobRequest
+        .then((job) => {
+          if (!job) return;
+          if (operation.jobProfile === "employees") {
+            operationStore.syncEmployeeJob(
+              operation.id,
+              job as BulkRegisterEmployeeJobDto,
+            );
+          } else {
+            operationStore.syncJob(operation.id, job as BulkRegisterJobDto);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to sync bulk import job", error);
+        });
     }
   }, 750);
   if (!isDesktopApp) {

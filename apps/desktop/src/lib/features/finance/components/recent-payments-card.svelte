@@ -32,7 +32,11 @@ function getPaymentMethodLabel(method: string): string {
   const normalized = method.toLowerCase().replace(/[\s-]/g, "_");
   if (normalized === "cash") return m.finance_pos_cash();
   if (normalized === "check") return m.finance_payments_check();
-  if (normalized === "bank" || normalized === "bank_transfer" || normalized === "transfer") {
+  if (
+    normalized === "bank" ||
+    normalized === "bank_transfer" ||
+    normalized === "transfer"
+  ) {
     return m.finance_payment_method_transfer();
   }
   return method;

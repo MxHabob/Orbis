@@ -63,30 +63,30 @@ function updateDate(field: "fromDate" | "toDate", date: string) {
 </script>
 
 <Popover bind:open={isOpen}>
-  <div class="inline-flex max-w-full items-center">
+  <div class="flex max-w-full min-w-0 items-center">
     <PopoverTrigger>
       {#snippet child({ props })}
         <Button
           {...props}
           variant="outline"
           size="sm"
-          class="h-8 max-w-32 gap-1.5 rounded-s-md rounded-e-none border-e-0 px-2 text-xs shadow-xs"
+          class="h-8 w-[7.25rem] max-w-[7.25rem] min-w-0 gap-1.5 rounded-s-md rounded-e-none border-e-0 px-2 text-xs shadow-xs"
           aria-label={m.finance_ui_filter_by_date()}
           aria-haspopup="dialog"
         >
           <Calendar size={13} class="shrink-0 text-muted-foreground" />
-          <span class="truncate">{selectedLabel}</span>
+          <span class="min-w-0 flex-1 truncate text-start" title={selectedLabel}>{selectedLabel}</span>
           <ChevronDown size={13} class="shrink-0 text-muted-foreground" />
         </Button>
       {/snippet}
     </PopoverTrigger>
-    <div class="inline-flex h-8 min-w-0 items-center rounded-e-md border border-input bg-background shadow-xs">
+    <div class="flex h-8 min-w-0 max-w-full items-center rounded-e-md border border-input bg-background shadow-xs">
       {#if value.preset === "today"}
         <Input
           type="date"
           value={value.fromDate}
           aria-label={m.finance_ui_date()}
-          class="h-7 w-32 border-0 bg-transparent px-1.5 text-xs shadow-none focus-visible:ring-0"
+          class="h-7 w-[8.5rem] max-w-full border-0 bg-transparent px-1.5 text-xs shadow-none focus-visible:ring-0"
           onchange={(event) => updateSingleDay(event.currentTarget.value)}
         />
       {:else if value.preset === "this_month"}
@@ -94,7 +94,7 @@ function updateDate(field: "fromDate" | "toDate", date: string) {
           type="month"
           value={value.fromDate.slice(0, 7)}
           aria-label={m.finance_ui_this_month()}
-          class="h-7 w-32 border-0 bg-transparent px-1.5 text-xs shadow-none focus-visible:ring-0"
+          class="h-7 w-[8.5rem] max-w-full border-0 bg-transparent px-1.5 text-xs shadow-none focus-visible:ring-0"
           onchange={(event) => updateMonth(event.currentTarget.value)}
         />
       {:else if value.preset === "year_to_date"}
@@ -103,17 +103,17 @@ function updateDate(field: "fromDate" | "toDate", date: string) {
           value={value.toDate}
           min={value.fromDate}
           aria-label={m.finance_ui_year_to_date()}
-          class="h-7 w-32 border-0 bg-transparent px-1.5 text-xs shadow-none focus-visible:ring-0"
+          class="h-7 w-[8.5rem] max-w-full border-0 bg-transparent px-1.5 text-xs shadow-none focus-visible:ring-0"
           onchange={(event) => updateYearToDate(event.currentTarget.value)}
         />
       {:else}
-        <div class="flex min-w-0 items-center gap-1 px-1.5">
+        <div class="flex min-w-0 flex-wrap items-center gap-1 px-1.5">
           <Input
             type="date"
             value={value.fromDate}
             max={value.toDate || undefined}
             aria-label={m.finance_ui_date_from()}
-            class="h-7 w-28 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
+            class="h-7 w-28 max-w-full border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
             onchange={(event) => updateDate("fromDate", event.currentTarget.value)}
           />
           <span class="shrink-0 text-muted-foreground" aria-hidden="true">–</span>
@@ -122,7 +122,7 @@ function updateDate(field: "fromDate" | "toDate", date: string) {
             value={value.toDate}
             min={value.fromDate || undefined}
             aria-label={m.finance_ui_to_date()}
-            class="h-7 w-28 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
+            class="h-7 w-28 max-w-full border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0"
             onchange={(event) => updateDate("toDate", event.currentTarget.value)}
           />
         </div>

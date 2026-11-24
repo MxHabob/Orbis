@@ -239,7 +239,9 @@ const shortProviderName = $derived.by(() => {
   if (currentApp.id === "groq") return "Groq";
   if (currentApp.id === "mistral") return "Mistral";
   if (currentApp.id === "ollama") return "Ollama";
-  return String(l(currentApp.name_ar, currentApp.name) ?? currentApp.name).split(" ")[0];
+  return String(
+    l(currentApp.name_ar, currentApp.name) ?? currentApp.name,
+  ).split(" ")[0];
 });
 
 const shortModelName = $derived.by(() => {

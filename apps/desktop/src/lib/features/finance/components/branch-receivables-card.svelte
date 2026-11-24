@@ -1,11 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@orbis/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import { formatCurrency } from "$lib/core/i18n";
 
 type BranchReceivable = {

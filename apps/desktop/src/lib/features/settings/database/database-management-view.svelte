@@ -101,7 +101,6 @@ function syncFormValues() {
       connSslMode = controller.config.direct.ssl_mode || "prefer";
     }
   }
-
 }
 
 function formatDuration(durationMs: number): string {

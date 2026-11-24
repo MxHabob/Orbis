@@ -151,7 +151,10 @@ function handleGridAction(event: GridActionEvent) {
       }
     } else if (event.row?.id) {
       const id = String(event.row.id);
-      if (event.selected === false || (event.selected === undefined && next.has(id))) {
+      if (
+        event.selected === false ||
+        (event.selected === undefined && next.has(id))
+      ) {
         next.delete(id);
       } else {
         next.add(id);
@@ -175,11 +178,12 @@ const selectedStudentLabels = $derived(
     .filter((student) =>
       selectedStudentIds.has(student.student?.id ?? student.id),
     )
-    .map((student) =>
-      student.person?.full_name_ar ||
-      student.person?.full_name ||
-      student.student?.student_number ||
-      m.common_word_student(),
+    .map(
+      (student) =>
+        student.person?.full_name_ar ||
+        student.person?.full_name ||
+        student.student?.student_number ||
+        m.common_word_student(),
     ),
 );
 

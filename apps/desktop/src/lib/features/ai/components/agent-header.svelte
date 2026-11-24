@@ -79,7 +79,9 @@ const displayTitle = $derived.by(() => {
   if (currentApp.id === "anthropic") return "Claude";
   if (currentApp.id === "deepseek") return "DeepSeek";
   if (currentApp.id === "gemini-ai") return "Gemini";
-  return String(l(currentApp.name_ar, currentApp.name) ?? currentApp.name).split(" ")[0];
+  return String(
+    l(currentApp.name_ar, currentApp.name) ?? currentApp.name,
+  ).split(" ")[0];
 });
 </script>
 

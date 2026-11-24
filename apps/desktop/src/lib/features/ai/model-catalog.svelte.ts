@@ -297,7 +297,10 @@ export async function refreshModelCatalog(): Promise<{
           catalog = mergeOpenRouterModels(directCatalog, await response.json());
         }
       } catch (error) {
-        console.warn("The OpenRouter model list could not be refreshed.", error);
+        console.warn(
+          "The OpenRouter model list could not be refreshed.",
+          error,
+        );
       }
 
       if (!catalog || Object.keys(catalog.providers).length === 0) {

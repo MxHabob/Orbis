@@ -69,7 +69,8 @@ function restorePersistedWidth() {
   }
   if (stored) {
     const val = parseFloat(stored);
-    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const valRem = isPixelValue ? val / base : val;
     if (
       !isNaN(valRem) &&
@@ -148,7 +149,8 @@ function onPointerUp(e: PointerEvent) {
     } else {
       targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
     }
-    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     localStorage.setItem(`resizer:${persistId}:px`, String(targetWidth * base));
   }
 }
@@ -156,8 +158,12 @@ function onPointerUp(e: PointerEvent) {
 function onDoubleClick() {
   onWidth?.(defaultValue);
   if (persistId) {
-    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    localStorage.setItem(`resizer:${persistId}:px`, String(defaultValue * base));
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    localStorage.setItem(
+      `resizer:${persistId}:px`,
+      String(defaultValue * base),
+    );
   }
 }
 </script>

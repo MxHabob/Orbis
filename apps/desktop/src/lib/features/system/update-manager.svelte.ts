@@ -190,7 +190,10 @@ class UpdateManager {
 
   private getFriendlyErrorMessage(error: unknown) {
     const message = this.getErrorMessage(error).toLowerCase();
-    if (message.includes("no internet connection") || message.includes("offline")) {
+    if (
+      message.includes("no internet connection") ||
+      message.includes("offline")
+    ) {
       return m.ui_update_offline();
     }
     if (this.isUnavailableUpdaterMessage(message)) {

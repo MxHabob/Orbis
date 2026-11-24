@@ -113,9 +113,7 @@ class OperationStore {
         ? {
             ...operation,
             status:
-              result.failed > 0
-                ? ("failed" as const)
-                : ("completed" as const),
+              result.failed > 0 ? ("failed" as const) : ("completed" as const),
             processed: result.total,
             total: result.total,
             committed: result.succeeded,
@@ -145,7 +143,9 @@ class OperationStore {
 
   setJobId(id: string, jobId: string, profile: BulkProfileId = "students") {
     this.operations = this.operations.map((operation) =>
-      operation.id === id ? { ...operation, jobId, jobProfile: profile } : operation,
+      operation.id === id
+        ? { ...operation, jobId, jobProfile: profile }
+        : operation,
     );
     this.persist();
   }

@@ -64,12 +64,13 @@ async function loadData() {
 
     if (sequence !== loadSequence) return;
 
-    const templatesById = new Map(feeTemplates.map((template) => [template.id, template]));
+    const templatesById = new Map(
+      feeTemplates.map((template) => [template.id, template]),
+    );
     const filteredFees = feesList.filter((fee) => {
       return (
         !selectedCurrency ||
-        templatesById.get(fee.fee_template_id)?.currency ===
-          selectedCurrency
+        templatesById.get(fee.fee_template_id)?.currency === selectedCurrency
       );
     });
     const filteredPayments = paymentsList.filter(

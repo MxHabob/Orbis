@@ -913,9 +913,7 @@ export const studentImportProfile: BulkImportProfile<
       const succeededItems = bulkRes.items.filter(
         (item) => item.success && item.student_id,
       );
-      const failedItems = bulkRes.items.filter(
-        (item) => !item.success,
-      );
+      const failedItems = bulkRes.items.filter((item) => !item.success);
       onProgress?.({
         totalChunks: 1,
         currentChunk: 1,

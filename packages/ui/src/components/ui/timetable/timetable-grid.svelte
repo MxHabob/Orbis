@@ -64,9 +64,9 @@ $effect(() => {
   if (!gridElement) return;
 
   const updateLayout = () => {
-    const rootFontSize = Number.parseFloat(
-      getComputedStyle(document.documentElement).fontSize,
-    ) || 16;
+    const rootFontSize =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
     isNarrow = gridElement!.clientWidth < 700 * (rootFontSize / 16);
   };
 
@@ -83,13 +83,10 @@ $effect(() => {
     return;
   }
 
-  const availableDays = weekdays.map(
-    (day, idx) => Number(day.value ?? day.day ?? idx + 1),
+  const availableDays = weekdays.map((day, idx) =>
+    Number(day.value ?? day.day ?? idx + 1),
   );
-  if (
-    activeAgendaDay === null ||
-    !availableDays.includes(activeAgendaDay)
-  ) {
+  if (activeAgendaDay === null || !availableDays.includes(activeAgendaDay)) {
     activeAgendaDay = availableDays[0];
   }
 });

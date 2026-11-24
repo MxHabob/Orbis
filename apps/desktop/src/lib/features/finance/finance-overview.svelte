@@ -73,7 +73,11 @@ const feeSummaryQuery = createQuery(() => ({
 const feeSummary = $derived(feeSummaryQuery.data ?? []);
 const feeTemplates = $derived(templatesQuery.data ?? []);
 const availableCurrencies = $derived(
-  [...new Set(feeTemplates.map((template) => template.currency).filter(Boolean))].sort(),
+  [
+    ...new Set(
+      feeTemplates.map((template) => template.currency).filter(Boolean),
+    ),
+  ].sort(),
 );
 const activeCurrency = $derived(
   availableCurrencies.includes(selectedCurrency)
@@ -83,20 +87,23 @@ const activeCurrency = $derived(
 const hasActiveFilters = $derived(
   dateRange.preset !== "year_to_date" ||
     selectedBranchId !== "all" ||
-    (selectedCurrency !== "" &&
-      selectedCurrency !== availableCurrencies[0]),
+    (selectedCurrency !== "" && selectedCurrency !== availableCurrencies[0]),
 );
 const selectedSummary = $derived(
   feeSummary.find((item) => item.currency === activeCurrency),
 );
-const feesQuery = createStudentFeesQuery(() => orgId, () => ({
-  from_date: dateRange.fromDate,
-  to_date: dateRange.toDate,
-  currency_code: activeCurrency || undefined,
-  is_overdue: true,
-  sort_by: "balance_due",
-  sort_dir: "desc",
-}), () => !!activeCurrency);
+const feesQuery = createStudentFeesQuery(
+  () => orgId,
+  () => ({
+    from_date: dateRange.fromDate,
+    to_date: dateRange.toDate,
+    currency_code: activeCurrency || undefined,
+    is_overdue: true,
+    sort_by: "balance_due",
+    sort_dir: "desc",
+  }),
+  () => !!activeCurrency,
+);
 const paymentsFilter = $derived({
   ...dateFilter,
   currency_code: activeCurrency || undefined,
@@ -107,10 +114,7 @@ const paymentsFilter = $derived({
 });
 const paymentsQuery = createQuery(() => ({
   queryKey: queryKeys.finance.payments(orgId, paymentsFilter),
-  queryFn: async () =>
-    (
-      await api.listPaymentsPaginated(paymentsFilter)
-    ).items,
+  queryFn: async () => (await api.listPaymentsPaginated(paymentsFilter)).items,
   enabled: !!orgId && !!activeCurrency,
   staleTime: 2 * 60 * 1000,
 }));
@@ -133,9 +137,11 @@ const branchUnits = $derived(
 const selectedBranchName = $derived(
   selectedBranchId === "all"
     ? m.finance_overview_current_branch()
-    : (branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name_ar ||
-        branchUnits.find((unit) => String(unit.id) === selectedBranchId)?.name ||
-        m.common_header_org_branch()),
+    : branchUnits.find((unit) => String(unit.id) === selectedBranchId)
+        ?.name_ar ||
+        branchUnits.find((unit) => String(unit.id) === selectedBranchId)
+          ?.name ||
+        m.common_header_org_branch(),
 );
 const enrollmentsById = $derived(
   new Map(enrollments.map((enrollment) => [enrollment.id, enrollment])),
@@ -146,13 +152,13 @@ const classesById = $derived(
 
 const isLoading = $derived(
   feesQuery.isLoading ||
-  orgUnitsQuery.isLoading ||
+    orgUnitsQuery.isLoading ||
     feeSummaryQuery.isLoading ||
     paymentsQuery.isLoading ||
     treasuriesQuery.isLoading ||
     enrollmentsQuery.isLoading ||
-  classesQuery.isLoading ||
-  templatesQuery.isLoading,
+    classesQuery.isLoading ||
+    templatesQuery.isLoading,
 );
 
 const error = $derived(
@@ -188,17 +194,11 @@ function formatSelectedAmount(value: number): string {
 }
 
 // ── Financial KPI Computations ───────────────────────────────────────────
-const totalFees = $derived(
-  toAmount(selectedSummary?.due),
-);
+const totalFees = $derived(toAmount(selectedSummary?.due));
 
-const totalPaid = $derived(
-  toAmount(selectedSummary?.paid),
-);
+const totalPaid = $derived(toAmount(selectedSummary?.paid));
 
-const totalBalance = $derived(
-  toAmount(selectedSummary?.balance),
-);
+const totalBalance = $derived(toAmount(selectedSummary?.balance));
 
 const collectionRate = $derived(
   totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0,
@@ -370,22 +370,19 @@ const lateStudents = $derived(
 const recentPayments = $derived(
   payments
     .filter(
-      (payment) =>
-        !activeCurrency || payment.currency_code === activeCurrency,
+      (payment) => !activeCurrency || payment.currency_code === activeCurrency,
     )
     .slice(0, 5)
     .map((payment) => {
-    const enrollment = payment.enrollment_id
-      ? enrollmentsById.get(payment.enrollment_id)
-      : undefined;
-    return {
-      ...payment,
-      studentName:
-        payment.payer_name?.trim() ||
-        enrollment?.student_number ||
-        "—",
-      receiptNumber: payment.receipt_number || payment.id.slice(0, 8),
-    };
+      const enrollment = payment.enrollment_id
+        ? enrollmentsById.get(payment.enrollment_id)
+        : undefined;
+      return {
+        ...payment,
+        studentName:
+          payment.payer_name?.trim() || enrollment?.student_number || "—",
+        receiptNumber: payment.receipt_number || payment.id.slice(0, 8),
+      };
     }),
 );
 const visibleTreasuries = $derived(
@@ -406,14 +403,14 @@ const visibleTreasuries = $derived(
     />
   {:else}
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex w-full min-w-0 flex-wrap items-center gap-2">
         <Select type="single" bind:value={selectedBranchId}>
           <SelectTrigger
-            class="h-9 min-w-44 gap-2 bg-background px-3 text-xs"
+            class="h-9 min-w-0 max-w-full gap-2 bg-background px-3 text-xs sm:min-w-44"
             aria-label={m.common_header_org_branch()}
           >
-            <span class="text-muted-foreground">{m.common_header_org_branch()}</span>
-            <span class="max-w-36 truncate font-medium text-foreground">{selectedBranchName}</span>
+            <span class="shrink-0 text-[11px] text-muted-foreground sm:text-xs">{m.common_header_org_branch()}</span>
+            <span class="min-w-0 truncate font-medium text-foreground">{selectedBranchName}</span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.finance_overview_current_branch()}</SelectItem>
@@ -433,11 +430,11 @@ const visibleTreasuries = $derived(
             }}
           >
             <SelectTrigger
-              class="h-9 min-w-28 gap-2 bg-background px-3 text-xs"
+              class="h-9 min-w-0 max-w-full gap-2 bg-background px-3 text-[11px] sm:min-w-28 sm:text-xs"
               aria-label={m.finance_ui_currency()}
             >
-              <span class="text-muted-foreground">{m.finance_ui_currency()}</span>
-              <span class="font-medium text-foreground">{activeCurrency}</span>
+              <span class="shrink-0 text-muted-foreground">{m.finance_ui_currency()}</span>
+              <span class="truncate font-medium text-foreground">{activeCurrency}</span>
             </SelectTrigger>
             <SelectContent>
               {#each availableCurrencies as currency (currency)}

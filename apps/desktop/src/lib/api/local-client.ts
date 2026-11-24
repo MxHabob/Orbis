@@ -625,12 +625,8 @@ export class LocalClient implements OrbisApiClient {
       }),
     );
   }
-  async getBulkRegisterJob(
-    jobId: string,
-  ): Promise<BulkRegisterJobDto | null> {
-    return unwrap(
-      await invoke("student_get_bulk_register_job", { jobId }),
-    );
+  async getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null> {
+    return unwrap(await invoke("student_get_bulk_register_job", { jobId }));
   }
   async bulkTransferStudents(
     items: BulkTransferStudentCommandItem[],
@@ -700,11 +696,13 @@ export class LocalClient implements OrbisApiClient {
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
   ): Promise<BulkRegisterEmployeeJobDto> {
-    return unwrap(await invoke("employee_start_bulk_register_job", {
-      items,
-      atomic: options?.atomic ?? true,
-      dryRun: options?.dryRun ?? false,
-    }));
+    return unwrap(
+      await invoke("employee_start_bulk_register_job", {
+        items,
+        atomic: options?.atomic ?? true,
+        dryRun: options?.dryRun ?? false,
+      }),
+    );
   }
   async getBulkRegisterEmployeeJob(
     jobId: string,

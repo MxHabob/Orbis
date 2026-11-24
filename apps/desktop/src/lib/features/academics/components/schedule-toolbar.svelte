@@ -99,9 +99,9 @@ $effect(() => {
   if (!toolbarElement) return;
 
   const updateLayout = () => {
-    const rootFontSize = Number.parseFloat(
-      getComputedStyle(document.documentElement).fontSize,
-    ) || 16;
+    const rootFontSize =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
     isNarrow = toolbarElement!.clientWidth < 820 * (rootFontSize / 16);
   };
 
