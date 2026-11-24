@@ -329,6 +329,14 @@ pub struct DuplicateCheckRequest {
     pub national_id: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub full_name: Option<String>,
+    pub first_name: Option<String>,
+    pub middle_name: Option<String>,
+    pub last_name: Option<String>,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
+    pub birth_date: Option<NaiveDate>,
     pub exclude_student_id: Option<Uuid>,
 }
 
@@ -340,6 +348,10 @@ pub struct DuplicateMatchDto {
     pub matched_person_name: String,
     pub student_id: Option<Uuid>,
     pub student_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -1097,6 +1109,14 @@ pub async fn check_duplicate(
         national_id: p.national_id,
         phone: p.phone,
         email: p.email,
+        full_name: p.full_name,
+        first_name: p.first_name,
+        middle_name: p.middle_name,
+        last_name: p.last_name,
+        first_name_ar: p.first_name_ar,
+        middle_name_ar: p.middle_name_ar,
+        last_name_ar: p.last_name_ar,
+        birth_date: p.birth_date,
         exclude_student_id: p.exclude_student_id,
     };
 
@@ -1114,6 +1134,8 @@ pub async fn check_duplicate(
             matched_person_name: m.matched_person_name,
             student_id: m.student_id,
             student_number: m.student_number,
+            reason: m.reason,
+            confidence: m.confidence,
         })
         .collect();
 

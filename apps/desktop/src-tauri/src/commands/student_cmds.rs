@@ -886,6 +886,7 @@ pub async fn student_check_duplicate(
         phone: request.phone,
         email: request.email,
         exclude_student_id,
+        ..Default::default()
     };
 
     let res = state

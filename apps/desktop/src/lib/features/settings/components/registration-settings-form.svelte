@@ -256,6 +256,10 @@ function parseOrgRegistration(rawOrg: any) {
       pol.allow_duplicate_national_id !== undefined
         ? Boolean(pol.allow_duplicate_national_id)
         : false,
+    preventDuplicateFullName:
+      pol.prevent_duplicate_full_name !== undefined
+        ? Boolean(pol.prevent_duplicate_full_name)
+        : true,
     autoAssignFees:
       pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
     maxClassCapacity: enr.max_class_size_default
@@ -313,6 +317,7 @@ let siblingPriorityEnabled = $state<boolean>(parsed.siblingPriorityEnabled);
 let allowLateEnrollment = $state<boolean>(parsed.allowLateEnrollment);
 let allowNoGuardian = $state<boolean>(parsed.allowNoGuardian);
 let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
+let preventDuplicateFullName = $state<boolean>(parsed.preventDuplicateFullName);
 let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
 let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
 let studentSortField = $state<string>(parsed.studentSortField);
@@ -355,6 +360,7 @@ let initialState = $state({
   allowLateEnrollment: parsed.allowLateEnrollment,
   allowNoGuardian: parsed.allowNoGuardian,
   allowDuplicateNationalId: parsed.allowDuplicateNationalId,
+  preventDuplicateFullName: parsed.preventDuplicateFullName,
   autoAssignFees: parsed.autoAssignFees,
   maxClassCapacity: parsed.maxClassCapacity,
   studentSortField: parsed.studentSortField,
@@ -380,6 +386,7 @@ function syncInitialState() {
     allowLateEnrollment,
     allowNoGuardian,
     allowDuplicateNationalId,
+    preventDuplicateFullName,
     autoAssignFees,
     maxClassCapacity,
     studentSortField,
@@ -406,6 +413,7 @@ const isDirty = $derived.by(() => {
     allowLateEnrollment !== initialState.allowLateEnrollment ||
     allowNoGuardian !== initialState.allowNoGuardian ||
     allowDuplicateNationalId !== initialState.allowDuplicateNationalId ||
+    preventDuplicateFullName !== initialState.preventDuplicateFullName ||
     autoAssignFees !== initialState.autoAssignFees ||
     maxClassCapacity !== initialState.maxClassCapacity ||
     studentSortField !== initialState.studentSortField ||
@@ -484,6 +492,10 @@ onMount(async () => {
             allowDuplicateNationalId = Boolean(
               a.policy.allow_duplicate_national_id,
             );
+          if (a.policy.prevent_duplicate_full_name !== undefined)
+            preventDuplicateFullName = Boolean(
+              a.policy.prevent_duplicate_full_name,
+            );
           if (a.policy.auto_assign_fees !== undefined)
             autoAssignFees = Boolean(a.policy.auto_assign_fees);
           if (a.policy.max_class_capacity !== undefined)
@@ -531,6 +543,7 @@ function resetToInitial() {
   allowLateEnrollment = initialState.allowLateEnrollment;
   allowNoGuardian = initialState.allowNoGuardian;
   allowDuplicateNationalId = initialState.allowDuplicateNationalId;
+  preventDuplicateFullName = initialState.preventDuplicateFullName;
   autoAssignFees = initialState.autoAssignFees;
   maxClassCapacity = initialState.maxClassCapacity;
   studentSortField = initialState.studentSortField;
@@ -943,6 +956,7 @@ async function handleFormSave() {
         requires_approval: requiresApproval,
         allow_no_guardian: allowNoGuardian,
         allow_duplicate_national_id: allowDuplicateNationalId,
+        prevent_duplicate_full_name: preventDuplicateFullName,
         auto_assign_fees: autoAssignFees,
         max_class_capacity: maxClassCapacity,
         allow_late_enrollment: allowLateEnrollment,
@@ -1175,6 +1189,19 @@ async function handleFormSave() {
               checked={!allowDuplicateNationalId}
               onCheckedChange={(v) => (allowDuplicateNationalId = !v)}
             />
+          </div>
+
+          <!-- Prevent Duplicate Full Name -->
+          <div class="py-2.5 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                منع تكرار الاسم الكامل للطالب (منع تسجيل/استيراد طالب بنفس الاسم داخل المؤسسة)
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                عند التفعيل، يرفض النظام إنشاء سجل طالب جديد إذا تطابق اسمه الكامل مع طالب قائم؛ لتسجيل حالتي توأم أو تشابه حقيقي يجب تمييز الاسم (مثلاً إضافة اسم الأب/الجد) أو مراجعة السجل القائم.
+              </span>
+            </div>
+            <Switch bind:checked={preventDuplicateFullName} />
           </div>
 
           <!-- Auto Assign Tuition Fees -->

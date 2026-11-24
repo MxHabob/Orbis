@@ -464,11 +464,17 @@ pub struct AdmissionPolicyDto {
     pub requires_approval: bool,
     pub allow_no_guardian: bool,
     pub allow_duplicate_national_id: bool,
+    #[serde(default = "default_prevent_duplicate_full_name")]
+    pub prevent_duplicate_full_name: bool,
     pub auto_assign_fees: bool,
     pub max_class_capacity: i32,
     pub allow_late_enrollment: bool,
     pub allow_waitlist: bool,
     pub sibling_priority_enabled: bool,
+}
+
+fn default_prevent_duplicate_full_name() -> bool {
+    true
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
@@ -615,6 +621,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                     requires_approval: s.admission.policy.requires_approval,
                     allow_no_guardian: s.admission.policy.allow_no_guardian,
                     allow_duplicate_national_id: s.admission.policy.allow_duplicate_national_id,
+                    prevent_duplicate_full_name: s.admission.policy.prevent_duplicate_full_name,
                     auto_assign_fees: s.admission.policy.auto_assign_fees,
                     max_class_capacity: s.admission.policy.max_class_capacity,
                     allow_late_enrollment: s.admission.policy.allow_late_enrollment,
@@ -743,6 +750,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                     requires_approval: s.admission.policy.requires_approval,
                     allow_no_guardian: s.admission.policy.allow_no_guardian,
                     allow_duplicate_national_id: s.admission.policy.allow_duplicate_national_id,
+                    prevent_duplicate_full_name: s.admission.policy.prevent_duplicate_full_name,
                     auto_assign_fees: s.admission.policy.auto_assign_fees,
                     max_class_capacity: s.admission.policy.max_class_capacity,
                     allow_late_enrollment: s.admission.policy.allow_late_enrollment,

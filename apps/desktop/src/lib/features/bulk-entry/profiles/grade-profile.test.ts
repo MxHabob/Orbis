@@ -49,6 +49,9 @@ describe("grade import", () => {
         component_code: "written_test",
         score: "18.5",
         max_score: "20",
+        is_absent: false,
+        is_excused: false,
+        is_exempt: false,
         notes: undefined,
       },
     ]);

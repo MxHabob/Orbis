@@ -305,6 +305,29 @@ impl StudentRepository for StudentRepoImpl {
         Ok(model.map(map_student_model_to_domain))
     }
 
+    async fn find_active_details_by_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<StudentDetail>, DomainError> {
+        let pairs = StudentEntity::find()
+            .find_also_related(PersonEntity)
+            .filter(student::Column::OrgId.eq(org_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(pairs
+            .into_iter()
+            .filter_map(|(sm, pm)| {
+                pm.map(|p| StudentDetail {
+                    student: map_student_model_to_domain(sm),
+                    person: map_person_model_to_domain(p),
+                })
+            })
+            .collect())
+    }
+
     async fn save(&self, s: &DomainStudent) -> Result<(), DomainError> {
         let active = student_to_active_model(s);
 

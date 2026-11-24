@@ -43,6 +43,7 @@ interface AdmissionPolicyState {
   allowWaitlist: boolean;
   allowNoGuardian: boolean;
   allowDuplicateNationalId: boolean;
+  preventDuplicateFullName: boolean;
   autoAssignFees: boolean;
   allowLateEnrollment: boolean;
   siblingPriorityEnabled: boolean;
@@ -55,6 +56,7 @@ const defaultAdmissionPolicy: AdmissionPolicyState = {
   allowWaitlist: true,
   allowNoGuardian: false,
   allowDuplicateNationalId: false,
+  preventDuplicateFullName: true,
   autoAssignFees: true,
   allowLateEnrollment: false,
   siblingPriorityEnabled: true,
@@ -137,6 +139,7 @@ export class StudentFormState {
     national_id?: string;
     email?: string;
     phone?: string;
+    full_name?: string;
   }>({});
 
   private duplicateCheckTimers: Record<string, ReturnType<typeof setTimeout>> =
@@ -297,6 +300,9 @@ export class StudentFormState {
       allowDuplicateNationalId:
         admissionPolicy?.allow_duplicate_national_id ??
         defaultAdmissionPolicy.allowDuplicateNationalId,
+      preventDuplicateFullName:
+        (admissionPolicy as any)?.prevent_duplicate_full_name ??
+        defaultAdmissionPolicy.preventDuplicateFullName,
       autoAssignFees:
         admissionPolicy?.auto_assign_fees ??
         defaultAdmissionPolicy.autoAssignFees,
@@ -353,7 +359,7 @@ export class StudentFormState {
 
   // Live debounced duplicate check triggers using authoritative backend API
   triggerDuplicateCheck(
-    field: "national_id" | "email" | "phone",
+    field: "national_id" | "email" | "phone" | "full_name",
     value: string,
   ) {
     if (this.duplicateCheckTimers[field]) {
@@ -361,7 +367,13 @@ export class StudentFormState {
     }
 
     const trimmed = (value || "").trim();
-    if (!trimmed) {
+    const hasName =
+      !!this.personal.nameEn?.trim() ||
+      !!this.personal.nameAr?.trim() ||
+      !!this.personal.firstName?.trim() ||
+      !!this.personal.lastName?.trim();
+
+    if (!trimmed && !(field === "full_name" && hasName)) {
       this.duplicateWarnings = {
         ...this.duplicateWarnings,
         [field]: undefined,
@@ -371,23 +383,51 @@ export class StudentFormState {
 
     this.duplicateCheckTimers[field] = setTimeout(async () => {
       try {
-        const res = await api.checkDuplicate({
-          [field]: trimmed,
+        const payload: any = {
           exclude_student_id: this.studentId,
-        });
+          full_name: this.personal.nameEn?.trim() || this.personal.nameAr?.trim() || undefined,
+          first_name: this.personal.firstName?.trim() || undefined,
+          middle_name: this.personal.middleName?.trim() || undefined,
+          last_name: this.personal.lastName?.trim() || undefined,
+          first_name_ar: this.personal.firstNameAr?.trim() || undefined,
+          middle_name_ar: this.personal.middleNameAr?.trim() || undefined,
+          last_name_ar: this.personal.lastNameAr?.trim() || undefined,
+          birth_date: this.personal.birthDate || undefined,
+        };
+        if (field !== "full_name") {
+          payload[field] = trimmed;
+        } else if (this.personal.nationalId?.trim()) {
+          payload.national_id = this.personal.nationalId.trim();
+        }
+        if (this.personal.phone?.trim()) payload.phone = this.personal.phone.trim();
+        if (this.personal.email?.trim()) payload.email = this.personal.email.trim();
+
+        const res = await api.checkDuplicate(payload);
 
         if (res.has_duplicate && res.matches.length > 0) {
           const match =
-            res.matches.find((m: any) => m.field === field) || res.matches[0];
+            res.matches.find((m: any) => m.field === field) ||
+            res.matches.find((m: any) => m.field === "full_name") ||
+            res.matches[0];
           const studentInfo = match.student_number
             ? ` (${match.student_number})`
             : "";
+          const message =
+            match.field === "full_name"
+              ? m.operations_ui_duplicate_person_value({
+                  name: match.matched_person_name,
+                  details: studentInfo,
+                })
+              : m.operations_ui_duplicate_person_value({
+                  name: match.matched_person_name,
+                  details: studentInfo,
+                });
           this.duplicateWarnings = {
             ...this.duplicateWarnings,
-            [field]: m.operations_ui_duplicate_person_value({
-              name: match.matched_person_name,
-              details: studentInfo,
-            }),
+            [field]: message,
+            ...(match.field === "full_name" && field !== "full_name"
+              ? { full_name: message }
+              : {}),
           };
         } else {
           this.duplicateWarnings = {
@@ -616,7 +656,8 @@ export class StudentFormState {
       !saveAsDraft &&
       (this.duplicateWarnings.national_id ||
         this.duplicateWarnings.phone ||
-        this.duplicateWarnings.email)
+        this.duplicateWarnings.email ||
+        this.duplicateWarnings.full_name)
     ) {
       toast.error(
         m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb(),

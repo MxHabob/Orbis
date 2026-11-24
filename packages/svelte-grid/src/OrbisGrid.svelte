@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 import { setContext, type Snippet } from "svelte";
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -154,6 +154,10 @@ let {
 }: Props = $props();
 
 const HEADER_H = 40;
+const hasGroupHeaders = $derived(visibleCols.some((c) => Boolean(c.group)));
+const hasSubHeaders = $derived(visibleCols.some((c) => c.subHeader !== undefined && c.subHeader !== null));
+const headerRowCount = $derived(1 + (hasGroupHeaders ? 1 : 0) + (hasSubHeaders ? 1 : 0));
+const totalHeaderHeight = $derived(HEADER_H * headerRowCount);
 let root: HTMLDivElement | null = $state(null);
 let bodyEl: HTMLDivElement | null = $state(null);
 let scrollTop = $state(0);
@@ -345,7 +349,7 @@ function isUtilityColumn(col: OrbisColumnDef): boolean {
 const rowWindow = $derived(
   visibleWindow(
     scrollTop,
-    viewportH - HEADER_H,
+    viewportH - totalHeaderHeight,
     rowSize,
     displayRows.length,
     10,
@@ -473,7 +477,7 @@ const totalWidth = $derived(columnSizes.reduce((sum, width) => sum + width, 0));
 const totalHeight = $derived(displayRows.length * rowSize);
 
 const colWindow = $derived.by(() => {
-  if (visibleCols.length < 24 || rtl)
+  if (visibleCols.length < 24 || rtl || hasGroupHeaders)
     return {
       start: 0,
       end: visibleCols.length,
@@ -758,11 +762,11 @@ function scrollActiveCellIntoView(row: number, col: number) {
 
   const top = row * rowSize;
   const visibleTop = bodyEl.scrollTop;
-  const visibleBottom = visibleTop + bodyEl.clientHeight - HEADER_H;
+  const visibleBottom = visibleTop + bodyEl.clientHeight - totalHeaderHeight;
   if (top < visibleTop) {
     bodyEl.scrollTop = top;
   } else if (top + rowSize > visibleBottom) {
-    bodyEl.scrollTop = top + rowSize - bodyEl.clientHeight + HEADER_H;
+    bodyEl.scrollTop = top + rowSize - bodyEl.clientHeight + totalHeaderHeight;
   }
   scrollTop = bodyEl.scrollTop;
 
@@ -1040,7 +1044,7 @@ function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
     ? bodyEl.scrollWidth - (localX + Math.max(0, bodyEl.scrollLeft))
     : localX + bodyEl.scrollLeft;
   return {
-    row: rowFromOffset(relY, HEADER_H, rowSize, displayRows.length),
+    row: rowFromOffset(relY, totalHeaderHeight, rowSize, displayRows.length),
     col: colFromOffset(relX, visibleCols.map(widthOf)),
   };
 }
@@ -1048,7 +1052,7 @@ function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
 function maybeAutoScroll(e: PointerEvent) {
   if (!bodyEl) return;
   const rect = bodyEl.getBoundingClientRect();
-  const dy = autoscrollDelta(e.clientY, rect.top + HEADER_H, rect.bottom);
+  const dy = autoscrollDelta(e.clientY, rect.top + totalHeaderHeight, rect.bottom);
   const dx = autoscrollDelta(e.clientX, rect.left, rect.right);
   if (dy) bodyEl.scrollTop += dy;
   if (dx) bodyEl.scrollLeft += rtl ? -dx : dx;
@@ -1111,7 +1115,7 @@ function handleKeydown(e: KeyboardEvent) {
   const cmd = interpretKey(e, !!editing, rtl);
   if (cmd.preventDefault) e.preventDefault();
   const active = selection.active ?? { row: 0, col: 0 };
-  const page = Math.max(1, Math.floor((viewportH - HEADER_H) / rowSize) - 1);
+  const page = Math.max(1, Math.floor((viewportH - totalHeaderHeight) / rowSize) - 1);
 
   switch (cmd.action) {
     case "move":
@@ -1465,10 +1469,10 @@ function getBadgeVariant(
       "approved",
       "open",
       "success",
-      "ناجح",
-      "حاضر",
-      "نشط",
-      "مدفوع",
+      "ظ†ط§ط¬ط­",
+      "ط­ط§ط¶ط±",
+      "ظ†ط´ط·",
+      "ظ…ط¯ظپظˆط¹",
       "passing",
       "true",
       "1",
@@ -1485,10 +1489,10 @@ function getBadgeVariant(
       "locked",
       "withdrawn",
       "error",
-      "راسب",
-      "غائب",
-      "غير نشط",
-      "معلق",
+      "ط±ط§ط³ط¨",
+      "ط؛ط§ط¦ط¨",
+      "ط؛ظٹط± ظ†ط´ط·",
+      "ظ…ط¹ظ„ظ‚",
       "false",
       "0",
     ].includes(s)
@@ -1500,9 +1504,9 @@ function getBadgeVariant(
       "late",
       "partial",
       "warning",
-      "متأخر",
-      "جزئي",
-      "قيد الانتظار",
+      "ظ…طھط£ط®ط±",
+      "ط¬ط²ط¦ظٹ",
+      "ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±",
     ].includes(s)
   )
     return "secondary";
@@ -1573,22 +1577,22 @@ function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
         "warning",
         "open",
         "closed",
-        "ناجح",
-        "راسب",
-        "حاضر",
-        "غائب",
-        "متأخر",
-        "معذور",
-        "نشط",
-        "غير نشط",
-        "مدفوع",
-        "معلق",
-        "جزئي",
-        "مسودة",
-        "مرحل",
-        "ملغى",
-        "مقبول",
-        "مرفوض",
+        "ظ†ط§ط¬ط­",
+        "ط±ط§ط³ط¨",
+        "ط­ط§ط¶ط±",
+        "ط؛ط§ط¦ط¨",
+        "ظ…طھط£ط®ط±",
+        "ظ…ط¹ط°ظˆط±",
+        "ظ†ط´ط·",
+        "ط؛ظٹط± ظ†ط´ط·",
+        "ظ…ط¯ظپظˆط¹",
+        "ظ…ط¹ظ„ظ‚",
+        "ط¬ط²ط¦ظٹ",
+        "ظ…ط³ظˆط¯ط©",
+        "ظ…ط±ط­ظ„",
+        "ظ…ظ„ط؛ظ‰",
+        "ظ…ظ‚ط¨ظˆظ„",
+        "ظ…ط±ظپظˆط¶",
       ].includes(val.toLowerCase().trim())
     ) {
       return true;
@@ -1650,6 +1654,230 @@ export function scrollToColumnProp(prop: string) {
   const i = visibleCols.findIndex((c) => columnId(c) === prop);
   if (i >= 0) scrollToColumnIndex(i);
 }
+
+type HeaderCellModel = {
+  colStart: number;
+  colSpan: number;
+  rowStart: number;
+  rowSpan: number;
+  col: OrbisColumnDef;
+  label: string;
+  kind: "group" | "leaf" | "sub" | "span";
+  key: string;
+};
+
+const headerLevels = $derived.by((): Array<"group" | "leaf" | "sub"> => {
+  const levels: Array<"group" | "leaf" | "sub"> = [];
+  if (hasGroupHeaders) levels.push("group");
+  levels.push("leaf");
+  if (hasSubHeaders) levels.push("sub");
+  return levels;
+});
+
+const headerGridTemplateColumns = $derived.by(() => {
+  if (!windowedCols.length) return "";
+  const parts: string[] = [];
+  if (colWindow.offset > 0) parts.push(`${colWindow.offset}px`);
+  for (const col of windowedCols) parts.push(`${widthOf(col)}px`);
+  return parts.join(" ");
+});
+
+const headerGridColBase = $derived(colWindow.offset > 0 ? 2 : 1);
+
+const headerModel = $derived.by((): HeaderCellModel[] => {
+  const cols = windowedCols;
+  const levels = headerLevels;
+  const rows = levels.length;
+  const out: HeaderCellModel[] = [];
+  if (!cols.length || !rows) return out;
+
+  const base = colWindow.start;
+  let i = 0;
+  while (i < cols.length) {
+    const col = cols[i]!;
+    const globalIdx = base + i;
+    const id = columnId(col);
+    const topSpan = Math.max(1, Math.min(rows, col.headerRowSpan ?? (rows === 1 ? 1 : 1)));
+    const hasGroupLevel = levels[0] === "group";
+    const hasSubLevel = levels[levels.length - 1] === "sub";
+
+    // Columns explicitly spanning multiple header rows from the top (e.g. student name / index)
+    if (topSpan > 1) {
+      const span = Math.min(topSpan, rows);
+      out.push({
+        colStart: globalIdx,
+        colSpan: 1,
+        rowStart: 0,
+        rowSpan: span,
+        col,
+        label: columnHeader(col),
+        kind: "span",
+        key: `span-${id}-${globalIdx}`,
+      });
+      // If there is a remaining sub-header row below the span, render it
+      if (span < rows && hasSubLevel) {
+        for (let r = span; r < rows; r++) {
+          const level = levels[r];
+          if (level === "sub") {
+            out.push({
+              colStart: globalIdx,
+              colSpan: 1,
+              rowStart: r,
+              rowSpan: 1,
+              col,
+              label: col.subHeader ?? "",
+              kind: "sub",
+              key: `sub-${id}-${globalIdx}-${r}`,
+            });
+          } else if (level === "leaf") {
+            out.push({
+              colStart: globalIdx,
+              colSpan: 1,
+              rowStart: r,
+              rowSpan: 1,
+              col,
+              label: columnHeader(col),
+              kind: "leaf",
+              key: `leaf-${id}-${globalIdx}-${r}`,
+            });
+          }
+        }
+      }
+      i++;
+      continue;
+    }
+
+    if (hasGroupLevel) {
+      const group = col.group;
+      if (group != null && String(group) !== "") {
+        // Merge consecutive columns with the same group (and no multi-row top span)
+        let j = i + 1;
+        while (j < cols.length) {
+          const next = cols[j]!;
+          const nextSpan = Math.max(1, Math.min(rows, next.headerRowSpan ?? 1));
+          if (nextSpan > 1) break;
+          if (next.group !== group) break;
+          j++;
+        }
+        out.push({
+          colStart: globalIdx,
+          colSpan: j - i,
+          rowStart: 0,
+          rowSpan: 1,
+          col,
+          label: String(group),
+          kind: "group",
+          key: `group-${globalIdx}-${String(group)}`,
+        });
+        const leafRow = 1;
+        const subRow = hasSubLevel ? 2 : -1;
+        for (let k = i; k < j; k++) {
+          const c = cols[k]!;
+          const cIdx = base + k;
+          const cid = columnId(c);
+          out.push({
+            colStart: cIdx,
+            colSpan: 1,
+            rowStart: leafRow,
+            rowSpan: 1,
+            col: c,
+            label: columnHeader(c),
+            kind: "leaf",
+            key: `leaf-${cid}-${cIdx}`,
+          });
+          if (subRow >= 0) {
+            out.push({
+              colStart: cIdx,
+              colSpan: 1,
+              rowStart: subRow,
+              rowSpan: 1,
+              col: c,
+              label: c.subHeader ?? "",
+              kind: "sub",
+              key: `sub-${cid}-${cIdx}`,
+            });
+          }
+        }
+        i = j;
+        continue;
+      } else {
+        // Ungrouped column inside a grouped grid: span group+leaf, optional sub row
+        if (hasSubLevel) {
+          out.push({
+            colStart: globalIdx,
+            colSpan: 1,
+            rowStart: 0,
+            rowSpan: 2,
+            col,
+            label: columnHeader(col),
+            kind: "span",
+            key: `ungrouped-${id}-${globalIdx}`,
+          });
+          out.push({
+            colStart: globalIdx,
+            colSpan: 1,
+            rowStart: 2,
+            rowSpan: 1,
+            col,
+            label: col.subHeader ?? "",
+            kind: "sub",
+            key: `sub-${id}-${globalIdx}`,
+          });
+        } else {
+          out.push({
+            colStart: globalIdx,
+            colSpan: 1,
+            rowStart: 0,
+            rowSpan: 2,
+            col,
+            label: columnHeader(col),
+            kind: "span",
+            key: `ungrouped-${id}-${globalIdx}`,
+          });
+        }
+        i++;
+        continue;
+      }
+    }
+
+    // No group level: leaf (+ optional sub)
+    if (hasSubLevel) {
+      out.push({
+        colStart: globalIdx,
+        colSpan: 1,
+        rowStart: 0,
+        rowSpan: 1,
+        col,
+        label: columnHeader(col),
+        kind: "leaf",
+        key: `leaf-${id}-${globalIdx}`,
+      });
+      out.push({
+        colStart: globalIdx,
+        colSpan: 1,
+        rowStart: 1,
+        rowSpan: 1,
+        col,
+        label: col.subHeader ?? "",
+        kind: "sub",
+        key: `sub-${id}-${globalIdx}`,
+      });
+    } else {
+      out.push({
+        colStart: globalIdx,
+        colSpan: 1,
+        rowStart: 0,
+        rowSpan: 1,
+        col,
+        label: columnHeader(col),
+        kind: "leaf",
+        key: `leaf-${id}-${globalIdx}`,
+      });
+    }
+    i++;
+  }
+  return out;
+});
 </script>
 
 <svelte:window
@@ -1670,7 +1898,7 @@ export function scrollToColumnProp(prop: string) {
   class:has-active-cell={selection.active !== null}
   style:height
   style:--row-h="{rowSize}px"
-  style:--header-h="{HEADER_H}px"
+  style:--header-h="{totalHeaderHeight}px" style:--header-row-h="{HEADER_H}px"
   dir={rtl ? "rtl" : "ltr"}
   role="grid"
   tabindex="0"
@@ -1696,7 +1924,7 @@ export function scrollToColumnProp(prop: string) {
     <div
       class="orbis-toolbar"
       role="toolbar"
-      aria-label={rtl ? "أدوات الجدول" : "Grid tools"}
+      aria-label={rtl ? "ط£ط¯ظˆط§طھ ط§ظ„ط¬ط¯ظˆظ„" : "Grid tools"}
     >
       {#if showSearch || showFilterButton || toolbarFilters}
         <div class="orbis-toolbar-controls">
@@ -1709,8 +1937,8 @@ export function scrollToColumnProp(prop: string) {
               <input
                 type="text"
                 value={search}
-                placeholder={searchPlaceholder ?? (rtl ? "بحث في السجلات…" : "Search records…")}
-                aria-label={rtl ? "بحث في جميع الأعمدة" : "Search all columns"}
+                placeholder={searchPlaceholder ?? (rtl ? "ط¨ط­ط« ظپظٹ ط§ظ„ط³ط¬ظ„ط§طھâ€¦" : "Search recordsâ€¦")}
+                aria-label={rtl ? "ط¨ط­ط« ظپظٹ ط¬ظ…ظٹط¹ ط§ظ„ط£ط¹ظ…ط¯ط©" : "Search all columns"}
                 oninput={handleSearchInput}
                 onkeydown={(event) => {
                   if (event.key === "Enter") event.preventDefault();
@@ -1721,9 +1949,9 @@ export function scrollToColumnProp(prop: string) {
                 <button
                   type="button"
                   class="orbis-toolbar-clear"
-                  aria-label={rtl ? "مسح البحث" : "Clear search"}
+                  aria-label={rtl ? "ظ…ط³ط­ ط§ظ„ط¨ط­ط«" : "Clear search"}
                   onclick={clearSearch}
-                >×</button>
+                >أ—</button>
               {/if}
             </label>
           {/if}
@@ -1768,7 +1996,7 @@ export function scrollToColumnProp(prop: string) {
               onclick={addRowFromToolbar}
             >
               <span aria-hidden="true">+</span>
-              {rtl ? "إضافة صف" : "Add row"}
+              {rtl ? "ط¥ط¶ط§ظپط© طµظپ" : "Add row"}
             </button>
           {/if}
         </div>
@@ -1788,12 +2016,36 @@ export function scrollToColumnProp(prop: string) {
 
   {#if loading}
     <div class="orbis-skeleton-wrap">
-      <div class="orbis-grid-head" role="row">
-        {#each visibleCols as col (columnId(col))}
-          <div class="orbis-hcell" style:width="{widthOf(col)}px">
-            <div class="orbis-skeleton-bar" style:width="{Math.min(widthOf(col) * 0.7, 90)}px"></div>
-          </div>
-        {/each}
+      <div
+        class="orbis-grid-head"
+        class:orbis-grid-head--multi={headerRowCount > 1}
+        role="row"
+        style:grid-template-columns={headerRowCount > 1 ? headerGridTemplateColumns : undefined}
+        style:grid-template-rows={headerRowCount > 1 ? `repeat(${headerRowCount}, var(--header-row-h))` : undefined}
+      >
+        {#if headerRowCount > 1}
+          {#if colWindow.offset > 0}
+            <div class="orbis-hcell orbis-hcell--offset" style:grid-column="1" style:grid-row={`1 / span ${headerRowCount}`}></div>
+          {/if}
+          {#each headerModel as hc (hc.key)}
+            <div
+              class="orbis-hcell"
+              class:orbis-hcell--group={hc.kind === "group"}
+              class:orbis-hcell--sub={hc.kind === "sub"}
+              class:orbis-hcell--span={hc.kind === "span"}
+              style:grid-column={`${hc.colStart - colWindow.start + headerGridColBase} / span ${hc.colSpan}`}
+              style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
+            >
+              <div class="orbis-skeleton-bar" style:width="70%"></div>
+            </div>
+          {/each}
+        {:else}
+          {#each visibleCols as col (columnId(col))}
+            <div class="orbis-hcell" style:width="{widthOf(col)}px">
+              <div class="orbis-skeleton-bar" style:width="{Math.min(widthOf(col) * 0.7, 90)}px"></div>
+            </div>
+          {/each}
+        {/if}
       </div>
       {#each Array(8) as _, i (i)}
         <div class="orbis-skeleton-row" style:opacity="{1 - i * 0.1}">
@@ -1809,12 +2061,12 @@ export function scrollToColumnProp(prop: string) {
   {:else if displayRows.length === 0}
     {#if loadMoreError}
       <div class="orbis-empty-wrap" role="alert">
-        <div class="orbis-empty-title">{rtl ? "تعذر تحميل السجلات" : "Couldn't load records"}</div>
+        <div class="orbis-empty-title">{rtl ? "طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ط³ط¬ظ„ط§طھ" : "Couldn't load records"}</div>
         <div class="orbis-empty-desc">
           {loadMoreError instanceof Error ? loadMoreError.message : String(loadMoreError)}
         </div>
         <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
-          {rtl ? "إعادة المحاولة" : "Retry"}
+          {rtl ? "ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©" : "Retry"}
         </button>
       </div>
     {:else}
@@ -1841,80 +2093,170 @@ export function scrollToColumnProp(prop: string) {
         };
       }}
     >
-      <div class="orbis-spacer" style:height="{HEADER_H + totalHeight}px" style:width="{totalWidth}px">
-        <div class="orbis-grid-head" role="row" style:padding-inline-start="{colWindow.offset}px">
-          {#each windowedCols as col, i (columnId(col) || i)}
-            {@const c = colWindow.start + i}
-            {@const id = columnId(col)}
-            {@const Header = col.headerCell}
-            {@const isSelectCol = id === "__selected"}
-            <div
-              class="orbis-hcell align-{defaultAlign(col)}"
-              class:pinned={isColumnPinnedLeft(col)}
-              role="columnheader"
-              tabindex="0"
-              aria-colindex={c + 1}
-              aria-sort={sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none"}
-              style:width="{widthOf(col)}px"
-              onclick={(e) => onHeaderClick(col, e)}
-              onkeydown={(e) => {
-                if (
-                  (e.key === "Enter" || e.key === " ") &&
-                  !isCheckboxTarget(e.target)
-                ) {
-                  e.preventDefault();
-                  sortColumn(col, e.shiftKey);
-                }
-              }}
-            >
-              {#if Header}
-                <Header row={{}} column={{ ...col, id }} />
-              {:else if isSelectCol}
-                {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
-                {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
-                <Checkbox
-                  checked={isAllSelected}
-                  indeterminate={isSomeSelected}
-                  aria-label="Select all"
-                  onclick={(e: MouseEvent) => {
-                    e.stopPropagation();
-                    const selected = !isAllSelected;
-                    const selectedIds = displayRows.map((row, idx) =>
-                      rowKey(row, idx),
-                    );
-                    if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
-                      if (selected) {
-                        selection = selectScope(selectedIds, "filtered", [], []);
-                      } else {
-                        selection = emptySelection();
+      <div class="orbis-spacer" style:height="{totalHeaderHeight + totalHeight}px" style:width="{totalWidth}px">
+        <div
+          class="orbis-grid-head"
+          class:orbis-grid-head--multi={headerRowCount > 1}
+          role="row"
+          style:padding-inline-start={headerRowCount > 1 ? undefined : `${colWindow.offset}px`}
+          style:grid-template-columns={headerRowCount > 1 ? headerGridTemplateColumns : undefined}
+          style:grid-template-rows={headerRowCount > 1 ? `repeat(${headerRowCount}, var(--header-row-h))` : undefined}
+        >
+          {#if headerRowCount > 1}
+            {#if colWindow.offset > 0}
+              <div class="orbis-hcell orbis-hcell--offset" style:grid-column="1" style:grid-row={`1 / span ${headerRowCount}`}></div>
+            {/if}
+            {#each headerModel as hc (hc.key)}
+              {@const c = hc.colStart}
+              {@const id = columnId(hc.col)}
+              {@const Header = hc.col.headerCell}
+              {@const isSelectCol = id === "__selected"}
+              {@const isLeafLike = hc.kind === "leaf" || (hc.kind === "span" && hc.colSpan === 1)}
+              <div
+                class="orbis-hcell align-{defaultAlign(hc.col)}"
+                class:pinned={isColumnPinnedLeft(hc.col)}
+                class:orbis-hcell--group={hc.kind === "group"}
+                class:orbis-hcell--sub={hc.kind === "sub"}
+                class:orbis-hcell--span={hc.kind === "span"}
+                role="columnheader"
+                tabindex={isLeafLike ? 0 : -1}
+                aria-colindex={c + 1}
+                aria-sort={isLeafLike ? (sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none") : "none"}
+                style:grid-column={`${hc.colStart - colWindow.start + headerGridColBase} / span ${hc.colSpan}`}
+                style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
+                onclick={(e) => { if (isLeafLike) onHeaderClick(hc.col, e); }}
+                onkeydown={(e) => {
+                  if (!isLeafLike) return;
+                  if ((e.key === "Enter" || e.key === " ") && !isCheckboxTarget(e.target)) {
+                    e.preventDefault();
+                    sortColumn(hc.col, e.shiftKey);
+                  }
+                }}
+              >
+                {#if isLeafLike}
+                  {#if Header}
+                    <Header row={{}} column={{ ...hc.col, id }} />
+                  {:else if isSelectCol}
+                    {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
+                    {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isSomeSelected}
+                      aria-label="Select all"
+                      onclick={(e: MouseEvent) => {
+                        e.stopPropagation();
+                        const selected = !isAllSelected;
+                        const selectedIds = displayRows.map((row, idx) => rowKey(row, idx));
+                        if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
+                          if (selected) {
+                            selection = selectScope(selectedIds, "filtered", [], []);
+                          } else {
+                            selection = emptySelection();
+                          }
+                          onselection?.(selection);
+                        }
+                        onaction?.({
+                          actionId: "select-all",
+                          row: {},
+                          rowIndex: -1,
+                          prop: id,
+                          originalEvent: e,
+                          selected,
+                          selectedIds,
+                        });
+                      }}
+                    />
+                  {:else}
+                    <span class="hlabel">{hc.label}</span>
+                  {/if}
+                  <button
+                    type="button"
+                    class="resize-handle"
+                    aria-label="Resize column"
+                    onpointerdown={(e) => onResizeStart(hc.col, e)}
+                    onclick={(e) => e.stopPropagation()}
+                    onkeydown={(e) => e.stopPropagation()}
+                    ondblclick={(e) => onResizeDblClick(hc.col, e)}
+                  ></button>
+                {:else}
+                  <span class="hlabel hlabel--static">{hc.label}</span>
+                {/if}
+              </div>
+            {/each}
+          {:else}
+            {#each windowedCols as col, i (columnId(col) || i)}
+              {@const c = colWindow.start + i}
+              {@const id = columnId(col)}
+              {@const Header = col.headerCell}
+              {@const isSelectCol = id === "__selected"}
+              <div
+                class="orbis-hcell align-{defaultAlign(col)}"
+                class:pinned={isColumnPinnedLeft(col)}
+                role="columnheader"
+                tabindex="0"
+                aria-colindex={c + 1}
+                aria-sort={sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none"}
+                style:width="{widthOf(col)}px"
+                onclick={(e) => onHeaderClick(col, e)}
+                onkeydown={(e) => {
+                  if (
+                    (e.key === "Enter" || e.key === " ") &&
+                    !isCheckboxTarget(e.target)
+                  ) {
+                    e.preventDefault();
+                    sortColumn(col, e.shiftKey);
+                  }
+                }}
+              >
+                {#if Header}
+                  <Header row={{}} column={{ ...col, id }} />
+                {:else if isSelectCol}
+                  {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
+                  {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
+                  <Checkbox
+                    checked={isAllSelected}
+                    indeterminate={isSomeSelected}
+                    aria-label="Select all"
+                    onclick={(e: MouseEvent) => {
+                      e.stopPropagation();
+                      const selected = !isAllSelected;
+                      const selectedIds = displayRows.map((row, idx) =>
+                        rowKey(row, idx),
+                      );
+                      if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
+                        if (selected) {
+                          selection = selectScope(selectedIds, "filtered", [], []);
+                        } else {
+                          selection = emptySelection();
+                        }
+                        onselection?.(selection);
                       }
-                      onselection?.(selection);
-                    }
-                    onaction?.({
-                      actionId: "select-all",
-                      row: {},
-                      rowIndex: -1,
-                      prop: id,
-                      originalEvent: e,
-                      selected,
-                      selectedIds,
-                    });
-                  }}
-                />
-              {:else}
-                <span class="hlabel">{columnHeader(col)}</span>
-              {/if}
-              <button
-                type="button"
-                class="resize-handle"
-                aria-label="Resize column"
-                onpointerdown={(e) => onResizeStart(col, e)}
-                onclick={(e) => e.stopPropagation()}
-                onkeydown={(e) => e.stopPropagation()}
-                ondblclick={(e) => onResizeDblClick(col, e)}
-              ></button>
-            </div>
-          {/each}
+                      onaction?.({
+                        actionId: "select-all",
+                        row: {},
+                        rowIndex: -1,
+                        prop: id,
+                        originalEvent: e,
+                        selected,
+                        selectedIds,
+                      });
+                    }}
+                  />
+                {:else}
+                  <span class="hlabel">{columnHeader(col)}</span>
+                {/if}
+                <button
+                  type="button"
+                  class="resize-handle"
+                  aria-label="Resize column"
+                  onpointerdown={(e) => onResizeStart(col, e)}
+                  onclick={(e) => e.stopPropagation()}
+                  onkeydown={(e) => e.stopPropagation()}
+                  ondblclick={(e) => onResizeDblClick(col, e)}
+                ></button>
+              </div>
+            {/each}
+          {/if}
         </div>
         <div class="orbis-window" style:transform="translateY({rowWindow.offset}px)">
           {#each { length: rowWindow.count } as _, i (rowWindow.start + i)}
@@ -2068,7 +2410,7 @@ export function scrollToColumnProp(prop: string) {
                       {@const val = getCellValue(row, col)}
                       {@const formatted = formatCell(row, col, rtl ? "ar" : "en")}
                       <Badge variant={getBadgeVariant(val)} class="orbis-grid-badge">
-                        {formatted || "—"}
+                        {formatted || "â€”"}
                       </Badge>
                     {:else if Array.isArray(getCellValue(row, col))}
                       {@const arr = getCellValue(row, col) as unknown[]}
@@ -2138,14 +2480,14 @@ export function scrollToColumnProp(prop: string) {
           <div class="orbis-load-status" role={loadMoreError ? "alert" : "status"}>
             {#if loadMoreError}
               <span>
-                {rtl ? "تعذر تحميل المزيد" : "Couldn't load more"}
+                {rtl ? "طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ظ…ط²ظٹط¯" : "Couldn't load more"}
                 {loadMoreError instanceof Error ? `: ${loadMoreError.message}` : ""}
               </span>
               <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
-                {rtl ? "إعادة المحاولة" : "Retry"}
+                {rtl ? "ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©" : "Retry"}
               </button>
             {:else}
-              {rtl ? "جارٍ تحميل المزيد…" : "Loading more…"}
+              {rtl ? "ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ظ…ط²ظٹط¯â€¦" : "Loading moreâ€¦"}
             {/if}
           </div>
         {/if}
@@ -2368,6 +2710,11 @@ export function scrollToColumnProp(prop: string) {
     flex-shrink: 0;
     z-index: 3;
   }
+  .orbis-grid-head.orbis-grid-head--multi {
+    display: grid;
+    grid-auto-flow: row dense;
+    align-items: stretch;
+  }
   .orbis-hcell {
     position: relative;
     display: flex;
@@ -2376,10 +2723,38 @@ export function scrollToColumnProp(prop: string) {
     font-weight: 600;
     letter-spacing: 0.01em;
     border-inline-end: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     user-select: none;
     flex: 0 0 auto;
     min-width: 0;
     cursor: pointer;
+    height: 100%;
+    box-sizing: border-box;
+    background: var(--muted);
+  }
+  .orbis-grid-head--multi .orbis-hcell {
+    flex-shrink: 1;
+    width: auto;
+  }
+  .orbis-hcell--group {
+    justify-content: center;
+    text-align: center;
+    font-weight: 700;
+  }
+  .orbis-hcell--sub {
+    justify-content: center;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+  .hlabel--static {
+    width: 100%;
+    text-align: center;
+  }
+  .orbis-hcell--offset {
+    padding: 0;
+    border-inline-end: 0;
   }
   .orbis-hcell:hover {
     color: var(--foreground);
