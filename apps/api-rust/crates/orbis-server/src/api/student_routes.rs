@@ -15,6 +15,9 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
 use orbis_domain::entities::report::ReportAuditEntry;
+use orbis_domain::entities::settings::{
+    StudentSortCriterion, StudentSortDirection, StudentSortField,
+};
 use orbis_domain::entities::student::{AcademicStanding, StudentDetail, StudentStatus};
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginationParams, StudentFilter};
 
@@ -326,6 +329,14 @@ pub struct DuplicateCheckRequest {
     pub national_id: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub full_name: Option<String>,
+    pub first_name: Option<String>,
+    pub middle_name: Option<String>,
+    pub last_name: Option<String>,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
+    pub birth_date: Option<NaiveDate>,
     pub exclude_student_id: Option<Uuid>,
 }
 
@@ -337,6 +348,10 @@ pub struct DuplicateMatchDto {
     pub matched_person_name: String,
     pub student_id: Option<Uuid>,
     pub student_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -500,6 +515,34 @@ pub async fn list_students(
     State(state): State<AppState>,
     Query(q): Query<StudentQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentDto>>>, ApiError> {
+    let has_sort_override = q.sort_by.is_some() || q.sort_dir.is_some();
+    let requested_sort_field = q.sort_by.as_deref().and_then(StudentSortField::from_key);
+    let requested_sort_direction = q
+        .sort_dir
+        .as_deref()
+        .and_then(StudentSortDirection::from_key);
+    let default_sort = if requested_sort_field.is_none() || requested_sort_direction.is_none() {
+        Some(
+            state
+                .settings_repo
+                .get_settings(ctx.tenant_id)
+                .await?
+                .student_sort,
+        )
+    } else {
+        None
+    };
+    let default_sort = default_sort.unwrap_or_default();
+    let sort_criteria = if has_sort_override {
+        vec![StudentSortCriterion {
+            field: requested_sort_field.unwrap_or(default_sort.field),
+            direction: requested_sort_direction.unwrap_or(default_sort.direction),
+        }]
+    } else {
+        default_sort.criteria()
+    };
+    let primary_sort = sort_criteria[0];
+
     let domain_filter = StudentFilter {
         period_id: q.period_id,
         section_id: q.section_id,
@@ -528,9 +571,10 @@ pub async fn list_students(
         pagination: Some(PaginationParams {
             page: q.page,
             page_size: q.page_size,
-            sort_by: q.sort_by,
-            sort_dir: q.sort_dir,
+            sort_by: Some(primary_sort.field.key().to_string()),
+            sort_dir: Some(primary_sort.direction.key().to_string()),
         }),
+        sort_criteria: Some(sort_criteria),
     };
     let paginated = state
         .student_service
@@ -571,13 +615,13 @@ pub async fn get_my_student(
     responses((status = 200, body = StudentDto)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn get_student(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
     let detail = state
         .student_service
-        .get_student(id)
+        .get_student_detail(&ctx, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Student {} not found", id)))?;
     Ok(ApiResponse::ok(detail.into()))
@@ -906,15 +950,11 @@ pub async fn list_enrollments(
     responses((status = 200, body = EnrollmentDto)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn get_enrollment(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
-    let e = state
-        .enrollment_repo
-        .find_by_id(id)
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("Enrollment {} not found", id)))?;
+    let e = state.student_service.get_enrollment(&ctx, id).await?;
     Ok(ApiResponse::ok(e.into()))
 }
 
@@ -1069,6 +1109,14 @@ pub async fn check_duplicate(
         national_id: p.national_id,
         phone: p.phone,
         email: p.email,
+        full_name: p.full_name,
+        first_name: p.first_name,
+        middle_name: p.middle_name,
+        last_name: p.last_name,
+        first_name_ar: p.first_name_ar,
+        middle_name_ar: p.middle_name_ar,
+        last_name_ar: p.last_name_ar,
+        birth_date: p.birth_date,
         exclude_student_id: p.exclude_student_id,
     };
 
@@ -1086,6 +1134,8 @@ pub async fn check_duplicate(
             matched_person_name: m.matched_person_name,
             student_id: m.student_id,
             student_number: m.student_number,
+            reason: m.reason,
+            confidence: m.confidence,
         })
         .collect();
 

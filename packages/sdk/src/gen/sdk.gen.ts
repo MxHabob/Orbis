@@ -50,6 +50,8 @@ import type {
   BulkRegisterStudentsResponses,
   BulkScheduleLessonsData,
   BulkScheduleLessonsResponses,
+  BulkTransferClassesData,
+  BulkTransferClassesResponses,
   CalculateGpaData,
   CalculateGpaResponses,
   CalculateGradesData,
@@ -561,6 +563,8 @@ import type {
   SplitFeeResponses,
   SubmitOverrideData,
   SubmitOverrideResponses,
+  SummarizeStudentFeesData,
+  SummarizeStudentFeesResponses,
   ToggleIntegrationData,
   ToggleIntegrationResponses,
   TransferClassData,
@@ -1780,6 +1784,22 @@ export const enrollStudent2 = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     url: "/api/v1/enrollments",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const bulkTransferClasses = <ThrowOnError extends boolean = false>(
+  options: Options<BulkTransferClassesData, ThrowOnError>,
+): RequestResult<BulkTransferClassesResponses, unknown, ThrowOnError> =>
+  (options.client ?? client).post<
+    BulkTransferClassesResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/v1/enrollments/bulk-transfer",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -3700,6 +3720,15 @@ export const generateFee = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
+
+export const summarizeStudentFees = <ThrowOnError extends boolean = false>(
+  options?: Options<SummarizeStudentFeesData, ThrowOnError>,
+): RequestResult<SummarizeStudentFeesResponses, unknown, ThrowOnError> =>
+  (options?.client ?? client).get<
+    SummarizeStudentFeesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/v1/student-fees/summary", ...options });
 
 export const deleteStudentFee = <ThrowOnError extends boolean = false>(
   options: Options<DeleteStudentFeeData, ThrowOnError>,

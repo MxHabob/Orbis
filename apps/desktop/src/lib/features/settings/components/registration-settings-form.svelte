@@ -202,6 +202,7 @@ function parseOrgRegistration(rawOrg: any) {
   const num = adm.numbering || {};
   const pol = adm.policy || adm.policy_settings || adm;
   const fields = adm.fields || adm.form_fields_list || [];
+  const sortCriteria = settingsObj.student_sort?.then_by || [];
 
   return {
     institutionType: adm.institution_type || "school",
@@ -255,6 +256,10 @@ function parseOrgRegistration(rawOrg: any) {
       pol.allow_duplicate_national_id !== undefined
         ? Boolean(pol.allow_duplicate_national_id)
         : false,
+    preventDuplicateFullName:
+      pol.prevent_duplicate_full_name !== undefined
+        ? Boolean(pol.prevent_duplicate_full_name)
+        : true,
     autoAssignFees:
       pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
     maxClassCapacity: enr.max_class_size_default
@@ -262,6 +267,12 @@ function parseOrgRegistration(rawOrg: any) {
       : pol.max_class_capacity
         ? Number(pol.max_class_capacity)
         : 30,
+    studentSortField: settingsObj.student_sort?.field || "student_number",
+    studentSortDirection: settingsObj.student_sort?.direction || "asc",
+    studentSortThenBy1Field: sortCriteria[0]?.field || "none",
+    studentSortThenBy1Direction: sortCriteria[0]?.direction || "asc",
+    studentSortThenBy2Field: sortCriteria[1]?.field || "none",
+    studentSortThenBy2Direction: sortCriteria[1]?.direction || "asc",
     requiredDocuments: Array.isArray(adm.required_documents_list)
       ? adm.required_documents_list
       : [],
@@ -306,8 +317,19 @@ let siblingPriorityEnabled = $state<boolean>(parsed.siblingPriorityEnabled);
 let allowLateEnrollment = $state<boolean>(parsed.allowLateEnrollment);
 let allowNoGuardian = $state<boolean>(parsed.allowNoGuardian);
 let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
+let preventDuplicateFullName = $state<boolean>(parsed.preventDuplicateFullName);
 let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
 let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
+let studentSortField = $state<string>(parsed.studentSortField);
+let studentSortDirection = $state<string>(parsed.studentSortDirection);
+let studentSortThenBy1Field = $state<string>(parsed.studentSortThenBy1Field);
+let studentSortThenBy1Direction = $state<string>(
+  parsed.studentSortThenBy1Direction,
+);
+let studentSortThenBy2Field = $state<string>(parsed.studentSortThenBy2Field);
+let studentSortThenBy2Direction = $state<string>(
+  parsed.studentSortThenBy2Direction,
+);
 let requiredDocuments = $state<DocItem[]>(
   JSON.parse(JSON.stringify(parsed.requiredDocuments)),
 );
@@ -321,7 +343,9 @@ let isAddDocSheetOpen = $state(false);
 let selectedClassFilter = $state<string>("all");
 
 // Active Tab
-let activeTab = $state<"policies" | "documents" | "fields">("policies");
+let activeTab = $state<"policies" | "documents" | "fields" | "sorting">(
+  "policies",
+);
 
 // Initial state snapshot for dirty checking
 let initialState = $state({
@@ -336,8 +360,15 @@ let initialState = $state({
   allowLateEnrollment: parsed.allowLateEnrollment,
   allowNoGuardian: parsed.allowNoGuardian,
   allowDuplicateNationalId: parsed.allowDuplicateNationalId,
+  preventDuplicateFullName: parsed.preventDuplicateFullName,
   autoAssignFees: parsed.autoAssignFees,
   maxClassCapacity: parsed.maxClassCapacity,
+  studentSortField: parsed.studentSortField,
+  studentSortDirection: parsed.studentSortDirection,
+  studentSortThenBy1Field: parsed.studentSortThenBy1Field,
+  studentSortThenBy1Direction: parsed.studentSortThenBy1Direction,
+  studentSortThenBy2Field: parsed.studentSortThenBy2Field,
+  studentSortThenBy2Direction: parsed.studentSortThenBy2Direction,
   requiredDocuments: JSON.parse(JSON.stringify(parsed.requiredDocuments)),
   formFields: parsed.formFields.map((field) => ({ ...field })),
 });
@@ -355,8 +386,15 @@ function syncInitialState() {
     allowLateEnrollment,
     allowNoGuardian,
     allowDuplicateNationalId,
+    preventDuplicateFullName,
     autoAssignFees,
     maxClassCapacity,
+    studentSortField,
+    studentSortDirection,
+    studentSortThenBy1Field,
+    studentSortThenBy1Direction,
+    studentSortThenBy2Field,
+    studentSortThenBy2Direction,
     requiredDocuments: JSON.parse(JSON.stringify(requiredDocuments)),
     formFields: formFields.map((field) => ({ ...field })),
   };
@@ -375,8 +413,15 @@ const isDirty = $derived.by(() => {
     allowLateEnrollment !== initialState.allowLateEnrollment ||
     allowNoGuardian !== initialState.allowNoGuardian ||
     allowDuplicateNationalId !== initialState.allowDuplicateNationalId ||
+    preventDuplicateFullName !== initialState.preventDuplicateFullName ||
     autoAssignFees !== initialState.autoAssignFees ||
     maxClassCapacity !== initialState.maxClassCapacity ||
+    studentSortField !== initialState.studentSortField ||
+    studentSortDirection !== initialState.studentSortDirection ||
+    studentSortThenBy1Field !== initialState.studentSortThenBy1Field ||
+    studentSortThenBy1Direction !== initialState.studentSortThenBy1Direction ||
+    studentSortThenBy2Field !== initialState.studentSortThenBy2Field ||
+    studentSortThenBy2Direction !== initialState.studentSortThenBy2Direction ||
     JSON.stringify(requiredDocuments) !==
       JSON.stringify(initialState.requiredDocuments) ||
     JSON.stringify(formFields) !== JSON.stringify(initialState.formFields)
@@ -396,6 +441,19 @@ onMount(async () => {
     }
 
     if (currentSettings) {
+      if (currentSettings.student_sort) {
+        studentSortField =
+          currentSettings.student_sort.field || "student_number";
+        studentSortDirection = currentSettings.student_sort.direction || "asc";
+        studentSortThenBy1Field =
+          currentSettings.student_sort.then_by?.[0]?.field || "none";
+        studentSortThenBy1Direction =
+          currentSettings.student_sort.then_by?.[0]?.direction || "asc";
+        studentSortThenBy2Field =
+          currentSettings.student_sort.then_by?.[1]?.field || "none";
+        studentSortThenBy2Direction =
+          currentSettings.student_sort.then_by?.[1]?.direction || "asc";
+      }
       if (currentSettings.enrollment) {
         const e = currentSettings.enrollment;
         if (e.registration_enabled !== undefined)
@@ -433,6 +491,10 @@ onMount(async () => {
           if (a.policy.allow_duplicate_national_id !== undefined)
             allowDuplicateNationalId = Boolean(
               a.policy.allow_duplicate_national_id,
+            );
+          if (a.policy.prevent_duplicate_full_name !== undefined)
+            preventDuplicateFullName = Boolean(
+              a.policy.prevent_duplicate_full_name,
             );
           if (a.policy.auto_assign_fees !== undefined)
             autoAssignFees = Boolean(a.policy.auto_assign_fees);
@@ -481,12 +543,62 @@ function resetToInitial() {
   allowLateEnrollment = initialState.allowLateEnrollment;
   allowNoGuardian = initialState.allowNoGuardian;
   allowDuplicateNationalId = initialState.allowDuplicateNationalId;
+  preventDuplicateFullName = initialState.preventDuplicateFullName;
   autoAssignFees = initialState.autoAssignFees;
   maxClassCapacity = initialState.maxClassCapacity;
+  studentSortField = initialState.studentSortField;
+  studentSortDirection = initialState.studentSortDirection;
+  studentSortThenBy1Field = initialState.studentSortThenBy1Field;
+  studentSortThenBy1Direction = initialState.studentSortThenBy1Direction;
+  studentSortThenBy2Field = initialState.studentSortThenBy2Field;
+  studentSortThenBy2Direction = initialState.studentSortThenBy2Direction;
   requiredDocuments = JSON.parse(
     JSON.stringify(initialState.requiredDocuments),
   );
   formFields = initialState.formFields.map((field) => ({ ...field }));
+}
+
+const studentSortFields = [
+  "student_number",
+  "name",
+  "status",
+  "admitted_at",
+  "created_at",
+  "birth_date",
+  "gender",
+];
+
+function studentSortFieldLabel(field: string) {
+  switch (field) {
+    case "name":
+      return m.settings_student_sort_name();
+    case "status":
+      return m.settings_student_sort_status();
+    case "admitted_at":
+      return m.settings_student_sort_admitted_at();
+    case "created_at":
+      return m.settings_student_sort_created_at();
+    case "birth_date":
+      return m.settings_student_sort_birth_date();
+    case "gender":
+      return m.settings_student_sort_gender();
+    default:
+      return m.settings_student_sort_student_number();
+  }
+}
+
+function setPrimarySortField(value: string | undefined) {
+  studentSortField = value ?? "student_number";
+  if (studentSortThenBy1Field === studentSortField)
+    studentSortThenBy1Field = "none";
+  if (studentSortThenBy2Field === studentSortField)
+    studentSortThenBy2Field = "none";
+}
+
+function setSecondarySortField(value: string | undefined) {
+  studentSortThenBy1Field = value ?? "none";
+  if (studentSortThenBy1Field === studentSortThenBy2Field)
+    studentSortThenBy2Field = "none";
 }
 
 // Generated ID Preview
@@ -844,6 +956,7 @@ async function handleFormSave() {
         requires_approval: requiresApproval,
         allow_no_guardian: allowNoGuardian,
         allow_duplicate_national_id: allowDuplicateNationalId,
+        prevent_duplicate_full_name: preventDuplicateFullName,
         auto_assign_fees: autoAssignFees,
         max_class_capacity: maxClassCapacity,
         allow_late_enrollment: allowLateEnrollment,
@@ -868,6 +981,20 @@ async function handleFormSave() {
       sibling_priority_enabled: siblingPriorityEnabled,
       max_class_size_default: maxClassCapacity,
       allow_late_enrollment: allowLateEnrollment,
+    },
+    student_sort: {
+      field: studentSortField,
+      direction: studentSortDirection,
+      then_by: [
+        {
+          field: studentSortThenBy1Field,
+          direction: studentSortThenBy1Direction,
+        },
+        {
+          field: studentSortThenBy2Field,
+          direction: studentSortThenBy2Direction,
+        },
+      ].filter((criterion) => criterion.field !== "none"),
     },
   };
 
@@ -895,6 +1022,10 @@ async function handleFormSave() {
       <TabsTrigger value="fields" class="h-8 rounded-lg px-3 text-xs font-semibold gap-1.5">
         <AdjustmentsHorizontal class="w-3.5 h-3.5" />
         <span>{m.ui_copy_form_fields_matrix_960721da()}</span>
+      </TabsTrigger>
+      <TabsTrigger value="sorting" class="h-8 rounded-lg px-3 text-xs font-semibold gap-1.5">
+        <Funnel class="w-3.5 h-3.5" />
+        <span>{m.settings_student_sort_tab()}</span>
       </TabsTrigger>
     </TabsList>
 
@@ -1060,6 +1191,19 @@ async function handleFormSave() {
             />
           </div>
 
+          <!-- Prevent Duplicate Full Name -->
+          <div class="py-2.5 flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-0.5 text-start">
+              <span class="text-xs font-bold text-foreground">
+                {m.settings_students_prevent_duplicate_full_name()}
+              </span>
+              <span class="text-[11px] text-muted-foreground">
+                {m.settings_students_prevent_duplicate_full_name_hint()}
+              </span>
+            </div>
+            <Switch bind:checked={preventDuplicateFullName} />
+          </div>
+
           <!-- Auto Assign Tuition Fees -->
           <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
@@ -1142,6 +1286,167 @@ async function handleFormSave() {
           emptyTitle={m.ui_copy_no_form_fields_79d7bef7()}
         />
       </div>
+    </TabsContent>
+
+    <TabsContent value="sorting" class="space-y-4 pt-4">
+      <Card class="overflow-hidden border-border/70 shadow-xs">
+        <CardHeader class="border-b border-border/50 px-4 py-3">
+          <CardTitle class="text-xs font-semibold">
+            {m.settings_student_sort_title()}
+          </CardTitle>
+          <p class="text-xs text-muted-foreground">
+            {m.settings_student_sort_description()}
+          </p>
+        </CardHeader>
+        <CardContent class="grid grid-cols-1 gap-4 p-6 text-start sm:grid-cols-2">
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {m.settings_student_sort_field()}
+            </Label>
+            <Select
+              type="single"
+              value={studentSortField}
+              onValueChange={setPrimarySortField}
+            >
+              <SelectTrigger class="h-9 text-xs">
+                {studentSortFieldLabel(studentSortField)}
+              </SelectTrigger>
+              <SelectContent>
+                {#each studentSortFields as field (field)}
+                  <SelectItem value={field} class="text-xs">
+                    {studentSortFieldLabel(field)}
+                  </SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {m.settings_student_sort_direction()}
+            </Label>
+            <Select
+              type="single"
+              value={studentSortDirection}
+              onValueChange={(value) => (studentSortDirection = value ?? "asc")}
+            >
+              <SelectTrigger class="h-9 text-xs">
+                {studentSortDirection === "desc"
+                  ? m.settings_student_sort_descending()
+                  : m.settings_student_sort_ascending()}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asc" class="text-xs">
+                  {m.settings_student_sort_ascending()}
+                </SelectItem>
+                <SelectItem value="desc" class="text-xs">
+                  {m.settings_student_sort_descending()}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {m.settings_student_sort_then_by()}
+            </Label>
+            <div class="flex gap-2">
+              <Select
+                type="single"
+                value={studentSortThenBy1Field}
+                onValueChange={setSecondarySortField}
+              >
+                <SelectTrigger class="h-9 min-w-0 flex-1 text-xs">
+                  {studentSortThenBy1Field === "none"
+                    ? m.settings_student_sort_none()
+                    : studentSortFieldLabel(studentSortThenBy1Field)}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" class="text-xs">
+                    {m.settings_student_sort_none()}
+                  </SelectItem>
+                  {#each studentSortFields.filter((field) => field !== studentSortField && field !== studentSortThenBy2Field) as field (field)}
+                    <SelectItem value={field} class="text-xs">
+                      {studentSortFieldLabel(field)}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+              {#if studentSortThenBy1Field !== "none"}
+                <Select
+                  type="single"
+                  value={studentSortThenBy1Direction}
+                  onValueChange={(value) =>
+                    (studentSortThenBy1Direction = value ?? "asc")}
+                >
+                  <SelectTrigger class="h-9 w-32 text-xs">
+                    {studentSortThenBy1Direction === "desc"
+                      ? m.settings_student_sort_descending()
+                      : m.settings_student_sort_ascending()}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc" class="text-xs">
+                      {m.settings_student_sort_ascending()}
+                    </SelectItem>
+                    <SelectItem value="desc" class="text-xs">
+                      {m.settings_student_sort_descending()}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              {/if}
+            </div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-semibold text-foreground">
+              {m.settings_student_sort_then_by_second()}
+            </Label>
+            <div class="flex gap-2">
+              <Select
+                type="single"
+                value={studentSortThenBy2Field}
+                onValueChange={(value) =>
+                  (studentSortThenBy2Field = value ?? "none")}
+              >
+                <SelectTrigger class="h-9 min-w-0 flex-1 text-xs">
+                  {studentSortThenBy2Field === "none"
+                    ? m.settings_student_sort_none()
+                    : studentSortFieldLabel(studentSortThenBy2Field)}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" class="text-xs">
+                    {m.settings_student_sort_none()}
+                  </SelectItem>
+                  {#each studentSortFields.filter((field) => field !== studentSortField && field !== studentSortThenBy1Field) as field (field)}
+                    <SelectItem value={field} class="text-xs">
+                      {studentSortFieldLabel(field)}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+              {#if studentSortThenBy2Field !== "none"}
+                <Select
+                  type="single"
+                  value={studentSortThenBy2Direction}
+                  onValueChange={(value) =>
+                    (studentSortThenBy2Direction = value ?? "asc")}
+                >
+                  <SelectTrigger class="h-9 w-32 text-xs">
+                    {studentSortThenBy2Direction === "desc"
+                      ? m.settings_student_sort_descending()
+                      : m.settings_student_sort_ascending()}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc" class="text-xs">
+                      {m.settings_student_sort_ascending()}
+                    </SelectItem>
+                    <SelectItem value="desc" class="text-xs">
+                      {m.settings_student_sort_descending()}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              {/if}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </TabsContent>
   </Tabs>
 

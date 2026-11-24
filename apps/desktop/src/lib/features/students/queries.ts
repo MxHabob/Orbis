@@ -403,6 +403,7 @@ export function createRegisterStudentMutation() {
     mutationFn: (req: RegisterStudentInput) => api.registerStudent(req),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.all });
     },
   }));
 }
@@ -419,6 +420,7 @@ export function createUpdateStudentStatusMutation() {
         ),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.all });
     },
   }));
 }
@@ -450,6 +452,7 @@ export function createDeleteStudentMutation() {
         queryKey: queryKeys.student.detail(studentId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.all });
     },
   }));
 }
@@ -467,6 +470,7 @@ export function createDeleteStudentsMutation() {
         results.some((result) => result.status === "fulfilled" && result.value)
       ) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.org.all });
       }
     },
   }));
@@ -482,6 +486,7 @@ export function createRestoreStudentMutation() {
         queryKey: queryKeys.student.detail(studentId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.all });
     },
   }));
 }
@@ -516,6 +521,7 @@ export function createEnrollStudentMutation() {
     mutationFn: (req: EnrollStudentRequest) => api.enrollStudent(req),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.all });
     },
   }));
 }

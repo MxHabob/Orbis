@@ -937,6 +937,7 @@ impl BootstrapService {
             requires_approval: true,
             allow_no_guardian: false,
             allow_duplicate_national_id: false,
+            prevent_duplicate_full_name: true,
             auto_assign_fees: true,
             max_class_capacity: settings.enrollment.max_class_size_default,
             allow_late_enrollment: settings.enrollment.allow_late_enrollment,

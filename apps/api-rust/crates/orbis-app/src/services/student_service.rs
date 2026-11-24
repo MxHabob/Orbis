@@ -165,17 +165,29 @@ pub struct DuplicateCheckInput {
     pub national_id: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub full_name: Option<String>,
+    pub first_name: Option<String>,
+    pub middle_name: Option<String>,
+    pub last_name: Option<String>,
+    pub first_name_ar: Option<String>,
+    pub middle_name_ar: Option<String>,
+    pub last_name_ar: Option<String>,
+    pub birth_date: Option<NaiveDate>,
     pub exclude_student_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DuplicateMatchItem {
-    pub field: String, // "national_id", "phone", "email"
+    pub field: String, // "national_id", "phone", "email", "full_name"
     pub value: String,
     pub matched_person_id: Uuid,
     pub matched_person_name: String,
     pub student_id: Option<Uuid>,
     pub student_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -265,6 +277,184 @@ pub struct UpdateStudentProfileInput {
     pub avatar_url: Option<String>,
 }
 
+fn normalize_name_for_match(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut prev_space = false;
+    for ch in input.chars() {
+        // remove tatweel and Arabic harakat
+        if matches!(ch, '\u{0640}' | '\u{064B}'..='\u{065F}' | '\u{0670}') {
+            continue;
+        }
+        let mapped = match ch {
+            'أ' | 'إ' | 'آ' | 'ٱ' => 'ا',
+            'ى' => 'ي',
+            'ؤ' => 'و',
+            'ئ' => 'ي',
+            'ة' => 'ه',
+            c => c,
+        };
+        for lc in mapped.to_lowercase() {
+            if lc.is_whitespace() {
+                if !prev_space {
+                    out.push(' ');
+                    prev_space = true;
+                }
+            } else {
+                out.push(lc);
+                prev_space = false;
+            }
+        }
+    }
+    out.trim().to_string()
+}
+
+fn compose_full_name(first: &str, middle: Option<&str>, last: &str) -> Option<String> {
+    let f = first.trim();
+    let l = last.trim();
+    if f.is_empty() && l.is_empty() {
+        return None;
+    }
+    let m = middle.map(str::trim).filter(|v| !v.is_empty());
+    Some(match m {
+        Some(mid) if !f.is_empty() || !l.is_empty() => {
+            format!("{} {} {}", f, mid, l).trim().to_string()
+        }
+        _ => format!("{} {}", f, l).trim().to_string(),
+    })
+}
+
+fn candidate_name_keys(
+    full_name: Option<&str>,
+    first: Option<&str>,
+    middle: Option<&str>,
+    last: Option<&str>,
+    first_ar: Option<&str>,
+    middle_ar: Option<&str>,
+    last_ar: Option<&str>,
+) -> Vec<String> {
+    let mut keys = Vec::new();
+    if let Some(v) = full_name.and_then(|s| {
+        let t = s.trim();
+        if t.is_empty() { None } else { Some(t) }
+    }) {
+        let k = normalize_name_for_match(v);
+        if !k.is_empty() {
+            keys.push(k);
+        }
+    }
+    if let (Some(f), Some(l)) = (first, last) {
+        if let Some(name) = compose_full_name(f, middle, l) {
+            let k = normalize_name_for_match(&name);
+            if !k.is_empty() {
+                keys.push(k);
+            }
+        }
+    }
+    if let (Some(f), Some(l)) = (first_ar, last_ar) {
+        if let Some(name) = compose_full_name(f, middle_ar, l) {
+            let k = normalize_name_for_match(&name);
+            if !k.is_empty() {
+                keys.push(k);
+            }
+        }
+    }
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
+fn student_name_keys(detail: &StudentDetail) -> Vec<String> {
+    let p = &detail.person;
+    let mut keys = Vec::new();
+    let full = p.full_name();
+    let k = normalize_name_for_match(&full);
+    if !k.is_empty() {
+        keys.push(k);
+    }
+    if let Some(ar) = p.full_name_ar() {
+        let k = normalize_name_for_match(&ar);
+        if !k.is_empty() {
+            keys.push(k);
+        }
+    }
+    if let Some(name) = compose_full_name(&p.first_name, p.middle_name.as_deref(), &p.last_name) {
+        let k = normalize_name_for_match(&name);
+        if !k.is_empty() {
+            keys.push(k);
+        }
+    }
+    if let (Some(f), Some(l)) = (p.first_name_ar.as_deref(), p.last_name_ar.as_deref()) {
+        if let Some(name) = compose_full_name(f, p.middle_name_ar.as_deref(), l) {
+            let k = normalize_name_for_match(&name);
+            if !k.is_empty() {
+                keys.push(k);
+            }
+        }
+    }
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
+fn collect_name_duplicate_matches(
+    candidates: &[StudentDetail],
+    input: &DuplicateCheckInput,
+    exclude_student_id: Option<Uuid>,
+) -> Vec<DuplicateMatchItem> {
+    let keys = candidate_name_keys(
+        input.full_name.as_deref(),
+        input.first_name.as_deref(),
+        input.middle_name.as_deref(),
+        input.last_name.as_deref(),
+        input.first_name_ar.as_deref(),
+        input.middle_name_ar.as_deref(),
+        input.last_name_ar.as_deref(),
+    );
+    if keys.is_empty() {
+        return Vec::new();
+    }
+    let mut matches = Vec::new();
+    for existing in candidates {
+        if exclude_student_id == Some(existing.student.id) {
+            continue;
+        }
+        let existing_keys = student_name_keys(existing);
+        let matched_key = keys.iter().find(|k| existing_keys.contains(k));
+        if let Some(key) = matched_key {
+            let same_birth_date = match (input.birth_date, existing.person.birth_date) {
+                (Some(a), Some(b)) => a == b,
+                _ => false,
+            };
+            let (confidence, reason) = if same_birth_date {
+                (
+                    "high".to_string(),
+                    "Existing student has the same full name and date of birth in this organization".to_string(),
+                )
+            } else {
+                (
+                    "medium".to_string(),
+                    "Existing student has the same full name in this organization. Verify identity before creating another record".to_string(),
+                )
+            };
+            let matched_person_name = existing
+                .person
+                .full_name_ar()
+                .unwrap_or_else(|| existing.person.full_name());
+            matches.push(DuplicateMatchItem {
+                field: "full_name".to_string(),
+                value: key.clone(),
+                matched_person_id: existing.person.id,
+                matched_person_name,
+                student_id: Some(existing.student.id),
+                student_number: Some(existing.student.student_number.clone()),
+                reason: Some(reason),
+                confidence: Some(confidence),
+            });
+        }
+    }
+    matches
+}
+
 impl StudentService {
     pub fn new(
         student_repo: Arc<dyn StudentRepository>,
@@ -309,13 +499,52 @@ impl StudentService {
         self
     }
 
+    async fn find_student_in_org(
+        &self,
+        student_id: Uuid,
+        org_id: Uuid,
+    ) -> Result<Student, DomainError> {
+        let student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        if student.org_id != org_id {
+            return Err(DomainError::NotFound("Student not found".into()));
+        }
+        Ok(student)
+    }
+
+    async fn find_person_in_org(
+        &self,
+        person_id: Uuid,
+        org_id: Uuid,
+    ) -> Result<Person, DomainError> {
+        let person = self
+            .person_repo
+            .find_by_id(person_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", person_id)))?;
+        if person.org_id != Some(org_id) {
+            return Err(DomainError::NotFound("Person not found".into()));
+        }
+        Ok(person)
+    }
+
     /// Check for duplicate student/person by national_id, phone, or email
     pub async fn check_duplicate(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         org_id: Uuid,
         input: DuplicateCheckInput,
     ) -> Result<DuplicateCheckResult, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
         let mut matches = Vec::new();
 
         if let Some(nid) = input.national_id.as_deref() {
@@ -335,6 +564,8 @@ impl StudentService {
                             matched_person_name: person.full_name(),
                             student_id: student.as_ref().map(|s| s.id),
                             student_number: student.as_ref().map(|s| s.student_number.clone()),
+                            reason: None,
+                            confidence: None,
                         });
                     }
                 }
@@ -358,6 +589,8 @@ impl StudentService {
                             matched_person_name: person.full_name(),
                             student_id: student.as_ref().map(|s| s.id),
                             student_number: student.as_ref().map(|s| s.student_number.clone()),
+                            reason: None,
+                            confidence: None,
                         });
                     }
                 }
@@ -381,11 +614,42 @@ impl StudentService {
                             matched_person_name: person.full_name(),
                             student_id: student.as_ref().map(|s| s.id),
                             student_number: student.as_ref().map(|s| s.student_number.clone()),
+                            reason: None,
+                            confidence: None,
                         });
                     }
                 }
             }
         }
+
+        // Full-name duplicate/suspected-duplicate detection (institutional safety)
+        let org_settings = self
+            .settings_repo
+            .get_settings(org_id)
+            .await
+            .unwrap_or_default();
+        if org_settings.admission.policy.prevent_duplicate_full_name {
+            let existing_details = self.student_repo.find_active_details_by_org(org_id).await?;
+            let name_matches =
+                collect_name_duplicate_matches(&existing_details, &input, input.exclude_student_id);
+            matches.extend(name_matches);
+        }
+
+        // de-duplicate identical matches (same field/person/student)
+        matches.sort_by(|a, b| {
+            (&a.field, &a.matched_person_id, &a.student_id, &a.value).cmp(&(
+                &b.field,
+                &b.matched_person_id,
+                &b.student_id,
+                &b.value,
+            ))
+        });
+        matches.dedup_by(|a, b| {
+            a.field == b.field
+                && a.matched_person_id == b.matched_person_id
+                && a.student_id == b.student_id
+                && a.value == b.value
+        });
 
         let has_duplicate = !matches.is_empty();
         Ok(DuplicateCheckResult {
@@ -404,6 +668,9 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
         let _enrollment_guard = self.enrollment_lock.lock().await;
         self.register_student_unlocked(ctx, org_id, input, None)
             .await
@@ -438,7 +705,7 @@ impl StudentService {
         let numbering_schema = admission_cfg.numbering;
         let admission_policy = admission_cfg.policy;
 
-        // 1. Enforce unique national ID policy if configured
+        // 1. Enforce duplicate-identity policies
         if !admission_policy.allow_duplicate_national_id {
             if let Some(nid) = input.national_id.as_deref() {
                 let clean_nid = nid.trim();
@@ -455,6 +722,35 @@ impl StudentService {
                         )));
                     }
                 }
+            }
+        }
+
+        if admission_policy.prevent_duplicate_full_name {
+            let existing_details = self.student_repo.find_active_details_by_org(org_id).await?;
+            let dup_input = DuplicateCheckInput {
+                full_name: input.display_name.clone(),
+                first_name: Some(input.first_name.clone()),
+                middle_name: input.middle_name.clone(),
+                last_name: Some(input.last_name.clone()),
+                first_name_ar: input.first_name_ar.clone(),
+                middle_name_ar: input.middle_name_ar.clone(),
+                last_name_ar: input.last_name_ar.clone(),
+                birth_date: input.birth_date,
+                exclude_student_id: None,
+                ..Default::default()
+            };
+            if let Some(matched) =
+                collect_name_duplicate_matches(&existing_details, &dup_input, None)
+                    .into_iter()
+                    .next()
+            {
+                return Err(DomainError::Conflict(format!(
+                    "A student with the same full name already exists in this organization ({} - {}). Please verify the student identity before creating a new record.",
+                    matched
+                        .student_number
+                        .unwrap_or_else(|| "existing record".to_string()),
+                    matched.matched_person_name
+                )));
             }
         }
 
@@ -528,6 +824,9 @@ impl StudentService {
             .find_by_id(person_id)
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", person_id)))?;
+        if person.org_id != Some(org_id) {
+            return Err(DomainError::NotFound("Person not found".into()));
+        }
 
         if let Some(existing_student) = self.student_repo.find_by_person_id(person_id).await? {
             if existing_student.org_id == org_id {
@@ -917,11 +1216,7 @@ impl StudentService {
             .check(ctx, Permission::StudentUpdate)
             .await?;
 
-        let mut student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        let mut student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
 
         let old_status = student.status;
         student.status = new_status;
@@ -973,13 +1268,47 @@ impl StudentService {
         Ok(Some(StudentDetail { student, person }))
     }
 
-    /// Get student detailed profile with context (for auth/permission checks if needed)
+    /// Get student detailed profile within the caller's organization.
     pub async fn get_student_detail(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Option<StudentDetail>, DomainError> {
-        self.get_student(student_id).await
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
+
+        let student = match self.student_repo.find_by_id(student_id).await? {
+            Some(student) if student.org_id == ctx.tenant_id => student,
+            _ => return Ok(None),
+        };
+        let person = match self.person_repo.find_by_id(student.person_id).await? {
+            Some(person) if person.org_id == Some(ctx.tenant_id) => person,
+            _ => return Ok(None),
+        };
+
+        Ok(Some(StudentDetail { student, person }))
+    }
+
+    pub async fn get_enrollment(
+        &self,
+        ctx: &RequestContext,
+        enrollment_id: Uuid,
+    ) -> Result<Enrollment, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::EnrollmentRead)
+            .await?;
+        let enrollment = self
+            .enrollment_repo
+            .find_by_id(enrollment_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
+            })?;
+        if enrollment.org_id != ctx.tenant_id {
+            return Err(DomainError::NotFound("Enrollment not found".into()));
+        }
+        Ok(enrollment)
     }
 
     /// List students with pagination & filters returning StudentDetail items
@@ -1072,6 +1401,9 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
 
         let mut pre_errors: HashMap<Uuid, String> = HashMap::new();
         let mut target_counts: HashMap<Uuid, i32> = HashMap::new();
@@ -1216,6 +1548,9 @@ impl StudentService {
             .ok_or_else(|| {
                 DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
             })?;
+        if enrollment.org_id != ctx.tenant_id {
+            return Err(DomainError::NotFound("Enrollment not found".into()));
+        }
 
         enrollment.study_mode = new_mode;
         enrollment.updated_at = Utc::now();
@@ -1273,6 +1608,8 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
+        self.find_student_in_org(student_id, ctx.tenant_id).await?;
+        self.find_person_in_org(guardian_id, ctx.tenant_id).await?;
 
         let now = Utc::now();
         let sg = StudentGuardian {
@@ -1301,9 +1638,13 @@ impl StudentService {
     /// Get student guardians
     pub async fn get_guardians(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Vec<StudentGuardian>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GuardianRead)
+            .await?;
+        self.find_student_in_org(student_id, ctx.tenant_id).await?;
         self.guardian_repo.find_by_student(student_id).await
     }
 
@@ -1326,6 +1667,8 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
+        self.find_student_in_org(student_id, ctx.tenant_id).await?;
+        self.find_person_in_org(guardian_id, ctx.tenant_id).await?;
         self.guardian_repo.delete(student_id, guardian_id).await
     }
 
@@ -1340,19 +1683,10 @@ impl StudentService {
             .check(ctx, Permission::StudentUpdate)
             .await?;
 
-        let student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
-
+        let student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
         let mut person = self
-            .person_repo
-            .find_by_id(student.person_id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::NotFound(format!("Person {} not found", student.person_id))
-            })?;
+            .find_person_in_org(student.person_id, ctx.tenant_id)
+            .await?;
 
         if let Some(v) = input.first_name {
             person.first_name = v;
@@ -1430,11 +1764,7 @@ impl StudentService {
             .check(ctx, Permission::StudentDelete)
             .await?;
 
-        let mut student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        let mut student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
 
         student.is_deleted = true;
         student.deleted_at = Some(Utc::now());
@@ -1453,11 +1783,9 @@ impl StudentService {
             .check(ctx, Permission::StudentDelete)
             .await?;
 
-        let mut student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        let mut student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
+        self.find_person_in_org(student.person_id, ctx.tenant_id)
+            .await?;
 
         student.is_deleted = false;
         student.deleted_at = None;
@@ -1478,6 +1806,9 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
         let _enrollment_guard = self.enrollment_lock.lock().await;
 
         let is_atomic = input.atomic.unwrap_or(true);
@@ -1501,8 +1832,14 @@ impl StudentService {
         let mut seen_nids: HashMap<String, usize> = HashMap::new();
         let mut seen_passports: HashMap<String, usize> = HashMap::new();
         let mut seen_student_nums: HashMap<String, usize> = HashMap::new();
+        let mut seen_full_names: HashMap<String, usize> = HashMap::new();
         let mut class_allocated_count: HashMap<Uuid, i32> = HashMap::new();
         let mut class_capacity_cache: HashMap<Uuid, (i32, i32)> = HashMap::new(); // class_id -> (current_active, max_capacity)
+        let existing_student_details = if admission_policy.prevent_duplicate_full_name {
+            self.student_repo.find_active_details_by_org(org_id).await?
+        } else {
+            Vec::new()
+        };
 
         for item in &items {
             let row = item.row_index;
@@ -1515,6 +1852,63 @@ impl StudentService {
             if item.registration.last_name.trim().is_empty() {
                 pre_errors.insert(row, "Last name is required".to_string());
                 continue;
+            }
+
+            // 1b. Full-name duplicate detection (existing students + intra-batch)
+            if admission_policy.prevent_duplicate_full_name {
+                let dup_input = DuplicateCheckInput {
+                    full_name: item.registration.display_name.clone(),
+                    first_name: Some(item.registration.first_name.clone()),
+                    middle_name: item.registration.middle_name.clone(),
+                    last_name: Some(item.registration.last_name.clone()),
+                    first_name_ar: item.registration.first_name_ar.clone(),
+                    middle_name_ar: item.registration.middle_name_ar.clone(),
+                    last_name_ar: item.registration.last_name_ar.clone(),
+                    birth_date: item.registration.birth_date,
+                    exclude_student_id: None,
+                    ..Default::default()
+                };
+                let keys = candidate_name_keys(
+                    dup_input.full_name.as_deref(),
+                    dup_input.first_name.as_deref(),
+                    dup_input.middle_name.as_deref(),
+                    dup_input.last_name.as_deref(),
+                    dup_input.first_name_ar.as_deref(),
+                    dup_input.middle_name_ar.as_deref(),
+                    dup_input.last_name_ar.as_deref(),
+                );
+                if !keys.is_empty() {
+                    if let Some(matched) =
+                        collect_name_duplicate_matches(&existing_student_details, &dup_input, None)
+                            .into_iter()
+                            .next()
+                    {
+                        pre_errors.insert(
+                            row,
+                            format!(
+                                "A student with the same full name already exists in this organization ({} - {}).",
+                                matched
+                                    .student_number
+                                    .unwrap_or_else(|| "existing record".to_string()),
+                                matched.matched_person_name
+                            ),
+                        );
+                        continue;
+                    }
+                    if let Some(prev_row) = keys.iter().find_map(|k| seen_full_names.get(k)) {
+                        pre_errors.insert(
+                            row,
+                            format!(
+                                "Duplicate full name within batch (conflicts with row {})",
+                                prev_row
+                            ),
+                        );
+                        continue;
+                    }
+                    for k in keys {
+                        seen_full_names.insert(k, row);
+                    }
+                }
             }
 
             // 2. Intra-Batch Duplicate National ID Check

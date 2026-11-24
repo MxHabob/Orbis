@@ -21,11 +21,16 @@ interface Props {
   isDirty: boolean;
   canEnterGrades: boolean;
   selectedPeriodId: string;
+  subjectItems?: any[];
   onRefresh: () => void;
   onSaveAll: () => void;
   onCellEdit: (e: any) => void;
   onCalculateRankings?: () => void;
   isCalculating?: boolean;
+  onExportTemplate?: () => void;
+  onImportTemplate?: () => void;
+  isExporting?: boolean;
+  isImporting?: boolean;
 }
 
 let {
@@ -39,11 +44,16 @@ let {
   isDirty,
   canEnterGrades,
   selectedPeriodId,
+  subjectItems = undefined,
   onRefresh,
   onSaveAll,
   onCellEdit,
   onCalculateRankings,
   isCalculating = false,
+  onExportTemplate,
+  onImportTemplate,
+  isExporting = false,
+  isImporting = false,
 }: Props = $props();
 </script>
 
@@ -60,14 +70,15 @@ let {
     <!-- Subject Selector -->
     <SubjectSelect
       bind:value={selectedSubjectId}
+      items={subjectItems}
       disabled={!selectedClassId}
       placeholder={m.common_control_select_subject()}
       class="h-9 w-full min-w-0 text-xs xl:min-w-[180px] xl:flex-1"
     />
 
-    {#if matrixData && canEnterGrades}
+    {#if matrixData}
       <div class="flex shrink-0 flex-wrap items-center gap-2 xl:ms-auto xl:flex-nowrap">
-        {#if onCalculateRankings}
+        {#if onCalculateRankings && canEnterGrades}
           <Button
             variant="outline"
             size="sm"
@@ -77,6 +88,30 @@ let {
           >
             {#if isCalculating}<LoadingIndicator size={12} />{/if}
             <span>{m.common_control_calculate_ranking()}</span>
+          </Button>
+        {/if}
+        {#if onExportTemplate}
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 px-3 text-xs"
+            onclick={onExportTemplate}
+            disabled={isExporting || isMatrixLoading || gridSource.length === 0}
+          >
+            {#if isExporting}<LoadingIndicator size={12} />{/if}
+            <span>{m.common_action_export()}</span>
+          </Button>
+        {/if}
+        {#if onImportTemplate && canEnterGrades}
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 px-3 text-xs"
+            onclick={onImportTemplate}
+            disabled={isImporting || isMatrixLoading}
+          >
+            {#if isImporting}<LoadingIndicator size={12} />{/if}
+            <span>{m.common_action_import()}</span>
           </Button>
         {/if}
         <Button
@@ -89,18 +124,20 @@ let {
           {#if isMatrixLoading}<LoadingIndicator size={12} />{/if}
           {m.common_control_refresh()}
         </Button>
-        <Button
-          variant="lime"
-          size="sm"
-          class="h-8 px-3 text-xs"
-          onclick={onSaveAll}
-          disabled={isSaving || !isDirty}
-        >
-          {#if isSaving}
-            <LoadingIndicator size={12} />
-          {/if}
-          {m.common_action_save()}
-        </Button>
+        {#if canEnterGrades}
+          <Button
+            variant="lime"
+            size="sm"
+            class="h-8 px-3 text-xs"
+            onclick={onSaveAll}
+            disabled={isSaving || !isDirty}
+          >
+            {#if isSaving}
+              <LoadingIndicator size={12} />
+            {/if}
+            {m.common_action_save()}
+          </Button>
+        {/if}
       </div>
     {/if}
   </div>
@@ -126,6 +163,14 @@ let {
     <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
       <p class="text-sm">{m.common_control_no_data()}</p>
       <p class="text-xs">{m.common_control_no_data_hint()}</p>
+    </div>
+  {:else if selectedPeriodId && selectedClassId && !selectedSubjectId}
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
+      <p class="text-sm">
+        {m.common_control_no_subjects_for_class?.() ??
+          m.common_control_select_subject?.() ??
+          m.common_control_select_filters()}
+      </p>
     </div>
   {:else}
     <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">

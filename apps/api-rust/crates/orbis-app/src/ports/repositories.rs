@@ -339,6 +339,19 @@ pub trait StudentRepository: Send + Sync {
     }
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<StudentDetail>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Student>, DomainError>;
+    async fn find_active_details_by_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<StudentDetail>, DomainError> {
+        let students = self.find_by_org(org_id).await?;
+        let mut details = Vec::with_capacity(students.len());
+        for student in students {
+            if let Some(detail) = self.find_detail_by_id(student.id).await? {
+                details.push(detail);
+            }
+        }
+        Ok(details)
+    }
     async fn list(
         &self,
         org_id: Uuid,
@@ -956,6 +969,8 @@ pub trait PolicyRepository: Send + Sync {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DashboardCounts {
     pub total_students: u64,
+    pub enrolled_students: u64,
+    pub enrollment_rate: f64,
     pub total_employees: u64,
     pub active_sections: u64,
     pub total_teachers: u64,

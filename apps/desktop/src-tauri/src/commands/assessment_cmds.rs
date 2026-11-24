@@ -77,6 +77,7 @@ pub struct GradeDto {
     pub student_id: String,
     pub enrollment_id: Option<String>,
     pub section_subject_id: String,
+    pub component_code: Option<String>,
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Decimal,
@@ -100,6 +101,7 @@ pub struct RecordGradeInput {
     pub student_id: String,
     pub enrollment_id: Option<String>,
     pub section_subject_id: String,
+    pub component_code: Option<String>,
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -116,6 +118,7 @@ pub struct RecordGradeItemInput {
     pub student_id: String,
     pub enrollment_id: Option<String>,
     pub section_subject_id: String,
+    pub component_code: Option<String>,
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -300,6 +303,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         student_id: g.student_id.to_string(),
         enrollment_id: g.enrollment_id.map(|e| e.to_string()),
         section_subject_id: g.section_subject_id.to_string(),
+        component_code: g.component_code,
         component_id: g.component_id.map(|c| c.to_string()),
         score: g.score,
         max_score: g.max_score,
@@ -480,8 +484,10 @@ pub async fn assessment_record_grade(
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let section_subject_id =
         Uuid::parse_str(&request.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
-    let component_id = request.component_id.and_then(|c| Uuid::parse_str(&c).ok());
-    let max_score = request.max_score.unwrap_or_else(|| Decimal::from(100));
+    let component_id = request
+        .component_id
+        .map(|c| Uuid::parse_str(&c).map_err(|_| "Invalid component_id"))
+        .transpose()?;
 
     let g = state
         .assessment_service
@@ -491,9 +497,10 @@ pub async fn assessment_record_grade(
             period_id,
             student_id,
             section_subject_id,
+            request.component_code,
             component_id,
             request.score,
-            max_score,
+            request.max_score,
             false,
         )
         .await
@@ -516,13 +523,17 @@ pub async fn assessment_batch_record_grades(
         let enrollment_id = item.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
         let section_subject_id =
             Uuid::parse_str(&item.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
-        let component_id = item.component_id.and_then(|c| Uuid::parse_str(&c).ok());
+        let component_id = item
+            .component_id
+            .map(|c| Uuid::parse_str(&c).map_err(|_| "Invalid component_id"))
+            .transpose()?;
 
         items.push(BatchGradeItem {
             period_id,
             student_id,
             enrollment_id,
             section_subject_id,
+            component_code: item.component_code,
             component_id,
             score: item.score,
             max_score: item.max_score,

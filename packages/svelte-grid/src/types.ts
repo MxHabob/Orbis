@@ -116,6 +116,12 @@ export interface OrbisColumnDef {
   ) => boolean | string | ColumnValidateResult;
   filterable?: boolean;
   aggregate?: AggregateFn;
+  /** Merged/group header label above this column (e.g. subject name). Consecutive columns with the same group merge. */
+  group?: string;
+  /** Secondary header label below the main header (e.g. max score / limit row). */
+  subHeader?: string;
+  /** Number of header rows this column's header should span from the top (use to span all header rows for identity columns). */
+  headerRowSpan?: number;
 }
 
 export type AggregateFn =

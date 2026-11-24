@@ -68,6 +68,7 @@ export type AcademicPeriodState =
 
 export type AcademicPolicyDto = {
   decimal_places: number;
+  grade_bands: Array<unknown>;
   honors_threshold_percentage: string;
   max_displayed_rank?: number | null;
   max_failed_subjects_for_conditional_pass: number;
@@ -119,6 +120,7 @@ export type AcademicSettingsDto = {
   default_passing_score?: string;
   enrollment_auto_close?: boolean;
   exclude_withdrawn?: boolean;
+  grade_bands?: Array<unknown>;
   grade_edit_approval?: boolean;
   grade_entry_auto_close?: boolean;
   honors_threshold_percentage?: string;
@@ -784,6 +786,30 @@ export type BulkScheduleLessonsRequest = {
   lessons: Array<ScheduleLessonRequest>;
 };
 
+export type BulkTransferClassItem = {
+  enrollment_id: string;
+  reason?: string | null;
+  target_section_id: string;
+};
+
+export type BulkTransferClassItemResult = {
+  enrollment_id: string;
+  error?: string | null;
+  success: boolean;
+};
+
+export type BulkTransferClassesRequest = {
+  atomic?: boolean | null;
+  items: Array<BulkTransferClassItem>;
+};
+
+export type BulkTransferClassesResponse = {
+  failed: number;
+  items: Array<BulkTransferClassItemResult>;
+  succeeded: number;
+  total: number;
+};
+
 export type CalculateGpaRequest = {
   period_id: string;
   student_id: string;
@@ -1210,6 +1236,8 @@ export type CurrencyInput = {
 export type DashboardCountsDto = {
   active_academic_calendar?: string | null;
   active_sections: number;
+  enrolled_students: number;
+  enrollment_rate: number;
   pending_fees_amount: number;
   total_classes: number;
   total_employees: number;
@@ -1619,10 +1647,12 @@ export type GoogleAuthRequest = {
 
 export type GradeDto = {
   change_reason?: string | null;
+  component_code?: string | null;
   component_id?: string | null;
   created_at: string;
   enrollment_id?: string | null;
   id: string;
+  is_absent: boolean;
   is_excused: boolean;
   is_exempt: boolean;
   is_final: boolean;
@@ -1996,6 +2026,7 @@ export type OrganizationSettingsDto = {
   enrollment?: EnrollmentSettingsDto;
   finance?: FinanceSettingsDto;
   notifications?: NotificationSettingsDto;
+  student_sort?: StudentSortSettingsDto;
 };
 
 export type OverrideRequestDto = {
@@ -2126,6 +2157,9 @@ export type ProcessPaymentRequest = {
   amount: string;
   enrollment_id?: string | null;
   fee_id?: string | null;
+  /**
+   * Reuse this UUID unchanged when retrying the same payment request.
+   */
   idempotency_key?: string | null;
   method: string;
   notes?: string | null;
@@ -2253,8 +2287,10 @@ export type RecordBehaviorRequest = {
 };
 
 export type RecordGradeItemRequest = {
+  component_code?: string | null;
   component_id?: string | null;
   enrollment_id?: string | null;
+  is_absent?: boolean;
   is_excused?: boolean | null;
   is_exempt?: boolean | null;
   max_score?: string | null;
@@ -2266,8 +2302,10 @@ export type RecordGradeItemRequest = {
 };
 
 export type RecordGradeRequest = {
+  component_code?: string | null;
   component_id?: string | null;
   enrollment_id?: string | null;
+  is_absent?: boolean;
   is_excused?: boolean | null;
   is_exempt?: boolean | null;
   max_score?: string | null;
@@ -2630,6 +2668,13 @@ export type StudentFeeDto = {
   updated_at: string;
 };
 
+export type StudentFeeSummaryDto = {
+  balance: string;
+  currency: string;
+  due: string;
+  paid: string;
+};
+
 export type StudentProgressionItemInput = {
   decision: string;
   enrollment_id: string;
@@ -2638,6 +2683,28 @@ export type StudentProgressionItemInput = {
   student_id: string;
   student_number?: string | null;
   target_section_id?: string | null;
+};
+
+export type StudentSortCriterion = {
+  direction?: StudentSortDirection;
+  field?: StudentSortField;
+};
+
+export type StudentSortDirection = "asc" | "desc";
+
+export type StudentSortField =
+  | "student_number"
+  | "name"
+  | "created_at"
+  | "admitted_at"
+  | "status"
+  | "birth_date"
+  | "gender";
+
+export type StudentSortSettingsDto = {
+  direction?: StudentSortDirection;
+  field?: StudentSortField;
+  then_by?: Array<StudentSortCriterion>;
 };
 
 export type SubjectDto = {
@@ -4933,6 +5000,20 @@ export type EnrollStudent2Responses = {
 
 export type EnrollStudent2Response =
   EnrollStudent2Responses[keyof EnrollStudent2Responses];
+
+export type BulkTransferClassesData = {
+  body: BulkTransferClassesRequest;
+  path?: never;
+  query?: never;
+  url: "/api/v1/enrollments/bulk-transfer";
+};
+
+export type BulkTransferClassesResponses = {
+  200: BulkTransferClassesResponse;
+};
+
+export type BulkTransferClassesResponse2 =
+  BulkTransferClassesResponses[keyof BulkTransferClassesResponses];
 
 export type GetEnrollmentData = {
   body?: never;
@@ -7806,6 +7887,35 @@ export type GenerateFeeResponses = {
 
 export type GenerateFeeResponse =
   GenerateFeeResponses[keyof GenerateFeeResponses];
+
+export type SummarizeStudentFeesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    enrollment_id?: string | null;
+    student_id?: string | null;
+    period_id?: string | null;
+    org_unit_id?: string | null;
+    currency_code?: string | null;
+    from_date?: string | null;
+    to_date?: string | null;
+    status?: string | null;
+    is_overdue?: boolean | null;
+    search?: string | null;
+    sort_by?: string | null;
+    sort_dir?: string | null;
+    page?: number | null;
+    page_size?: number | null;
+  };
+  url: "/api/v1/student-fees/summary";
+};
+
+export type SummarizeStudentFeesResponses = {
+  200: Array<StudentFeeSummaryDto>;
+};
+
+export type SummarizeStudentFeesResponse =
+  SummarizeStudentFeesResponses[keyof SummarizeStudentFeesResponses];
 
 export type DeleteStudentFeeData = {
   body?: never;

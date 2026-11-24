@@ -48,10 +48,14 @@ async function collectFiles(directory: string): Promise<string[]> {
   return files;
 }
 
+function parseJsonWithBom<T>(text: string): T {
+  return JSON.parse(text.replace(/^\uFEFF/, "")) as T;
+}
+
 async function main() {
   const [arabicMessages, englishMessages, sourceFiles] = await Promise.all([
-    readFile(join(messagesRoot, "ar.json"), "utf8").then(JSON.parse),
-    readFile(join(messagesRoot, "en.json"), "utf8").then(JSON.parse),
+    readFile(join(messagesRoot, "ar.json"), "utf8").then(parseJsonWithBom),
+    readFile(join(messagesRoot, "en.json"), "utf8").then(parseJsonWithBom),
     collectFiles(sourceRoot),
   ]);
 

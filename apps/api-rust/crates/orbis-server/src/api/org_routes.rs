@@ -17,7 +17,10 @@ use orbis_domain::entities::academic_calculation::{CalculationPlan, OutcomePolic
 use orbis_domain::entities::academic_policy::{
     PolicyGradeBand, RankingScope, RoundingMode, TiePolicy,
 };
-use orbis_domain::entities::settings::OrganizationSettings;
+use orbis_domain::entities::settings::{
+    OrganizationSettings, StudentSortCriterion, StudentSortDirection, StudentSortField,
+    StudentSortSettings,
+};
 use rust_decimal::Decimal;
 
 // ── DTOs ────────────────────────────────────────────────────────
@@ -344,6 +347,8 @@ pub struct OrganizationSettingsDto {
     #[serde(default)]
     pub academic: AcademicSettingsDto,
     #[serde(default)]
+    pub student_sort: StudentSortSettingsDto,
+    #[serde(default)]
     pub enrollment: EnrollmentSettingsDto,
     #[serde(default, alias = "registration")]
     pub admission: AdmissionConfigurationDto,
@@ -355,6 +360,14 @@ pub struct OrganizationSettingsDto {
     pub ai: AiSettingsDto,
     #[serde(default)]
     pub autopilot: AutopilotSettingsDto,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+#[serde(default)]
+pub struct StudentSortSettingsDto {
+    pub field: StudentSortField,
+    pub direction: StudentSortDirection,
+    pub then_by: Vec<StudentSortCriterion>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
@@ -451,11 +464,17 @@ pub struct AdmissionPolicyDto {
     pub requires_approval: bool,
     pub allow_no_guardian: bool,
     pub allow_duplicate_national_id: bool,
+    #[serde(default = "default_prevent_duplicate_full_name")]
+    pub prevent_duplicate_full_name: bool,
     pub auto_assign_fees: bool,
     pub max_class_capacity: i32,
     pub allow_late_enrollment: bool,
     pub allow_waitlist: bool,
     pub sibling_priority_enabled: bool,
+}
+
+fn default_prevent_duplicate_full_name() -> bool {
+    true
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
@@ -528,6 +547,8 @@ pub struct AutopilotSettingsDto {
 #[derive(Serialize, Deserialize, ToSchema, Default)]
 pub struct DashboardCountsDto {
     pub total_students: u64,
+    pub enrolled_students: u64,
+    pub enrollment_rate: f64,
     pub total_employees: u64,
     pub active_sections: u64,
     pub total_teachers: u64,
@@ -571,6 +592,11 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 exclude_withdrawn: s.academic.exclude_withdrawn,
                 grade_bands: s.academic.grade_bands,
             },
+            student_sort: StudentSortSettingsDto {
+                field: s.student_sort.field,
+                direction: s.student_sort.direction,
+                then_by: s.student_sort.then_by,
+            },
             enrollment: EnrollmentSettingsDto {
                 registration_enabled: s.enrollment.registration_enabled,
                 require_admin_approval: s.enrollment.require_admin_approval,
@@ -595,6 +621,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                     requires_approval: s.admission.policy.requires_approval,
                     allow_no_guardian: s.admission.policy.allow_no_guardian,
                     allow_duplicate_national_id: s.admission.policy.allow_duplicate_national_id,
+                    prevent_duplicate_full_name: s.admission.policy.prevent_duplicate_full_name,
                     auto_assign_fees: s.admission.policy.auto_assign_fees,
                     max_class_capacity: s.admission.policy.max_class_capacity,
                     allow_late_enrollment: s.admission.policy.allow_late_enrollment,
@@ -694,6 +721,11 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 exclude_withdrawn: s.academic.exclude_withdrawn,
                 grade_bands: s.academic.grade_bands,
             },
+            student_sort: StudentSortSettings {
+                field: s.student_sort.field,
+                direction: s.student_sort.direction,
+                then_by: s.student_sort.then_by,
+            },
             enrollment: orbis_domain::entities::settings::EnrollmentSettings {
                 registration_enabled: s.enrollment.registration_enabled,
                 require_admin_approval: s.enrollment.require_admin_approval,
@@ -718,6 +750,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                     requires_approval: s.admission.policy.requires_approval,
                     allow_no_guardian: s.admission.policy.allow_no_guardian,
                     allow_duplicate_national_id: s.admission.policy.allow_duplicate_national_id,
+                    prevent_duplicate_full_name: s.admission.policy.prevent_duplicate_full_name,
                     auto_assign_fees: s.admission.policy.auto_assign_fees,
                     max_class_capacity: s.admission.policy.max_class_capacity,
                     allow_late_enrollment: s.admission.policy.allow_late_enrollment,
@@ -832,6 +865,8 @@ async fn get_dashboard(
         .await?;
     Ok(ApiResponse::ok(DashboardCountsDto {
         total_students: counts.total_students,
+        enrolled_students: counts.enrolled_students,
+        enrollment_rate: counts.enrollment_rate,
         total_employees: counts.total_employees,
         active_sections: counts.active_sections,
         total_teachers: counts.total_teachers,

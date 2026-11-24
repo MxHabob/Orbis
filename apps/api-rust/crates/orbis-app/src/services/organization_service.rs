@@ -419,6 +419,21 @@ impl OrganizationService {
             .check(ctx, Permission::OrganizationWrite)
             .await?;
 
+        if settings.student_sort.then_by.len() > 2 {
+            return Err(DomainError::Validation(
+                "Student sorting supports up to three criteria".into(),
+            ));
+        }
+        let mut sort_fields = vec![settings.student_sort.field];
+        for criterion in &settings.student_sort.then_by {
+            if sort_fields.contains(&criterion.field) {
+                return Err(DomainError::Validation(
+                    "Student sort criteria must use distinct fields".into(),
+                ));
+            }
+            sort_fields.push(criterion.field);
+        }
+
         if let Some(plan) = settings.academic.calculation_plan.as_mut() {
             AcademicCalculationEngine::validate_plan(plan)?;
             let current = self.settings_repo.get_settings(org_id).await?;

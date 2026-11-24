@@ -25,6 +25,7 @@ export interface GradeCell {
   exam_type: string;
   score?: number | null;
   max_score: number;
+  component_code?: string | null;
   /** Links this grade to a specific assessment component for backend storage */
   component_id?: string | null;
 }
@@ -116,6 +117,7 @@ export function buildGradeColumns(
     labels?: {
       rowIndex?: string;
       studentName?: string;
+      studentNameSubHeader?: string;
       total?: string;
       percentage?: string;
       grade?: string;
@@ -131,6 +133,7 @@ export function buildGradeColumns(
       prop: "__rowIndex",
       header: labels.rowIndex || "#",
       name: labels.rowIndex || "#",
+      subHeader: "",
       width: 48,
       size: 48,
       readonly: true,
@@ -143,6 +146,7 @@ export function buildGradeColumns(
       prop: locale === "ar" ? "student_name_ar" : "student_name",
       header: labels.studentName || m.common_grade_column_student(),
       name: labels.studentName || m.common_grade_column_student(),
+      subHeader: labels.studentNameSubHeader ?? "",
       width: 200,
       size: 200,
       type: "avatar",
@@ -158,17 +162,17 @@ export function buildGradeColumns(
     for (const comp of matrix.components) {
       const displayName =
         locale === "ar" && comp.name_ar ? comp.name_ar : comp.name;
-      const typeLabel = `${displayName} (${comp.max_score})`;
 
       cols.push({
         id: `exam_${comp.code}`,
         prop: `exam_${comp.code}`,
-        header: typeLabel,
-        name: typeLabel,
+        header: displayName,
+        name: displayName,
+        subHeader: String(comp.max_score),
         width: 105,
         size: 105,
         type: "number",
-        align: "end",
+        align: "center",
         editor: readonly
           ? undefined
           : {
@@ -185,22 +189,23 @@ export function buildGradeColumns(
         (g) => g.exam_type === type,
       );
       const max = sample?.max_score || (type === "final" ? 30 : 20);
-      const typeLabel =
+      const displayName =
         type === "monthly"
-          ? m.exams_grade_work_label({ max })
+          ? m.exams_grade_work_label({ max }).replace(/\s*\([^)]*\)\s*$/, "") || m.exams_grade_work_label({ max })
           : type === "final"
-            ? m.exams_grade_exam_label({ max })
-            : `${type} (${max})`;
+            ? m.exams_grade_exam_label({ max }).replace(/\s*\([^)]*\)\s*$/, "") || m.exams_grade_exam_label({ max })
+            : String(type);
 
       cols.push({
         id: `exam_${type}`,
         prop: `exam_${type}`,
-        header: typeLabel,
-        name: typeLabel,
+        header: displayName,
+        name: displayName,
+        subHeader: String(max),
         width: 105,
         size: 105,
         type: "number",
-        align: "end",
+        align: "center",
         editor: readonly
           ? undefined
           : {
@@ -218,10 +223,11 @@ export function buildGradeColumns(
       prop: "total",
       header: labels.total || m.common_grades_col_total(),
       name: labels.total || m.common_grades_col_total(),
+      subHeader: "",
       width: 85,
       size: 85,
       type: "number",
-      align: "end",
+      align: "center",
       readonly: true,
       sort: true,
     },
@@ -230,10 +236,11 @@ export function buildGradeColumns(
       prop: "percentage",
       header: labels.percentage || "%",
       name: labels.percentage || "%",
+      subHeader: "",
       width: 75,
       size: 75,
       type: "percentage",
-      align: "end",
+      align: "center",
       readonly: true,
       sort: true,
     },
@@ -242,6 +249,7 @@ export function buildGradeColumns(
       prop: "grade_letter",
       header: labels.grade || labels.gradeLetter || m.common_grade(),
       name: labels.grade || labels.gradeLetter || m.common_grade(),
+      subHeader: "",
       width: 85,
       size: 85,
       type: "badge",
@@ -281,6 +289,7 @@ export function transformMatrixToSource(
       row[`__meta_exam_${g.exam_type}`] = {
         grade_id: g.grade_id,
         assessment_id: g.assessment_id,
+        component_code: g.component_code ?? null,
         component_id: g.component_id ?? null,
         max_score: g.max_score,
       };

@@ -2533,6 +2533,35 @@
         "security": [{ "bearer": [] }]
       }
     },
+    "/api/v1/enrollments/bulk-transfer": {
+      "post": {
+        "tags": ["Student"],
+        "operationId": "bulk_transfer_classes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkTransferClassesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkTransferClassesResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }]
+      }
+    },
     "/api/v1/enrollments/{id}": {
       "get": {
         "tags": ["Student"],
@@ -6618,6 +6647,124 @@
         "security": [{ "bearer": [] }]
       }
     },
+    "/api/v1/student-fees/summary": {
+      "get": {
+        "tags": ["Finance"],
+        "operationId": "summarize_student_fees",
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid", "nullable": true }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid", "nullable": true }
+          },
+          {
+            "name": "period_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid", "nullable": true }
+          },
+          {
+            "name": "org_unit_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid", "nullable": true }
+          },
+          {
+            "name": "currency_code",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date", "nullable": true }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date", "nullable": true }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true }
+          },
+          {
+            "name": "is_overdue",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "nullable": true }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "nullable": true }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudentFeeSummaryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }]
+      }
+    },
     "/api/v1/student-fees/{id}": {
       "delete": {
         "tags": ["Finance"],
@@ -7934,13 +8081,18 @@
           "decimal_places",
           "ranking_scope",
           "tie_policy",
-          "ranking_enabled"
+          "ranking_enabled",
+          "grade_bands"
         ],
         "properties": {
           "decimal_places": {
             "type": "integer",
             "format": "int32",
             "minimum": 0
+          },
+          "grade_bands": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PolicyGradeBand" }
           },
           "honors_threshold_percentage": { "type": "string" },
           "max_displayed_rank": {
@@ -8055,6 +8207,11 @@
           "default_passing_score": { "type": "string", "default": "50" },
           "enrollment_auto_close": { "type": "boolean", "default": true },
           "exclude_withdrawn": { "type": "boolean", "default": true },
+          "grade_bands": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PolicyGradeBand" },
+            "default": []
+          },
           "grade_edit_approval": { "type": "boolean", "default": true },
           "grade_entry_auto_close": { "type": "boolean", "default": true },
           "honors_threshold_percentage": { "type": "string", "default": "85" },
@@ -9314,6 +9471,50 @@
           }
         }
       },
+      "BulkTransferClassItem": {
+        "type": "object",
+        "required": ["enrollment_id", "target_section_id"],
+        "properties": {
+          "enrollment_id": { "type": "string", "format": "uuid" },
+          "reason": { "type": "string", "nullable": true },
+          "target_section_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "BulkTransferClassItemResult": {
+        "type": "object",
+        "required": ["enrollment_id", "success"],
+        "properties": {
+          "enrollment_id": { "type": "string", "format": "uuid" },
+          "error": { "type": "string", "nullable": true },
+          "success": { "type": "boolean" }
+        }
+      },
+      "BulkTransferClassesRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "atomic": { "type": "boolean", "nullable": true },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BulkTransferClassItem" }
+          }
+        }
+      },
+      "BulkTransferClassesResponse": {
+        "type": "object",
+        "required": ["total", "succeeded", "failed", "items"],
+        "properties": {
+          "failed": { "type": "integer", "minimum": 0 },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkTransferClassItemResult"
+            }
+          },
+          "succeeded": { "type": "integer", "minimum": 0 },
+          "total": { "type": "integer", "minimum": 0 }
+        }
+      },
       "CalculateGpaRequest": {
         "type": "object",
         "required": ["student_id", "period_id"],
@@ -10100,6 +10301,8 @@
         "type": "object",
         "required": [
           "total_students",
+          "enrolled_students",
+          "enrollment_rate",
           "total_employees",
           "active_sections",
           "total_teachers",
@@ -10116,6 +10319,12 @@
             "format": "int64",
             "minimum": 0
           },
+          "enrolled_students": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "enrollment_rate": { "type": "number", "format": "double" },
           "pending_fees_amount": { "type": "number", "format": "double" },
           "total_classes": {
             "type": "integer",
@@ -11020,11 +11229,13 @@
           "is_final",
           "is_excused",
           "is_exempt",
+          "is_absent",
           "created_at",
           "updated_at"
         ],
         "properties": {
           "change_reason": { "type": "string", "nullable": true },
+          "component_code": { "type": "string", "nullable": true },
           "component_id": {
             "type": "string",
             "format": "uuid",
@@ -11037,6 +11248,7 @@
             "nullable": true
           },
           "id": { "type": "string", "format": "uuid" },
+          "is_absent": { "type": "boolean" },
           "is_excused": { "type": "boolean" },
           "is_exempt": { "type": "boolean" },
           "is_final": { "type": "boolean" },
@@ -11756,6 +11968,9 @@
           "finance": { "$ref": "#/components/schemas/FinanceSettingsDto" },
           "notifications": {
             "$ref": "#/components/schemas/NotificationSettingsDto"
+          },
+          "student_sort": {
+            "$ref": "#/components/schemas/StudentSortSettingsDto"
           }
         }
       },
@@ -11980,8 +12195,8 @@
           "idempotency_key": {
             "type": "string",
             "format": "uuid",
-            "nullable": true,
-            "description": "Reuse this UUID unchanged when retrying the same payment request."
+            "description": "Reuse this UUID unchanged when retrying the same payment request.",
+            "nullable": true
           },
           "method": { "type": "string" },
           "notes": { "type": "string", "nullable": true },
@@ -12282,6 +12497,7 @@
         "type": "object",
         "required": ["period_id", "student_id", "section_subject_id", "score"],
         "properties": {
+          "component_code": { "type": "string", "nullable": true },
           "component_id": {
             "type": "string",
             "format": "uuid",
@@ -12292,6 +12508,7 @@
             "format": "uuid",
             "nullable": true
           },
+          "is_absent": { "type": "boolean" },
           "is_excused": { "type": "boolean", "nullable": true },
           "is_exempt": { "type": "boolean", "nullable": true },
           "max_score": { "type": "string", "nullable": true },
@@ -12306,6 +12523,7 @@
         "type": "object",
         "required": ["period_id", "student_id", "section_subject_id", "score"],
         "properties": {
+          "component_code": { "type": "string", "nullable": true },
           "component_id": {
             "type": "string",
             "format": "uuid",
@@ -12316,6 +12534,7 @@
             "format": "uuid",
             "nullable": true
           },
+          "is_absent": { "type": "boolean" },
           "is_excused": { "type": "boolean", "nullable": true },
           "is_exempt": { "type": "boolean", "nullable": true },
           "max_score": { "type": "string", "nullable": true },
@@ -13027,6 +13246,16 @@
           "updated_at": { "type": "string", "format": "date-time" }
         }
       },
+      "StudentFeeSummaryDto": {
+        "type": "object",
+        "required": ["currency", "due", "paid", "balance"],
+        "properties": {
+          "balance": { "type": "string" },
+          "currency": { "type": "string" },
+          "due": { "type": "string" },
+          "paid": { "type": "string" }
+        }
+      },
       "StudentProgressionItemInput": {
         "type": "object",
         "required": ["student_id", "enrollment_id", "decision"],
@@ -13045,6 +13274,50 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          }
+        }
+      },
+      "StudentSortCriterion": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "allOf": [{ "$ref": "#/components/schemas/StudentSortDirection" }],
+            "default": "asc"
+          },
+          "field": {
+            "allOf": [{ "$ref": "#/components/schemas/StudentSortField" }],
+            "default": "student_number"
+          }
+        }
+      },
+      "StudentSortDirection": { "type": "string", "enum": ["asc", "desc"] },
+      "StudentSortField": {
+        "type": "string",
+        "enum": [
+          "student_number",
+          "name",
+          "created_at",
+          "admitted_at",
+          "status",
+          "birth_date",
+          "gender"
+        ]
+      },
+      "StudentSortSettingsDto": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "allOf": [{ "$ref": "#/components/schemas/StudentSortDirection" }],
+            "default": "asc"
+          },
+          "field": {
+            "allOf": [{ "$ref": "#/components/schemas/StudentSortField" }],
+            "default": "student_number"
+          },
+          "then_by": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/StudentSortCriterion" },
+            "default": []
           }
         }
       },

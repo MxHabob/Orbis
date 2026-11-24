@@ -23,7 +23,7 @@ function getKeys(profileId: BulkProfileId, row: Row): Array<[string, string]> {
       "student_id",
       "period_id",
       "section_subject_id",
-      "component_id",
+      "component_code",
     ].map(value);
     return keyParts.every(Boolean)
       ? [["grade_assessment", JSON.stringify(keyParts)]]

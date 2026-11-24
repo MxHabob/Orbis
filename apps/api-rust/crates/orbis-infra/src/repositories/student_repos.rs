@@ -6,6 +6,9 @@ use orbis_domain::entities::enrollment::{
     Enrollment as DomainEnrollment, EnrollmentStatus, StudyMode,
 };
 use orbis_domain::entities::person::Person as DomainPerson;
+use orbis_domain::entities::settings::{
+    StudentSortCriterion, StudentSortDirection, StudentSortField,
+};
 use orbis_domain::entities::student::{
     AcademicStanding, Student as DomainStudent, StudentDetail, StudentStatus,
 };
@@ -13,8 +16,8 @@ use orbis_domain::entities::student_guardian::StudentGuardian as DomainStudentGu
 use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, Set, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, Order,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -158,11 +161,54 @@ impl StudentRepository for StudentRepoImpl {
             }
         }
 
-        query = query.order_by_asc(student::Column::StudentNumber);
-
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
         let page_size = pagination.page_size();
+        let sort_criteria = filter
+            .sort_criteria
+            .filter(|criteria| !criteria.is_empty())
+            .unwrap_or_else(|| {
+                vec![StudentSortCriterion {
+                    field: pagination
+                        .sort_by
+                        .as_deref()
+                        .and_then(StudentSortField::from_key)
+                        .unwrap_or_default(),
+                    direction: pagination
+                        .sort_dir
+                        .as_deref()
+                        .and_then(StudentSortDirection::from_key)
+                        .unwrap_or_default(),
+                }]
+            });
+
+        for criterion in sort_criteria.iter().take(3) {
+            let order = match criterion.direction {
+                StudentSortDirection::Asc => Order::Asc,
+                StudentSortDirection::Desc => Order::Desc,
+            };
+            query = match criterion.field {
+                StudentSortField::StudentNumber => {
+                    query.order_by(student::Column::StudentNumber, order)
+                }
+                StudentSortField::Name => query
+                    .order_by(person::Column::FirstName, order.clone())
+                    .order_by(person::Column::MiddleName, order.clone())
+                    .order_by(person::Column::LastName, order),
+                StudentSortField::CreatedAt => query.order_by(student::Column::CreatedAt, order),
+                StudentSortField::AdmittedAt => query.order_by(student::Column::AdmittedAt, order),
+                StudentSortField::Status => query.order_by(student::Column::Status, order),
+                StudentSortField::BirthDate => query.order_by(person::Column::BirthDate, order),
+                StudentSortField::Gender => query.order_by(person::Column::Gender, order),
+            };
+        }
+        if !sort_criteria
+            .iter()
+            .any(|criterion| criterion.field == StudentSortField::StudentNumber)
+        {
+            query = query.order_by_asc(student::Column::StudentNumber);
+        }
+        query = query.order_by_asc(student::Column::Id);
 
         let paginator = query.paginate(&self.db, page_size);
         let total_count = paginator
@@ -257,6 +303,29 @@ impl StudentRepository for StudentRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_student_model_to_domain))
+    }
+
+    async fn find_active_details_by_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<StudentDetail>, DomainError> {
+        let pairs = StudentEntity::find()
+            .find_also_related(PersonEntity)
+            .filter(student::Column::OrgId.eq(org_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(pairs
+            .into_iter()
+            .filter_map(|(sm, pm)| {
+                pm.map(|p| StudentDetail {
+                    student: map_student_model_to_domain(sm),
+                    person: map_person_model_to_domain(p),
+                })
+            })
+            .collect())
     }
 
     async fn save(&self, s: &DomainStudent) -> Result<(), DomainError> {

@@ -40,7 +40,9 @@ export function revalidateCellChange<T = Record<string, unknown>>(
   const affectedColumns =
     profile.id === "grades" && columnId === "max_score"
       ? ["max_score", "score"]
-      : [columnId];
+      : profile.id === "grades" && ["is_absent", "is_excused", "is_exempt"].includes(columnId)
+        ? [columnId, "score", "is_absent", "is_excused", "is_exempt"]
+        : [columnId];
   const rowErrors = new Map<string, string>(targetRow.errors);
   const rowWarnings = new Map<string, string>(targetRow.warnings);
   for (const affectedColumn of affectedColumns) {
@@ -101,7 +103,7 @@ export function revalidateCellChange<T = Record<string, unknown>>(
     "student_id",
     "period_id",
     "section_subject_id",
-    "component_id",
+    "component_code",
   ];
   if (profile.id === "grades" && gradeContextColumns.includes(columnId)) {
     const summary = validateAllRows(rows, profile, refData);

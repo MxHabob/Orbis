@@ -403,14 +403,14 @@ const visibleTreasuries = $derived(
     />
   {:else}
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
-      <div class="flex w-full min-w-0 flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <Select type="single" bind:value={selectedBranchId}>
           <SelectTrigger
-            class="h-9 min-w-0 max-w-full gap-2 bg-background px-3 text-xs sm:min-w-44"
+            class="h-9 min-w-44 gap-2 bg-background px-3 text-xs"
             aria-label={m.common_header_org_branch()}
           >
-            <span class="shrink-0 text-[11px] text-muted-foreground sm:text-xs">{m.common_header_org_branch()}</span>
-            <span class="min-w-0 truncate font-medium text-foreground">{selectedBranchName}</span>
+            <span class="text-muted-foreground">{m.common_header_org_branch()}</span>
+            <span class="max-w-36 truncate font-medium text-foreground">{selectedBranchName}</span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.finance_overview_current_branch()}</SelectItem>
@@ -430,11 +430,11 @@ const visibleTreasuries = $derived(
             }}
           >
             <SelectTrigger
-              class="h-9 min-w-0 max-w-full gap-2 bg-background px-3 text-[11px] sm:min-w-28 sm:text-xs"
+              class="h-9 min-w-28 gap-2 bg-background px-3 text-xs"
               aria-label={m.finance_ui_currency()}
             >
-              <span class="shrink-0 text-muted-foreground">{m.finance_ui_currency()}</span>
-              <span class="truncate font-medium text-foreground">{activeCurrency}</span>
+              <span class="text-muted-foreground">{m.finance_ui_currency()}</span>
+              <span class="font-medium text-foreground">{activeCurrency}</span>
             </SelectTrigger>
             <SelectContent>
               {#each availableCurrencies as currency (currency)}

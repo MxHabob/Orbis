@@ -7,6 +7,7 @@ use orbis_domain::entities::attendance::Attendance as DomainAttendance;
 use orbis_domain::entities::behavior_record::BehaviorRecord as DomainBehaviorRecord;
 use orbis_domain::entities::grade::Grade as DomainGrade;
 use orbis_domain::errors::DomainError;
+use sea_orm::sea_query::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
     Set, TransactionTrait,
@@ -311,6 +312,7 @@ impl GradeRepository for AssessmentRepoImpl {
             student_id: Set(grade.student_id),
             enrollment_id: Set(grade.enrollment_id),
             section_subject_id: Set(grade.section_subject_id),
+            component_code: Set(grade.component_code.clone()),
             component_id: Set(grade.component_id),
             score: Set(grade.score),
             max_score: Set(Some(grade.max_score)),
@@ -348,20 +350,25 @@ impl GradeRepository for AssessmentRepoImpl {
     }
 
     async fn save_batch(&self, grades: &[DomainGrade]) -> Result<(), DomainError> {
+        if grades.is_empty() {
+            return Ok(());
+        }
+
         let txn = self
             .db
             .begin()
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        for grade in grades {
-            let active = grade::ActiveModel {
+        for chunk in grades.chunks(40) {
+            let rows = chunk.iter().map(|grade| grade::ActiveModel {
                 id: Set(grade.id),
                 org_id: Set(grade.org_id),
                 period_id: Set(Some(grade.period_id)),
                 student_id: Set(grade.student_id),
                 enrollment_id: Set(grade.enrollment_id),
                 section_subject_id: Set(grade.section_subject_id),
+                component_code: Set(grade.component_code.clone()),
                 component_id: Set(grade.component_id),
                 score: Set(grade.score),
                 max_score: Set(Some(grade.max_score)),
@@ -377,24 +384,39 @@ impl GradeRepository for AssessmentRepoImpl {
                 notes: Set(grade.notes.clone()),
                 created_at: Set(grade.created_at),
                 updated_at: Set(grade.updated_at),
-            };
+            });
 
-            if GradeEntity::find_by_id(grade.id)
-                .one(&txn)
+            GradeEntity::insert_many(rows)
+                .on_conflict(
+                    OnConflict::column(grade::Column::Id)
+                        .update_columns([
+                            grade::Column::OrgId,
+                            grade::Column::PeriodId,
+                            grade::Column::StudentId,
+                            grade::Column::EnrollmentId,
+                            grade::Column::SectionSubjectId,
+                            grade::Column::ComponentCode,
+                            grade::Column::ComponentId,
+                            grade::Column::Score,
+                            grade::Column::MaxScore,
+                            grade::Column::Weight,
+                            grade::Column::LetterGrade,
+                            grade::Column::IsFinal,
+                            grade::Column::IsExcused,
+                            grade::Column::IsExempt,
+                            grade::Column::IsAbsent,
+                            grade::Column::ChangeReason,
+                            grade::Column::RecordedBy,
+                            grade::Column::UpdatedBy,
+                            grade::Column::Notes,
+                            grade::Column::CreatedAt,
+                            grade::Column::UpdatedAt,
+                        ])
+                        .to_owned(),
+                )
+                .exec(&txn)
                 .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?
-                .is_some()
-            {
-                active
-                    .update(&txn)
-                    .await
-                    .map_err(|e| DomainError::Internal(e.to_string()))?;
-            } else {
-                active
-                    .insert(&txn)
-                    .await
-                    .map_err(|e| DomainError::Internal(e.to_string()))?;
-            }
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         txn.commit()
@@ -568,6 +590,7 @@ fn map_grade_model_to_domain(m: grade::Model) -> DomainGrade {
         student_id: m.student_id,
         enrollment_id: m.enrollment_id,
         section_subject_id: m.section_subject_id,
+        component_code: m.component_code,
         component_id: m.component_id,
         score: m.score,
         max_score: m

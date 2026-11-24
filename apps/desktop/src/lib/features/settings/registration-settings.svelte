@@ -24,6 +24,8 @@ async function handleSave(registrationConfig: any): Promise<boolean> {
       ...currentSettings,
       admission: registrationConfig.admission,
       enrollment: registrationConfig.enrollment ?? currentSettings.enrollment,
+      student_sort:
+        registrationConfig.student_sort ?? currentSettings.student_sort,
     };
     await api.updateSettings(updatedSettings);
     toast.success(m.settings_registration_save_success());
