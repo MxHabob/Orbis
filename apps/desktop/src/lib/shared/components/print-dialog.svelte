@@ -643,7 +643,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
 </script>
 
 <Dialog bind:open={open} onOpenChange={handleDialogOpenChange}>
-  <DialogContent class="w-[calc(100vw-1rem)] h-[92dvh] max-h-[92dvh] text-start flex flex-col overflow-hidden sm:w-[calc(100vw-2rem)] sm:max-w-195">
+  <DialogContent class="w-[calc(100dvw-1rem)] h-[92dvh] max-h-[92dvh] text-start flex flex-col overflow-hidden sm:w-[calc(100dvw-2rem)] sm:max-w-195">
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
         <Grid class="text-primary h-5 w-5" />

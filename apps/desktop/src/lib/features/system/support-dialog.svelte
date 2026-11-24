@@ -178,7 +178,7 @@ $effect(() => {
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="max-w-2xl max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col bg-background/95 backdrop-blur-md border-border/60 shadow-2xl">
+  <DialogContent class="max-w-2xl max-h-[90dvh] p-0 gap-0 overflow-hidden flex flex-col bg-background/95 backdrop-blur-md border-border/60 shadow-2xl">
     <!-- Header -->
     <DialogHeader class="px-6 py-4 border-b border-border/40 bg-muted/20 text-start space-y-1">
       <div class="flex items-center gap-2">

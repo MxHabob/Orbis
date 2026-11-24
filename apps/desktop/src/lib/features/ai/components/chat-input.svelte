@@ -96,7 +96,7 @@ function handleCommandSelect(prompt: string) {
 <div class="relative shrink-0 select-none px-3 pb-3 pt-2">
   <!-- Quick Commands Popup Menu -->
   {#if showCommands}
-    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 z-30 flex max-h-[min(20rem,calc(100vh-8rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-150">
+    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 z-30 flex max-h-[min(20rem,calc(100dvh-8rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-150">
       <div class="border-b border-border px-2 py-2 text-[10px] font-semibold text-muted-foreground">
         {m.ai_ui_suggested_smart_commands()}
       </div>

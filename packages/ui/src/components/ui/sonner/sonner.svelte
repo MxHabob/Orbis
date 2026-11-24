@@ -51,7 +51,7 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
 </div>
 
 <style>
-  .toaster { position: fixed; z-index: 100; display: flex; width: min(380px, calc(100vw - 2rem)); flex-direction: column; gap: 0.5rem; pointer-events: none; }
+  .toaster { position: fixed; z-index: 100; display: flex; width: min(380px, calc(100dvw - 2rem)); max-width: calc(100dvw - 1rem); flex-direction: column; gap: 0.5rem; pointer-events: none; }
   .toaster[data-position="top-left"] { top: 1rem; left: 1rem; }
   .toaster[data-position="top-center"] { top: 1rem; left: 50%; transform: translateX(-50%); }
   .toaster[data-position="top-right"] { top: 1rem; right: 1rem; }
@@ -75,7 +75,7 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
   .toast-action { align-self: flex-end; }
   .toast-footer { padding-top: 0.25rem; }
   @media (max-width: 640px) {
-    .toaster { right: auto; left: auto; width: min(380px, calc(100vw - 1.5rem)); transform: none; }
+    .toaster { right: auto; left: auto; width: min(380px, calc(100dvw - 1.5rem)); max-width: calc(100dvw - 1rem); transform: none; }
     .toaster[data-position$="-left"] { left: 0.75rem; }
     .toaster[data-position$="-center"] { left: 50%; transform: translateX(-50%); }
     .toaster[data-position$="-right"] { right: 0.75rem; }

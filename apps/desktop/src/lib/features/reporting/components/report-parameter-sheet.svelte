@@ -58,7 +58,7 @@ let {
   {#if selectedDefinition}
     <SheetContent
       side="end"
-      contentClass="data-[side=end]:w-[min(32rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100vw-1rem))]"
+      contentClass="data-[side=end]:w-[min(32rem,calc(100dvw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100dvw-1rem))]"
       class="flex h-full flex-col gap-0 overflow-hidden p-0 text-start"
     >
       <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 text-start">

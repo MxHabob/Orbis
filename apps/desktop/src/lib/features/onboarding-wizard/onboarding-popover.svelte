@@ -133,7 +133,7 @@ function handleOpenHub() {
     {side}
     {align}
     sideOffset={6}
-    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+    class="flex max-h-[min(40rem,calc(100dvh-4rem))] w-[min(360px,calc(100dvw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     {#if isLoadingOnboarding}
       <p class="border-b border-border bg-muted/20 px-4 py-2 text-xs text-muted-foreground" aria-live="polite">
@@ -193,7 +193,7 @@ function handleOpenHub() {
     </div>
 
     <!-- Steps List -->
-    <div class="max-h-[min(20rem,calc(100vh-12rem))] overflow-y-auto scrollbar-hide space-y-0.5 px-2 py-2">
+    <div class="max-h-[min(20rem,calc(100dvh-12rem))] overflow-y-auto scrollbar-hide space-y-0.5 px-2 py-2">
       {#each steps as step (step.id)}
         {@const isCompleted = step.status === "completed"}
         {@const isActive = step.id === nextStep?.id && !isReady}

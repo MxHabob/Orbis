@@ -77,7 +77,7 @@ function handleOpenChange(open: boolean) {
     side="bottom"
     align="end"
     sideOffset={6}
-    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(440px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+    class="flex max-h-[min(40rem,calc(100dvh-4rem))] w-[min(440px,calc(100dvw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     <div class="flex items-center justify-between border-b border-border px-4 py-3">
       <h4 class="text-sm font-bold text-foreground">

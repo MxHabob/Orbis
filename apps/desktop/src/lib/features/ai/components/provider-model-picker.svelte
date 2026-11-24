@@ -322,7 +322,7 @@ async function handleSelectProviderAndModel(
     align="start"
     side="top"
     sideOffset={8}
-    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(280px,calc(100vw-1rem))] flex-col gap-0 overflow-visible rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+    class="flex max-h-[min(40rem,calc(100dvh-4rem))] w-[min(280px,calc(100dvw-1rem))] flex-col gap-0 overflow-visible rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
       <div class="min-w-0">
@@ -332,7 +332,7 @@ async function handleSelectProviderAndModel(
       </div>
     </div>
 
-    <div class="min-h-0 max-h-[min(28rem,calc(100vh-8rem))] flex-1 overflow-y-auto px-2 py-2">
+    <div class="min-h-0 max-h-[min(28rem,calc(100dvh-8rem))] flex-1 overflow-y-auto px-2 py-2">
       {#if providersQuery.isPending}
         <div class="px-3 py-6 text-center text-xs text-muted-foreground" role="status">
           {m.ai_ui_loading_ai_center()}
@@ -371,7 +371,7 @@ async function handleSelectProviderAndModel(
               side="inline-end"
               align="start"
               sideOffset={4}
-              class="flex max-h-[min(32rem,calc(100vh-6rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-x-hidden overflow-y-auto rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+              class="flex max-h-[min(32rem,calc(100dvh-6rem))] w-[min(360px,calc(100dvw-1rem))] flex-col gap-0 overflow-x-hidden overflow-y-auto rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
             >
               <DropdownMenuLabel class="border-b border-border px-4 py-3 text-xs font-semibold text-foreground">
                 {m.ai_ui_available_models()}

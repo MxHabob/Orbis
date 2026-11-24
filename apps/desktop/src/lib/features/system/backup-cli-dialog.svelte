@@ -93,7 +93,7 @@ function handleKeydown(event: KeyboardEvent) {
   <DialogContent
     showCloseButton={false}
     dir="ltr"
-    class="w-[min(640px,calc(100vw-2rem))] max-w-2xl overflow-hidden rounded-none border-0 bg-black p-0 text-left font-mono text-green-400 shadow-2xl"
+    class="w-[min(640px,calc(100dvw-2rem))] max-w-2xl overflow-hidden rounded-none border-0 bg-black p-0 text-left font-mono text-green-400 shadow-2xl"
   >
     <div class="flex min-h-96 flex-col bg-black p-5 font-mono text-xs leading-6">
       <div class="max-h-[70vh] overflow-y-auto scrollbar-hide" aria-live="polite">

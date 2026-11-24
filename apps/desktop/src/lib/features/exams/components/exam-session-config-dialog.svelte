@@ -133,7 +133,7 @@ function run(action: () => void) {
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="max-h-[90vh] max-w-lg overflow-hidden p-0 text-start">
+  <DialogContent class="max-h-[90dvh] max-w-lg overflow-hidden p-0 text-start">
     <DialogHeader class="border-b border-border/60 px-5 py-4">
       <DialogTitle>{m.academics_exams_ai_wizard()}</DialogTitle>
     </DialogHeader>

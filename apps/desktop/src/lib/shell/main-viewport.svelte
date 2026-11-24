@@ -58,14 +58,24 @@ let {
 const standaloneWindow = $derived(isStandaloneWindow(page.url));
 const COLLAPSED_WIDTH = 3;
 
-// Convert px to rem using root font-size (cached to avoid DOM reads per render)
-let _cachedBaseFontSize: number | null = null;
+// Convert px to rem using the current root font-size.
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
-  _cachedBaseFontSize ??= parseFloat(
+  const baseFontSize = parseFloat(
     getComputedStyle(document.documentElement).fontSize,
   );
-  return px / _cachedBaseFontSize;
+  return px / (baseFontSize || 16);
+}
+
+function persistPanelWidth(persistId: string, widthRem: number) {
+  const baseFontSize =
+    typeof document === "undefined"
+      ? 16
+      : parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  localStorage.setItem(
+    `resizer:viewport-${persistId}:px`,
+    String(widthRem * baseFontSize),
+  );
 }
 
 // Panel preferred widths (in rem)
@@ -131,7 +141,7 @@ function getFallbackLabel(
 							class="h-8 w-8 flex items-center justify-center cursor-pointer duration-150 mb-4"
 							onclick={() => {
 								leftPreferredWidth = pxToRem(leftWidth.default);
-								localStorage.setItem(`resizer:viewport-${name}-left`, String(leftPreferredWidth));
+								persistPanelWidth(`${name}-left`, leftPreferredWidth);
 							}}
 							title={m.shared_ui_expand_sidebar()}
 						>
@@ -160,7 +170,7 @@ function getFallbackLabel(
 						class="flex h-full flex-col overflow-hidden"
 						oncollapsesidebar={() => {
 							leftPreferredWidth = COLLAPSED_WIDTH;
-							localStorage.setItem(`resizer:viewport-${name}-left`, String(COLLAPSED_WIDTH));
+							persistPanelWidth(`${name}-left`, COLLAPSED_WIDTH);
 						}}
 					>
 						{@render left()}
@@ -213,7 +223,7 @@ function getFallbackLabel(
 							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
 							onclick={() => {
 								rightPreferredWidth = pxToRem(rightWidth.default);
-								localStorage.setItem(`resizer:viewport-${name}-right`, String(rightPreferredWidth));
+								persistPanelWidth(`${name}-right`, rightPreferredWidth);
 							}}
 							title={m.shared_ui_expand_sidebar()}
 						>

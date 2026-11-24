@@ -466,7 +466,7 @@ async function retrySolverSetup() {
           side="top"
           align="start"
           sideOffset={6}
-          class="w-[min(360px,calc(100vw-1rem))] rounded-md border border-border bg-card p-0 text-foreground shadow-md"
+          class="w-[min(360px,calc(100dvw-1rem))] rounded-md border border-border bg-card p-0 text-foreground shadow-md"
         >
           <div class="flex items-start gap-2.5 border-b border-border px-3 py-2.5">
             {#if isLicenseUrgent}
@@ -582,7 +582,7 @@ async function retrySolverSetup() {
         side="top"
         align="start"
         sideOffset={6}
-        class="flex max-h-[min(24rem,calc(100dvh-3rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-0 text-foreground shadow-md"
+        class="flex max-h-[min(24rem,calc(100dvh-3rem))] w-[min(360px,calc(100dvw-1rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-0 text-foreground shadow-md"
       >
         <h2 class="border-b border-border px-3 py-2 text-xs font-semibold">
           {m.ui_shell_status_operations()}

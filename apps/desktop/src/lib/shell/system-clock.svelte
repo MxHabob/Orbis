@@ -77,7 +77,7 @@ onMount(() => {
     side="top"
     align="end"
     sideOffset={6}
-    class="w-[min(18rem,calc(100vw-1rem))] rounded-md border border-border bg-card p-4 text-foreground shadow-md"
+    class="w-[min(18rem,calc(100dvw-1rem))] rounded-md border border-border bg-card p-4 text-foreground shadow-md"
   >
     <div class="flex flex-col items-center gap-3">
       <time

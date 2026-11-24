@@ -95,7 +95,7 @@ function isGroupCollapsed(groupId: string) {
 
   <PopoverContent
     align="end"
-    class="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg p-0"
+    class="w-[min(22rem,calc(100dvw-2rem))] overflow-hidden rounded-lg p-0"
   >
     <div class="flex items-center gap-2 border-b border-border/60 px-3 py-2">
       <Search class="size-3.5 shrink-0 text-muted-foreground" />
