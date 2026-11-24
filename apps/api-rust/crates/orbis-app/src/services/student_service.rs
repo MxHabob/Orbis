@@ -308,11 +308,7 @@ fn normalize_name_for_match(input: &str) -> String {
     out.trim().to_string()
 }
 
-fn compose_full_name(
-    first: &str,
-    middle: Option<&str>,
-    last: &str,
-) -> Option<String> {
+fn compose_full_name(first: &str, middle: Option<&str>, last: &str) -> Option<String> {
     let f = first.trim();
     let l = last.trim();
     if f.is_empty() && l.is_empty() {
@@ -320,7 +316,9 @@ fn compose_full_name(
     }
     let m = middle.map(str::trim).filter(|v| !v.is_empty());
     Some(match m {
-        Some(mid) if !f.is_empty() || !l.is_empty() => format!("{} {} {}", f, mid, l).trim().to_string(),
+        Some(mid) if !f.is_empty() || !l.is_empty() => {
+            format!("{} {} {}", f, mid, l).trim().to_string()
+        }
         _ => format!("{} {}", f, l).trim().to_string(),
     })
 }
@@ -639,18 +637,12 @@ impl StudentService {
 
         // de-duplicate identical matches (same field/person/student)
         matches.sort_by(|a, b| {
-            (
-                &a.field,
-                &a.matched_person_id,
-                &a.student_id,
-                &a.value,
-            )
-                .cmp(&(
-                    &b.field,
-                    &b.matched_person_id,
-                    &b.student_id,
-                    &b.value,
-                ))
+            (&a.field, &a.matched_person_id, &a.student_id, &a.value).cmp(&(
+                &b.field,
+                &b.matched_person_id,
+                &b.student_id,
+                &b.value,
+            ))
         });
         matches.dedup_by(|a, b| {
             a.field == b.field
@@ -747,10 +739,16 @@ impl StudentService {
                 exclude_student_id: None,
                 ..Default::default()
             };
-            if let Some(matched) = collect_name_duplicate_matches(&existing_details, &dup_input, None).into_iter().next() {
+            if let Some(matched) =
+                collect_name_duplicate_matches(&existing_details, &dup_input, None)
+                    .into_iter()
+                    .next()
+            {
                 return Err(DomainError::Conflict(format!(
                     "A student with the same full name already exists in this organization ({} - {}). Please verify the student identity before creating a new record.",
-                    matched.student_number.unwrap_or_else(|| "existing record".to_string()),
+                    matched
+                        .student_number
+                        .unwrap_or_else(|| "existing record".to_string()),
                     matched.matched_person_name
                 )));
             }

@@ -644,9 +644,9 @@ impl AssessmentService {
                 }
             }
 
-            let section_subject = section_subjects.get(&item.section_subject_id).ok_or_else(|| {
-                DomainError::NotFound("Section subject not found".into())
-            })?;
+            let section_subject = section_subjects
+                .get(&item.section_subject_id)
+                .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
             if section_subject.org_id != org_id || section_subject.period_id != item.period_id {
                 return Err(DomainError::Unauthorized(
                     "Section subject is not valid for this organization and period".into(),
@@ -662,9 +662,9 @@ impl AssessmentService {
             let mut component_max_score = None;
             let mut resolved_component_id = item.component_id;
             if let Some(scheme_id) = section_subject.scheme_id {
-                let scheme = schemes.get(&scheme_id).ok_or_else(|| {
-                    DomainError::NotFound("Assessment scheme not found".into())
-                })?;
+                let scheme = schemes
+                    .get(&scheme_id)
+                    .ok_or_else(|| DomainError::NotFound("Assessment scheme not found".into()))?;
                 if scheme.org_id != org_id {
                     return Err(DomainError::Unauthorized(
                         "Assessment scheme belongs to another organization".into(),
@@ -687,8 +687,7 @@ impl AssessmentService {
                         !component.code.trim().eq_ignore_ascii_case(code.trim())
                     }) || item.component_id.is_some_and(|id| {
                         !component.code.trim().eq_ignore_ascii_case(&id.to_string())
-                    })
-                    {
+                    }) {
                         return Err(DomainError::Validation(
                             "Assessment component code and legacy ID do not match".into(),
                         ));
@@ -704,9 +703,9 @@ impl AssessmentService {
 
             let resolved_enrollment_id = if self.enrollment_repo.is_some() {
                 let enrollment = if let Some(enrollment_id) = item.enrollment_id {
-                    enrollments_by_id.get(&enrollment_id).ok_or_else(|| {
-                        DomainError::NotFound("Enrollment not found".into())
-                    })?
+                    enrollments_by_id
+                        .get(&enrollment_id)
+                        .ok_or_else(|| DomainError::NotFound("Enrollment not found".into()))?
                 } else {
                     enrollments_by_student
                         .get(&item.student_id)
@@ -732,8 +731,7 @@ impl AssessmentService {
                 None
             };
 
-            let max_score =
-                resolve_grade_max_score(component_max_score, item.max_score)?;
+            let max_score = resolve_grade_max_score(component_max_score, item.max_score)?;
             if item.score < Decimal::ZERO || item.score > max_score {
                 return Err(DomainError::Validation(format!(
                     "Score {} is outside allowable range [0, {}] for student {}",
@@ -741,8 +739,10 @@ impl AssessmentService {
                 )));
             }
 
-            let component_key =
-                normalize_grade_component_key(resolved_component_code.as_deref(), resolved_component_id);
+            let component_key = normalize_grade_component_key(
+                resolved_component_code.as_deref(),
+                resolved_component_id,
+            );
             let key = (
                 item.student_id,
                 item.period_id,
