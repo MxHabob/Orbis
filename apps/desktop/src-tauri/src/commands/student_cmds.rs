@@ -544,6 +544,7 @@ pub async fn student_list_students(
             sort_by: f.sort_by,
             sort_dir: f.sort_dir,
         }),
+        sort_criteria: None,
     };
 
     let result = state

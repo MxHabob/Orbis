@@ -11,7 +11,7 @@ let { stats, orgId }: { stats: DashboardCountsDto | null; orgId: string } =
 const studentVal = $derived(formatNumber(stats?.total_students ?? 0));
 const sectionsVal = $derived(formatNumber(stats?.active_sections ?? 0));
 const studentDetail = $derived(
-  m.common_card_detail_total_enrolled({ count: stats?.total_enrollments ?? 0 }),
+  m.common_card_detail_total_enrolled({ count: stats?.enrolled_students ?? 0 }),
 );
 
 const attendanceVal = $derived(
@@ -39,7 +39,7 @@ const staffDetail = $derived(m.common_card_detail_admin_roles());
 
 const enrollmentVal = $derived(formatPercent(stats?.enrollment_rate ?? 0));
 const enrollmentDetail = $derived(
-  m.common_card_detail_total_enrolled({ count: stats?.total_enrollments ?? 0 }),
+  m.common_card_detail_total_enrolled({ count: stats?.enrolled_students ?? 0 }),
 );
 </script>
 

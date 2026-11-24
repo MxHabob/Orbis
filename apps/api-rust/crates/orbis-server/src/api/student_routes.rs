@@ -15,6 +15,9 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
 use orbis_domain::entities::report::ReportAuditEntry;
+use orbis_domain::entities::settings::{
+    StudentSortCriterion, StudentSortDirection, StudentSortField,
+};
 use orbis_domain::entities::student::{AcademicStanding, StudentDetail, StudentStatus};
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginationParams, StudentFilter};
 
@@ -500,6 +503,34 @@ pub async fn list_students(
     State(state): State<AppState>,
     Query(q): Query<StudentQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentDto>>>, ApiError> {
+    let has_sort_override = q.sort_by.is_some() || q.sort_dir.is_some();
+    let requested_sort_field = q.sort_by.as_deref().and_then(StudentSortField::from_key);
+    let requested_sort_direction = q
+        .sort_dir
+        .as_deref()
+        .and_then(StudentSortDirection::from_key);
+    let default_sort = if requested_sort_field.is_none() || requested_sort_direction.is_none() {
+        Some(
+            state
+                .settings_repo
+                .get_settings(ctx.tenant_id)
+                .await?
+                .student_sort,
+        )
+    } else {
+        None
+    };
+    let default_sort = default_sort.unwrap_or_default();
+    let sort_criteria = if has_sort_override {
+        vec![StudentSortCriterion {
+            field: requested_sort_field.unwrap_or(default_sort.field),
+            direction: requested_sort_direction.unwrap_or(default_sort.direction),
+        }]
+    } else {
+        default_sort.criteria()
+    };
+    let primary_sort = sort_criteria[0];
+
     let domain_filter = StudentFilter {
         period_id: q.period_id,
         section_id: q.section_id,
@@ -528,9 +559,10 @@ pub async fn list_students(
         pagination: Some(PaginationParams {
             page: q.page,
             page_size: q.page_size,
-            sort_by: q.sort_by,
-            sort_dir: q.sort_dir,
+            sort_by: Some(primary_sort.field.key().to_string()),
+            sort_dir: Some(primary_sort.direction.key().to_string()),
         }),
+        sort_criteria: Some(sort_criteria),
     };
     let paginated = state
         .student_service
@@ -571,13 +603,13 @@ pub async fn get_my_student(
     responses((status = 200, body = StudentDto)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn get_student(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
     let detail = state
         .student_service
-        .get_student(id)
+        .get_student_detail(&ctx, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Student {} not found", id)))?;
     Ok(ApiResponse::ok(detail.into()))
@@ -906,15 +938,11 @@ pub async fn list_enrollments(
     responses((status = 200, body = EnrollmentDto)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn get_enrollment(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
-    let e = state
-        .enrollment_repo
-        .find_by_id(id)
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("Enrollment {} not found", id)))?;
+    let e = state.student_service.get_enrollment(&ctx, id).await?;
     Ok(ApiResponse::ok(e.into()))
 }
 

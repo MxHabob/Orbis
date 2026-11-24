@@ -309,13 +309,52 @@ impl StudentService {
         self
     }
 
+    async fn find_student_in_org(
+        &self,
+        student_id: Uuid,
+        org_id: Uuid,
+    ) -> Result<Student, DomainError> {
+        let student = self
+            .student_repo
+            .find_by_id(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        if student.org_id != org_id {
+            return Err(DomainError::NotFound("Student not found".into()));
+        }
+        Ok(student)
+    }
+
+    async fn find_person_in_org(
+        &self,
+        person_id: Uuid,
+        org_id: Uuid,
+    ) -> Result<Person, DomainError> {
+        let person = self
+            .person_repo
+            .find_by_id(person_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", person_id)))?;
+        if person.org_id != Some(org_id) {
+            return Err(DomainError::NotFound("Person not found".into()));
+        }
+        Ok(person)
+    }
+
     /// Check for duplicate student/person by national_id, phone, or email
     pub async fn check_duplicate(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         org_id: Uuid,
         input: DuplicateCheckInput,
     ) -> Result<DuplicateCheckResult, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
         let mut matches = Vec::new();
 
         if let Some(nid) = input.national_id.as_deref() {
@@ -404,6 +443,9 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
         let _enrollment_guard = self.enrollment_lock.lock().await;
         self.register_student_unlocked(ctx, org_id, input, None)
             .await
@@ -528,6 +570,9 @@ impl StudentService {
             .find_by_id(person_id)
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Person {} not found", person_id)))?;
+        if person.org_id != Some(org_id) {
+            return Err(DomainError::NotFound("Person not found".into()));
+        }
 
         if let Some(existing_student) = self.student_repo.find_by_person_id(person_id).await? {
             if existing_student.org_id == org_id {
@@ -917,11 +962,7 @@ impl StudentService {
             .check(ctx, Permission::StudentUpdate)
             .await?;
 
-        let mut student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        let mut student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
 
         let old_status = student.status;
         student.status = new_status;
@@ -973,13 +1014,47 @@ impl StudentService {
         Ok(Some(StudentDetail { student, person }))
     }
 
-    /// Get student detailed profile with context (for auth/permission checks if needed)
+    /// Get student detailed profile within the caller's organization.
     pub async fn get_student_detail(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Option<StudentDetail>, DomainError> {
-        self.get_student(student_id).await
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
+
+        let student = match self.student_repo.find_by_id(student_id).await? {
+            Some(student) if student.org_id == ctx.tenant_id => student,
+            _ => return Ok(None),
+        };
+        let person = match self.person_repo.find_by_id(student.person_id).await? {
+            Some(person) if person.org_id == Some(ctx.tenant_id) => person,
+            _ => return Ok(None),
+        };
+
+        Ok(Some(StudentDetail { student, person }))
+    }
+
+    pub async fn get_enrollment(
+        &self,
+        ctx: &RequestContext,
+        enrollment_id: Uuid,
+    ) -> Result<Enrollment, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::EnrollmentRead)
+            .await?;
+        let enrollment = self
+            .enrollment_repo
+            .find_by_id(enrollment_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
+            })?;
+        if enrollment.org_id != ctx.tenant_id {
+            return Err(DomainError::NotFound("Enrollment not found".into()));
+        }
+        Ok(enrollment)
     }
 
     /// List students with pagination & filters returning StudentDetail items
@@ -1072,6 +1147,9 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
 
         let mut pre_errors: HashMap<Uuid, String> = HashMap::new();
         let mut target_counts: HashMap<Uuid, i32> = HashMap::new();
@@ -1216,6 +1294,9 @@ impl StudentService {
             .ok_or_else(|| {
                 DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
             })?;
+        if enrollment.org_id != ctx.tenant_id {
+            return Err(DomainError::NotFound("Enrollment not found".into()));
+        }
 
         enrollment.study_mode = new_mode;
         enrollment.updated_at = Utc::now();
@@ -1273,6 +1354,8 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
+        self.find_student_in_org(student_id, ctx.tenant_id).await?;
+        self.find_person_in_org(guardian_id, ctx.tenant_id).await?;
 
         let now = Utc::now();
         let sg = StudentGuardian {
@@ -1301,9 +1384,13 @@ impl StudentService {
     /// Get student guardians
     pub async fn get_guardians(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         student_id: Uuid,
     ) -> Result<Vec<StudentGuardian>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GuardianRead)
+            .await?;
+        self.find_student_in_org(student_id, ctx.tenant_id).await?;
         self.guardian_repo.find_by_student(student_id).await
     }
 
@@ -1326,6 +1413,8 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
+        self.find_student_in_org(student_id, ctx.tenant_id).await?;
+        self.find_person_in_org(guardian_id, ctx.tenant_id).await?;
         self.guardian_repo.delete(student_id, guardian_id).await
     }
 
@@ -1340,19 +1429,10 @@ impl StudentService {
             .check(ctx, Permission::StudentUpdate)
             .await?;
 
-        let student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
-
+        let student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
         let mut person = self
-            .person_repo
-            .find_by_id(student.person_id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::NotFound(format!("Person {} not found", student.person_id))
-            })?;
+            .find_person_in_org(student.person_id, ctx.tenant_id)
+            .await?;
 
         if let Some(v) = input.first_name {
             person.first_name = v;
@@ -1430,11 +1510,7 @@ impl StudentService {
             .check(ctx, Permission::StudentDelete)
             .await?;
 
-        let mut student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        let mut student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
 
         student.is_deleted = true;
         student.deleted_at = Some(Utc::now());
@@ -1453,11 +1529,9 @@ impl StudentService {
             .check(ctx, Permission::StudentDelete)
             .await?;
 
-        let mut student = self
-            .student_repo
-            .find_by_id(student_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
+        let mut student = self.find_student_in_org(student_id, ctx.tenant_id).await?;
+        self.find_person_in_org(student.person_id, ctx.tenant_id)
+            .await?;
 
         student.is_deleted = false;
         student.deleted_at = None;
@@ -1478,6 +1552,9 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        if ctx.tenant_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
         let _enrollment_guard = self.enrollment_lock.lock().await;
 
         let is_atomic = input.atomic.unwrap_or(true);

@@ -59,8 +59,43 @@ const activePeriodId = $derived(
     ),
 );
 
+const activeStudentsQuery = createQuery(() => ({
+  queryKey: [
+    ...queryKeys.student.all,
+    "active-students-in-period",
+    orgId,
+    activePeriodId,
+  ],
+  queryFn: async () => {
+    if (!activePeriodId) return [];
+
+    const students: Awaited<ReturnType<typeof api.listStudents>>["items"] = [];
+    let page = 1;
+    let result: Awaited<ReturnType<typeof api.listStudents>>;
+    do {
+      result = await api.listStudents({
+        period_id: activePeriodId,
+        status: "active",
+        page,
+        page_size: 100,
+      });
+      students.push(...result.items);
+      page += 1;
+    } while (result.page < result.total_pages);
+
+    return students;
+  },
+  enabled: !!orgId && !!activePeriodId,
+  staleTime: 3 * 60 * 1000,
+}));
+
 const enrollmentsQuery = createQuery(() => ({
-  queryKey: ["classes-enrollments", orgId, activePeriodId],
+  queryKey: [
+    ...queryKeys.student.all,
+    "classes-enrollments",
+    orgId,
+    activePeriodId,
+  ],
   queryFn: async () => {
     if (!activePeriodId) return [];
     const enrollments = [];
@@ -92,8 +127,22 @@ const currentEnrollments = $derived(
       enrollment.status === "pending_approval",
   ),
 );
+const activeStudentIds = $derived(
+  new Set(
+    (activeStudentsQuery.data ?? []).map((detail) => String(detail.student.id)),
+  ),
+);
+const validCurrentEnrollments = $derived(
+  currentEnrollments.filter((enrollment) =>
+    activeStudentIds.has(String(enrollment.student_id)),
+  ),
+);
 const error = $derived(
-  classesQuery.error ? extractErrorMessage(classesQuery.error) : null,
+  classesQuery.error
+    ? extractErrorMessage(classesQuery.error)
+    : activeStudentsQuery.error
+      ? extractErrorMessage(activeStudentsQuery.error)
+      : null,
 );
 
 // Sheet trigger state
@@ -103,6 +152,7 @@ let editingSection = $state<SectionDto | null>(null);
 function refetchAll() {
   classesQuery.refetch();
   periodsQuery.refetch();
+  activeStudentsQuery.refetch();
   enrollmentsQuery.refetch();
 }
 
@@ -113,9 +163,11 @@ function getClassMetric(cls: SectionDto): {
   attendance_rate: number;
   subject_count: number;
 } {
-  const count = currentEnrollments.filter(
-    (e) => String(e.section_id) === String(cls.id),
-  ).length;
+  const count = new Set(
+    validCurrentEnrollments
+      .filter((e) => String(e.section_id) === String(cls.id))
+      .map((e) => String(e.student_id)),
+  ).size;
   const capacity = Number(cls.capacity ?? 0);
   return {
     active_students: count,
@@ -128,7 +180,9 @@ function getClassMetric(cls: SectionDto): {
 
 // Compute statistics
 const totalClassesCount = $derived(classes.length);
-const totalStudentsCount = $derived(currentEnrollments.length);
+const totalStudentsCount = $derived(
+  new Set(validCurrentEnrollments.map((e) => String(e.student_id))).size,
+);
 const averageClassSize = $derived(
   totalClassesCount > 0
     ? Math.round(totalStudentsCount / totalClassesCount)
@@ -137,6 +191,7 @@ const averageClassSize = $derived(
 const pageLoading = $derived(
   classesQuery.isLoading ||
     periodsQuery.isLoading ||
+    activeStudentsQuery.isLoading ||
     enrollmentsQuery.isLoading,
 );
 const classMenuActions = $derived([

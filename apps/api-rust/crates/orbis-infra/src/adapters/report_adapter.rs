@@ -23,6 +23,50 @@ use uuid::Uuid;
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
+fn student_sort_clause(
+    settings: &orbis_domain::entities::settings::StudentSortSettings,
+    student_alias: &str,
+) -> String {
+    use orbis_domain::entities::settings::{StudentSortDirection, StudentSortField};
+
+    let criteria = settings.criteria();
+    let mut clauses = Vec::new();
+    for criterion in &criteria {
+        let direction = match criterion.direction {
+            StudentSortDirection::Asc => "ASC",
+            StudentSortDirection::Desc => "DESC",
+        };
+        let columns = match criterion.field {
+            StudentSortField::StudentNumber => {
+                vec![format!("{student_alias}.student_number")]
+            }
+            StudentSortField::Name => vec![
+                "p.first_name".to_string(),
+                "p.middle_name".to_string(),
+                "p.last_name".to_string(),
+            ],
+            StudentSortField::CreatedAt => vec![format!("{student_alias}.created_at")],
+            StudentSortField::AdmittedAt => vec![format!("{student_alias}.admitted_at")],
+            StudentSortField::Status => vec![format!("{student_alias}.status")],
+            StudentSortField::BirthDate => vec!["p.birth_date".to_string()],
+            StudentSortField::Gender => vec!["p.gender".to_string()],
+        };
+        clauses.extend(
+            columns
+                .into_iter()
+                .map(|column| format!("{column} {direction}")),
+        );
+    }
+    if !criteria
+        .iter()
+        .any(|criterion| criterion.field == StudentSortField::StudentNumber)
+    {
+        clauses.push(format!("{student_alias}.student_number ASC"));
+    }
+    clauses.push(format!("{student_alias}.id ASC"));
+    clauses.join(", ")
+}
+
 // ═══════════════════════════════════════════════════════════════
 // DATA PROVIDER REGISTRY
 // ═══════════════════════════════════════════════════════════════
@@ -380,8 +424,28 @@ fn escape_xml(value: &str) -> String {
 mod xlsx_tests {
     use super::*;
     use chrono::Utc;
+    use orbis_domain::entities::settings::{
+        StudentSortDirection, StudentSortField, StudentSortSettings,
+    };
     use std::io::Read;
     use zip::ZipArchive;
+
+    #[test]
+    fn student_report_sort_uses_configured_field_and_stable_tie_breaker() {
+        let settings = StudentSortSettings {
+            field: StudentSortField::Name,
+            direction: StudentSortDirection::Desc,
+            then_by: vec![orbis_domain::entities::settings::StudentSortCriterion {
+                field: StudentSortField::CreatedAt,
+                direction: StudentSortDirection::Asc,
+            }],
+        };
+
+        assert_eq!(
+            student_sort_clause(&settings, "st"),
+            "p.first_name DESC, p.middle_name DESC, p.last_name DESC, st.created_at ASC, st.student_number ASC, st.id ASC"
+        );
+    }
 
     #[test]
     fn docforge_context_exposes_organization_branding_as_template_variables() {
@@ -764,6 +828,12 @@ impl OrgContextResolver for DbOrgContextResolver {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
             .ok_or_else(|| DomainError::NotFound("Organization not found".into()))?;
+        let student_sort = org
+            .settings
+            .as_ref()
+            .and_then(|settings| settings.get("student_sort"))
+            .and_then(|settings| serde_json::from_value(settings.clone()).ok())
+            .unwrap_or_default();
 
         Ok(OrgReportContext {
             id: org.id,
@@ -785,6 +855,7 @@ impl OrgContextResolver for DbOrgContextResolver {
             city: organization_metadata_text(&org.metadata, "city"),
             tax_id: organization_metadata_text(&org.metadata, "tax_id"),
             license_number: organization_metadata_text(&org.metadata, "license_number"),
+            student_sort,
         })
     }
 }
@@ -814,11 +885,12 @@ impl ReportDataProvider for FeeCollectionDataProvider {
         use rust_decimal::prelude::ToPrimitive;
         use sea_orm::{ConnectionTrait, Statement};
 
+        let order_by = student_sort_clause(&org_context.student_sort, "s");
         let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
-                r#"SELECT
+                &format!(r#"SELECT
                     sf.net_amount as amount,
                     COALESCE(sf.paid_amount, 0) as paid_amount,
                     sf.status,
@@ -829,7 +901,7 @@ impl ReportDataProvider for FeeCollectionDataProvider {
                 LEFT JOIN persons p ON s.person_id = p.id
                 LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
                 WHERE sf.org_id = $1
-                ORDER BY student_name"#,
+                ORDER BY {order_by}"#),
                 vec![org_id.into()],
             ))
             .await
@@ -1015,11 +1087,12 @@ impl ReportDataProvider for StudentListDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
+        let order_by = student_sort_clause(&org_context.student_sort, "s");
         let rows_result = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
-                r#"SELECT
+                &format!(r#"SELECT
                     e.id, e.status,
                     COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
                     COALESCE(sec.name, '') as class_name
@@ -1028,7 +1101,7 @@ impl ReportDataProvider for StudentListDataProvider {
                 LEFT JOIN persons p ON s.person_id = p.id
                 LEFT JOIN sections sec ON e.section_id = sec.id
                 WHERE e.org_id = $1
-                ORDER BY sec.name, student_name"#,
+                ORDER BY sec.name, {order_by}"#),
                 vec![org_id.to_string().into()],
             ))
             .await;
@@ -1137,6 +1210,7 @@ impl ReportDataProvider for TermResultDataProvider {
 
         let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
         let period_filter = parameters.get("period_id").and_then(|v| v.as_str());
+        let student_order = student_sort_clause(&org_context.student_sort, "st");
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
@@ -1167,7 +1241,7 @@ impl ReportDataProvider for TermResultDataProvider {
             values.push(pid.to_string().into());
         }
 
-        sql.push_str(" ORDER BY s.name");
+        sql.push_str(&format!(" ORDER BY s.name, {student_order}"));
 
         let rows_result = self
             .db
@@ -1592,6 +1666,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
         use sea_orm::{ConnectionTrait, Statement};
 
         let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
+        let student_order = student_sort_clause(&org_context.student_sort, "st");
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
@@ -1618,7 +1693,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
             values.push(sid.to_string().into());
         }
 
-        sql.push_str(" ORDER BY s.name");
+        sql.push_str(&format!(" ORDER BY s.name, {student_order}"));
 
         let rows_result = self
             .db
@@ -1772,6 +1847,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         let class_filter = parameters.get("class_id").and_then(|v| v.as_str());
         let year_filter = parameters.get("year_id").and_then(|v| v.as_str());
         let period_filter = parameters.get("period_id").and_then(|v| v.as_str());
+        let student_order = student_sort_clause(&org_context.student_sort, "st");
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
@@ -1816,7 +1892,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
             values.push(pid.to_string().into());
         }
 
-        sql.push_str(" ORDER BY s.name");
+        sql.push_str(&format!(" ORDER BY s.name, {student_order}"));
 
         let rows_result = self
             .db

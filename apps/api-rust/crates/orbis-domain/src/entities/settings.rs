@@ -14,6 +14,8 @@ pub struct OrganizationSettings {
     #[serde(default)]
     pub academic: AcademicSettings,
     #[serde(default)]
+    pub student_sort: StudentSortSettings,
+    #[serde(default)]
     pub enrollment: EnrollmentSettings,
     #[serde(default, alias = "registration")]
     pub admission: AdmissionConfiguration,
@@ -25,6 +27,134 @@ pub struct OrganizationSettings {
     pub ai: AiSettings,
     #[serde(default)]
     pub autopilot: AutopilotSettings,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StudentSortField {
+    StudentNumber,
+    Name,
+    CreatedAt,
+    AdmittedAt,
+    Status,
+    BirthDate,
+    Gender,
+}
+
+impl StudentSortField {
+    pub fn from_key(key: &str) -> Option<Self> {
+        match key {
+            "student_number" => Some(Self::StudentNumber),
+            "name" => Some(Self::Name),
+            "created_at" => Some(Self::CreatedAt),
+            "admitted_at" => Some(Self::AdmittedAt),
+            "status" => Some(Self::Status),
+            "birth_date" => Some(Self::BirthDate),
+            "gender" => Some(Self::Gender),
+            _ => None,
+        }
+    }
+
+    pub const fn key(self) -> &'static str {
+        match self {
+            Self::StudentNumber => "student_number",
+            Self::Name => "name",
+            Self::CreatedAt => "created_at",
+            Self::AdmittedAt => "admitted_at",
+            Self::Status => "status",
+            Self::BirthDate => "birth_date",
+            Self::Gender => "gender",
+        }
+    }
+}
+
+impl Default for StudentSortField {
+    fn default() -> Self {
+        Self::StudentNumber
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StudentSortDirection {
+    Asc,
+    Desc,
+}
+
+impl StudentSortDirection {
+    pub fn from_key(key: &str) -> Option<Self> {
+        match key {
+            "asc" => Some(Self::Asc),
+            "desc" => Some(Self::Desc),
+            _ => None,
+        }
+    }
+
+    pub const fn key(self) -> &'static str {
+        match self {
+            Self::Asc => "asc",
+            Self::Desc => "desc",
+        }
+    }
+}
+
+impl Default for StudentSortDirection {
+    fn default() -> Self {
+        Self::Asc
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(default)]
+pub struct StudentSortSettings {
+    pub field: StudentSortField,
+    pub direction: StudentSortDirection,
+    #[serde(default)]
+    pub then_by: Vec<StudentSortCriterion>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(default)]
+pub struct StudentSortCriterion {
+    pub field: StudentSortField,
+    pub direction: StudentSortDirection,
+}
+
+impl Default for StudentSortCriterion {
+    fn default() -> Self {
+        Self {
+            field: StudentSortField::default(),
+            direction: StudentSortDirection::default(),
+        }
+    }
+}
+
+impl Default for StudentSortSettings {
+    fn default() -> Self {
+        Self {
+            field: StudentSortField::default(),
+            direction: StudentSortDirection::default(),
+            then_by: Vec::new(),
+        }
+    }
+}
+
+impl StudentSortSettings {
+    pub fn criteria(&self) -> Vec<StudentSortCriterion> {
+        let mut criteria = vec![StudentSortCriterion {
+            field: self.field,
+            direction: self.direction,
+        }];
+        for criterion in self.then_by.iter().take(2) {
+            if !criteria
+                .iter()
+                .any(|existing| existing.field == criterion.field)
+            {
+                criteria.push(*criterion);
+            }
+        }
+        criteria
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -304,7 +434,7 @@ impl Default for AutopilotSettings {
 
 #[cfg(test)]
 mod tests {
-    use super::OrganizationSettings;
+    use super::{OrganizationSettings, StudentSortDirection, StudentSortField};
 
     #[test]
     fn missing_ai_settings_default_to_mobile_chat_disabled() {
@@ -323,5 +453,41 @@ mod tests {
 
         let serialized = serde_json::to_value(settings).expect("settings should serialize");
         assert_eq!(serialized["ai"]["mobile_chat_enabled"], true);
+    }
+
+    #[test]
+    fn student_sort_defaults_and_round_trips() {
+        let legacy: OrganizationSettings = serde_json::from_value(serde_json::json!({}))
+            .expect("legacy settings should use the default student sort");
+        assert_eq!(legacy.student_sort.field, StudentSortField::StudentNumber);
+        assert_eq!(legacy.student_sort.direction, StudentSortDirection::Asc);
+
+        let configured: OrganizationSettings = serde_json::from_value(serde_json::json!({
+            "student_sort": {
+                "field": "name",
+                "direction": "desc",
+                "then_by": [
+                    { "field": "created_at", "direction": "asc" }
+                ]
+            }
+        }))
+        .expect("configured student sort should deserialize");
+        assert_eq!(configured.student_sort.field, StudentSortField::Name);
+        assert_eq!(
+            configured.student_sort.direction,
+            StudentSortDirection::Desc
+        );
+        assert_eq!(
+            configured.student_sort.criteria()[1],
+            super::StudentSortCriterion {
+                field: StudentSortField::CreatedAt,
+                direction: StudentSortDirection::Asc,
+            }
+        );
+        let serialized = serde_json::to_value(configured).expect("student sort should serialize");
+        assert_eq!(
+            serialized["student_sort"]["then_by"][0]["field"],
+            "created_at"
+        );
     }
 }

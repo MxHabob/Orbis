@@ -24,6 +24,10 @@ impl DashboardRepository for DashboardRepoImpl {
             )
             .await?;
 
+        let (enrolled_students, enrollment_rate) = self
+            .enrollment_metrics(org_id, self.current_period_id(org_id).await?)
+            .await?;
+
         let total_employees = self
             .count_query(
                 "SELECT COUNT(*) as cnt FROM employees WHERE org_id = $1 AND is_deleted = FALSE",
@@ -52,7 +56,7 @@ impl DashboardRepository for DashboardRepoImpl {
             )
             .await?;
 
-        // Count enrollments
+        // Keep the all-period enrollment-record count for API consumers.
         let total_enrollments = self
             .count_query(
                 "SELECT COUNT(*) as cnt FROM enrollments WHERE org_id = $1",
@@ -110,6 +114,8 @@ impl DashboardRepository for DashboardRepoImpl {
 
         Ok(DashboardCounts {
             total_students,
+            enrolled_students,
+            enrollment_rate,
             total_employees,
             active_sections,
             total_teachers,
@@ -124,6 +130,114 @@ impl DashboardRepository for DashboardRepoImpl {
 }
 
 impl DashboardRepoImpl {
+    async fn current_period_id(&self, org_id: Uuid) -> Result<Option<Uuid>, DomainError> {
+        let calendar = self
+            .db
+            .query_one(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT id, name, current_period_id FROM academic_calendars WHERE org_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1",
+                [org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        let calendar = match calendar {
+            Some(calendar) => calendar,
+            None => {
+                match self
+                    .db
+                    .query_one(Statement::from_sql_and_values(
+                        self.db.get_database_backend(),
+                        "SELECT id, name, current_period_id FROM academic_calendars WHERE org_id = $1 ORDER BY created_at DESC LIMIT 1",
+                        [org_id.into()],
+                    ))
+                    .await
+                    .map_err(|e| DomainError::Internal(e.to_string()))?
+                {
+                    Some(calendar) => calendar,
+                    None => return Ok(None),
+                }
+            }
+        };
+
+        let current_period_id = calendar
+            .try_get::<Option<Uuid>>("", "current_period_id")
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        if current_period_id.is_some() {
+            return Ok(current_period_id);
+        }
+
+        let calendar_id: Uuid = calendar
+            .try_get("", "id")
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let period = self
+            .db
+            .query_one(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT id FROM academic_periods WHERE org_id = $1 AND calendar_id = $2 AND status = 'active' ORDER BY sort_order ASC, created_at ASC LIMIT 1",
+                [org_id.into(), calendar_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        period
+            .map(|row| row.try_get("", "id"))
+            .transpose()
+            .map_err(|e| DomainError::Internal(e.to_string()))
+    }
+
+    async fn enrollment_metrics(
+        &self,
+        org_id: Uuid,
+        current_period_id: Option<Uuid>,
+    ) -> Result<(u64, f64), DomainError> {
+        let eligible_students = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM students WHERE org_id = $1 AND is_deleted = FALSE AND status = 'active'",
+                org_id,
+            )
+            .await?;
+
+        let enrolled_students = match current_period_id {
+            Some(period_id) => {
+                let result = self
+                    .db
+                    .query_one(Statement::from_sql_and_values(
+                        self.db.get_database_backend(),
+                        "SELECT COUNT(DISTINCT e.student_id) as cnt FROM enrollments e INNER JOIN students s ON s.id = e.student_id AND s.org_id = e.org_id WHERE e.org_id = $1 AND e.period_id = $2 AND e.status IN ('active', 'pending_approval') AND s.is_deleted = FALSE AND s.status = 'active'",
+                        [org_id.into(), period_id.into()],
+                    ))
+                    .await
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+                match result {
+                    Some(row) => {
+                        let count: i64 = row
+                            .try_get("", "cnt")
+                            .map_err(|e| DomainError::Internal(e.to_string()))?;
+                        u64::try_from(count).map_err(|e| {
+                            DomainError::Internal(format!("Invalid enrollment count: {e}"))
+                        })?
+                    }
+                    None => {
+                        return Err(DomainError::Internal(
+                            "Enrollment count query returned no row".into(),
+                        ));
+                    }
+                }
+            }
+            None => 0,
+        };
+
+        let enrollment_rate = if eligible_students == 0 {
+            0.0
+        } else {
+            enrolled_students as f64 / eligible_students as f64 * 100.0
+        };
+
+        Ok((enrolled_students, enrollment_rate))
+    }
+
     async fn count_query(&self, sql: &str, org_id: Uuid) -> Result<u64, DomainError> {
         let result = self
             .db
@@ -208,6 +322,79 @@ mod tests {
             .unwrap();
 
         assert_eq!(repo.sum_query(query, org_id).await.unwrap(), 125.0);
+    }
+
+    #[tokio::test]
+    async fn enrollment_metrics_count_unique_active_students_in_current_period() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE students (id TEXT NOT NULL, org_id TEXT NOT NULL, status TEXT NOT NULL, is_deleted BOOLEAN NOT NULL)",
+        )
+        .await
+        .unwrap();
+        db.execute_unprepared(
+            "CREATE TABLE enrollments (org_id TEXT NOT NULL, period_id TEXT NOT NULL, student_id TEXT NOT NULL, status TEXT NOT NULL)",
+        )
+        .await
+        .unwrap();
+
+        let org_id = Uuid::new_v4();
+        let current_period_id = Uuid::new_v4();
+        let other_period_id = Uuid::new_v4();
+        let active_student = Uuid::new_v4();
+        let other_active_student = Uuid::new_v4();
+        let inactive_student = Uuid::new_v4();
+        let deleted_student = Uuid::new_v4();
+
+        for (student_id, status, is_deleted) in [
+            (active_student, "active", false),
+            (other_active_student, "active", false),
+            (inactive_student, "inactive", false),
+            (deleted_student, "active", true),
+        ] {
+            db.execute(Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "INSERT INTO students (id, org_id, status, is_deleted) VALUES ($1, $2, $3, $4)",
+                [
+                    student_id.into(),
+                    org_id.into(),
+                    status.into(),
+                    is_deleted.into(),
+                ],
+            ))
+            .await
+            .unwrap();
+        }
+
+        for (student_id, period_id, status) in [
+            (active_student, current_period_id, "active"),
+            (active_student, current_period_id, "pending_approval"),
+            (other_active_student, other_period_id, "active"),
+            (inactive_student, current_period_id, "active"),
+            (deleted_student, current_period_id, "active"),
+        ] {
+            db.execute(Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "INSERT INTO enrollments (org_id, period_id, student_id, status) VALUES ($1, $2, $3, $4)",
+                [
+                    org_id.into(),
+                    period_id.into(),
+                    student_id.into(),
+                    status.into(),
+                ],
+            ))
+            .await
+            .unwrap();
+        }
+
+        let repo = DashboardRepoImpl { db };
+        let (enrolled_students, enrollment_rate) = repo
+            .enrollment_metrics(org_id, Some(current_period_id))
+            .await
+            .unwrap();
+
+        assert_eq!(enrolled_students, 1);
+        assert_eq!(enrollment_rate, 50.0);
     }
 
     #[tokio::test]

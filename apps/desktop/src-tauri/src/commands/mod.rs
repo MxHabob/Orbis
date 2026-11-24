@@ -33,7 +33,7 @@ pub mod template_cmds;
 pub mod window_cmds;
 pub mod workflow_cmds;
 
-use tauri::generate_handler;
+use tauri::{Manager, generate_handler};
 
 pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::RequestContext {
     let session = state.get_active_session();
@@ -60,8 +60,8 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
         let command = invoke.message.command().to_string();
         if let Some(state) = invoke
             .message
-            .state_ref()
-            .try_get::<crate::state::AppState>()
+            .webview_ref()
+            .try_state::<crate::state::AppState>()
         {
             if state.get_active_session().is_none() && !is_allowed_before_auth(&command) {
                 invoke

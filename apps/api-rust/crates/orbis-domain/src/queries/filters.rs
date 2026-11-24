@@ -1,5 +1,6 @@
 use crate::entities::enrollment::{EnrollmentStatus, StudyMode};
 use crate::entities::payment::PaymentMethod;
+use crate::entities::settings::StudentSortCriterion;
 use crate::entities::student::{AcademicStanding, StudentStatus};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -79,6 +80,8 @@ pub struct StudentFilter {
     pub standing: Option<AcademicStanding>,
     pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
+    #[serde(default)]
+    pub sort_criteria: Option<Vec<StudentSortCriterion>>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
