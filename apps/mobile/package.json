@@ -1,7 +1,7 @@
 {
   "name": "@orbis/mobile",
   "main": "expo-router/entry",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "dependencies": {
     "@docforge/core": "workspace:*",
     "@orbis/avatar-engine": "workspace:*",
