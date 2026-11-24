@@ -20,7 +20,7 @@ export interface GradeRowData {
   student_name?: string;
   period_id: string;
   section_subject_id: string;
-  component_id: string;
+  component_code: string;
   score: number | string;
   max_score: number | string;
   is_excused?: boolean | string;
@@ -66,13 +66,13 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
     example: "section-subject-id",
   },
   {
-    id: "component_id",
-    headerAr: "معرف مكون التقييم*",
-    headerEn: "Assessment Component ID*",
+    id: "component_code",
+    headerAr: "رمز مكون التقييم*",
+    headerEn: "Assessment Component Code*",
     required: true,
     type: "text",
-    descriptionAr: "معرف مكون التقييم كما هو معرف في إعداد المؤسسة",
-    example: "assessment-component-id",
+    descriptionAr: "الرمز الثابت لمكون التقييم كما هو معرف في مخطط التقييم",
+    example: "written_test",
   },
   {
     id: "score",
@@ -149,8 +149,8 @@ export const gradeGridColumns: OrbisColumnDef[] = [
     width: 180,
   },
   {
-    id: "component_id",
-    header: "Assessment Component ID",
+    id: "component_code",
+    header: "Assessment Component Code",
     width: 190,
   },
   {
@@ -228,7 +228,7 @@ export const gradeImportProfile: BulkImportProfile<
         "student_id",
         "period_id",
         "section_subject_id",
-        "component_id",
+        "component_code",
         "score",
         "max_score",
       ].includes(colId)
@@ -342,13 +342,13 @@ export const gradeImportProfile: BulkImportProfile<
       row.student_id &&
       row.period_id &&
       row.section_subject_id &&
-      row.component_id
+      row.component_code
     ) {
       const key = JSON.stringify([
         row.student_id.trim().toLocaleLowerCase(),
         row.period_id.trim().toLocaleLowerCase(),
         row.section_subject_id.trim().toLocaleLowerCase(),
-        row.component_id.trim().toLocaleLowerCase(),
+        row.component_code.trim().toLocaleLowerCase(),
       ]);
       const duplicateIndex = context
         ? (findDuplicateIndex(context, "grade_assessment", key, rowIndex) ?? -1)
@@ -358,7 +358,7 @@ export const gradeImportProfile: BulkImportProfile<
               other.student_id?.trim().toLocaleLowerCase(),
               other.period_id?.trim().toLocaleLowerCase(),
               other.section_subject_id?.trim().toLocaleLowerCase(),
-              other.component_id?.trim().toLocaleLowerCase(),
+              other.component_code?.trim().toLocaleLowerCase(),
             ]);
             return key === otherKey;
           });
@@ -395,13 +395,13 @@ export const gradeImportProfile: BulkImportProfile<
         row.student_id?.trim().toLocaleLowerCase(),
         row.period_id?.trim().toLocaleLowerCase(),
         row.section_subject_id?.trim().toLocaleLowerCase(),
-        row.component_id?.trim().toLocaleLowerCase(),
+        row.component_code?.trim().toLocaleLowerCase(),
       ]);
       const hasContext =
         Boolean(row.student_id?.trim()) &&
         Boolean(row.period_id?.trim()) &&
         Boolean(row.section_subject_id?.trim()) &&
-        Boolean(row.component_id?.trim());
+        Boolean(row.component_code?.trim());
       const isInvalid =
         !hasContext ||
         String(row.score ?? "").trim() === "" ||
@@ -425,8 +425,8 @@ export const gradeImportProfile: BulkImportProfile<
           (sectionSubjectsSummary[row.section_subject_id] || 0) + 1;
         academicPeriodsSummary[row.period_id] =
           (academicPeriodsSummary[row.period_id] || 0) + 1;
-        assessmentComponentsSummary[row.component_id] =
-          (assessmentComponentsSummary[row.component_id] || 0) + 1;
+        assessmentComponentsSummary[row.component_code] =
+          (assessmentComponentsSummary[row.component_code] || 0) + 1;
       }
     }
 
@@ -501,7 +501,7 @@ export function buildGradeBatchItems(
       row.student_id,
       row.period_id,
       row.section_subject_id,
-      row.component_id,
+      row.component_code,
     ];
     if (requiredIds.some((id) => typeof id !== "string" || !id.trim())) {
       throw new TypeError(
@@ -542,7 +542,7 @@ export function buildGradeBatchItems(
       period_id: row.period_id.trim(),
       student_id: row.student_id.trim(),
       section_subject_id: row.section_subject_id.trim(),
-      component_id: row.component_id.trim(),
+      component_code: row.component_code.trim(),
       score: String(score),
       max_score: String(maximum),
       ...(excusedInput ? { is_excused: isExcused } : {}),

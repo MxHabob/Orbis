@@ -11,6 +11,8 @@ pub struct Grade {
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
     pub section_subject_id: Uuid,
+    #[serde(default)]
+    pub component_code: Option<String>,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Decimal,

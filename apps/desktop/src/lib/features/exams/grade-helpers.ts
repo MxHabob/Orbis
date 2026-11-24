@@ -25,6 +25,7 @@ export interface GradeCell {
   exam_type: string;
   score?: number | null;
   max_score: number;
+  component_code?: string | null;
   /** Links this grade to a specific assessment component for backend storage */
   component_id?: string | null;
 }
@@ -281,6 +282,7 @@ export function transformMatrixToSource(
       row[`__meta_exam_${g.exam_type}`] = {
         grade_id: g.grade_id,
         assessment_id: g.assessment_id,
+        component_code: g.component_code ?? null,
         component_id: g.component_id ?? null,
         max_score: g.max_score,
       };

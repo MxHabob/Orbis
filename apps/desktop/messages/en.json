@@ -782,7 +782,7 @@
   "bulk_entry_filter_valid": "Valid ({count})",
   "bulk_entry_filter_warnings": "Warnings ({count})",
   "bulk_entry_grade_commit_failed": "Failed to record student grades",
-  "bulk_entry_grade_header_component_id": "Assessment Component ID",
+  "bulk_entry_grade_header_component_id": "Assessment Component Code",
   "bulk_entry_grade_header_is_excused": "Is Excused",
   "bulk_entry_grade_header_max_score": "Max Score",
   "bulk_entry_grade_header_notes": "Remarks",

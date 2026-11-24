@@ -61,7 +61,7 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     student_name: m.bulk_entry_grade_header_student_name,
     period_id: m.bulk_entry_grade_header_period_id,
     section_subject_id: m.bulk_entry_grade_header_section_subject_id,
-    component_id: m.bulk_entry_grade_header_component_id,
+    component_code: m.bulk_entry_grade_header_component_id,
     score: m.bulk_entry_grade_header_score,
     max_score: m.bulk_entry_grade_header_max_score,
     is_excused: m.bulk_entry_grade_header_is_excused,

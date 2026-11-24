@@ -34,7 +34,7 @@ const validRow: GradeRowData = {
   student_id: "student-1",
   period_id: "period-1",
   section_subject_id: "offering-1",
-  component_id: "component-1",
+  component_code: "written_test",
   score: "18.5",
   max_score: "20",
 };
@@ -46,7 +46,7 @@ describe("grade import", () => {
         student_id: "student-1",
         period_id: "period-1",
         section_subject_id: "offering-1",
-        component_id: "component-1",
+        component_code: "written_test",
         score: "18.5",
         max_score: "20",
         notes: undefined,

@@ -116,8 +116,7 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
       const grade = hasScheme
         ? (studentGrades.find(
             (item) =>
-              String(item.component_id ?? "") === code ||
-              (item.component_id && String(item.component_id).includes(code)),
+              String(item.component_code ?? item.component_id ?? "") === code,
           ) ??
           // Legacy fallback for old 2-column data
           (code === "final" || code === "written_test" || code === "term_exam"
@@ -134,6 +133,7 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
         score: grade ? Number(grade.score) : null,
         max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
         component_id: grade?.component_id ?? null,
+        component_code: grade?.component_code ?? null,
       };
     });
     const total = cells.reduce((sum, cell) => sum + (cell.score || 0), 0);
@@ -217,48 +217,46 @@ function handleCellEdit(event: CellEditEvent) {
 async function handleSaveAll() {
   if (!matrixData || !canEnterGrades) return;
   isSaving = true;
+
   try {
-    const studentsToSave: any[] = [];
+    const items: Array<
+      Parameters<typeof api.batchRecordGrades>[0]["items"][number]
+    > = [];
     for (const row of gridSource) {
       for (const key of assessmentKeys) {
         const score = row[`exam_${key}`];
         if (score !== null && score !== undefined && score !== "") {
           const meta = row[`__meta_exam_${key}`] as
-            | { max_score: number; component_id?: string | null }
+            | {
+                max_score: number;
+                component_id?: string | null;
+                component_code?: string | null;
+              }
             | undefined;
-          // Read max_score from the scheme component, fall back to meta or legacy defaults
           const compConfig = schemeComponents.find((c) => c.code === key);
           const maxScore = compConfig?.max_score ?? meta?.max_score ?? 100;
-          studentsToSave.push({
-            student_id: row.student_id,
-            enrollment_id: row.enrollment_id || undefined,
-            score: Number(score),
-            max_score: maxScore,
+          items.push({
+            student_id: String(row.student_id),
+            period_id: selectedPeriodId,
+            section_subject_id: SectionSubjectId,
+            enrollment_id: row.enrollment_id
+              ? String(row.enrollment_id)
+              : undefined,
+            score: String(Number(score)),
+            max_score: String(maxScore),
             notes: null,
-            exam_type: key,
-            component_id: meta?.component_id ?? key,
+            component_code: meta?.component_code ?? key,
           });
         }
       }
     }
 
-    if (studentsToSave.length === 0) {
+    if (items.length === 0) {
       toast.info(m.common_no_changes_to_save());
       return;
     }
 
-    for (const student of studentsToSave) {
-      await api.recordGrade({
-        period_id: selectedPeriodId,
-        student_id: String(student.student_id),
-        enrollment_id: student.enrollment_id || undefined,
-        section_subject_id: SectionSubjectId,
-        score: String(student.score),
-        max_score: String(student.max_score),
-        notes: student.notes ?? undefined,
-        component_id: student.component_id ?? undefined,
-      });
-    }
+    await api.batchRecordGrades({ items });
 
     toast.success(m.common_grades_save_success());
     isDirty = false;

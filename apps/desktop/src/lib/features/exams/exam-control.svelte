@@ -21,6 +21,7 @@ import {
   type GradeCell,
 } from "./grade-helpers";
 import type { CellEditEvent } from "@orbis/svelte-grid";
+import * as XLSX from "xlsx";
 import { ControlGrid } from "../academics";
 
 let { orgId }: { orgId: string } = $props();
@@ -34,6 +35,9 @@ let isLoading = $state(true);
 let isMatrixLoading = $state(false);
 let isSaving = $state(false);
 let isDirty = $state(false);
+let isExporting = $state(false);
+let isImporting = $state(false);
+let importFileInput: HTMLInputElement | undefined = $state();
 let matrixData = $state<GradeMatrixResponse | null>(null);
 let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
@@ -149,7 +153,7 @@ $effect(() => {
   previousSelectedClassId = currentClassId;
 });
 
-// ── Grade Matrix ───────────────────────────────────────────────────────────
+// â”€â”€ Grade Matrix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadGradeMatrix() {
   if (!selectedPeriodId || !selectedClassId || !selectedSubjectId) return;
   isMatrixLoading = true;
@@ -157,16 +161,26 @@ async function loadGradeMatrix() {
   gridSource = [];
   isDirty = false;
   try {
-    const [studentRes, sectionSubjects] = await Promise.all([
-      api.listStudents({
-        page: 1,
-        page_size: 200,
-        class_id: selectedClassId,
-        period_id: selectedPeriodId,
-      }),
+    const [studentItems, sectionSubjects] = await Promise.all([
+      (async () => {
+        const items: any[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const result = await api.listStudents({
+            page,
+            page_size: 100,
+            class_id: selectedClassId,
+            period_id: selectedPeriodId,
+          });
+          items.push(...(result.items || []));
+          totalPages = result.total_pages || 1;
+          page += 1;
+        } while (page <= totalPages);
+        return items;
+      })(),
       api.listSectionSubjects(selectedClassId, selectedPeriodId),
     ]);
-    const studentItems = studentRes.items || [];
     const sectionSubject = sectionSubjects.find(
       (offering) => String(offering.subject_id) === String(selectedSubjectId),
     );
@@ -174,7 +188,7 @@ async function loadGradeMatrix() {
       ? await api.listGrades({ SectionSubjectId: sectionSubject.id })
       : [];
 
-    // ── Build assessment columns from scheme components ────────
+    // â”€â”€ Build assessment columns from scheme components â”€â”€â”€â”€â”€â”€â”€â”€
     const hasSchemeComponents = schemeComponents.length > 0;
     const assessmentConfigs = hasSchemeComponents
       ? schemeComponents.map((comp) => ({
@@ -189,14 +203,14 @@ async function loadGradeMatrix() {
           {
             code: "monthly",
             name: "Monthly",
-            name_ar: "العملية",
+            name_ar: "ط§ظ„ط¹ظ…ظ„ظٹط©",
             max: 20,
             sort_order: 1,
           },
           {
             code: "final",
             name: "Final",
-            name_ar: "الاختبار",
+            name_ar: "ط§ظ„ط§ط®طھط¨ط§ط±",
             max: 30,
             sort_order: 2,
           },
@@ -215,9 +229,7 @@ async function loadGradeMatrix() {
         const grade = hasSchemeComponents
           ? (matchingGrades.find(
               (item) =>
-                String(item.component_id ?? "") === code ||
-                // Fallback: match by component_id containing the code
-                (item.component_id && String(item.component_id).includes(code)),
+                String(item.component_code ?? item.component_id ?? "") === code,
             ) ??
             // Last-resort legacy match for old 2-column data
             (code === "final" || code === "written_test" || code === "term_exam"
@@ -233,6 +245,7 @@ async function loadGradeMatrix() {
           score: grade ? Number(grade.score) : null,
           max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
           component_id: grade?.component_id ?? null,
+          component_code: grade?.component_code ?? null,
         };
       });
       const total = cells.reduce((acc, cell) => acc + (cell.score || 0), 0);
@@ -296,7 +309,7 @@ $effect(() => {
   }
 });
 
-// ── Cell Pencil Handler ──────────────────────────────────────────────────────
+// â”€â”€ Cell Pencil Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, columnId, newValue } = event;
   const field = columnId;
@@ -313,7 +326,7 @@ function handleCellEdit(event: CellEditEvent) {
   isDirty = true;
 }
 
-// ── Save All Grades ────────────────────────────────────────────────────────
+// â”€â”€ Save All Grades â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handleSaveAll() {
   if (!matrixData || !canEnterGrades) return;
   isSaving = true;
@@ -337,7 +350,7 @@ async function handleSaveAll() {
             score: String(Number(score)),
             max_score: maxScore,
             enrollment_id: row.enrollment_id || undefined,
-            component_id: meta?.component_id ?? key,
+            component_code: meta?.component_code ?? key,
             notes: null,
           });
         }
@@ -388,6 +401,202 @@ async function handleCalculateRankings() {
 onMount(() => {
   if (orgId) loadInitialData();
 });
+
+function triggerImportMatrix() {
+  if (!canEnterGrades || !matrixData) return;
+  if (importFileInput) {
+    importFileInput.value = "";
+    importFileInput.click();
+  }
+}
+
+async function saveWorkbookFile(workbook: XLSX.WorkBook, filename: string) {
+  try {
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const { writeFile } = await import("@tauri-apps/plugin-fs");
+    const filePath = await save({
+      defaultPath: filename,
+      filters: [{ name: "Excel", extensions: ["xlsx"] }],
+    });
+    if (!filePath) return false;
+    const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    await writeFile(filePath, new Uint8Array(buffer));
+    return true;
+  } catch {
+    XLSX.writeFile(workbook, filename);
+    return true;
+  }
+}
+
+async function handleExportMatrix() {
+  if (!matrixData || gridSource.length === 0) return;
+  isExporting = true;
+  try {
+    const locale = getLocale();
+    const componentKeys =
+      assessmentKeys.length > 0
+        ? assessmentKeys
+        : matrixData.assessment_types || [];
+    const rows = gridSource.map((row) => {
+      const out: Record<string, unknown> = {
+        student_id: row.student_id ?? "",
+        enrollment_id: row.enrollment_id ?? "",
+        student_name:
+          (locale === "ar" ? row.student_name_ar : row.student_name) ||
+          row.student_name ||
+          "",
+      };
+      for (const key of componentKeys) {
+        out[key] = row[`exam_${key}`] ?? "";
+      }
+      out.total = row.total ?? "";
+      out.percentage = row.percentage ?? "";
+      out.grade_letter = row.grade_letter ?? "";
+      return out;
+    });
+
+    const headers = [
+      "student_id",
+      "enrollment_id",
+      "student_name",
+      ...componentKeys,
+      "total",
+      "percentage",
+      "grade_letter",
+    ];
+    const sheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Grades");
+
+    const metaRows = [
+      { key: "period_id", value: selectedPeriodId || "" },
+      { key: "section_subject_id", value: matrixData.section_subject_id || "" },
+      { key: "class_id", value: selectedClassId || "" },
+      { key: "subject_id", value: selectedSubjectId || "" },
+      ...componentKeys.map((code) => {
+        const comp = schemeComponents.find((c) => c.code === code);
+        return {
+          key: `component:${code}`,
+          value: comp
+            ? `${comp.name}${comp.name_ar ? ` / ${comp.name_ar}` : ""} (max ${comp.max_score})`
+            : code,
+        };
+      }),
+    ];
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(metaRows),
+      "Context",
+    );
+
+    const safeName = `grades-${(matrixData.section_subject_id || "matrix").slice(0, 8)}.xlsx`;
+    await saveWorkbookFile(workbook, safeName);
+    toast.success(m.common_action_export());
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e) || "Export failed");
+  } finally {
+    isExporting = false;
+  }
+}
+
+async function handleImportMatrix(event: Event) {
+  if (!matrixData || !canEnterGrades) return;
+  const input = event.currentTarget as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  isImporting = true;
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const sheetName = workbook.SheetNames.includes("Grades")
+      ? "Grades"
+      : workbook.SheetNames[0];
+    if (!sheetName) throw new Error("No sheet found");
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+      defval: "",
+    });
+    if (rows.length === 0) {
+      toast.warning(m.common_control_no_data());
+      return;
+    }
+
+    const componentKeys =
+      assessmentKeys.length > 0
+        ? assessmentKeys
+        : matrixData.assessment_types || [];
+    const componentSet = new Set(componentKeys);
+    const byStudentId = new Map<string, Record<string, unknown>>();
+    for (const row of gridSource) {
+      const id = String(row.student_id ?? "");
+      if (id) byStudentId.set(id, row);
+    }
+
+    let matchedRows = 0;
+    let updatedCells = 0;
+    const updatedSource = gridSource.map((r) => ({ ...r }));
+
+    for (const imported of rows) {
+      const studentId = String(
+        imported.student_id ??
+          imported.studentId ??
+          imported.StudentId ??
+          imported["معرف الطالب"] ??
+          "",
+      ).trim();
+      if (!studentId) continue;
+      const rowIndex = updatedSource.findIndex(
+        (r) => String(r.student_id ?? "") === studentId,
+      );
+      if (rowIndex === -1) continue;
+      matchedRows++;
+      const row = { ...updatedSource[rowIndex] };
+
+      for (const key of componentKeys) {
+        const raw =
+          imported[key] ??
+          imported[`exam_${key}`] ??
+          imported[`comp:${key}`] ??
+          imported[key.toUpperCase()] ??
+          imported[key.toLowerCase()];
+        if (raw === undefined || raw === "") continue;
+        const num = Number(raw);
+        if (Number.isNaN(num)) continue;
+        const compConfig = schemeComponents.find((c) => c.code === key);
+        const meta = row[`__meta_exam_${key}`] as
+          | { max_score?: number }
+          | undefined;
+        const maxScore = compConfig?.max_score ?? meta?.max_score ?? 100;
+        const clamped = Math.max(0, Math.min(maxScore, num));
+        if (row[`exam_${key}`] !== clamped) {
+          row[`exam_${key}`] = clamped;
+          updatedCells++;
+        }
+      }
+
+      recalculateRowTotals(row, componentKeys, academicContext.gradeScaleItems);
+      updatedSource[rowIndex] = row;
+    }
+
+    if (matchedRows === 0) {
+      toast.warning(m.common_control_no_data());
+      return;
+    }
+
+    gridSource = updatedSource;
+    isDirty = updatedCells > 0 || isDirty;
+    toast.success(
+      m.common_control_save_success({ total: String(updatedCells) }) +
+        ` (${matchedRows} ${m.academics_students_tab_title?.() ?? "students"})`,
+    );
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e) || "Import failed");
+  } finally {
+    isImporting = false;
+    if (input) input.value = "";
+  }
+}
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-3 text-start select-none sm:gap-4 sm:p-4">
@@ -435,6 +644,18 @@ onMount(() => {
       onCellEdit={handleCellEdit}
       onCalculateRankings={handleCalculateRankings}
       isCalculating={isCalculatingRankings}
+      onExportTemplate={handleExportMatrix}
+      onImportTemplate={triggerImportMatrix}
+      {isExporting}
+      {isImporting}
+    />
+    <input
+      bind:this={importFileInput}
+      type="file"
+      accept=".xlsx,.xls"
+      class="hidden"
+      onchange={handleImportMatrix}
     />
   {/if}
 </div>
+

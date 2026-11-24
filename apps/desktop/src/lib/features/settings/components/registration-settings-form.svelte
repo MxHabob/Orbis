@@ -436,8 +436,7 @@ onMount(async () => {
       if (currentSettings.student_sort) {
         studentSortField =
           currentSettings.student_sort.field || "student_number";
-        studentSortDirection =
-          currentSettings.student_sort.direction || "asc";
+        studentSortDirection = currentSettings.student_sort.direction || "asc";
         studentSortThenBy1Field =
           currentSettings.student_sort.then_by?.[0]?.field || "none";
         studentSortThenBy1Direction =

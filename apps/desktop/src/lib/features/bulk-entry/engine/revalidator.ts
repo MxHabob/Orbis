@@ -101,7 +101,7 @@ export function revalidateCellChange<T = Record<string, unknown>>(
     "student_id",
     "period_id",
     "section_subject_id",
-    "component_id",
+    "component_code",
   ];
   if (profile.id === "grades" && gradeContextColumns.includes(columnId)) {
     const summary = validateAllRows(rows, profile, refData);

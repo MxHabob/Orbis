@@ -112,6 +112,7 @@ pub struct BatchGradeItem {
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
     pub section_subject_id: Uuid,
+    pub component_code: Option<String>,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -119,6 +120,39 @@ pub struct BatchGradeItem {
     pub is_exempt: bool,
     pub is_absent: bool,
     pub notes: Option<String>,
+}
+
+struct ValidatedGradeContext {
+    enrollment_id: Uuid,
+    component_code: Option<String>,
+    component_max_score: Option<Decimal>,
+}
+
+fn normalize_grade_component_key(
+    component_code: Option<&str>,
+    component_id: Option<Uuid>,
+) -> Option<String> {
+    component_code
+        .map(str::trim)
+        .filter(|code| !code.is_empty())
+        .map(|code| code.to_lowercase())
+        .or_else(|| component_id.map(|id| id.to_string()))
+}
+
+fn resolve_grade_max_score(
+    configured_max_score: Option<Decimal>,
+    requested_max_score: Option<Decimal>,
+) -> Result<Decimal, DomainError> {
+    if let Some(configured_max_score) = configured_max_score {
+        if requested_max_score.is_some_and(|requested| requested != configured_max_score) {
+            return Err(DomainError::Validation(
+                "Grade maximum score must match the assessment scheme component".into(),
+            ));
+        }
+        return Ok(configured_max_score);
+    }
+
+    Ok(requested_max_score.unwrap_or_else(|| Decimal::from(100)))
 }
 
 pub struct BatchAttendanceItem {
@@ -262,9 +296,10 @@ impl AssessmentService {
         period_id: Uuid,
         student_id: Uuid,
         section_subject_id: Uuid,
+        component_code: Option<&str>,
         component_id: Option<Uuid>,
         enrollment_id: Option<Uuid>,
-    ) -> Result<Uuid, DomainError> {
+    ) -> Result<ValidatedGradeContext, DomainError> {
         if let Some(period_repo) = &self.period_repo {
             let period = period_repo
                 .find_by_id(period_id)
@@ -273,6 +308,11 @@ impl AssessmentService {
             if period.org_id != org_id {
                 return Err(DomainError::Unauthorized(
                     "Academic period belongs to another organization".into(),
+                ));
+            }
+            if !period.can_enter_grades() {
+                return Err(DomainError::BusinessRule(
+                    "Grade entry is not open for this academic period".into(),
                 ));
             }
         }
@@ -300,6 +340,11 @@ impl AssessmentService {
             ));
         }
 
+        let mut resolved_component_code = component_code
+            .map(str::trim)
+            .filter(|code| !code.is_empty())
+            .map(str::to_owned);
+        let mut component_max_score = None;
         if section_subject.scheme_id.is_some() {
             let scheme_id = section_subject.scheme_id.expect("checked above");
             let scheme = self
@@ -312,19 +357,31 @@ impl AssessmentService {
                     "Assessment scheme belongs to another organization".into(),
                 ));
             }
-            if let Some(component_id) = component_id {
-                if scheme.components.is_empty()
-                    || !scheme.components.iter().any(|component| {
-                        component
-                            .code
-                            .trim()
-                            .eq_ignore_ascii_case(&component_id.to_string())
-                    })
-                {
+            if component_code.is_some() || component_id.is_some() {
+                let matched_component = scheme.components.iter().find(|component| {
+                    component_code
+                        .is_some_and(|code| component.code.trim().eq_ignore_ascii_case(code.trim()))
+                        || component_id.is_some_and(|id| {
+                            component.code.trim().eq_ignore_ascii_case(&id.to_string())
+                        })
+                });
+                let Some(component) = matched_component else {
                     return Err(DomainError::Validation(
                         "The assessment component is not defined by the section subject's assessment scheme".into(),
                     ));
+                };
+                if component_code
+                    .is_some_and(|code| !component.code.trim().eq_ignore_ascii_case(code.trim()))
+                    || component_id.is_some_and(|id| {
+                        !component.code.trim().eq_ignore_ascii_case(&id.to_string())
+                    })
+                {
+                    return Err(DomainError::Validation(
+                        "Assessment component code and legacy ID do not match".into(),
+                    ));
                 }
+                resolved_component_code = Some(component.code.clone());
+                component_max_score = Some(component.max_score);
             }
         }
 
@@ -354,10 +411,18 @@ impl AssessmentService {
                     "Enrollment does not match the student, period, and section".into(),
                 ));
             }
-            return Ok(enrollment.id);
+            return Ok(ValidatedGradeContext {
+                enrollment_id: enrollment.id,
+                component_code: resolved_component_code,
+                component_max_score,
+            });
         }
 
-        Ok(Uuid::nil())
+        Ok(ValidatedGradeContext {
+            enrollment_id: Uuid::nil(),
+            component_code: resolved_component_code,
+            component_max_score,
+        })
     }
 
     pub async fn record_grade(
@@ -367,32 +432,34 @@ impl AssessmentService {
         period_id: Uuid,
         student_id: Uuid,
         section_subject_id: Uuid,
+        component_code: Option<String>,
         component_id: Option<Uuid>,
         score: Decimal,
-        max_score: Decimal,
+        max_score: Option<Decimal>,
         is_final: bool,
     ) -> Result<Grade, DomainError> {
         self.permission_checker
             .check(ctx, Permission::GradeWrite)
             .await?;
 
+        let context = self
+            .validate_grade_context(
+                org_id,
+                period_id,
+                student_id,
+                section_subject_id,
+                component_code.as_deref(),
+                component_id,
+                None,
+            )
+            .await?;
+        let max_score = resolve_grade_max_score(context.component_max_score, max_score)?;
         if score < Decimal::ZERO || score > max_score {
             return Err(DomainError::Validation(format!(
                 "Score {} is outside allowable range [0, {}]",
                 score, max_score
             )));
         }
-
-        let enrollment_id = self
-            .validate_grade_context(
-                org_id,
-                period_id,
-                student_id,
-                section_subject_id,
-                component_id,
-                None,
-            )
-            .await?;
 
         let now = Utc::now();
         let grade_id = Uuid::new_v4();
@@ -402,8 +469,9 @@ impl AssessmentService {
             org_id,
             period_id,
             student_id,
-            enrollment_id: Some(enrollment_id).filter(|id| *id != Uuid::nil()),
+            enrollment_id: Some(context.enrollment_id).filter(|id| *id != Uuid::nil()),
             section_subject_id,
+            component_code: context.component_code,
             component_id,
             score,
             max_score,
@@ -454,10 +522,46 @@ impl AssessmentService {
         let now = Utc::now();
         let mut grades = Vec::with_capacity(items.len());
         let mut existing_by_key =
-            std::collections::HashMap::<(Uuid, Uuid, Uuid, Option<Uuid>), Grade>::new();
+            std::collections::HashMap::<(Uuid, Uuid, Uuid, Option<String>), Grade>::new();
+        let section_subject_ids = items
+            .iter()
+            .map(|item| item.section_subject_id)
+            .collect::<std::collections::HashSet<_>>();
+        for section_subject_id in section_subject_ids {
+            for existing in self
+                .grade_repo
+                .find_by_org_and_section_subject(org_id, section_subject_id)
+                .await?
+            {
+                existing_by_key.insert(
+                    (
+                        existing.student_id,
+                        existing.period_id,
+                        existing.section_subject_id,
+                        normalize_grade_component_key(
+                            existing.component_code.as_deref(),
+                            existing.component_id,
+                        ),
+                    ),
+                    existing,
+                );
+            }
+        }
+        let mut submitted_keys = std::collections::HashSet::with_capacity(items.len());
 
         for item in items {
-            let max_score = item.max_score.unwrap_or_else(|| Decimal::from(100));
+            let context = self
+                .validate_grade_context(
+                    org_id,
+                    item.period_id,
+                    item.student_id,
+                    item.section_subject_id,
+                    item.component_code.as_deref(),
+                    item.component_id,
+                    item.enrollment_id,
+                )
+                .await?;
+            let max_score = resolve_grade_max_score(context.component_max_score, item.max_score)?;
             if item.score < Decimal::ZERO || item.score > max_score {
                 return Err(DomainError::Validation(format!(
                     "Score {} is outside allowable range [0, {}] for student {}",
@@ -465,48 +569,18 @@ impl AssessmentService {
                 )));
             }
 
-            let enrollment_id = self
-                .validate_grade_context(
-                    org_id,
-                    item.period_id,
-                    item.student_id,
-                    item.section_subject_id,
-                    item.component_id,
-                    item.enrollment_id,
-                )
-                .await?;
-
+            let component_key =
+                normalize_grade_component_key(context.component_code.as_deref(), item.component_id);
             let key = (
                 item.student_id,
                 item.period_id,
                 item.section_subject_id,
-                item.component_id,
+                component_key,
             );
-            if !existing_by_key.contains_key(&key) {
-                for existing in self
-                    .grade_repo
-                    .find_by_org_student_and_subject(
-                        org_id,
-                        item.student_id,
-                        item.section_subject_id,
-                    )
-                    .await?
-                {
-                    if existing.period_id == item.period_id
-                        && existing.section_subject_id == item.section_subject_id
-                        && existing.component_id == item.component_id
-                    {
-                        existing_by_key.insert(
-                            (
-                                existing.student_id,
-                                existing.period_id,
-                                existing.section_subject_id,
-                                existing.component_id,
-                            ),
-                            existing,
-                        );
-                    }
-                }
+            if !submitted_keys.insert(key.clone()) {
+                return Err(DomainError::Validation(
+                    "A grade batch cannot contain duplicate student assessment rows".into(),
+                ));
             }
             let existing = existing_by_key.get(&key).cloned();
             let grade_id = existing
@@ -522,8 +596,9 @@ impl AssessmentService {
                 org_id,
                 period_id: item.period_id,
                 student_id: item.student_id,
-                enrollment_id: Some(enrollment_id).filter(|id| *id != Uuid::nil()),
+                enrollment_id: Some(context.enrollment_id).filter(|id| *id != Uuid::nil()),
                 section_subject_id: item.section_subject_id,
+                component_code: context.component_code,
                 component_id: item.component_id,
                 score: item.score,
                 max_score,
@@ -660,8 +735,9 @@ impl AssessmentService {
         let mut engine = CalcEngine::new();
         for grade in grades {
             let var_name = grade
-                .component_id
-                .map(|cid| cid.to_string())
+                .component_code
+                .clone()
+                .or_else(|| grade.component_id.map(|cid| cid.to_string()))
                 .unwrap_or_else(|| grade.section_subject_id.to_string());
             engine.set_variable(&var_name, grade.score);
         }
@@ -1696,8 +1772,9 @@ impl AssessmentService {
                                 .iter()
                                 .map(|g| ComponentScore {
                                     code: g
-                                        .component_id
-                                        .map(|cid| cid.to_string())
+                                        .component_code
+                                        .clone()
+                                        .or_else(|| g.component_id.map(|cid| cid.to_string()))
                                         .unwrap_or_else(|| "TOTAL".into()),
                                     name: g.notes.clone().unwrap_or_else(|| "Score".into()),
                                     name_ar: None,
@@ -1732,8 +1809,9 @@ impl AssessmentService {
                     } else {
                         direct_components.push(ComponentScore {
                             code: g
-                                .component_id
-                                .map(|cid| cid.to_string())
+                                .component_code
+                                .clone()
+                                .or_else(|| g.component_id.map(|cid| cid.to_string()))
                                 .unwrap_or_else(|| "TOTAL".into()),
                             name: g.notes.clone().unwrap_or_else(|| "Score".into()),
                             name_ar: None,
@@ -2278,7 +2356,8 @@ impl AssessmentService {
             let cumulative_score = all_grades
                 .iter()
                 .find(|g| {
-                    g.component_id.is_none() && !g.is_final
+                    (g.component_id.is_none() && g.component_code.is_none() && !g.is_final)
+                        || g.component_code.as_deref() == Some("cumulative_prior_years")
                         || g.notes
                             .as_deref()
                             .unwrap_or("")
@@ -2502,5 +2581,38 @@ mod assessment_service_tests {
             &lesson,
             &section_subject
         ));
+    }
+
+    #[test]
+    fn normalize_grade_component_key_prefers_trimmed_lowercased_code() {
+        let key = super::normalize_grade_component_key(Some("  Written_Test  "), None);
+        assert_eq!(key.as_deref(), Some("written_test"));
+    }
+
+    #[test]
+    fn normalize_grade_component_key_falls_back_to_legacy_component_id() {
+        let id = Uuid::nil();
+        let key = super::normalize_grade_component_key(None, Some(id));
+        assert_eq!(key, Some(id.to_string()));
+    }
+
+    #[test]
+    fn resolve_grade_max_score_uses_configured_scheme_maximum() {
+        let configured = Decimal::from(20);
+        let resolved = super::resolve_grade_max_score(Some(configured), None).unwrap();
+        assert_eq!(resolved, configured);
+    }
+
+    #[test]
+    fn resolve_grade_max_score_rejects_mismatched_requested_maximum() {
+        let err = super::resolve_grade_max_score(Some(Decimal::from(20)), Some(Decimal::from(30)))
+            .unwrap_err();
+        assert!(matches!(err, DomainError::Validation(_)));
+    }
+
+    #[test]
+    fn resolve_grade_max_score_defaults_to_hundred_without_scheme_component() {
+        let resolved = super::resolve_grade_max_score(None, None).unwrap();
+        assert_eq!(resolved, Decimal::from(100));
     }
 }
