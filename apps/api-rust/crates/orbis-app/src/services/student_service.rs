@@ -609,12 +609,9 @@ impl StudentService {
                     && period
                         .enrollment_starts_at
                         .is_none_or(|started| started <= now)
-                    && period
-                        .enrollment_ends_at
-                        .is_none_or(|ends| ends >= now);
-                let late_allowed =
-                    org_settings.academic.allow_late_enrollment
-                        || admission_policy.allow_late_enrollment;
+                    && period.enrollment_ends_at.is_none_or(|ends| ends >= now);
+                let late_allowed = org_settings.academic.allow_late_enrollment
+                    || admission_policy.allow_late_enrollment;
                 if !window_open && !late_allowed {
                     return Err(DomainError::Validation(
                         "Enrollment is outside the configured period window".into(),
@@ -662,8 +659,7 @@ impl StudentService {
                 .save_with_capacity(
                     &mut enrollment,
                     org_settings.enrollment.max_class_size_default.max(0),
-                    org_settings.enrollment.allow_waitlist
-                        || admission_policy.allow_waitlist,
+                    org_settings.enrollment.allow_waitlist || admission_policy.allow_waitlist,
                     capacity_override,
                     admission_override,
                 )
@@ -1030,8 +1026,7 @@ impl StudentService {
         let settings = self.settings_repo.get_settings(enrollment.org_id).await?;
         let default_capacity = settings.enrollment.max_class_size_default.max(0);
         let allow_waitlist =
-            settings.enrollment.allow_waitlist
-                || settings.admission.policy.allow_waitlist;
+            settings.enrollment.allow_waitlist || settings.admission.policy.allow_waitlist;
         let target_section = self
             .section_repo
             .find_by_id(target_section_id)
@@ -1094,9 +1089,7 @@ impl StudentService {
             };
             let target = match self.section_repo.find_by_id(item.target_section_id).await? {
                 Some(section)
-                    if section.org_id == org_id
-                        && section.is_active
-                        && !section.is_deleted =>
+                    if section.org_id == org_id && section.is_active && !section.is_deleted =>
                 {
                     section
                 }
@@ -1119,8 +1112,7 @@ impl StudentService {
                 .unwrap_or(settings.enrollment.max_class_size_default)
                 .max(0);
             let allow_waitlist =
-                settings.enrollment.allow_waitlist
-                    || settings.admission.policy.allow_waitlist;
+                settings.enrollment.allow_waitlist || settings.admission.policy.allow_waitlist;
             let active_count = self
                 .enrollment_repo
                 .find_by_section(item.target_section_id)
@@ -1148,14 +1140,9 @@ impl StudentService {
                 .map(|item| BulkTransferStudentItemResult {
                     enrollment_id: item.enrollment_id,
                     success: false,
-                    error: pre_errors
-                        .get(&item.enrollment_id)
-                        .cloned()
-                        .or_else(|| {
-                            Some(
-                                "Batch transfer aborted by another row's validation".to_string(),
-                            )
-                        }),
+                    error: pre_errors.get(&item.enrollment_id).cloned().or_else(|| {
+                        Some("Batch transfer aborted by another row's validation".to_string())
+                    }),
                 })
                 .collect::<Vec<_>>();
             return Ok(BulkTransferStudentResult {
@@ -1180,12 +1167,7 @@ impl StudentService {
                 continue;
             }
             match self
-                .transfer_class(
-                    ctx,
-                    item.enrollment_id,
-                    item.target_section_id,
-                    item.reason,
-                )
+                .transfer_class(ctx, item.enrollment_id, item.target_section_id, item.reason)
                 .await
             {
                 Ok(_) => {
@@ -1555,11 +1537,15 @@ impl StudentService {
                 }
                 seen_nids.insert(nid.to_string(), row);
 
-                if let Ok(Some(existing_person)) =
-                    self.person_repo.find_by_national_id(Some(org_id), nid).await
+                if let Ok(Some(existing_person)) = self
+                    .person_repo
+                    .find_by_national_id(Some(org_id), nid)
+                    .await
                 {
-                    if let Ok(Some(existing_student)) =
-                        self.student_repo.find_by_person_id(existing_person.id).await
+                    if let Ok(Some(existing_student)) = self
+                        .student_repo
+                        .find_by_person_id(existing_person.id)
+                        .await
                     {
                         if existing_student.org_id == org_id {
                             pre_errors.insert(
@@ -1628,8 +1614,7 @@ impl StudentService {
                 }
                 seen_student_nums.insert(sn.to_string(), row);
 
-                if let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await
-                {
+                if let Ok(Some(_)) = self.student_repo.find_by_student_number(org_id, sn).await {
                     pre_errors.insert(
                         row,
                         format!("Student number '{}' already exists in organization", sn),
@@ -1663,13 +1648,10 @@ impl StudentService {
                             && period
                                 .enrollment_starts_at
                                 .is_none_or(|started| started <= now)
-                            && period
-                                .enrollment_ends_at
-                                .is_none_or(|ends| ends >= now);
-                        let late_allowed =
-                            org_settings.enrollment.allow_late_enrollment
-                                || org_settings.academic.allow_late_enrollment
-                                || admission_policy.allow_late_enrollment;
+                            && period.enrollment_ends_at.is_none_or(|ends| ends >= now);
+                        let late_allowed = org_settings.enrollment.allow_late_enrollment
+                            || org_settings.academic.allow_late_enrollment
+                            || admission_policy.allow_late_enrollment;
                         if !window_open && !late_allowed {
                             pre_errors.insert(
                                 row,

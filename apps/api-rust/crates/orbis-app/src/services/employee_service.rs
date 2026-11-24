@@ -848,8 +848,10 @@ impl EmployeeService {
                 }
                 seen_nids.insert(nid.to_string(), row);
 
-                if let Ok(Some(existing_person)) =
-                    self.person_repo.find_by_national_id(Some(org_id), nid).await
+                if let Ok(Some(existing_person)) = self
+                    .person_repo
+                    .find_by_national_id(Some(org_id), nid)
+                    .await
                 {
                     if let Ok(Some(existing_employee)) = self
                         .employee_repo

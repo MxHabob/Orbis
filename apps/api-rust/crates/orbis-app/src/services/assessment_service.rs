@@ -315,7 +315,10 @@ impl AssessmentService {
             if let Some(component_id) = component_id {
                 if scheme.components.is_empty()
                     || !scheme.components.iter().any(|component| {
-                        component.code.trim().eq_ignore_ascii_case(&component_id.to_string())
+                        component
+                            .code
+                            .trim()
+                            .eq_ignore_ascii_case(&component_id.to_string())
                     })
                 {
                     return Err(DomainError::Validation(
@@ -381,7 +384,14 @@ impl AssessmentService {
         }
 
         let enrollment_id = self
-            .validate_grade_context(org_id, period_id, student_id, section_subject_id, component_id, None)
+            .validate_grade_context(
+                org_id,
+                period_id,
+                student_id,
+                section_subject_id,
+                component_id,
+                None,
+            )
             .await?;
 
         let now = Utc::now();
@@ -443,10 +453,8 @@ impl AssessmentService {
 
         let now = Utc::now();
         let mut grades = Vec::with_capacity(items.len());
-        let mut existing_by_key = std::collections::HashMap::<
-            (Uuid, Uuid, Uuid, Option<Uuid>),
-            Grade,
-        >::new();
+        let mut existing_by_key =
+            std::collections::HashMap::<(Uuid, Uuid, Uuid, Option<Uuid>), Grade>::new();
 
         for item in items {
             let max_score = item.max_score.unwrap_or_else(|| Decimal::from(100));
@@ -477,7 +485,11 @@ impl AssessmentService {
             if !existing_by_key.contains_key(&key) {
                 for existing in self
                     .grade_repo
-                    .find_by_org_student_and_subject(org_id, item.student_id, item.section_subject_id)
+                    .find_by_org_student_and_subject(
+                        org_id,
+                        item.student_id,
+                        item.section_subject_id,
+                    )
                     .await?
                 {
                     if existing.period_id == item.period_id
