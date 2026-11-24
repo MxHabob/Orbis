@@ -84,9 +84,9 @@ function gradeStateOf(g: any): GradeState {
   return "present";
 }
 function stateLabel(state: GradeState): string {
-  if (state === "absent") return locale === "ar" ? "غائب" : "Absent";
-  if (state === "excused") return locale === "ar" ? "معذور" : "Excused";
-  if (state === "exempt") return locale === "ar" ? "معفى" : "Exempt";
+  if (state === "absent") return m.academics_grade_state_absent();
+  if (state === "excused") return m.academics_grade_state_excused();
+  if (state === "exempt") return m.academics_grade_state_exempt();
   return "";
 }
 function canonicalCell(cell: GradeCellState | null | undefined): GradeCellState | null {
@@ -114,10 +114,10 @@ function parseCellInput(raw: unknown, maxScore: number): GradeCellState | null {
   const text = String(raw).trim();
   if (text === "") return null;
   const norm = text.toLowerCase();
-  if (["غ", "غائب", "a", "abs", "absent"].includes(norm)) return { score: 0, state: "absent" };
-  if (["م", "معذور", "عذر", "e", "exc", "excused"].includes(norm)) return { score: 0, state: "excused" };
-  if (["مع", "معفى", "معاف", "x", "ex", "exempt"].includes(norm)) return { score: 0, state: "exempt" };
-  const digits = text.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/٫/g, ".").replace(/,/g, ".");
+  if (["\u063a", "\u063a\u0627\u0626\u0628", "a", "abs", "absent", m.academics_grade_state_absent().toLowerCase()].includes(norm)) return { score: 0, state: "absent" };
+  if (["\u0645", "\u0645\u0639\u0630\u0648\u0631", "\u0639\u0630\u0631", "e", "exc", "excused", m.academics_grade_state_excused().toLowerCase()].includes(norm)) return { score: 0, state: "excused" };
+  if (["\u0645\u0639", "\u0645\u0639\u0641\u0649", "\u0645\u0639\u0627\u0641", "x", "ex", "exempt", m.academics_grade_state_exempt().toLowerCase()].includes(norm)) return { score: 0, state: "exempt" };
+  const digits = text.replace(/[\u0660-\u0669]/g, (d) => String("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(d))).replace(/\u066b/g, ".").replace(/,/g, ".");
   const n = Number(digits);
   if (!Number.isFinite(n)) return null;
   return { score: Math.max(0, Math.min(maxScore, n)), state: "present" };
@@ -368,9 +368,7 @@ async function handleSaveAll() {
 
     if (items.length === 0) {
       if (clearedCount > 0) {
-        toast.info(getLocale() === "ar"
-          ? "لا يمكن حذف الدرجات المحفوظة بمسح الخلية حاليًا؛ تم تجاهل الخلايا المفرّغة."
-          : "Clearing previously saved grades is not supported yet; cleared cells were ignored.");
+        toast.info(m.common_grades_clear_saved_not_supported());
       } else {
         toast.info(m.common_no_changes_to_save());
         isDirty = false;
@@ -380,7 +378,7 @@ async function handleSaveAll() {
 
     await api.batchRecordGrades({ items });
     if (clearedCount > 0) {
-      toast.success((getLocale() === "ar" ? "تم حفظ التغييرات. " : "Changes saved. ") + (getLocale() === "ar" ? "تعذّر حذف بعض الخلايا المفرّغة." : "Some cleared cells could not be deleted."));
+      toast.success(m.common_grades_save_partial_cleared_ignored());
     } else {
       toast.success(m.common_grades_save_success());
     }

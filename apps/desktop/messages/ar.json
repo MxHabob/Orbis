@@ -1,4 +1,4 @@
-{
+﻿{
   "academics_attendance_absent_days": "أيام الغياب",
   "academics_attendance_col_notes": "ملاحظات عضو أكاديمي",
   "academics_attendance_day_unit": "يوم",
@@ -1102,6 +1102,7 @@
   "common_control_select_class": "اختر الشعبة...",
   "common_control_select_filters": "اختر الدورة والشعبة والمقرر لبدء رصد الدرجات",
   "common_control_select_subject": "اختر المقرر...",
+  "common_control_no_subjects_for_class": "لا توجد مواد مسندة لهذه الشعبة في الفترة المحددة.",
   "common_control_stats": "ملخص الإحصائيات",
   "common_control_unlock_period": "فتح الفترة",
   "common_copied_to_clipboard": "تم النسخ إلى الحافظة",
@@ -5977,5 +5978,12 @@
   "settings_assessment_scope_all": "الكل",
   "settings_assessment_component_weight_total_error": "يجب أن يساوي مجموع أوزان مكونات التقييم 100٪.",
   "settings_assessment_component_passing_error": "لا يمكن أن تتجاوز درجة النجاح الدرجة القصوى للمكوّن.",
-  "common_period_type_annual": "سنوي"
+  "common_period_type_annual": "سنوي",
+  "academics_grade_state_absent": "غائب",
+  "academics_students_tab_title": "الطلاب",
+  "common_action_import": "استيراد",
+  "common_grades_clear_saved_not_supported": "لا يمكن حذف الدرجات المحفوظة بمسح الخلية حاليًا؛ تم تجاهل الخلايا المفرّغة.",
+  "common_grades_save_partial_cleared_ignored": "تم حفظ التغييرات. تعذّر حذف بعض الخلايا المفرّغة.",
+  "settings_students_prevent_duplicate_full_name": "منع تكرار الاسم الكامل للطالب (منع تسجيل/استيراد طالب بنفس الاسم داخل المؤسسة)",
+  "settings_students_prevent_duplicate_full_name_hint": "عند التفعيل، يرفض النظام إنشاء سجل طالب جديد إذا تطابق اسمه الكامل مع طالب قائم؛ لتسجيل حالتي توأم أو تشابه حقيقي يجب تمييز الاسم (مثلاً إضافة اسم الأب/الجد) أو مراجعة السجل القائم."
 }

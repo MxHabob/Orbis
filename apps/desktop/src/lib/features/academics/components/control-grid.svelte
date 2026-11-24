@@ -21,6 +21,7 @@ interface Props {
   isDirty: boolean;
   canEnterGrades: boolean;
   selectedPeriodId: string;
+  subjectItems?: any[];
   onRefresh: () => void;
   onSaveAll: () => void;
   onCellEdit: (e: any) => void;
@@ -43,6 +44,7 @@ let {
   isDirty,
   canEnterGrades,
   selectedPeriodId,
+  subjectItems = undefined,
   onRefresh,
   onSaveAll,
   onCellEdit,
@@ -68,6 +70,7 @@ let {
     <!-- Subject Selector -->
     <SubjectSelect
       bind:value={selectedSubjectId}
+      items={subjectItems}
       disabled={!selectedClassId}
       placeholder={m.common_control_select_subject()}
       class="h-9 w-full min-w-0 text-xs xl:min-w-[180px] xl:flex-1"
@@ -160,6 +163,14 @@ let {
     <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
       <p class="text-sm">{m.common_control_no_data()}</p>
       <p class="text-xs">{m.common_control_no_data_hint()}</p>
+    </div>
+  {:else if selectedPeriodId && selectedClassId && !selectedSubjectId}
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
+      <p class="text-sm">
+        {m.common_control_no_subjects_for_class?.() ??
+          m.common_control_select_subject?.() ??
+          m.common_control_select_filters()}
+      </p>
     </div>
   {:else}
     <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">

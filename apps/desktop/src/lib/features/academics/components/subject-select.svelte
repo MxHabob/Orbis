@@ -14,6 +14,7 @@ import { authStore } from "$lib/stores";
 interface Props {
   value?: string | null;
   orgId?: string;
+  items?: any[];
   placeholder?: string;
   searchPlaceholder?: string;
   disabled?: boolean;
@@ -29,6 +30,7 @@ interface Props {
 let {
   value = $bindable<string | null>(null),
   orgId,
+  items = undefined,
   placeholder = m.common_cs_form_select_subject(),
   searchPlaceholder = m.shared_ui_search_subjects_placeholder(),
   disabled = false,
@@ -45,10 +47,10 @@ const resolvedOrgId = $derived(
   orgId || page.params.orgId || authStore.orgId || "default",
 );
 
-// Self-contained TanStack Query
+// Self-contained TanStack Query (skipped when caller provides explicit items)
 const subjectsQuery = createSubjectsQuery(() => resolvedOrgId);
 
-const subjects = $derived(subjectsQuery.data ?? []);
+const subjects = $derived(items ?? subjectsQuery.data ?? []);
 
 function getSubjectLabel(subj: any): string {
   if (!subj) return "";

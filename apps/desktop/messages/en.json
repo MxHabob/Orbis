@@ -1,4 +1,4 @@
-{
+﻿{
   "academics_attendance_absent_days": "Absent Days",
   "academics_attendance_col_notes": "Notes",
   "academics_attendance_day_unit": "Days",
@@ -1102,6 +1102,7 @@
   "common_control_select_class": "Select class...",
   "common_control_select_filters": "Select cycle, class, and subject to start entering grades",
   "common_control_select_subject": "Select subject...",
+  "common_control_no_subjects_for_class": "No subjects are assigned to this class for the selected period.",
   "common_control_stats": "Statistics Summary",
   "common_control_unlock_period": "Unlock Period",
   "common_copied_to_clipboard": "Copied to clipboard",
@@ -5977,5 +5978,12 @@
   "settings_assessment_scope_all": "All",
   "settings_assessment_component_weight_total_error": "Assessment component weights must total 100%.",
   "settings_assessment_component_passing_error": "Passing score cannot exceed the component maximum score.",
-  "common_period_type_annual": "Annual"
+  "common_period_type_annual": "Annual",
+  "academics_grade_state_absent": "Absent",
+  "academics_students_tab_title": "Students",
+  "common_action_import": "Import",
+  "common_grades_clear_saved_not_supported": "Clearing previously saved grades is not supported yet; cleared cells were ignored.",
+  "common_grades_save_partial_cleared_ignored": "Changes saved. Some cleared cells could not be deleted.",
+  "settings_students_prevent_duplicate_full_name": "Prevent duplicate student full name (block registering/importing a student with the same name in the organization)",
+  "settings_students_prevent_duplicate_full_name_hint": "When enabled, the system rejects creating a new student record if the full name matches an existing student. To register twins or a genuine same-name case, distinguish the name (for example by adding the father?s/grandfather?s name) or review the existing record."
 }

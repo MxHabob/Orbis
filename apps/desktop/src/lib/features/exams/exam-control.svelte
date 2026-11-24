@@ -31,6 +31,9 @@ let subjects = $state<any[]>([]);
 let selectedPeriodId = $state<string>("");
 let selectedClassId = $state<string>("");
 let selectedSubjectId = $state<string>("");
+let classSectionSubjects = $state<any[]>([]);
+let classSubjectsLoadKey = $state<string>("");
+let isLoadingClassSubjects = $state(false);
 let isLoading = $state(true);
 let isMatrixLoading = $state(false);
 let isSaving = $state(false);
@@ -46,6 +49,98 @@ let previousSelectedClassId: string | null = null;
 const preferenceScope = () => ({
   userId: authStore.userId,
   organizationId: orgId,
+});
+
+const classSubjectOptions = $derived.by(() => {
+  if (!selectedClassId || !selectedPeriodId) return [] as any[];
+  const byId = new Map(subjects.map((s: any) => [String(s.id), s]));
+  const seen = new Set<string>();
+  const options: any[] = [];
+  for (const offering of classSectionSubjects) {
+    const subjectId = String((offering as any)?.subject_id ?? "");
+    if (!subjectId || seen.has(subjectId)) continue;
+    seen.add(subjectId);
+    const subject = byId.get(subjectId);
+    if (subject) options.push(subject);
+  }
+  return options;
+});
+
+$effect(() => {
+  const periodId = selectedPeriodId;
+  const classId = selectedClassId;
+  const key = periodId && classId ? `${periodId}::${classId}` : "";
+
+  if (!key) {
+    classSectionSubjects = [];
+    classSubjectsLoadKey = "";
+    isLoadingClassSubjects = false;
+    return;
+  }
+
+  let cancelled = false;
+  isLoadingClassSubjects = true;
+  classSubjectsLoadKey = "";
+  classSectionSubjects = [];
+
+  void (async () => {
+    try {
+      const offerings = await api.listSectionSubjects(classId, periodId);
+      if (!cancelled) {
+        classSectionSubjects = offerings ?? [];
+        classSubjectsLoadKey = key;
+      }
+    } catch {
+      if (!cancelled) {
+        classSectionSubjects = [];
+        classSubjectsLoadKey = key;
+      }
+    } finally {
+      if (!cancelled) isLoadingClassSubjects = false;
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+});
+
+$effect(() => {
+  if (!selectedClassId || !selectedPeriodId) {
+    if (selectedSubjectId) {
+      selectedSubjectId = "";
+      academicContext.selectedSubjectId = "";
+    }
+    if (!isMatrixLoading) {
+      matrixData = null;
+      gridSource = [];
+    }
+    return;
+  }
+
+  const key = `${selectedPeriodId}::${selectedClassId}`;
+  if (isLoadingClassSubjects || classSubjectsLoadKey !== key) return;
+
+  const options = classSubjectOptions;
+  if (options.length === 0) {
+    if (selectedSubjectId) {
+      selectedSubjectId = "";
+      academicContext.selectedSubjectId = "";
+    }
+    if (!isMatrixLoading) {
+      matrixData = null;
+      gridSource = [];
+    }
+    return;
+  }
+
+  const hasValidSelection = options.some(
+    (subject: any) => String(subject.id) === String(selectedSubjectId),
+  );
+  if (!hasValidSelection) {
+    selectedSubjectId = String(options[0].id);
+    academicContext.selectedSubjectId = selectedSubjectId;
+  }
 });
 
 onMount(() => {
@@ -140,7 +235,7 @@ async function loadInitialData() {
   }
 }
 
-// Reset subject when class changes
+// Reset subject and stale matrix when class changes
 $effect(() => {
   const currentClassId = selectedClassId;
   if (
@@ -149,6 +244,8 @@ $effect(() => {
   ) {
     selectedSubjectId = "";
     academicContext.selectedSubjectId = "";
+    matrixData = null;
+    gridSource = [];
   }
   previousSelectedClassId = currentClassId;
 });
@@ -542,7 +639,7 @@ async function handleImportMatrix(event: Event) {
         imported.student_id ??
           imported.studentId ??
           imported.StudentId ??
-          imported["معرف الطالب"] ??
+          imported["\u0645\u0639\u0631\u0641 \u0627\u0644\u0637\u0627\u0644\u0628"] ??
           "",
       ).trim();
       if (!studentId) continue;
@@ -588,7 +685,7 @@ async function handleImportMatrix(event: Event) {
     isDirty = updatedCells > 0 || isDirty;
     toast.success(
       m.common_control_save_success({ total: String(updatedCells) }) +
-        ` (${matchedRows} ${m.academics_students_tab_title?.() ?? "students"})`,
+        ` (${matchedRows} ${m.academics_students_tab_title()})`,
     );
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e) || "Import failed");
@@ -639,6 +736,7 @@ async function handleImportMatrix(event: Event) {
       {isDirty}
       {canEnterGrades}
       {selectedPeriodId}
+      subjectItems={selectedClassId && selectedPeriodId ? classSubjectOptions : undefined}
       onRefresh={loadGradeMatrix}
       onSaveAll={handleSaveAll}
       onCellEdit={handleCellEdit}

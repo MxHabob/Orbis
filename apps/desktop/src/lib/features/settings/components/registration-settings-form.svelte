@@ -1195,10 +1195,10 @@ async function handleFormSave() {
           <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
-                منع تكرار الاسم الكامل للطالب (منع تسجيل/استيراد طالب بنفس الاسم داخل المؤسسة)
+                {m.settings_students_prevent_duplicate_full_name()}
               </span>
               <span class="text-[11px] text-muted-foreground">
-                عند التفعيل، يرفض النظام إنشاء سجل طالب جديد إذا تطابق اسمه الكامل مع طالب قائم؛ لتسجيل حالتي توأم أو تشابه حقيقي يجب تمييز الاسم (مثلاً إضافة اسم الأب/الجد) أو مراجعة السجل القائم.
+                {m.settings_students_prevent_duplicate_full_name_hint()}
               </span>
             </div>
             <Switch bind:checked={preventDuplicateFullName} />
