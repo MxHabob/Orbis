@@ -228,9 +228,11 @@ import type {
   MigrationResultDto,
   DatabaseSettingsDto,
   BulkRegisterStudentCommandItem,
-  BulkRegisterStudentCommandResultDto,
+  BulkRegisterJobDto,
   BulkRegisterEmployeeCommandItem,
-  BulkRegisterEmployeeCommandResultDto,
+  BulkRegisterEmployeeJobDto,
+  BulkTransferStudentCommandItem,
+  BulkTransferStudentCommandResultDto,
   ProvisionUserRequest,
   AccountProvisioningResultDto,
   UpdateStudentStatusInput,
@@ -333,6 +335,8 @@ export class RemoteClient implements OrbisApiClient {
   private baseUrl: string;
   private token: string | null = null;
   private orbisClient: OrbisClient;
+  private bulkRegisterJobs = new Map<string, BulkRegisterJobDto>();
+  private employeeBulkJobs = new Map<string, BulkRegisterEmployeeJobDto>();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -954,11 +958,21 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
-  async bulkRegisterStudents(
+  async startBulkRegisterJob(
     items: BulkRegisterStudentCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterStudentCommandResultDto> {
-    return this.call(
+  ): Promise<BulkRegisterJobDto> {
+    const jobId = crypto.randomUUID();
+    const job: BulkRegisterJobDto = {
+      id: jobId,
+      status: "running",
+      total: items.length,
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+    this.bulkRegisterJobs.set(jobId, job);
+    void this.call(
       sdk.bulkRegisterStudents({
         client: this.client,
         body: {
@@ -967,7 +981,42 @@ export class RemoteClient implements OrbisApiClient {
           dry_run: options?.dryRun ?? false,
         },
       }),
-    ) as any;
+    ).then(
+      (result) => {
+        const normalized = {
+          total: result.total,
+          succeeded: result.succeeded,
+          failed: result.failed,
+          items: result.items.map((item) => ({
+            row_index: item.row_index,
+            success: item.success,
+            student_id: item.student_id ?? undefined,
+            student_number: item.student_number ?? undefined,
+            error: item.error ?? undefined,
+          })),
+        };
+        this.bulkRegisterJobs.set(jobId, {
+          ...job,
+          status: "completed",
+          processed: normalized.total,
+          succeeded: normalized.succeeded,
+          failed: normalized.failed,
+          result: normalized,
+        });
+      },
+      (error) => {
+        this.bulkRegisterJobs.set(jobId, {
+          ...job,
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      },
+    );
+    return job;
+  }
+
+  async getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null> {
+    return this.bulkRegisterJobs.get(jobId) ?? null;
   }
 
   // ── Employee Affairs ────────────────────────────────────────
@@ -1058,11 +1107,21 @@ export class RemoteClient implements OrbisApiClient {
     ) as any;
   }
 
-  async bulkRegisterEmployees(
+  async startBulkRegisterEmployeeJob(
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterEmployeeCommandResultDto> {
-    return this.call(
+  ): Promise<BulkRegisterEmployeeJobDto> {
+    const jobId = crypto.randomUUID();
+    const job: BulkRegisterEmployeeJobDto = {
+      id: jobId,
+      status: "running",
+      total: items.length,
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+    this.employeeBulkJobs.set(jobId, job);
+    void this.call(
       sdk.bulkRegisterEmployees({
         client: this.client,
         body: {
@@ -1071,7 +1130,71 @@ export class RemoteClient implements OrbisApiClient {
           dry_run: options?.dryRun ?? false,
         },
       }),
-    ) as any;
+    ).then(
+      (result) => {
+        const normalized = {
+          total: result.total,
+          succeeded: result.succeeded,
+          failed: result.failed,
+          items: result.items.map((item) => ({
+            row_index: item.row_index,
+            success: item.success,
+            employee_id: item.employee_id ?? undefined,
+            employee_number: item.employee_number ?? undefined,
+            user_id: item.user_id ?? undefined,
+            error: item.error ?? undefined,
+          })),
+        };
+        this.employeeBulkJobs.set(jobId, {
+          ...job,
+          status: "completed",
+          processed: normalized.total,
+          succeeded: normalized.succeeded,
+          failed: normalized.failed,
+          result: normalized,
+        });
+      },
+      (error) =>
+        this.employeeBulkJobs.set(jobId, {
+          ...job,
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+        }),
+    );
+    return job;
+  }
+
+  async getBulkRegisterEmployeeJob(
+    jobId: string,
+  ): Promise<BulkRegisterEmployeeJobDto | null> {
+    return this.employeeBulkJobs.get(jobId) ?? null;
+  }
+
+  async bulkTransferStudents(
+    items: BulkTransferStudentCommandItem[],
+    options?: { atomic?: boolean },
+  ): Promise<BulkTransferStudentCommandResultDto> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/enrollments/bulk-transfer`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        },
+        body: JSON.stringify({
+          items,
+          atomic: options?.atomic ?? true,
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new ApiRequestError(response.status, await response.text());
+    }
+    const payload = (await response.json()) as {
+      data: BulkTransferStudentCommandResultDto;
+    };
+    return payload.data;
   }
 
   // ── User Groups ─────────────────────────────────────────────
@@ -1940,9 +2063,19 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.generateFee({ client: this.client, body: req }));
   }
 
-  async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
-    return this.fetchApi<StudentFeeSummaryDto[]>(
-      "/api/v1/student-fees/summary",
+  async getStudentFeeSummary(
+    filter?: Pick<
+      StudentFeeFilterParams,
+      "org_unit_id" | "from_date" | "to_date" | "currency_code"
+    >,
+  ): Promise<StudentFeeSummaryDto[]> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filter ?? {})) {
+      if (value) query.set(key, value);
+    }
+    const queryString = query.toString();
+    return this.fetchApi(
+      `/api/v1/student-fees/summary${queryString ? `?${queryString}` : ""}`,
     );
   }
 
@@ -2926,7 +3059,7 @@ export class RemoteClient implements OrbisApiClient {
 
   async databaseGetSettings(): Promise<DatabaseSettingsDto> {
     return {
-      auto_backup_enabled: false,
+      auto_backup_enabled: true,
       auto_backup_interval_hours: 24,
       max_backup_files: 10,
       integrity_check_on_startup: true,

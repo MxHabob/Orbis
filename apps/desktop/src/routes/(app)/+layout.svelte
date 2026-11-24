@@ -9,7 +9,7 @@ import { localeState } from "$lib/core/i18n";
 let { children } = $props();
 </script>
 
-<div class="flex flex-col h-screen w-screen overflow-hidden bg-background">
+<div class="flex flex-col h-dvh w-dvw min-h-0 min-w-0 overflow-hidden bg-background">
 	{#if isDesktopApp}
 		{#key localeState.revision}
 			<TitleBar />

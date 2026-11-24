@@ -468,6 +468,59 @@ export interface BulkRegisterStudentCommandResultDto {
   items: BulkRegisterItemCommandResultDto[];
 }
 
+export interface BulkRegisterJobDto {
+  id: string;
+  status: "running" | "completed" | "failed";
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  result?: BulkRegisterStudentCommandResultDto;
+  error?: string;
+}
+
+export interface BulkTransferStudentCommandItem {
+  enrollment_id: string;
+  target_section_id: string;
+  reason?: string;
+}
+
+export interface BulkTransferStudentCommandItemResult {
+  enrollment_id: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface BulkTransferStudentCommandResultDto {
+  total: number;
+  succeeded: number;
+  failed: number;
+  items: BulkTransferStudentCommandItemResult[];
+}
+
+export interface BulkRegisterEmployeeJobDto {
+  id: string;
+  status: "running" | "completed" | "failed";
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  result?: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    items: Array<{
+      row_index: number;
+      success: boolean;
+      employee_id?: string;
+      employee_number?: string;
+      user_id?: string;
+      error?: string;
+    }>;
+  };
+  error?: string;
+}
+
 export interface UpdateStudentStatusInput {
   student_id: string;
   status: string;
@@ -572,6 +625,8 @@ export interface StudentFeeFilterParams {
   student_id?: string;
   enrollment_id?: string;
   feeTemplate_id?: string;
+  org_unit_id?: string;
+  currency_code?: string;
   from_date?: string;
   to_date?: string;
   status?: string;
@@ -594,6 +649,8 @@ export interface PaymentFilterParams {
   fee_id?: string;
   student_id?: string;
   enrollment_id?: string;
+  org_unit_id?: string;
+  currency_code?: string;
   method?: string;
   from_date?: string;
   to_date?: string;
@@ -1954,10 +2011,15 @@ export interface OrbisApiClient {
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
   removeGuardian(studentId: string, guardianId: string): Promise<boolean>;
-  bulkRegisterStudents(
+  startBulkRegisterJob(
     items: BulkRegisterStudentCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterStudentCommandResultDto>;
+  ): Promise<BulkRegisterJobDto>;
+  getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null>;
+  bulkTransferStudents(
+    items: BulkTransferStudentCommandItem[],
+    options?: { atomic?: boolean },
+  ): Promise<BulkTransferStudentCommandResultDto>;
 
   // ── Employee Affairs ────────────────────────────────────────
   registerEmployee(
@@ -1978,10 +2040,13 @@ export interface OrbisApiClient {
     req: ProvisionEmployeeAccountRequest,
   ): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
-  bulkRegisterEmployees(
+  startBulkRegisterEmployeeJob(
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterEmployeeCommandResultDto>;
+  ): Promise<BulkRegisterEmployeeJobDto>;
+  getBulkRegisterEmployeeJob(
+    jobId: string,
+  ): Promise<BulkRegisterEmployeeJobDto | null>;
 
   // ── User Groups ─────────────────────────────────────────────
   createGroup(req: CreateGroupRequest): Promise<GroupDetailDto>;
@@ -2155,7 +2220,12 @@ export interface OrbisApiClient {
   deleteFeeTemplate(id: string): Promise<boolean>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
-  getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]>;
+  getStudentFeeSummary(
+    filter?: Pick<
+      StudentFeeFilterParams,
+      "org_unit_id" | "from_date" | "to_date" | "currency_code"
+    >,
+  ): Promise<StudentFeeSummaryDto[]>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
   listStudentFeesPaginated(
     filter?: StudentFeeFilterParams,

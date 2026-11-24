@@ -151,7 +151,7 @@ const classMenuActions = $derived([
 </script>
 
 <div
-	class="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden scrollbar-hide p-4 sm:p-6 flex flex-col gap-6 font-sans"
+	class="h-full min-h-0 w-full min-w-0 overflow-hidden p-4 sm:p-6 flex flex-col gap-6 font-sans"
 >
 	<!-- KPI Metrics Summary Row using standard Cards -->
 	{#if !pageLoading && !error && classes.length > 0}
@@ -210,8 +210,8 @@ const classMenuActions = $derived([
 	{/if}
 
 	<!-- Header Area Card -->
-	<Card>
-		<CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
+	<Card class="min-h-0 flex-1 flex flex-col overflow-hidden">
+		<CardHeader class="py-3 px-4 flex flex-row items-center justify-between shrink-0">
 			<div class="flex items-center gap-2.5">
 				<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
 					<BookOpen class="w-4 h-4" />
@@ -242,7 +242,7 @@ const classMenuActions = $derived([
 		</CardHeader>
 
 		<!-- Main Directory Content -->
-		<CardContent class="p-4 pt-2">
+		<CardContent class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4 pt-2 [scrollbar-gutter:stable]">
 			{#if pageLoading}
 				<div
 					class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
@@ -311,7 +311,7 @@ const classMenuActions = $derived([
 							>
 							<Card class="flex min-h-40 min-w-0 flex-col justify-between hover:border-primary/50 transition-colors h-full">
 								<!-- Class Header -->
-								<CardHeader class="py-2.5 px-3.5 flex flex-row items-start justify-between">
+								<CardHeader class="py-2.5 px-3.5 pe-10 flex flex-row items-start justify-between gap-2">
 									<div class="flex flex-col text-start">
 										<CardTitle class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
 											{displayName}
@@ -323,7 +323,7 @@ const classMenuActions = $derived([
 										{/if}
 									</div>
 									<div
-										class="px-1.5 py-0.5 rounded text-[9px] font-mono border border-border bg-muted/50 text-muted-foreground shrink-0"
+										class="me-8 px-1.5 py-0.5 rounded text-[9px] font-mono border border-border bg-muted/50 text-muted-foreground shrink-0"
 									>
 										{cls.code || m.common_classes_code_unavailable()}
 									</div>
@@ -407,7 +407,7 @@ const classMenuActions = $derived([
 							<Button
 								variant="outline"
 								size="icon-xs"
-								class="absolute end-2 bottom-2 z-10 h-7 w-7 opacity-100 shadow-sm bg-background md:opacity-0 md:group-hover:opacity-100"
+								class="absolute end-2 top-2 z-10 h-7 w-7 rounded-md border-border/70 bg-background/95 shadow-sm backdrop-blur-sm opacity-100 transition-colors hover:border-primary/50 hover:text-primary"
 								onclick={(event) => {
 									event.preventDefault();
 									event.stopPropagation();

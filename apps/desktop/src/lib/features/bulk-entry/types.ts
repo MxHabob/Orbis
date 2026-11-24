@@ -210,5 +210,6 @@ export interface BulkImportProfile<
     rows: TRow[],
     orgId: string,
     refData: BulkReferenceData,
+    onProgress?: (progress: ChunkProgress) => void,
   ) => Promise<BulkChunkCommitResult>;
 }

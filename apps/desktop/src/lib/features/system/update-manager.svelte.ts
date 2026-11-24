@@ -2,6 +2,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { api } from "$lib/api/client";
 import { isDesktopApp } from "$lib/api/runtime";
 import type { UpdateCheckResult } from "$lib/api/types";
+import * as m from "$lib/paraglide/messages";
 
 type UpdateProgress = {
   downloaded_bytes: number;
@@ -41,7 +42,14 @@ class UpdateManager {
         await this.checkForUpdates();
       }
     } catch (error) {
-      this.error = this.isOnline ? this.getErrorMessage(error) : null;
+      const message = this.getErrorMessage(error);
+      if (this.isUnavailableUpdaterMessage(message)) {
+        this.updateResult = null;
+        this.error = null;
+        this.hasChecked = true;
+      } else {
+        this.error = this.isOnline ? this.getFriendlyErrorMessage(error) : null;
+      }
     }
   }
 
@@ -62,9 +70,19 @@ class UpdateManager {
       const result = await api.systemCheckForUpdates();
       this.updateResult = result;
       this.hasChecked = true;
+      if (result.status === "unavailable") {
+        this.error = null;
+      }
       return result;
     } catch (error) {
-      this.error = this.isOnline ? this.getErrorMessage(error) : null;
+      const message = this.getErrorMessage(error);
+      if (this.isUnavailableUpdaterMessage(message)) {
+        this.updateResult = null;
+        this.error = null;
+        this.hasChecked = true;
+      } else {
+        this.error = this.isOnline ? this.getFriendlyErrorMessage(error) : null;
+      }
       throw error;
     } finally {
       this.isChecking = false;
@@ -94,7 +112,7 @@ class UpdateManager {
       await api.systemDownloadUpdate();
       this.isReadyToRestart = true;
     } catch (error) {
-      this.error = this.isOnline ? this.getErrorMessage(error) : null;
+      this.error = this.isOnline ? this.getFriendlyErrorMessage(error) : null;
       throw error;
     } finally {
       this.isDownloading = false;
@@ -159,6 +177,29 @@ class UpdateManager {
 
   private getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
+  }
+
+  private isUnavailableUpdaterMessage(message: string) {
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes("updater does not have any endpoints set") ||
+      normalized.includes("updates are not configured") ||
+      normalized.includes("no updater")
+    );
+  }
+
+  private getFriendlyErrorMessage(error: unknown) {
+    const message = this.getErrorMessage(error).toLowerCase();
+    if (
+      message.includes("no internet connection") ||
+      message.includes("offline")
+    ) {
+      return m.ui_update_offline();
+    }
+    if (this.isUnavailableUpdaterMessage(message)) {
+      return m.ui_update_unavailable();
+    }
+    return m.ui_update_check_failed();
   }
 
   private bindNetworkEvents() {

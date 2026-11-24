@@ -240,7 +240,7 @@ function handleDragStart(e: DragEvent) {
 
     <!-- Hover Micro-Actions -->
     {#if !isDraft && (onAttendance || onEdit || onDelete)}
-      <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+      <div class="touch-actions flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         {#if onAttendance}
           <Button
             variant="ghost"
@@ -279,3 +279,11 @@ function handleDragStart(e: DragEvent) {
     {/if}
   </div>
 </article>
+
+<style>
+  @media (hover: none) {
+    .touch-actions {
+      opacity: 1;
+    }
+  }
+</style>

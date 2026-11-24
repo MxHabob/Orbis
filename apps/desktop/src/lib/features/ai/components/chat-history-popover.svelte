@@ -75,7 +75,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
   <PopoverContent
     align="end"
     sideOffset={6}
-    class="flex max-h-[min(32rem,calc(100vh-4rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+    class="flex max-h-[min(32rem,calc(100dvh-4rem))] w-[min(360px,calc(100dvw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
       <div class="flex min-w-0 items-center gap-2">
@@ -103,7 +103,7 @@ function handleDelete(e: MouseEvent, sessionId: string) {
       />
     </div>
 
-    <div class="flex max-h-[min(18rem,calc(100vh-14rem))] flex-col gap-1.5 overflow-y-auto px-3 pb-3 text-start">
+    <div class="flex max-h-[min(18rem,calc(100dvh-14rem))] flex-col gap-1.5 overflow-y-auto px-3 pb-3 text-start">
       {#if filteredSessions.length === 0}
         <div class="flex flex-col items-center gap-1.5 py-6 text-center text-[11px] text-muted-foreground">
           <ClockRotateRight size={20} class="text-muted-foreground/40" />

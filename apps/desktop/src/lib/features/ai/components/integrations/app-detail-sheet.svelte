@@ -228,7 +228,7 @@ function settingsRecord(value: unknown): Record<string, unknown> {
 <Sheet bind:open onOpenChange={handleOpenChange}>
   <SheetContent
     side="end"
-    contentClass="data-[side=end]:w-[min(32rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100vw-1rem))]"
+    contentClass="data-[side=end]:w-[min(32rem,calc(100dvw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100dvw-1rem))]"
     class="flex h-full flex-col overflow-hidden p-0"
   >
     <div

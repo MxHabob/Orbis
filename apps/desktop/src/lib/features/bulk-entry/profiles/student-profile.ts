@@ -17,6 +17,7 @@ import {
   provisionStudentLoginAccount,
 } from "$lib/features/students/registration-effects";
 import * as m from "$lib/paraglide/messages";
+import { operationStore } from "$lib/stores";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -24,6 +25,7 @@ import type {
   BulkCellIssue,
   BulkPreviewSummary,
   StudentPreviewDetails,
+  ChunkProgress,
 } from "../types";
 
 export interface StudentRowData {
@@ -690,15 +692,15 @@ export const studentImportProfile: BulkImportProfile<
       (sum, t) => sum + (Number((t.meta as any)?.default_amount) || 0),
       0,
     );
+    const enabledColumns = studentColumnMetadata.filter(
+      (column) =>
+        column.id === "full_name_ar" ||
+        column.id === "class_name" ||
+        refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]
+          ?.active !== false,
+    );
 
     for (const [rowIndex, row] of rows.entries()) {
-      const enabledColumns = studentColumnMetadata.filter(
-        (column) =>
-          column.id === "full_name_ar" ||
-          column.id === "class_name" ||
-          refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]
-            ?.active !== false,
-      );
       const hasErrors =
         enabledColumns.some(
           (column) =>
@@ -756,8 +758,9 @@ export const studentImportProfile: BulkImportProfile<
 
   async commitChunk(
     rows: StudentRowData[],
-    _orgId: string,
+    orgId: string,
     refData: BulkReferenceData,
+    onProgress?: (progress: ChunkProgress) => void,
   ) {
     const items: BulkRegisterStudentCommandItem[] = [];
 
@@ -848,7 +851,50 @@ export const studentImportProfile: BulkImportProfile<
     }
 
     try {
-      const bulkRes = await api.bulkRegisterStudents(items, { atomic: false });
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: 0,
+        committedRows: 0,
+        failedRows: 0,
+        isFinished: false,
+        hasErrors: false,
+      });
+      const job = await api.startBulkRegisterJob(items, { atomic: false });
+      const activeOperation = operationStore.operations.find(
+        (operation) => operation.status === "running",
+      );
+      if (activeOperation) {
+        operationStore.setJobId(activeOperation.id, job.id, "students");
+      }
+      let latestJob = job;
+      while (latestJob.status === "running") {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        const polled = await api.getBulkRegisterJob(job.id);
+        if (!polled) break;
+        latestJob = polled;
+        onProgress?.({
+          totalChunks: 1,
+          currentChunk: 1,
+          chunkSize: rows.length,
+          totalRows: latestJob.total,
+          processedRows: latestJob.processed,
+          committedRows: latestJob.succeeded,
+          failedRows: latestJob.failed,
+          isFinished: latestJob.status === "completed",
+          hasErrors: latestJob.failed > 0,
+        });
+      }
+      if (latestJob.status === "failed") {
+        throw new Error(latestJob.error || "Bulk student import failed");
+      }
+      if (!latestJob.result) {
+        throw new Error("Bulk student import did not produce a result");
+      }
+      const bulkRes = latestJob.result;
+
       const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
       const warnings: Array<{ rowNumber: number; reason: string }> = [];
 
@@ -867,6 +913,21 @@ export const studentImportProfile: BulkImportProfile<
       const succeededItems = bulkRes.items.filter(
         (item) => item.success && item.student_id,
       );
+      const failedItems = bulkRes.items.filter((item) => !item.success);
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: Math.min(bulkRes.items.length, rows.length),
+        committedRows: succeededItems.length,
+        failedRows: failedItems.length,
+        isFinished: false,
+        hasErrors: failedItems.length > 0,
+      });
+      const rowsByNumber = new Map(
+        rows.map((row, index) => [row.rowNumber ?? index + 1, row]),
+      );
       let accounts: Awaited<ReturnType<typeof api.listAccounts>> | undefined;
       let accountListError: string | undefined;
       if (succeededItems.length > 0) {
@@ -881,9 +942,7 @@ export const studentImportProfile: BulkImportProfile<
         const batch = succeededItems.slice(offset, offset + 10);
         const artifactResults = await Promise.all(
           batch.map(async (item) => {
-            const row = rows.find(
-              (candidate) => candidate.rowNumber === item.row_index,
-            );
+            const row = rowsByNumber.get(item.row_index);
             const studentId = item.student_id;
             if (!studentId) return { rowNumber: item.row_index, errors: [] };
             const name =
@@ -943,6 +1002,21 @@ export const studentImportProfile: BulkImportProfile<
             artifactErrors.map((reason) => ({ rowNumber, reason })),
           ),
         );
+        const processedArtifactRows = Math.min(
+          offset + batch.length,
+          succeededItems.length,
+        );
+        onProgress?.({
+          totalChunks: 1,
+          currentChunk: 1,
+          chunkSize: rows.length,
+          totalRows: rows.length,
+          processedRows: failedItems.length + processedArtifactRows,
+          committedRows: processedArtifactRows,
+          failedRows: failedItems.length,
+          isFinished: false,
+          hasErrors: failedItems.length > 0,
+        });
       }
 
       return {

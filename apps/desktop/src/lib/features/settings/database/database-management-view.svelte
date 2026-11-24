@@ -73,12 +73,6 @@ let customBackupPath = $state("");
 let restoreFilePath = $state("");
 
 // Settings state
-let autoBackup = $state(false);
-let backupInterval = $state(24);
-let maxBackups = $state(10);
-let customBackupDir = $state("");
-let integrityOnStartup = $state(true);
-
 onMount(async () => {
   await controller.init();
   syncFormValues();
@@ -106,14 +100,6 @@ function syncFormValues() {
       connPassword = "";
       connSslMode = controller.config.direct.ssl_mode || "prefer";
     }
-  }
-
-  if (controller.settings) {
-    autoBackup = controller.settings.auto_backup_enabled;
-    backupInterval = controller.settings.auto_backup_interval_hours;
-    maxBackups = controller.settings.max_backup_files;
-    customBackupDir = controller.settings.backup_dir || "";
-    integrityOnStartup = controller.settings.integrity_check_on_startup ?? true;
   }
 }
 
@@ -272,23 +258,6 @@ async function handleExecuteRestore() {
     syncFormValues();
   } else if (controller.operationError) {
     toast.error(controller.operationError);
-  }
-}
-
-async function handleSaveSettings() {
-  try {
-    await controller.saveSettings({
-      auto_backup_enabled: autoBackup,
-      auto_backup_interval_hours: backupInterval,
-      max_backup_files: maxBackups,
-      backup_dir: customBackupDir.trim() ? customBackupDir.trim() : undefined,
-      integrity_check_on_startup: integrityOnStartup,
-      last_backup_timestamp: controller.settings?.last_backup_timestamp,
-      last_backup_path: controller.settings?.last_backup_path,
-    });
-    toast.success(m.ui_copy_backup_policies_saved_successfully_78b2a35b());
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : String(e));
   }
 }
 
@@ -825,49 +794,29 @@ const connectionStatus = $derived.by(() => {
                 </Button>
               </div>
 
-              <!-- Automatic Backup Policy -->
-              <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3.5">
+              <!-- Autonomous Backup Protection -->
+              <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3">
                 <div class="flex items-center justify-between pb-2 border-b border-border/30">
                   <div class="flex items-center gap-2">
-                    <ClockRotateRight size={14} class="text-indigo-500" />
-                    <span class="text-xs font-bold text-foreground">{m.ui_copy_automated_backup_policy_ecc1317b()}</span>
+                    <Sparkles size={14} class="text-primary" />
+                    <span class="text-xs font-bold text-foreground">{m.ai_ui_autopilot_engine()}</span>
                   </div>
-                  <Switch bind:checked={autoBackup} />
+                  <Badge variant="outline" class="border-emerald-500/30 text-emerald-600">{m.ui_autopilot_auto()}</Badge>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <FormField id="backupInterval" label={m.database_backup_interval_label?.() || m.ui_copy_interval_hours_23ad5bfc()}>
-                    {#snippet children()}
-                      <Input id="backupInterval" type="number" bind:value={backupInterval} min="1" max="168" class="h-8 text-xs bg-background border-input" disabled={!autoBackup} />
-                    {/snippet}
-                  </FormField>
-
-                  <FormField id="maxBackups" label={m.database_backup_max_files_label?.() || m.ui_copy_max_retained_files_02a1c239()}>
-                    {#snippet children()}
-                      <Input id="maxBackups" type="number" bind:value={maxBackups} min="1" max="100" class="h-8 text-xs bg-background border-input" disabled={!autoBackup} />
-                    {/snippet}
-                  </FormField>
-                </div>
-
-                <div class="pt-2 border-t border-border/30 flex items-center justify-between">
-                  <div>
-                    <div class="text-xs font-bold text-foreground">{m.ui_copy_integrity_check_on_startup_92991c81()}</div>
-                    <p class="text-[9.5px] text-muted-foreground">{m.ui_copy_automatically_verify_database_integrity_wh_1270bffe()}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="rounded-md border border-border/40 bg-background/60 p-3">
+                    <div class="text-[10px] text-muted-foreground">{m.ui_autopilot_system_backup()}</div>
+                    <div class="mt-1 text-xs font-bold text-foreground">
+                      {controller.status?.last_backup_timestamp
+                        ? new Date(controller.status.last_backup_timestamp).toLocaleString()
+                        : m.ai_ui_periodic_autopilot_operation()}
+                    </div>
                   </div>
-                  <Switch bind:checked={integrityOnStartup} />
-                </div>
-
-                <div class="pt-2 border-t border-border/30 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    class="h-7.5 px-3 text-[10.5px] font-bold border-border"
-                    onclick={handleSaveSettings}
-                    disabled={controller.isOperating}
-                  >
-                    {m.ui_copy_save_policy_5fce5a59()}
-                  </Button>
+                  <div class="rounded-md border border-border/40 bg-background/60 p-3">
+                    <div class="text-[10px] text-muted-foreground">{m.ai_ui_autopilot()}</div>
+                    <div class="mt-1 text-xs font-bold text-foreground">{m.ui_autopilot_health_check()}</div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -22,7 +22,6 @@ import { onMount } from "svelte";
 import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
 import NotificationPopover from "./notification-popover.svelte";
 import WhatsNewPopover from "./whats-new-popover.svelte";
-import DownloadManager from "./download-manager.svelte";
 import { isStandaloneWindow, STANDALONE_WINDOW_PARAM } from "./window-mode";
 
 const standaloneWindow = $derived(isStandaloneWindow(page.url));
@@ -137,10 +136,6 @@ onMount(() => {
 
   <!-- End Side: Header Buttons, Sync Indicator, Theme, Focus Mode, Window Controls -->
   <div class="flex items-center gap-1.5 shrink-0" data-tauri-drag-region>
-    {#if isDesktopApp}
-      <DownloadManager />
-    {/if}
-
     {#if authStore.isAuthenticated && !standaloneWindow}
       <Button
         variant="outline"

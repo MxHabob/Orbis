@@ -35,6 +35,26 @@ let {
   onDayChange,
 }: Props = $props();
 
+let matrixElement = $state<HTMLDivElement>();
+let isNarrow = $state(false);
+
+$effect(() => {
+  if (!matrixElement) return;
+
+  const updateLayout = () => {
+    const rootFontSize =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
+    isNarrow = matrixElement!.clientWidth < 700 * (rootFontSize / 16);
+  };
+
+  updateLayout();
+  const observer = new ResizeObserver(updateLayout);
+  observer.observe(matrixElement);
+
+  return () => observer.disconnect();
+});
+
 const weekdayOptions = getWeekdayOptions();
 const weekdayOrder = new Map(
   weekdayOptions.map((weekday, index) => [weekday.value, index]),
@@ -73,7 +93,7 @@ function getLessonForClassSlot(classId: string, slotId: string) {
 }
 </script>
 
-<div class="flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
+<div bind:this={matrixElement} class="flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
   <div class="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-border/60 bg-muted/15 px-3 py-2">
     <Calendar size={14} class="shrink-0 text-muted-foreground" />
     {#each availableDays as day (day)}
@@ -89,6 +109,64 @@ function getLessonForClassSlot(classId: string, slotId: string) {
       </button>
     {/each}
   </div>
+  {#if isNarrow}
+    <div class="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3">
+      {#each classes as cls (cls.id)}
+        <section class="mb-3 rounded-xl border border-border/60 bg-card p-2.5 last:mb-0">
+          <div class="mb-2 flex items-center gap-1.5 border-b border-border/50 pb-2 font-bold text-xs text-foreground">
+            <Users size={12} class="shrink-0 text-primary" />
+            <span>{l(cls.name_ar, cls.name)}</span>
+          </div>
+          <div class="grid gap-2">
+            {#each enrichedSlots as slot (slot.id)}
+              {@const isBreak = Boolean(slot.is_break)}
+              {@const lessonItem = getLessonForClassSlot(cls.id, slot.id)}
+              <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
+                <div class="rounded-lg bg-muted/20 px-2 py-2 text-center {isBreak ? 'text-amber-600 dark:text-amber-400' : ''}">
+                  <div class="text-[0.6875rem] font-bold">{slot.display_name}</div>
+                  <div class="mt-0.5 text-[0.625rem] text-muted-foreground font-mono">
+                    {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
+                  </div>
+                </div>
+                {#if isBreak}
+                  <div class="flex min-h-12 items-center justify-center rounded-lg border border-dashed border-amber-500/25 bg-amber-500/5 text-[0.6875rem] font-semibold text-amber-600 dark:text-amber-400">
+                    {slot.display_name}
+                  </div>
+                {:else if lessonItem}
+                  <button
+                    type="button"
+                    class="relative min-h-12 overflow-hidden rounded-lg border border-border/60 bg-card p-2 text-start transition-colors hover:border-primary/50"
+                    style={`--subject-color: ${getSubjectColor(lessonItem.subject_id)};`}
+                    onclick={() => onLessonClick?.(lessonItem)}
+                  >
+                    <div class="absolute inset-s-0 top-0 bottom-0 w-1" style="background-color: var(--subject-color);"></div>
+                    <div class="ps-2">
+                      <div class="truncate text-xs font-bold text-foreground">{getSubjectName(lessonItem.subject_id)}</div>
+                      <div class="mt-1 flex items-center justify-between gap-2 text-[0.625rem] text-muted-foreground">
+                        <span class="truncate">{getTeacherName(lessonItem.teacher_id)}</span>
+                        {#if lessonItem.room_id}
+                          <span class="shrink-0 font-medium text-primary">{getRoomName(lessonItem.room_id)}</span>
+                        {/if}
+                      </div>
+                    </div>
+                  </button>
+                {:else}
+                  <button
+                    type="button"
+                    class="min-h-12 w-full rounded-lg border border-dashed border-border/70 text-primary transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    aria-label={m.common_lesson_sheet_title()}
+                    onclick={() => onCellClick?.(String(cls.id), String(slot.id), selectedDay)}
+                  >
+                    +
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </section>
+      {/each}
+    </div>
+  {:else}
   <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
     <!-- Matrix Grid -->
     <table class="w-full min-w-[700px] border-collapse text-xs select-none">
@@ -170,6 +248,7 @@ function getLessonForClassSlot(classId: string, slotId: string) {
       </tbody>
     </table>
   </div>
+  {/if}
 </div>
 
 <style>

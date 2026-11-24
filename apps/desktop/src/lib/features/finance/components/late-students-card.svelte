@@ -1,4 +1,6 @@
 <script lang="ts">
+import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import * as m from "$lib/paraglide/messages";
 import {
   Card,
@@ -12,12 +14,24 @@ import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 
+type LateStudent = {
+  studentId: string;
+  studentName: string;
+  studentNumber: string | null;
+  className: string;
+  remaining: number;
+  daysLate: number;
+  dueDate: string;
+};
+
 let {
   lateStudents,
   orgId,
+  currency,
 }: {
-  lateStudents: any[];
+  lateStudents: LateStudent[];
   orgId: string;
+  currency: string;
 } = $props();
 </script>
 
@@ -32,12 +46,12 @@ let {
 
     <CardAction>
       <div class="flex items-center gap-1.5">
-        <a href={localizeHref(`/${orgId}/finance/fees`)}>
+        <a href={resolve(localizeHref(`/${orgId}/finance/fees`) as Pathname)}>
           <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
             {m.common_fee_button_assign()}
           </Button>
         </a>
-        <a href={localizeHref(`/${orgId}/finance/fees`)}>
+        <a href={resolve(localizeHref(`/${orgId}/finance/fees`) as Pathname)}>
           <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
             {m.common_overview_view_all()}
           </Button>
@@ -52,7 +66,7 @@ let {
         {m.finance_overview_no_late_students()}
       </div>
     {:else}
-      {#each lateStudents.slice(0, 3) as item (item.feeId)}
+      {#each lateStudents.slice(0, 3) as item (item.studentId)}
         <div class="flex items-center justify-between p-2.5 rounded-xl border border-border/40 bg-card hover:bg-muted/20 transition-all duration-200">
           <div class="flex items-center gap-2.5 text-start min-w-0">
             <Avatar class="h-7 w-7 border border-border/70 select-none">
@@ -63,8 +77,10 @@ let {
             <div class="flex flex-col min-w-0">
               <span class="font-bold text-foreground truncate max-w-[150px] text-[11px]">{item.studentName}</span>
               <span class="text-[8px] text-muted-foreground font-mono select-none flex items-center gap-1">
-                <span>{item.studentNum}</span>
-                <span>•</span>
+                {#if item.studentNumber}
+                  <span class="font-mono">{item.studentNumber}</span>
+                  <span>•</span>
+                {/if}
                 <span>{item.className}</span>
               </span>
             </div>
@@ -72,7 +88,7 @@ let {
           
           <div class="flex items-center gap-3 shrink-0">
             <div class="flex flex-col items-end text-end">
-              <span class="font-bold font-mono text-foreground text-[10px]">{formatCurrency(item.remaining, "YER")}</span>
+              <span class="font-bold font-mono text-foreground text-[10px]">{formatCurrency(item.remaining, currency)}</span>
               {#if item.daysLate > 0}
                 <span class="text-[7px] font-mono text-destructive select-none font-bold mt-0.5">
                   {m.finance_overview_days_overdue({ days: item.daysLate })}

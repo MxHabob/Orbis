@@ -115,7 +115,7 @@ async function handleSubmit() {
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="max-h-[90vh] max-w-md overflow-y-auto text-start">
+  <DialogContent class="max-h-[90dvh] max-w-md overflow-y-auto text-start">
     <DialogHeader>
       <DialogTitle>{m.operations_ui_assign_proctors()}</DialogTitle>
     </DialogHeader>

@@ -93,10 +93,10 @@ function handleCommandSelect(prompt: string) {
 }
 </script>
 
-<div class="relative shrink-0 select-none px-3.5 pb-3.5 pt-1.5 bg-gradient-to-t from-card via-card/90 to-transparent">
+<div class="relative shrink-0 select-none px-3 pb-3 pt-2">
   <!-- Quick Commands Popup Menu -->
   {#if showCommands}
-    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 z-30 flex max-h-[min(20rem,calc(100vh-8rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-150">
+    <div class="absolute bottom-[calc(100%+4px)] inset-x-3.5 z-30 flex max-h-[min(20rem,calc(100dvh-8rem))] flex-col gap-0 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-150">
       <div class="border-b border-border px-2 py-2 text-[10px] font-semibold text-muted-foreground">
         {m.ai_ui_suggested_smart_commands()}
       </div>
@@ -114,9 +114,10 @@ function handleCommandSelect(prompt: string) {
   {/if}
 
   <!-- Unified Floating Input Capsule -->
-  <form 
-    onsubmit={handleSubmit} 
-    class="flex flex-col bg-background/95 border border-border/80 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 rounded-2xl p-2 shadow-xs transition-all"
+  <form
+    onsubmit={handleSubmit}
+    class="flex flex-col rounded-[var(--radius)] border border-border p-2 text-foreground backdrop-blur-xl transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+    style="background:color-mix(in srgb, var(--popover) 72%, transparent);"
   >
     <!-- Textarea Input Area -->
     <textarea

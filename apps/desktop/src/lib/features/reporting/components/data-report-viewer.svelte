@@ -178,7 +178,7 @@ onMount(() => {
           <OrbisGrid
             columns={gridColumns}
             source={dataset.rows as Array<Record<string, any>>}
-            height="calc(100vh - 120px)"
+            height="calc(100dvh - 120px)"
             rtl={getLocale() === "ar"}
           />
         </div>

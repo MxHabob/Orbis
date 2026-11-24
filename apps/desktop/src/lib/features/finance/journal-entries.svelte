@@ -553,7 +553,7 @@ function exportCsv() {
                   bind:currentCurrency={selectedCurrency}
                   currencyOptions={currencies}
                   onchange={handleCurrencyChange}
-                  disabled={isLoading || isSubmitting || currencies.length < 2}
+                  disabled={isLoading || isSubmitting}
                 />
               </div>
             </div>

@@ -13,6 +13,7 @@ import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
+import StudentTransferDialog from "$lib/features/students/student-transfer-dialog.svelte";
 import { toast } from "@orbis/ui";
 import { confirmStore } from "$lib/stores";
 import { extractErrorMessage } from "$lib/api";
@@ -39,6 +40,7 @@ let showOverrideDialog = $state(false);
 
 let printDialogOpen = $state(false);
 let isDeletingStudents = $state(false);
+let transferDialogOpen = $state(false);
 let selectedStudentIds = $state<Set<string>>(new Set());
 const selectedStudent = $derived(
   selectedStudentIds.size === 1
@@ -279,6 +281,16 @@ async function deleteSelectedStudents() {
 
       <Button
         type="button"
+        variant="outline"
+        size="sm"
+        class="h-8 px-2.5 text-xs font-medium"
+        onclick={() => (transferDialogOpen = true)}
+      >
+        {m.common_student_layout_transfer_class()}
+      </Button>
+
+      <Button
+        type="button"
         variant="destructive"
         size="sm"
         class="h-8 px-2.5 text-xs font-medium"
@@ -309,6 +321,17 @@ async function deleteSelectedStudents() {
       </Button>
     {/snippet}
   </SettingsBottomBar>
+
+  <StudentTransferDialog
+    bind:open={transferDialogOpen}
+    studentIds={selectedStudentIds}
+    enrollments={directory.enrollmentsQuery.data ?? []}
+    {classes}
+    onsuccess={() => {
+      selectedStudentIds = new Set();
+      directory.retry();
+    }}
+  />
 
   <PrintDialog
     bind:open={printDialogOpen}

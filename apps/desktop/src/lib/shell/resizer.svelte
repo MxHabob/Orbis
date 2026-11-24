@@ -19,6 +19,8 @@ Inspired by GitButler's Resizer component.
 ```
 -->
 <script lang="ts">
+import { onMount } from "svelte";
+
 let {
   viewport,
   edge,
@@ -50,21 +52,37 @@ let startX = 0;
 let startWidth = 0;
 let dragTarget: HTMLElement | null = null;
 
-// Restore persisted width on mount
-$effect(() => {
+function restorePersistedWidth() {
   if (!persistId) return;
-  const stored = localStorage.getItem(`resizer:${persistId}`);
+  const pxStorageKey = `resizer:${persistId}:px`;
+  const legacyStorageKey = `resizer:${persistId}`;
+  const legacyViewportKey = `resizer:viewport-${persistId.replace(/^viewport-/, "")}`;
+  let stored = localStorage.getItem(pxStorageKey);
+  let isPixelValue = true;
+  if (!stored) {
+    stored = localStorage.getItem(legacyStorageKey);
+    isPixelValue = false;
+  }
+  if (!stored) {
+    stored = localStorage.getItem(legacyViewportKey);
+    isPixelValue = false;
+  }
   if (stored) {
     const val = parseFloat(stored);
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const valRem = isPixelValue ? val / base : val;
     if (
-      !isNaN(val) &&
-      ((collapsible && val === collapsedWidth) ||
-        (val >= minWidth && val <= maxWidth))
+      !isNaN(valRem) &&
+      ((collapsible && valRem === collapsedWidth) ||
+        (valRem >= minWidth && valRem <= maxWidth))
     ) {
-      onWidth?.(val);
+      onWidth?.(valRem);
     }
   }
-});
+}
+
+onMount(restorePersistedWidth);
 
 function pxToRem(px: number): number {
   const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -123,21 +141,29 @@ function onPointerUp(e: PointerEvent) {
 
   // Persist final width
   if (persistId && viewport) {
-    const currentRem = pxToRem(viewport.getBoundingClientRect().width);
+    const currentPx = viewport.getBoundingClientRect().width;
+    const currentRem = pxToRem(currentPx);
     let targetWidth = currentRem;
     if (collapsible && targetWidth < collapseThreshold) {
       targetWidth = collapsedWidth;
     } else {
       targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
     }
-    localStorage.setItem(`resizer:${persistId}`, String(targetWidth));
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    localStorage.setItem(`resizer:${persistId}:px`, String(targetWidth * base));
   }
 }
 
 function onDoubleClick() {
   onWidth?.(defaultValue);
   if (persistId) {
-    localStorage.setItem(`resizer:${persistId}`, String(defaultValue));
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    localStorage.setItem(
+      `resizer:${persistId}:px`,
+      String(defaultValue * base),
+    );
   }
 }
 </script>

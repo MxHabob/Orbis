@@ -20,6 +20,7 @@ import {
   CheckCircle,
   Computer,
   Database,
+  FolderOpen,
   GlobeAlt,
   InfoCircle,
 } from "@orbis/icons";
@@ -92,7 +93,7 @@ type ConnectionFormValues = z.infer<typeof connectionSchema>;
 const form = new FormController<ConnectionFormValues>({
   initialValues: {
     mode: undefined,
-    dbFilename: "",
+    dbFilename: "orbis.db",
     serverUrl: "",
     host: "localhost",
     port: 5432,
@@ -105,6 +106,37 @@ const form = new FormController<ConnectionFormValues>({
 
 function fieldError(field: keyof ConnectionFormValues): string | undefined {
   return form.errors[field]?.[0];
+}
+
+let customDatabasePath = $state("");
+
+onMount(async () => {
+  configureApiClient("local");
+  try {
+    const config = await api.connectionGetConfig();
+    form.values.dbFilename = config.local?.db_filename ?? "orbis.db";
+    customDatabasePath = config.local?.custom_path ?? "";
+  } catch (error) {
+    form.formError = error instanceof Error ? error.message : String(error);
+  }
+});
+
+async function browseDatabasePath() {
+  form.formError = undefined;
+  try {
+    const path = await api.databasePickSavePath({
+      defaultFilename: form.values.dbFilename || "orbis.db",
+      filterName: "SQLite Database (*.db, *.sqlite)",
+      extensions: ["db", "sqlite", "sqlite3"],
+    });
+    if (path) {
+      customDatabasePath = path;
+      const selectedFilename = path.split(/[\\/]/).pop();
+      if (selectedFilename) form.values.dbFilename = selectedFilename;
+    }
+  } catch (error) {
+    form.formError = error instanceof Error ? error.message : String(error);
+  }
 }
 
 async function continueToOrganization() {
@@ -121,10 +153,6 @@ async function continueToOrganization() {
 let isCheckingHealth = $state(false);
 let healthResult = $state<RemoteHealthResult | null>(null);
 let pendingMigrationCount = $state<number | null>(null);
-
-onMount(() => {
-  configureApiClient("local");
-});
 
 async function checkHealth() {
   const url = form.values.serverUrl.trim();
@@ -165,6 +193,10 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
       password: values.mode === "direct" ? values.password : undefined,
       dbFilename:
         values.mode === "local" ? values.dbFilename.trim() : undefined,
+      customPath:
+        values.mode === "local" && customDatabasePath.trim()
+          ? customDatabasePath.trim()
+          : undefined,
     });
 
     if (values.mode === "api") {
@@ -299,14 +331,45 @@ async function applyDirectMigrations() {
             description={m.setup_connection_db_file_hint()}
             labelFor="dbFilename"
             required
-            last
           >
             {#snippet children()}
-              <div class="w-full space-y-1">
+              <div class="w-full">
                 <Input id="dbFilename" bind:value={form.values.dbFilename} disabled={form.isSubmitting} class="h-9 bg-background font-mono" placeholder="orbis.db" aria-invalid={!!fieldError("dbFilename")} />
                 {#if fieldError("dbFilename")}
                   <p class="text-[11px] text-destructive" role="alert">{fieldError("dbFilename")}</p>
                 {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          <SettingsRow
+            title={m.ui_copy_custom_absolute_file_path_optional_0c3adc12()}
+            description={m.ui_copy_leave_blank_for_default_appdata_path_a40f6b20()}
+            labelFor="customDatabasePath"
+            last
+          >
+            {#snippet children()}
+              <div class="w-full">
+                <div class="flex gap-2">
+                  <Input
+                    id="customDatabasePath"
+                    type="text"
+                    bind:value={customDatabasePath}
+                    disabled={form.isSubmitting}
+                    class="h-9 min-w-0 flex-1 bg-background font-mono"
+                    placeholder={m.ui_copy_default_application_data_folder_cc5cf159()}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-9 shrink-0 gap-1.5"
+                    onclick={browseDatabasePath}
+                    disabled={form.isSubmitting}
+                  >
+                    <FolderOpen class="size-3.5" />
+                    <span>{m.database_browse_file?.() || m.ui_copy_browse_f7b87051()}</span>
+                  </Button>
+                </div>
               </div>
             {/snippet}
           </SettingsRow>

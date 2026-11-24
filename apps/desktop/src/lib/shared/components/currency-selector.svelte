@@ -93,8 +93,6 @@ function getCurrencySubtitle(
 function getCurrencyBadge(
   c: CurrencyOption | null | undefined,
 ): string | undefined {
-  if (!c || typeof c === "string") return undefined;
-  if (c?.is_base) return m.shared_ui_base_currency();
   return undefined;
 }
 

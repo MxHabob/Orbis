@@ -168,7 +168,7 @@ function handleCreateClick(e: MouseEvent) {
   </SelectTrigger>
 
   <SelectContent
-    class="text-xs font-sans w-(--bits-select-anchor-width,100%) min-w-0 max-w-[calc(100vw-1rem)] p-0 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden {contentClass}"
+    class="text-xs font-sans w-(--bits-select-anchor-width,100%) min-w-0 max-w-[calc(100dvw-1rem)] p-0 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden {contentClass}"
     style="max-height: min(75dvh, 28rem)"
     align="start"
   >

@@ -56,6 +56,40 @@ let {
 }: Props = $props();
 
 const isArabic = $derived(locale === "ar");
+let gridElement = $state<HTMLDivElement>();
+let isNarrow = $state(false);
+let activeAgendaDay = $state<number | null>(null);
+
+$effect(() => {
+  if (!gridElement) return;
+
+  const updateLayout = () => {
+    const rootFontSize =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
+    isNarrow = gridElement!.clientWidth < 700 * (rootFontSize / 16);
+  };
+
+  updateLayout();
+  const observer = new ResizeObserver(updateLayout);
+  observer.observe(gridElement);
+
+  return () => observer.disconnect();
+});
+
+$effect(() => {
+  if (weekdays.length === 0) {
+    activeAgendaDay = null;
+    return;
+  }
+
+  const availableDays = weekdays.map((day, idx) =>
+    Number(day.value ?? day.day ?? idx + 1),
+  );
+  if (activeAgendaDay === null || !availableDays.includes(activeAgendaDay)) {
+    activeAgendaDay = availableDays[0];
+  }
+});
 
 const enrichedSlots = $derived<EnrichedTimeSlot[]>(
   timeSlots.length > 0 && timeSlots[0]?.display_name !== undefined
@@ -158,9 +192,101 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
 </script>
 
 <div
+  bind:this={gridElement}
   class="relative flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs {className}"
 >
   <!-- Main Grid Viewport -->
+  {#if isNarrow}
+    <div class="agenda-layout flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+      <div class="flex shrink-0 gap-1 overflow-x-auto border-b border-border/60 bg-muted/10 p-2 scrollbar-hide">
+        {#each weekdays as day, idx (day.value ?? day.day ?? idx)}
+          {@const dayValue = day.value ?? day.day ?? idx + 1}
+          {@const count = lessonsByDay[dayValue] ?? 0}
+          <button
+            type="button"
+            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors {activeAgendaDay === dayValue
+              ? 'bg-primary text-primary-foreground shadow-xs'
+              : 'bg-card text-muted-foreground border border-border/60'}"
+            aria-pressed={activeAgendaDay === dayValue}
+            onclick={() => (activeAgendaDay = dayValue)}
+          >
+            <span>{day.label}</span>
+            {#if count > 0}
+              <span class="rounded-full bg-current/10 px-1.5 py-0.5 text-[0.625rem]">{count}</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3">
+        {#each slotIndexes as slotIndex (slotIndex)}
+          {@const slot = activeAgendaDay
+            ? slotsByDayAndIndex.get(`${activeAgendaDay}:${slotIndex}`)
+            : undefined}
+          {#if slot}
+            {@const key = `${activeAgendaDay}:${slot.id}`}
+            {@const cellLessons = lessonMatrix.get(key) || []}
+            <section class="mb-2 grid grid-cols-[5rem_minmax(0,1fr)] gap-2 last:mb-0 sm:grid-cols-[7rem_minmax(0,1fr)]">
+              <div class="rounded-lg border border-border/50 bg-muted/20 px-2 py-3 text-center">
+                {#if slot.is_break}
+                  <div class="text-xs font-semibold text-primary">
+                    {slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}
+                  </div>
+                {:else}
+                  <div class="text-xs font-bold text-foreground">
+                    {slot.name_ar || slot.name || slot.display_name || (isArabic ? `الحصة ${slotIndex}` : `Period ${slotIndex}`)}
+                  </div>
+                {/if}
+                {#if slot.start_time && slot.end_time}
+                  <div class="mt-1 text-[0.625rem] text-muted-foreground font-mono">
+                    {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                  </div>
+                {/if}
+              </div>
+
+              {#if slot.is_break}
+                <div class="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-primary/20 bg-primary/5 text-xs font-medium text-primary">
+                  {slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}
+                </div>
+              {:else if cellLessons.length > 0}
+                <div class="flex min-h-16 flex-col gap-1.5">
+                  {#each cellLessons as lesson (lesson.id)}
+                    <SessionCard
+                      {lesson}
+                      timeSlot={slot}
+                      {viewMode}
+                      {locale}
+                      compact={false}
+                      hasConflict={conflictLessonIds.has(String(lesson.id))}
+                      isDraft={Boolean(lesson.isDraft)}
+                      subjectColor={getSubjectColor(lesson.subject_id)}
+                      {getSubjectName}
+                      {getTeacherName}
+                      {getClassName}
+                      {getRoomName}
+                      onDelete={onDeleteLesson}
+                      onEdit={onEditLesson}
+                      onClick={onLessonClick}
+                      onAttendance={onAttendanceClick}
+                    />
+                  {/each}
+                </div>
+              {:else}
+                <button
+                  type="button"
+                  class="min-h-16 w-full rounded-lg border border-dashed border-border/70 bg-card text-primary transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  onclick={() => onCellClick?.(activeAgendaDay ?? 0, String(slot.id))}
+                  aria-label={isArabic ? "إضافة حصة" : "Add lesson"}
+                >
+                  <Plus size={18} class="mx-auto" />
+                </button>
+              {/if}
+            </section>
+          {/if}
+        {/each}
+      </div>
+    </div>
+  {:else}
   <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
     <!-- Header Row (Sticky top) -->
     <div class="sticky top-0 z-20 flex min-w-[700px] border-b border-border/60 bg-card shadow-2xs">
@@ -208,7 +334,7 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
                     {#each cellLessons as lesson (lesson.id)}
                       <SessionCard
                         {lesson}
-                        {slot}
+                        timeSlot={slot}
                         {viewMode}
                         {locale}
                         {compact}
@@ -244,6 +370,7 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
       {/each}
     </div>
   </div>
+  {/if}
 </div>
 
 <style>

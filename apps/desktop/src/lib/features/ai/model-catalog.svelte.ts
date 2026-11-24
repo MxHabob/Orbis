@@ -2,6 +2,7 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 const CATALOG_URL = "https://models.dev/api.json";
+const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 const CACHE_FILE = "model-catalog.json";
 const PROVIDER_SOURCES: Record<string, string> = {
   anthropic: "anthropic",
@@ -139,6 +140,36 @@ function buildCatalog(payload: unknown): ModelCatalog {
   };
 }
 
+function mergeOpenRouterModels(
+  catalog: ModelCatalog,
+  payload: unknown,
+): ModelCatalog {
+  if (!isRecord(payload) || !Array.isArray(payload.data)) {
+    return catalog;
+  }
+
+  const options: ModelOption[] = [];
+  const seen = new Set<string>();
+  for (const rawModel of payload.data) {
+    if (!isRecord(rawModel) || typeof rawModel.id !== "string") continue;
+    const modelId = rawModel.id.trim();
+    if (!modelId || seen.has(modelId)) continue;
+    seen.add(modelId);
+    const modelName =
+      typeof rawModel.name === "string" ? rawModel.name.trim() : "";
+    options.push({
+      label: modelName ? `${modelName} (${modelId})` : modelId,
+      value: modelId,
+    });
+  }
+
+  if (options.length > 0) {
+    options.sort((a, b) => a.label.localeCompare(b.label));
+    catalog.providers.openrouter = options;
+  }
+  return catalog;
+}
+
 async function cachePath(): Promise<string> {
   return join(await appDataDir(), CACHE_FILE);
 }
@@ -213,8 +244,10 @@ export async function ensureModelCatalog(appId: string): Promise<void> {
       .then(() => refreshModelCatalog())
       .then(() => undefined)
       .catch((error: unknown) => {
-        ensurePromise = undefined;
         throw error;
+      })
+      .finally(() => {
+        ensurePromise = undefined;
       });
   }
   await ensurePromise;
@@ -227,17 +260,53 @@ export async function refreshModelCatalog(): Promise<{
 }> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
-      const response = await fetch(CATALOG_URL, {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!response.ok) {
-        throw new Error(
-          `Model catalog request failed with HTTP ${response.status}.`,
+      let catalog: ModelCatalog | null = null;
+      try {
+        const response = await fetch(CATALOG_URL, {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response.ok) {
+          throw new Error(
+            `Model catalog request failed with HTTP ${response.status}.`,
+          );
+        }
+        catalog = buildCatalog(await response.json());
+      } catch (error) {
+        console.warn("The models.dev catalog could not be refreshed.", error);
+      }
+
+      try {
+        const response = await fetch(OPENROUTER_MODELS_URL, {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response.ok) {
+          throw new Error(
+            `OpenRouter model request failed with HTTP ${response.status}.`,
+          );
+        }
+        if (catalog) {
+          catalog = mergeOpenRouterModels(catalog, await response.json());
+        } else {
+          const directCatalog: ModelCatalog = {
+            source: CATALOG_URL,
+            updatedAt: new Date().toISOString(),
+            providers: {},
+          };
+          catalog = mergeOpenRouterModels(directCatalog, await response.json());
+        }
+      } catch (error) {
+        console.warn(
+          "The OpenRouter model list could not be refreshed.",
+          error,
         );
       }
 
-      const catalog = buildCatalog(await response.json());
+      if (!catalog || Object.keys(catalog.providers).length === 0) {
+        throw new Error("No AI model catalogs could be loaded.");
+      }
+
       const contents = `${JSON.stringify(catalog, null, 2)}\n`;
       applyCatalog(catalog);
       await writeCachedCatalog(contents);

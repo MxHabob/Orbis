@@ -639,7 +639,7 @@ export class StudentFormState {
           this.personal.nameEn || this.personal.nameAr,
         );
 
-        const registrationResult = await api.bulkRegisterStudents(
+        const registrationJob = await api.startBulkRegisterJob(
           [
             {
               row_index: 0,
@@ -704,7 +704,19 @@ export class StudentFormState {
           ],
           { atomic: true },
         );
-        const registrationResultItem = registrationResult.items[0];
+        let registrationJobState = registrationJob;
+        while (registrationJobState.status === "running") {
+          await new Promise((resolve) => window.setTimeout(resolve, 250));
+          const polled = await api.getBulkRegisterJob(registrationJob.id);
+          if (!polled) break;
+          registrationJobState = polled;
+        }
+        if (registrationJobState.status === "failed") {
+          throw new Error(
+            registrationJobState.error || "Student registration failed.",
+          );
+        }
+        const registrationResultItem = registrationJobState.result?.items[0];
         if (
           !registrationResultItem?.success ||
           !registrationResultItem.student_id

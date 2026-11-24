@@ -31,7 +31,7 @@ const formId = $derived(`app-connect-form-${app.id}`);
 <Sheet bind:open={open}>
   <SheetContent
     side="end"
-    contentClass="data-[side=end]:w-[min(32rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100vw-1rem))]"
+    contentClass="data-[side=end]:w-[min(32rem,calc(100dvw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100dvw-1rem))]"
     class="flex h-full flex-col overflow-hidden p-0"
   >
     <SheetHeader class="shrink-0 border-b border-border/50 px-6 py-5 text-start">

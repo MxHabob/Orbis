@@ -91,20 +91,40 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
   { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
   { id: "matrix", label: m.academics_planning_studio_title, icon: Keyframes },
 ];
+
+let toolbarElement = $state<HTMLDivElement>();
+let isNarrow = $state(false);
+
+$effect(() => {
+  if (!toolbarElement) return;
+
+  const updateLayout = () => {
+    const rootFontSize =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
+    isNarrow = toolbarElement!.clientWidth < 820 * (rootFontSize / 16);
+  };
+
+  updateLayout();
+  const observer = new ResizeObserver(updateLayout);
+  observer.observe(toolbarElement);
+
+  return () => observer.disconnect();
+});
 </script>
 
-<div class="w-full shrink-0 border-b border-border/60 bg-card select-none">
+<div bind:this={toolbarElement} class="w-full shrink-0 border-b border-border/60 bg-card select-none">
   <!-- Top Primary Row: Perspectives + Period + Search + Actions -->
-  <div class="flex min-h-12 w-full items-center justify-between px-2 sm:px-3 py-1 gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
+  <div class="flex w-full items-center justify-between px-2 sm:px-3 py-1 gap-2 {isNarrow ? 'flex-wrap' : 'min-h-12 overflow-x-auto overflow-y-hidden scrollbar-hide'}">
     <!-- Left: Period Selector & View Mode Segmented Tabs -->
-    <div class="flex items-center gap-2 min-w-max shrink-0">
+    <div class="flex items-center gap-2 {isNarrow ? 'w-full flex-wrap' : 'min-w-max shrink-0'}">
       <!-- Period Select Dropdown -->
       <Select
         type="single"
         value={activePeriodId}
         onValueChange={handlePeriodSelect}
       >
-        <SelectTrigger class="h-8 w-40 bg-muted/30 text-xs font-bold border-border/60">
+        <SelectTrigger class="h-8 {isNarrow ? 'w-full min-w-40' : 'w-40'} bg-muted/30 text-xs font-bold border-border/60">
           <div class="flex items-center gap-1.5 truncate">
             <Calendar size={13} class="text-primary shrink-0" />
             <span class="truncate">
@@ -126,8 +146,8 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
       <div class="h-4 w-px bg-border/60 mx-1 hidden sm:block"></div>
 
       <!-- Segmented View Tabs -->
-      <div class="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40 overflow-x-auto scrollbar-hide">
-        {#each viewModes as mode}
+      <div class="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40 {isNarrow ? 'w-full overflow-x-auto scrollbar-hide' : 'overflow-x-auto scrollbar-hide'}">
+        {#each viewModes as mode (mode.id)}
           {@const Icon = mode.icon}
           {@const isActive = viewMode === mode.id}
           <button
@@ -145,7 +165,7 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
     </div>
 
     <!-- Center: Global Schedule Search -->
-    <div class="flex-1 max-w-xs min-w-0 hidden lg:block">
+    <div class="{isNarrow ? 'order-3 w-full' : 'flex-1 max-w-xs min-w-0 hidden lg:block'}">
       <div class="relative w-full">
         <Search size={13} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
@@ -157,7 +177,7 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
     </div>
 
     <!-- Right: Solver, Time Slots, Export, New Lesson -->
-    <div class="flex items-center gap-1.5 shrink-0">
+    <div class="flex items-center gap-1.5 {isNarrow ? 'ms-auto' : 'shrink-0'}">
       
       <!-- Time Slots Configuration -->
       <Button
@@ -195,8 +215,8 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
 
   <!-- Bottom Secondary Row: Contextual Resource Dropdowns & AdjustmentsHorizontal Chips -->
   {#if viewMode !== "matrix"}
-    <div class="flex h-10 w-full items-center justify-between px-2 sm:px-3 gap-2 bg-muted/15 border-t border-border/40 text-xs overflow-x-auto overflow-y-hidden scrollbar-hide">
-      <div class="flex items-center gap-2 min-w-0 flex-1">
+    <div class="flex w-full items-center justify-between px-2 sm:px-3 py-1.5 gap-2 bg-muted/15 border-t border-border/40 text-xs {isNarrow ? 'flex-wrap min-h-10' : 'h-10 overflow-x-auto overflow-y-hidden scrollbar-hide'}">
+      <div class="flex items-center gap-2 min-w-0 flex-1 {isNarrow ? 'flex-wrap w-full' : ''}">
         <!-- Class Selector (When in Class view) -->
         {#if viewMode === "class"}
           <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_class()}</span>

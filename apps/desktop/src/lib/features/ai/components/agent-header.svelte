@@ -6,6 +6,7 @@ import { getAppsByCategory } from "@orbis/app-store";
 import { ChartBar, Expand, Plus, Sparkles, XMark } from "@orbis/icons";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
+import { l } from "$lib/core/i18n";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
 
 let {
@@ -78,12 +79,14 @@ const displayTitle = $derived.by(() => {
   if (currentApp.id === "anthropic") return "Claude";
   if (currentApp.id === "deepseek") return "DeepSeek";
   if (currentApp.id === "gemini-ai") return "Gemini";
-  return currentApp.name_ar?.split(" ")[0] || currentApp.name;
+  return String(
+    l(currentApp.name_ar, currentApp.name) ?? currentApp.name,
+  ).split(" ")[0];
 });
 </script>
 
 <div
-  class="flex items-center justify-between px-3 h-12 shrink-0 border-b border-border/80 select-none bg-card/95 backdrop-blur-xl"
+  class="flex items-center justify-between px-3 h-12 shrink-0 border-b border-border/40 select-none bg-transparent"
 >
   <!-- Left/Start Side: Provider Avatar + Title + Status -->
   <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">

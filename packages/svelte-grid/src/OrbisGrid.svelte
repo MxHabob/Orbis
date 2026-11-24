@@ -2196,8 +2196,7 @@ export function scrollToColumnProp(prop: string) {
     outline: none;
   }
   .orbis-grid:focus-visible:not(.has-active-cell) {
-    outline: 1px solid var(--ring);
-    outline-offset: -2px;
+    outline: none;
   }
   .orbis-grid.is-selecting {
     user-select: none;
@@ -2516,8 +2515,7 @@ export function scrollToColumnProp(prop: string) {
     background: color-mix(in oklab, var(--primary) 14%, transparent);
   }
   .orbis-grid:focus-visible .orbis-cell.is-active {
-    box-shadow: inset 0 0 0 1.5px var(--ring);
-    z-index: 1;
+    box-shadow: none;
   }
   .orbis-cell.is-editing {
     padding: 0;

@@ -4,7 +4,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
-import { uiStore, authStore } from "$lib/stores";
+import { uiStore, authStore, operationStore } from "$lib/stores";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
 import {
@@ -422,6 +422,13 @@ const searchError = $derived(
 
 const shortcuts = $derived([
   {
+    id: "sc-transfer-students",
+    title: m.common_student_layout_transfer_class(),
+    icon: Users,
+    action: () => goto(`/${currentOrgId}/students`),
+    group: m.common_search_group_shortcuts(),
+  },
+  {
     id: "sc-create-student",
     title: m.students_create(),
     icon: Plus,
@@ -743,6 +750,37 @@ const filteredItems = $derived.by((): SearchItem[] => {
     ...shortcuts
       .filter((shortcut) => matchesQuery(query, shortcut.title))
       .map((shortcut) => ({ ...shortcut, subtitle: undefined })),
+  );
+
+  list.push(
+    ...operationStore.operations
+      .filter((operation) =>
+        matchesQuery(
+          query,
+          operation.title,
+          m.ui_shell_status_operations(),
+          m.common_student_layout_transfer_class(),
+        ),
+      )
+      .slice(0, 8)
+      .map((operation) => ({
+        id: `operation-${operation.id}`,
+        title: operation.title,
+        subtitle:
+          operation.status === "running"
+            ? `${operation.processed} / ${operation.total}`
+            : operation.status === "completed"
+              ? m.ui_shell_status_completed()
+              : m.ui_shell_status_failed(),
+        icon: Users,
+        action: () =>
+          goto(
+            operation.jobProfile === "students"
+              ? `/${currentOrgId}/settings/bulk-input/students`
+              : `/${currentOrgId}/students`,
+          ),
+        group: m.ui_shell_status_operations(),
+      })),
   );
 
   list.push(

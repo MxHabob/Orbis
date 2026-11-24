@@ -77,6 +77,7 @@ let showAddForm = $state(false);
 let referenceNumber = $state("");
 let voucherDate = $state(getLocalDateInputValue());
 let treasuryAccountId = $state(""); // Credit: Cash/Bank
+let selectedCurrency = $state(orgContext.baseCurrency || "");
 let paymentMethod = $state<"Cash" | "Bank" | "Check">("Cash");
 let disbursementLines = $state<DisbursementLine[]>([createDisbursementLine()]);
 function getLocalDateInputValue(date = new Date()) {
@@ -85,16 +86,35 @@ function getLocalDateInputValue(date = new Date()) {
     .slice(0, 10);
 }
 
-const selectedCurrency = $derived(
-  treasuries.find((account) => String(account.id) === String(treasuryAccountId))
-    ?.currency || "",
-);
-const availableCurrencies = $derived(
-  currencies.filter((currency) =>
-    treasuries.some(
-      (account) =>
-        account.currency.toUpperCase() === currency.code.toUpperCase(),
+const availableCurrencies = $derived([
+  ...currencies,
+  ...treasuries
+    .map((account) => account.currency)
+    .filter((currency) => Boolean(currency))
+    .filter(
+      (currency) =>
+        !currencies.some(
+          (option) => option.code.toUpperCase() === currency.toUpperCase(),
+        ),
+    )
+    .map(
+      (currency) =>
+        ({
+          code: currency,
+          name: currency,
+          name_ar: null,
+          symbol: currency,
+          symbol_position: "after",
+          decimal_places: 2,
+          exchange_rate: "1",
+        }) as CurrencyDto,
     ),
+]);
+const treasuryAccountsForCurrency = $derived(
+  treasuries.filter(
+    (account) =>
+      String(account.currency).toUpperCase() ===
+      String(selectedCurrency).toUpperCase(),
   ),
 );
 const disbursementAccounts = $derived(
@@ -143,11 +163,19 @@ async function loadData() {
     treasuries = accountsList.filter(isCashOrBankAccount);
     currencies = currenciesList;
 
-    if (
-      treasuries.length > 0 &&
-      !treasuries.some((account) => account.id === treasuryAccountId)
-    ) {
-      handleTreasuryChange(treasuries[0].id);
+    if (treasuries.length > 0) {
+      const selectedTreasury = treasuries.find(
+        (account) => String(account.id) === String(treasuryAccountId),
+      );
+      const matchingTreasury =
+        selectedTreasury ||
+        treasuries.find(
+          (account) =>
+            String(account.currency).toUpperCase() ===
+            String(selectedCurrency).toUpperCase(),
+        ) ||
+        treasuries[0];
+      handleTreasuryChange(matchingTreasury.id);
     }
 
     // Identify disbursement vouchers (entries where credit is a treasury/cash account)
@@ -176,6 +204,7 @@ function handleTreasuryChange(accountId: string) {
   const currency = treasuries.find(
     (account) => account.id === accountId,
   )?.currency;
+  if (currency) selectedCurrency = currency.toUpperCase();
   for (const line of disbursementLines) {
     const account = accounts.find(
       (candidate) => candidate.id === line.beneficiaryAccountId,
@@ -192,10 +221,15 @@ function handleTreasuryChange(accountId: string) {
 
 function handleCurrencyChange(currencyCode: string | undefined) {
   if (!currencyCode || currencyCode === selectedCurrency) return;
+  selectedCurrency = currencyCode.toUpperCase();
   const treasury = treasuries.find(
     (account) => account.currency.toUpperCase() === currencyCode.toUpperCase(),
   );
   if (treasury) handleTreasuryChange(treasury.id);
+  else {
+    treasuryAccountId = "";
+    for (const line of disbursementLines) line.beneficiaryAccountId = "";
+  }
 }
 
 function addDisbursementLine() {
@@ -613,7 +647,7 @@ function exportCsv() {
                   <AccountSearchInput
                     value={treasuryAccountId}
                     placeholder={m.finance_ui_treasury_select_placeholder()}
-                    accounts={treasuries}
+                    accounts={treasuryAccountsForCurrency}
                     onchange={(value) => handleTreasuryChange(value ?? "")}
                     disabled={isSubmitting}
                   />
@@ -650,7 +684,7 @@ function exportCsv() {
                     currentCurrency={selectedCurrency}
                     currencyOptions={availableCurrencies}
                     onchange={handleCurrencyChange}
-                    disabled={isSubmitting || isLoading || availableCurrencies.length < 2}
+                    disabled={isSubmitting || isLoading}
                   />
                 </div>
               </div>

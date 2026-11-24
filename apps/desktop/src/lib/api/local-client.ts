@@ -222,7 +222,7 @@ import type {
   MigrationResultDto,
   DatabaseSettingsDto,
   BulkRegisterStudentCommandItem,
-  BulkRegisterStudentCommandResultDto,
+  BulkRegisterJobDto,
   AiChatRequest,
   AiChatResponse,
   AiCustomReportRequest,
@@ -232,7 +232,9 @@ import type {
   AutopilotDiagnosticsDto,
   AutopilotTaskDto,
   BulkRegisterEmployeeCommandItem,
-  BulkRegisterEmployeeCommandResultDto,
+  BulkRegisterEmployeeJobDto,
+  BulkTransferStudentCommandItem,
+  BulkTransferStudentCommandResultDto,
   GoogleAuthRequest,
   ListTasksResponse,
   MfaChallengeRequest,
@@ -611,15 +613,29 @@ export class LocalClient implements OrbisApiClient {
   async restoreStudent(id: string): Promise<StudentDto> {
     return unwrap(await invoke("student_restore_student", { id }));
   }
-  async bulkRegisterStudents(
+  async startBulkRegisterJob(
     items: BulkRegisterStudentCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterStudentCommandResultDto> {
+  ): Promise<BulkRegisterJobDto> {
     return unwrap(
-      await invoke("student_bulk_register", {
+      await invoke("student_start_bulk_register_job", {
         items,
         atomic: options?.atomic ?? true,
         dryRun: options?.dryRun ?? false,
+      }),
+    );
+  }
+  async getBulkRegisterJob(jobId: string): Promise<BulkRegisterJobDto | null> {
+    return unwrap(await invoke("student_get_bulk_register_job", { jobId }));
+  }
+  async bulkTransferStudents(
+    items: BulkTransferStudentCommandItem[],
+    options?: { atomic?: boolean },
+  ): Promise<BulkTransferStudentCommandResultDto> {
+    return unwrap(
+      await invoke("student_bulk_transfer_classes", {
+        items,
+        atomic: options?.atomic ?? true,
       }),
     );
   }
@@ -676,17 +692,22 @@ export class LocalClient implements OrbisApiClient {
   async assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean> {
     return unwrap(await invoke("employee_assign_groups", { id, groupIds }));
   }
-  async bulkRegisterEmployees(
+  async startBulkRegisterEmployeeJob(
     items: BulkRegisterEmployeeCommandItem[],
     options?: { atomic?: boolean; dryRun?: boolean },
-  ): Promise<BulkRegisterEmployeeCommandResultDto> {
+  ): Promise<BulkRegisterEmployeeJobDto> {
     return unwrap(
-      await invoke("employee_bulk_register", {
+      await invoke("employee_start_bulk_register_job", {
         items,
         atomic: options?.atomic ?? true,
         dryRun: options?.dryRun ?? false,
       }),
     );
+  }
+  async getBulkRegisterEmployeeJob(
+    jobId: string,
+  ): Promise<BulkRegisterEmployeeJobDto | null> {
+    return unwrap(await invoke("employee_get_bulk_register_job", { jobId }));
   }
 
   // ── User Groups ─────────────────────────────────────────────
@@ -1255,8 +1276,13 @@ export class LocalClient implements OrbisApiClient {
       }),
     );
   }
-  async getStudentFeeSummary(): Promise<StudentFeeSummaryDto[]> {
-    return unwrap(await invoke("finance_get_student_fee_summary"));
+  async getStudentFeeSummary(
+    filter?: Pick<
+      StudentFeeFilterParams,
+      "org_unit_id" | "from_date" | "to_date" | "currency_code"
+    >,
+  ): Promise<StudentFeeSummaryDto[]> {
+    return unwrap(await invoke("finance_get_student_fee_summary", { filter }));
   }
   async deleteStudentFee(id: string): Promise<boolean> {
     return unwrap(await invoke("finance_delete_student_fee", { id }));

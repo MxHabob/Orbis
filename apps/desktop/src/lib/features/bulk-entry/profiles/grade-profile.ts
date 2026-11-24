@@ -449,10 +449,22 @@ export const gradeImportProfile: BulkImportProfile<
     rows: GradeRowData[],
     _orgId: string,
     _refData: BulkReferenceData,
+    onProgress?: (progress: import("../types").ChunkProgress) => void,
   ): Promise<{ success: boolean; errors?: string[] }> {
     const items = buildGradeBatchItems(rows);
 
     try {
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: 0,
+        committedRows: 0,
+        failedRows: 0,
+        isFinished: false,
+        hasErrors: false,
+      });
       const result = await api.batchRecordGrades({ items });
       if (result.count !== items.length) {
         return {
@@ -460,6 +472,17 @@ export const gradeImportProfile: BulkImportProfile<
           errors: [m.bulk_entry_grade_commit_failed()],
         };
       }
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: rows.length,
+        committedRows: rows.length,
+        failedRows: 0,
+        isFinished: true,
+        hasErrors: false,
+      });
       return { success: true };
     } catch (err: any) {
       return {

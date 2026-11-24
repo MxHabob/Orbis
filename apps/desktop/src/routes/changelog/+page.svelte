@@ -105,7 +105,7 @@ onMount(() => {
   <title>{currentRelease?.title ? `${currentRelease.title} (v${currentRelease.version})` : m.ui_changelog_what_s_new_releases()}</title>
 </svelte:head>
 
-<div class="h-screen overflow-hidden bg-background font-sans text-foreground flex flex-col">
+<div class="h-dvh w-dvw min-h-0 min-w-0 overflow-hidden bg-background font-sans text-foreground flex flex-col">
   <main class="min-h-0 flex-1 w-full max-w-2xl sm:max-w-3xl mx-auto overflow-y-auto scrollbar-hide p-5 sm:p-7 flex flex-col gap-5 justify-between">
     <div class="flex flex-col gap-5">
       <!-- Update Available Action Bar -->

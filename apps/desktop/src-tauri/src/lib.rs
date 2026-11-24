@@ -56,6 +56,8 @@ pub fn run() {
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
             app.manage(commands::system_cmds::PendingUpdateState::default());
+            app.manage(commands::student_cmds::BulkRegisterJobRegistry::default());
+            app.manage(commands::employee_cmds::BulkRegisterEmployeeJobRegistry::default());
             // 1. Initialize local AppData directory
             let app_data_dir = app
                 .path()
@@ -105,6 +107,10 @@ pub fn run() {
                     }
                 }
             }
+            tauri::async_runtime::spawn(features::database_manager::run_auto_backup_scheduler(
+                app.handle().clone(),
+            ));
+
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
             // Clone app_handle before it gets moved into closures

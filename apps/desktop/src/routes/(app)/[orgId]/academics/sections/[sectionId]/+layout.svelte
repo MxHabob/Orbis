@@ -10,13 +10,14 @@ import { page } from "$app/state";
 import { toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Share, Sparkles, Users } from "@orbis/icons";
+import { Pencil, Share, Sparkles, Users } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import type { SplitActionItem } from "$lib/shared/components/split-action-menu.svelte";
+import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 import {
   createClassQuery,
@@ -38,6 +39,7 @@ const SectionSubjectId = $derived(
 // Class Info Query using consolidated feature query
 const classQuery = createClassQuery(() => sectionId);
 const studentsQuery = createClassStudentsQuery(() => sectionId);
+let isEditSheetOpen = $state(false);
 
 const classData = $derived(classQuery.data);
 const students = $derived(studentsQuery.data ?? []);
@@ -103,6 +105,12 @@ function handleAskOrbis() {
 }
 
 const classHeaderActions = $derived<SplitActionItem[]>([
+  {
+    id: "edit-section",
+    label: m.common_action_edit(),
+    icon: Pencil,
+    onSelect: () => (isEditSheetOpen = true),
+  },
   {
     id: "ask-orbis",
     label: m.academics_student_evaluation_ask_orbis_btn_short(),
@@ -189,6 +197,15 @@ const classHeaderActions = $derived<SplitActionItem[]>([
       </span>
     {/if}
   </DetailPageHeader>
+
+  <ClassCreateSheet
+    bind:open={isEditSheetOpen}
+    {orgId}
+    section={classData}
+    onSuccess={() => {
+      void classQuery.refetch();
+    }}
+  />
 
   <!-- Main Viewport Content -->
   <div class="flex-1 w-full overflow-y-auto p-6 scrollbar-hide">

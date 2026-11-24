@@ -1,15 +1,16 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
-import { authStore, uiStore } from "$lib/stores";
+import { authStore } from "$lib/stores";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { formatDate } from "$lib/core/i18n";
-import { Button } from "@orbis/ui/button";
 import { Clock } from "@orbis/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 
 const organizationQuery = createOrganizationQuery(() => authStore.orgId);
 let now = $state(new Date());
+let isOpen = $state(false);
 
 $effect(() => {
   const organization = organizationQuery.data;
@@ -42,10 +43,6 @@ const hijriDate = $derived(
     : "",
 );
 
-function toggleOpen() {
-  uiStore.setSystemClock(!uiStore.showSystemClock);
-}
-
 onMount(() => {
   const updateTime = () => {
     now = new Date();
@@ -60,38 +57,49 @@ onMount(() => {
 });
 </script>
 
-<div class="relative">
-<Button
-  variant="outline"
-  size="icon-sm"
-  onclick={toggleOpen}
-  aria-label={uiStore.showSystemClock ? m.ui_shell_clock_close() : m.ui_shell_clock_open()}
-  aria-expanded={uiStore.showSystemClock}
-  title={timeLabel}
->
-  <Clock size={18} />
-</Button>
+<Popover bind:open={isOpen}>
+  <PopoverTrigger>
+    {#snippet child({ props }: { props: any })}
+      <button
+        {...props}
+        type="button"
+        class="flex h-7 shrink-0 items-center gap-1.5 px-2 text-[11px] tabular-nums text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        title={m.ui_shell_clock_open()}
+        aria-label={m.ui_shell_clock_open()}
+      >
+        <Clock size={14} />
+        <time datetime={now.toISOString()}>{timeLabel}</time>
+      </button>
+    {/snippet}
+  </PopoverTrigger>
 
-{#if uiStore.showSystemClock}
-  <button
-    type="button"
-    class="fixed bottom-3 inset-s-14 z-100 flex w-[min(14rem,calc(100vw-4.5rem))] flex-col gap-2 backdrop-blur-md"
-    aria-label={m.ui_shell_clock_close()}
-    title={m.ui_shell_clock_close()}
-    onclick={() => uiStore.setSystemClock(false)}
+  <PopoverContent
+    side="top"
+    align="end"
+    sideOffset={6}
+    class="w-[min(18rem,calc(100dvw-1rem))] rounded-md border border-border bg-card p-4 text-foreground shadow-md"
   >
-    <time
-      datetime={now.toISOString()}
-      class="w-full whitespace-nowrap text-balance text-4xl font-semibold tracking-tight tabular-nums text-foreground"
-    >
-      {timeLabel}
-    </time>
-    <span class="flex w-full min-w-0 flex-col items-center gap-2 text-sm">
+    <div class="flex flex-col items-center gap-3">
+      <time
+        datetime={now.toISOString()}
+        class="text-4xl font-semibold tracking-tight tabular-nums"
+      >
+        {timeLabel}
+      </time>
       {#if hijriEnabled}
-        <span class="max-w-full whitespace-nowrap text-balance font-medium tabular-nums">{hijriDate}</span>
+        <time
+          datetime={now.toISOString()}
+          class="text-sm font-medium tabular-nums text-muted-foreground"
+        >
+          {hijriDate}
+        </time>
       {/if}
-      <span class="max-w-full whitespace-nowrap text-balance font-medium tabular-nums">{gregorianDate}</span>
-    </span>
-  </button>
-{/if}
-</div>
+      <time
+        datetime={now.toISOString()}
+        class="text-sm font-medium tabular-nums text-muted-foreground"
+      >
+        {gregorianDate}
+      </time>
+    </div>
+  </PopoverContent>
+</Popover>

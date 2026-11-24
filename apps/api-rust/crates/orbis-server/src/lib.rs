@@ -157,6 +157,7 @@ use api::{
         api::student_routes::get_enrollment,
         api::student_routes::change_study_mode,
         api::student_routes::transfer_class,
+        api::student_routes::bulk_transfer_classes,
         api::student_routes::assign_guardian,
         api::student_routes::list_guardians,
         api::student_routes::remove_guardian,
@@ -480,6 +481,10 @@ use api::{
             api::student_routes::BulkRegisterStudentsRequest,
             api::student_routes::BulkRegisterItemResultDto,
             api::student_routes::BulkRegisterStudentsResponse,
+            api::student_routes::BulkTransferClassItem,
+            api::student_routes::BulkTransferClassesRequest,
+            api::student_routes::BulkTransferClassItemResult,
+            api::student_routes::BulkTransferClassesResponse,
             // Override & Workflow
             api::override_routes::OverrideRequestDto,
             api::override_routes::SubmitOverrideRequest,
