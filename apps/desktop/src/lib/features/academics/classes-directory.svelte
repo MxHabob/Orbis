@@ -206,12 +206,12 @@ const classMenuActions = $derived([
 </script>
 
 <div
-	class="h-full min-h-0 w-full min-w-0 overflow-hidden p-4 sm:p-6 flex flex-col gap-6 font-sans"
+	class="h-full min-h-0 w-full min-w-0 overflow-hidden p-3 @lg/workspace:p-6 flex flex-col gap-6 font-sans"
 >
 	<!-- KPI Metrics Summary Row using standard Cards -->
 	{#if !pageLoading && !error && classes.length > 0}
 		<div
-			class="grid grid-cols-1 gap-4 sm:grid-cols-3"
+			class="grid grid-cols-1 gap-4 @min-[36rem]/workspace:grid-cols-3"
 			in:fade={{ duration: 200 }}
 		>
 			<Card class="flex flex-col justify-between">
@@ -300,7 +300,7 @@ const classMenuActions = $derived([
 		<CardContent class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4 pt-2 [scrollbar-gutter:stable]">
 			{#if pageLoading}
 				<div
-					class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+					class="grid grid-cols-1 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4 gap-4"
 				>
 					<Skeleton class="h-40 w-full rounded-xl" />
 					<Skeleton class="h-40 w-full rounded-xl" />
@@ -346,7 +346,7 @@ const classMenuActions = $derived([
 			{:else}
 				<!-- Classes Grid — each card is a structured Card component linking to class detail -->
 				<div
-					class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+					class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4"
 					in:fade={{ duration: 250 }}
 				>
 					{#each classes as cls (cls.id)}

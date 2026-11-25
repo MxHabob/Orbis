@@ -5,6 +5,7 @@ and inspect role assignments according to the Orbis IAM Domain model.
 Powered by OrbisGrid and Design System Card primitives.
 -->
 <script lang="ts">
+import { getLocale } from "$lib/paraglide/runtime";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";

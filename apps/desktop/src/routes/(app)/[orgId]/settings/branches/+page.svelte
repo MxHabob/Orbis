@@ -5,6 +5,7 @@ Matches the FinanceOverview layout and design aesthetic with top KPI cards,
 toolbar controls, and an advanced OrbisGrid / cards directory.
 -->
 <script lang="ts">
+import { getLocale } from "$lib/paraglide/runtime";
 import { LoadingIndicator } from "@orbis/ui";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
@@ -431,9 +432,9 @@ async function setDefaultBranch(branch: OrgUnitDto) {
   <title>{m.ui_copy_branches_directory_cf4c7981()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start font-sans flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto p-3 @lg/workspace:p-6 scrollbar-hide text-start font-sans flex flex-col gap-6">
   <!-- 1. Top KPI Summary Metric Cards (Matching FinanceOverview Style) -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-4 gap-4">
     <!-- Total Branches -->
     <Card class="border border-border/50 bg-card/60 shadow-xs">
       <CardContent class="p-4 flex items-center justify-between">
@@ -550,7 +551,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
 
   <!-- 3. Main Content (OrbisGrid / Cards) -->
   {#if isLoading}
-    <div class="h-[520px] w-full rounded-xl border border-border/50 bg-muted/10 flex items-center justify-center">
+    <div class="h-[clamp(16rem,58dvh,35rem)] shrink-0 w-full rounded-xl border border-border/50 bg-muted/10 flex items-center justify-center">
       <span class="text-xs text-muted-foreground">{m.ui_copy_loading_branches_bf291b7e()}</span>
     </div>
   {:else if filteredBranches.length === 0}
@@ -572,7 +573,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       {/if}
     </div>
   {:else}
-    <div class="h-[560px] w-full overflow-hidden">
+    <div class="h-[clamp(16rem,58dvh,35rem)] shrink-0 w-full overflow-hidden">
       <OrbisGrid
         source={gridSource}
         {columns}

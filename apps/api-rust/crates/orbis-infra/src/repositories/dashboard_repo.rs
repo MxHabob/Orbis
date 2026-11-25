@@ -16,115 +16,64 @@ pub struct DashboardRepoImpl {
 #[async_trait]
 impl DashboardRepository for DashboardRepoImpl {
     async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError> {
-        // Student records are the source of truth; role assignments may be absent.
-        let total_students = self
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM students WHERE org_id = $1 AND is_deleted = FALSE",
-                org_id,
-            )
-            .await?;
-
+        let row = self.db.query_one(Statement::from_sql_and_values(
+            self.db.get_database_backend(),
+            r#"
+                SELECT
+                    (SELECT COUNT(*) FROM students WHERE org_id = $1 AND is_deleted = FALSE) AS total_students,
+                    (SELECT COUNT(*) FROM employees WHERE org_id = $1 AND is_deleted = FALSE) AS total_employees,
+                    sections.active_sections,
+                    sections.total_classes,
+                    (SELECT COUNT(DISTINCT user_id) FROM user_role_assignments
+                        WHERE org_id = $1 AND LOWER(role_id) LIKE '%teacher%') AS total_teachers,
+                    (SELECT COUNT(*) FROM enrollments WHERE org_id = $1) AS total_enrollments,
+                    (SELECT COUNT(*) FROM subjects WHERE org_id = $1) AS total_subjects,
+                    (SELECT name FROM academic_calendars WHERE org_id = $1
+                        ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, created_at DESC, id
+                        LIMIT 1) AS active_academic_calendar,
+                    (SELECT CAST(COALESCE(SUM(amount), 0) AS DOUBLE PRECISION)
+                        FROM payments WHERE org_id = $1) AS total_payments_amount,
+                    (SELECT CAST(COALESCE(SUM(net_amount), 0) AS DOUBLE PRECISION)
+                        FROM student_fees WHERE org_id = $1 AND status != 'paid') AS pending_fees_amount
+                FROM (
+                    SELECT COUNT(CASE WHEN is_active = TRUE THEN 1 END) AS active_sections,
+                           COUNT(CASE WHEN section_type = 'class' THEN 1 END) AS total_classes
+                    FROM sections
+                    WHERE org_id = $1 AND is_deleted = FALSE
+                ) AS sections
+            "#,
+            [org_id.into()],
+        )).await.map_err(|error| DomainError::Internal(error.to_string()))?
+            .ok_or_else(|| DomainError::Internal("Dashboard aggregate returned no row".into()))?;
+        let count = |column| {
+            let value = row
+                .try_get::<i64>("", column)
+                .map_err(dashboard_query_error)?;
+            u64::try_from(value).map_err(|error| DomainError::Internal(error.to_string()))
+        };
         let (enrolled_students, enrollment_rate) = self
             .enrollment_metrics(org_id, self.current_period_id(org_id).await?)
             .await?;
 
-        let total_employees = self
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM employees WHERE org_id = $1 AND is_deleted = FALSE",
-                org_id,
-            )
-            .await?;
-
-        let active_sections = self
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND is_active = TRUE AND is_deleted = FALSE",
-                org_id,
-            )
-            .await?;
-
-        // Count teachers from user_role_assignments
-        let total_teachers = self.count_query(
-            "SELECT COUNT(DISTINCT user_id) as cnt FROM user_role_assignments WHERE org_id = $1 AND (LOWER(role_id) LIKE '%teacher%')",
-            org_id,
-        ).await?;
-
-        // Classes are stored as class-typed sections in the unified schema.
-        let total_classes = self
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND section_type = 'class' AND is_deleted = FALSE",
-                org_id,
-            )
-            .await?;
-
-        // Keep the all-period enrollment-record count for API consumers.
-        let total_enrollments = self
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM enrollments WHERE org_id = $1",
-                org_id,
-            )
-            .await?;
-
-        // Count subjects
-        let total_subjects = self
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM subjects WHERE org_id = $1",
-                org_id,
-            )
-            .await?;
-
-        // Active academic year (status = 'active')
-        let active_year = {
-            let result = self.db.query_one(
-                Statement::from_sql_and_values(
-                    self.db.get_database_backend(),
-                    "SELECT name FROM academic_calendars WHERE org_id = $1 AND status = 'active' LIMIT 1",
-                    [org_id.into()],
-                ),
-            ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-
-            match result {
-                Some(row) => row.try_get::<String>("", "name").ok(),
-                None => {
-                    // Fallback to most recent academic year if none is marked 'active'
-                    let fallback = self.db.query_one(
-                        Statement::from_sql_and_values(
-                            self.db.get_database_backend(),
-                            "SELECT name FROM academic_calendars WHERE org_id = $1 ORDER BY created_at DESC LIMIT 1",
-                            [org_id.into()],
-                        ),
-                    ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
-                    fallback.and_then(|row| row.try_get::<String>("", "name").ok())
-                }
-            }
-        };
-
-        // Sum of payment amounts
-        let total_payments_amount = self
-            .sum_query(
-                "SELECT CAST(COALESCE(SUM(amount), 0) AS DOUBLE PRECISION) as total FROM payments WHERE org_id = $1",
-                org_id,
-            )
-            .await?;
-
-        // Sum of pending fees
-        let pending_fees_amount = self.sum_query(
-            "SELECT CAST(COALESCE(SUM(net_amount), 0) AS DOUBLE PRECISION) as total FROM student_fees WHERE org_id = $1 AND status != 'paid'",
-            org_id,
-        ).await?;
-
         Ok(DashboardCounts {
-            total_students,
+            total_students: count("total_students")?,
             enrolled_students,
             enrollment_rate,
-            total_employees,
-            active_sections,
-            total_teachers,
-            total_classes,
-            total_enrollments,
-            total_subjects,
-            active_academic_calendar: active_year,
-            total_payments_amount,
-            pending_fees_amount,
+            total_employees: count("total_employees")?,
+            active_sections: count("active_sections")?,
+            total_teachers: count("total_teachers")?,
+            total_classes: count("total_classes")?,
+            total_enrollments: count("total_enrollments")?,
+            total_subjects: count("total_subjects")?,
+            active_academic_calendar: row
+                .try_get("", "active_academic_calendar")
+                .map_err(dashboard_query_error)?,
+            total_payments_amount: row
+                .try_get("", "total_payments_amount")
+                .map_err(dashboard_query_error)?,
+            pending_fees_amount: row
+                .try_get("", "pending_fees_amount")
+                .map_err(dashboard_query_error)?,
         })
     }
 }
@@ -262,30 +211,10 @@ impl DashboardRepoImpl {
             )),
         }
     }
+}
 
-    async fn sum_query(&self, sql: &str, org_id: Uuid) -> Result<f64, DomainError> {
-        let result = self
-            .db
-            .query_one(Statement::from_sql_and_values(
-                self.db.get_database_backend(),
-                sql,
-                [org_id.into()],
-            ))
-            .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
-
-        match result {
-            Some(row) => {
-                let total: f64 = row
-                    .try_get("", "total")
-                    .map_err(|e| DomainError::Internal(e.to_string()))?;
-                Ok(total)
-            }
-            None => Err(DomainError::Internal(
-                "Dashboard sum query returned no row".into(),
-            )),
-        }
-    }
+fn dashboard_query_error(error: sea_orm::DbErr) -> DomainError {
+    DomainError::Internal(error.to_string())
 }
 
 #[cfg(test)]
@@ -297,32 +226,6 @@ mod tests {
     };
     use chrono::Utc;
     use sea_orm::{ActiveModelTrait, Database, Set};
-
-    #[tokio::test]
-    async fn dashboard_sum_query_decodes_empty_and_integer_sums_as_f64() {
-        let db = Database::connect("sqlite::memory:").await.unwrap();
-        db.execute_unprepared(
-            "CREATE TABLE payments (org_id TEXT NOT NULL, amount INTEGER NOT NULL)",
-        )
-        .await
-        .unwrap();
-        let repo = DashboardRepoImpl { db };
-        let org_id = Uuid::new_v4();
-        let query = "SELECT CAST(COALESCE(SUM(amount), 0) AS DOUBLE PRECISION) as total FROM payments WHERE org_id = $1";
-
-        assert_eq!(repo.sum_query(query, org_id).await.unwrap(), 0.0);
-
-        repo.db
-            .execute(Statement::from_sql_and_values(
-                repo.db.get_database_backend(),
-                "INSERT INTO payments (org_id, amount) VALUES ($1, $2)",
-                [org_id.into(), 125.into()],
-            ))
-            .await
-            .unwrap();
-
-        assert_eq!(repo.sum_query(query, org_id).await.unwrap(), 125.0);
-    }
 
     #[tokio::test]
     async fn enrollment_metrics_count_unique_active_students_in_current_period() {
@@ -400,6 +303,22 @@ mod tests {
     #[tokio::test]
     async fn dashboard_counts_classes_from_unified_sections_table() {
         let db = Database::connect("sqlite::memory:").await.unwrap();
+        check_dashboard_and_autopilot_on_migrated_database(db).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "requires a disposable PostgreSQL database"]
+    async fn postgres_migrations_dashboard_and_autopilot() {
+        let url = std::env::var("ORBIS_TEST_POSTGRES_URL").unwrap();
+        let db = Database::connect(url).await.unwrap();
+        check_dashboard_and_autopilot_on_migrated_database(db).await;
+    }
+
+    async fn check_dashboard_and_autopilot_on_migrated_database(db: DatabaseConnection) {
+        use crate::autopilot::task_repo::PgAutopilotTaskRepo;
+        use orbis_app::ports::repositories::AutopilotTaskRepository;
+        use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskStatus, TaskType};
+
         Migrator::up(&db, None).await.unwrap();
 
         let org_id = Uuid::new_v4();
@@ -466,23 +385,60 @@ mod tests {
             .unwrap();
         }
 
-        let repo = DashboardRepoImpl { db };
-        let total_classes = repo
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND section_type = 'class' AND is_deleted = FALSE",
-                org_id,
-            )
-            .await
-            .unwrap();
-        let active_sections = repo
-            .count_query(
-                "SELECT COUNT(*) as cnt FROM sections WHERE org_id = $1 AND is_active = TRUE AND is_deleted = FALSE",
-                org_id,
-            )
-            .await
-            .unwrap();
+        let repo = DashboardRepoImpl { db: db.clone() };
+        let counts = repo.get_counts(org_id).await.unwrap();
+        assert_eq!(counts.total_classes, 1);
+        assert_eq!(counts.active_sections, 2);
+        assert_eq!(counts.active_academic_calendar, None);
+        assert_eq!(counts.total_payments_amount, 0.0);
+        assert_eq!(counts.pending_fees_amount, 0.0);
 
-        assert_eq!(total_classes, 1);
-        assert_eq!(active_sections, 2);
+        let task_repo = PgAutopilotTaskRepo::new(db);
+        let mut task = AutopilotTask::new(
+            org_id,
+            TaskType::PeriodActivate,
+            Some(Uuid::new_v4()),
+            None,
+            RiskLevel::Medium,
+            None,
+            now,
+        );
+        task.idempotency_key = Some("policy:period_activate:test".into());
+        let mut duplicate = task.clone();
+        duplicate.id = Uuid::new_v4();
+        let (first, second) = tokio::join!(
+            task_repo.schedule_task(&task),
+            task_repo.schedule_task(&duplicate),
+        );
+        let scheduled = first.unwrap();
+        assert_eq!(scheduled.id, second.unwrap().id);
+        assert!(
+            task_repo
+                .claim_task(scheduled.id, org_id, TaskStatus::Pending, 0)
+                .await
+                .unwrap()
+        );
+
+        let mut dismissal = scheduled;
+        dismissal.status = TaskStatus::Cancelled;
+        assert!(matches!(
+            task_repo
+                .update_task_state(&dismissal, TaskStatus::Pending)
+                .await,
+            Err(DomainError::Conflict(_))
+        ));
+        assert_eq!(
+            task_repo
+                .find_by_id(dismissal.id)
+                .await
+                .unwrap()
+                .unwrap()
+                .status,
+            TaskStatus::Executing,
+        );
+        assert_eq!(
+            task_repo.count_by_status(org_id).await.unwrap(),
+            vec![(TaskStatus::Executing, 1)]
+        );
     }
 }

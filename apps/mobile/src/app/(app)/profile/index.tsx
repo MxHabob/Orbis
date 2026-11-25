@@ -6,6 +6,8 @@ import {
   AppNotification,
   ArrowUpCircle,
   BuildingOffice,
+  ChevronLeft,
+  ChevronRight,
   Cog6,
   GlobeAlt,
   Headphone,
@@ -36,7 +38,6 @@ import { useI18n } from "@/lib/i18n";
 import { checkForMobileAppUpdate } from "@/lib/app-updates";
 import { getOrganizationWebsite } from "@/lib/web-urls";
 import type { TranslationKey } from "@/lib/i18n/types";
-import { ChevronLeft, ChevronRight } from "@orbis/icons/native";
 import { Text } from "@/components/ui/text";
 
 const roleKeys: Record<string, TranslationKey> = {

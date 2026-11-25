@@ -552,30 +552,22 @@ impl AppState {
             autopilot_task_repo.clone(),
             calendar_service.clone(),
             progression_service.clone(),
-            finance_service.clone(),
             report_service.clone(),
-            workflow_service.clone(),
         ));
 
         let autopilot_evaluator =
             Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
-                policy_repo.clone(),
                 calendar_repo.clone(),
                 calendar_repo.clone(),
-                student_repo.clone(),
-                finance_repo.clone(),
             ));
 
-        let autopilot_service = Arc::new(
-            orbis_app::services::AutopilotService::new(
-                autopilot_evaluator.clone(),
-                autopilot_engine.clone(),
-                autopilot_task_repo.clone(),
-                policy_repo.clone(),
-                permission_checker.clone(),
-            )
-            .with_notification_port(notification_adapter.clone()),
-        );
+        let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
+            autopilot_evaluator,
+            autopilot_engine,
+            autopilot_task_repo.clone(),
+            policy_repo.clone(),
+            permission_checker.clone(),
+        ));
 
         let ai_service = Arc::new(
             orbis_app::services::AiOrchestrationService::new(

@@ -32,9 +32,12 @@
    ```
 
    Use TLS and a database account with only the permissions required by Orbis. Restrict access to the local `server.json` because it contains credentials; do not commit it.
-4. Start and inspect the service:
+4. Initialize the schema with a database role that has schema modification
+   privileges, then start and inspect the service with its runtime role:
 
    ```sh
+   docker compose stop api
+   docker compose run --rm --no-deps api migrate
    docker compose up -d
    docker compose ps
    docker compose logs --tail=100 api
@@ -44,6 +47,13 @@ The container runs as a non-root user, drops Linux capabilities, uses a read-onl
 
 ## Upgrade and rollback
 
-Back up the database and retain the current `server.json` and `.env` before changing the version. Replace `ORBIS_API_IMAGE` with the digest-pinned image reference from the desired release bundle, then run `docker compose pull` and `docker compose up -d`. The named configuration volume persists across upgrades. To roll back, restore the previous image reference and start the service again. Confirm that the selected API version supports the existing database schema before upgrading or rolling back.
+Back up the database and retain the current `server.json` and `.env` before
+changing the version. Replace `ORBIS_API_IMAGE` with the digest-pinned image
+reference and run `docker compose pull`. Stop all API replicas sharing the
+database. Run `docker compose run --rm --no-deps api migrate` once with a
+configuration that grants schema modification privileges, then start the API
+using `docker compose up -d` with its runtime credentials. The named configuration
+volume persists across upgrades. To roll back, restore the previous image
+reference and a database backup compatible with that image when needed.
 
 Release CI builds the API binary on native AMD64 and ARM64 runners in parallel, uses per-architecture Rust caches, and publishes versioned and `latest` multi-architecture images without emulation. It attaches a digest-pinned Compose bundle to the API release. For an existing API version, dispatch the API release workflow with `docker_only` enabled to publish its image and bundle without rebuilding or republishing the API binary; the Docker-only build uses the selected workflow ref so a merged API hotfix can be included while retaining the requested release tag. Container startup and API health require a customer-supplied, migrated PostgreSQL database; automated release checks do not modify a customer database.

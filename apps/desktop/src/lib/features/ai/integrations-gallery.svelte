@@ -71,7 +71,7 @@ const filteredApps = $derived.by(() => {
   <!-- Apps Grid or AI Interactive Empty State -->
   <main>
     {#if filteredApps.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4">
         {#each filteredApps as app (app.id)}
           <AppCard
             {app}

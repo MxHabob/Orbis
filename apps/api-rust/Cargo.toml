@@ -29,21 +29,16 @@ jsonwebtoken = "9.3.0"
 
 # Decimals & Mathematics
 rust_decimal = { version = "1.36", features = ["serde", "maths"] }
-rust_decimal_macros = "1.36"
 
 # Logs & Monitoring
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tower-http = { version = "0.5.2", features = ["cors", "trace", "fs"] }
 
-# CSV Import/Export
-csv = "1.3"
-
 # Inter-workspace dependencies (Clean Architecture)
 orbis-domain = { path = "crates/orbis-domain" }
 orbis-app = { path = "crates/orbis-app" }
 orbis-infra = { path = "crates/orbis-infra" }
-orbis-server = { path = "crates/orbis-server" }
 docforge-engine = { path = "crates/docforge-engine" }
 
 # HTTP client (solver sidecar)

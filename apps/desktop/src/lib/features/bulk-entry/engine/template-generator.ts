@@ -1,18 +1,9 @@
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
-import * as m from "$lib/paraglide/messages";
+﻿import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import {
-  downloadBlob,
-  revealDownloadedPath,
-  type RevealDownloadedLocation,
-} from "$lib/shared/utils/download";
-import {
-  getBulkEntryColumnHeader,
-  getBulkEntryProfileName,
-} from "../localization";
-import type { BulkImportProfile, BulkReferenceData } from "../types";
-import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
+import { getBulkEntryColumnHeader, getBulkEntryProfileName } from "../localization";
+import { getActiveImportColumns, isImportColumnRequired } from "./template-columns";
+import type { BulkImportProfile, BulkReferenceData, BulkProfileId, ReferenceItem } from "../types";
+import { extractSchemeComponents } from "../../exams/grade-helpers";
 
 export interface GenerateTemplateOptions {
   profile: BulkImportProfile<any, any>;
@@ -21,340 +12,126 @@ export interface GenerateTemplateOptions {
   academicCalendar?: string;
 }
 
-export async function buildTemplateWorkbook(
-  options: GenerateTemplateOptions,
-): Promise<import("xlsx").WorkBook> {
+const referenceSources = {
+  students: ["classes", "userGroups"],
+  employees: ["userGroups"],
+  "teacher-subjects": ["classes", "academicPeriods", "subjects", "teachers"],
+  grades: ["academicPeriods", "assessmentSchemes"],
+} as const satisfies Record<BulkProfileId, readonly (keyof BulkReferenceData)[]>;
+
+const referenceLabels = {
+  classes: m.bulk_entry_workbook_class,
+  userGroups: m.bulk_entry_workbook_user_group,
+  academicPeriods: m.bulk_entry_workbook_reference_academic_periods,
+  subjects: m.bulk_entry_workbook_subject,
+  teachers: m.bulk_entry_workbook_teachers,
+  assessmentSchemes: m.bulk_entry_workbook_assessment,
+};
+
+export async function buildTemplateWorkbook(options: GenerateTemplateOptions): Promise<import("xlsx").WorkBook> {
   const XLSX = await import("xlsx");
   const { profile, refData, orgName, academicCalendar } = options;
-  const wb = XLSX.utils.book_new();
-  const columns = profile.columnMetadata.filter((column) => {
-    if (profile.id !== "students" || !refData.registrationFields) return true;
-    if (column.id === "full_name_ar" || column.id === "class_name") return true;
-    return (
-      refData.registrationFields[normalizeRegistrationFieldKey(column.id)]
-        ?.active !== false
-    );
-  });
+  const arabic = getLocale() === "ar";
+  const workbook = XLSX.utils.book_new();
+  workbook.Workbook = { Views: [{ RTL: arabic }] };
+  const columns = getActiveImportColumns(profile, refData.registrationFields);
+  const headers = columns.map((column) => getBulkEntryColumnHeader(
+    profile.id, column.id, arabic ? column.headerAr : column.headerEn,
+    isImportColumnRequired(profile.id, column, refData.registrationFields),
+  ));
 
-  // ── Sheet 1: Data Entry Sheet ──────────────────────────────────
-  const headers = columns.map((col) => {
-    const policy =
-      refData.registrationFields?.[normalizeRegistrationFieldKey(col.id)];
-    return getBulkEntryColumnHeader(
-      profile.id,
-      col.id,
-      col.headerAr,
-      profile.id === "students"
-        ? (policy?.required ?? col.required)
-        : undefined,
-    );
-  });
-  const sampleRow = columns.map((col) => col.example || "");
-
-  const dataAoa = [headers, sampleRow];
-  const wsData = XLSX.utils.aoa_to_sheet(dataAoa);
-
-  // Set column widths based on metadata
-  wsData["!cols"] = columns.map((col) => ({
-    wch: Math.max(col.headerAr.length * 2, 16),
-  }));
-
-  XLSX.utils.book_append_sheet(wb, wsData, m.bulk_entry_workbook_data_sheet());
-
-  // ── Sheet 2: Reference Data Sheet ──────────────────────────────
-  const refAoa: string[][] = [];
-  const referenceMerges: Array<{
-    s: { r: number; c: number };
-    e: { r: number; c: number };
-  }> = [];
-
-  function appendReferenceSection(
-    title: string,
-    headers: string[],
-    rows: string[][],
-  ) {
-    if (rows.length === 0) return;
-    if (refAoa.length > 0) refAoa.push(["", "", "", ""]);
-
-    const titleRow = refAoa.length;
-    refAoa.push([title, "", "", ""]);
-    referenceMerges.push({
-      s: { r: titleRow, c: 0 },
-      e: { r: titleRow, c: 3 },
-    });
-    refAoa.push(headers);
-    refAoa.push(...rows);
-  }
-
-  const codeHeader = m.bulk_entry_workbook_reference_code();
-  const nameHeader = m.bulk_entry_workbook_reference_name();
-  const detailsHeader = m.bulk_entry_workbook_reference_meta();
-
-  appendReferenceSection(
-    m.bulk_entry_workbook_class(),
-    [codeHeader, nameHeader, detailsHeader],
-    refData.classes.map((item) => [
-      item.code || item.id,
-      item.name || item.nameAr || "",
-      String(
-        item.meta?.details ??
-          m.bulk_entry_workbook_capacity({
-            capacity: Number(item.meta?.capacity) || 30,
-          }),
-      ),
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_subject(),
-    [codeHeader, nameHeader],
-    refData.subjects.map((item) => [
-      item.code || "",
-      item.name || item.nameAr || "",
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_reference_sections(),
-    [codeHeader, nameHeader],
-    refData.sections.map((item) => [
-      item.code || "",
-      item.name || item.nameAr || "",
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_reference_levels(),
-    [codeHeader, nameHeader],
-    refData.levels.map((item) => [
-      item.code || "",
-      item.name || item.nameAr || "",
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_fee_template(),
-    [nameHeader, detailsHeader],
-    refData.feeTemplates.map((item) => {
-      const meta = item.meta ?? {};
-      return [
-        item.name || item.nameAr || "",
-        m.bulk_entry_workbook_fee_details({
-          amount: Number(meta.default_amount) || 0,
-          requirement: meta.is_mandatory
-            ? m.bulk_entry_workbook_mandatory()
-            : m.bulk_entry_workbook_optional(),
-        }),
-      ];
-    }),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_reference_discount_templates(),
-    [codeHeader, nameHeader],
-    refData.discountTemplates.map((item) => [
-      item.code || "",
-      item.name || item.nameAr || "",
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_user_group(),
-    [codeHeader, nameHeader],
-    refData.userGroups.map((item) => [
-      item.code || item.id,
-      item.name || item.nameAr || "",
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_reference_academic_periods(),
-    [codeHeader, nameHeader],
-    refData.academicPeriods.map((item) => [
-      item.code || "",
-      item.name || item.nameAr || "",
-    ]),
-  );
-  appendReferenceSection(
-    m.bulk_entry_workbook_assessment(),
-    [nameHeader, detailsHeader],
-    refData.assessmentSchemes.map((item) => [
-      item.name || item.nameAr || "",
-      m.bulk_entry_workbook_max_score({
-        score: Number(item.meta?.max_score) || 100,
-      }),
-    ]),
-  );
-
-  const enumValuesByField = new Map<
-    string,
-    Array<{ value: string; label: string }>
-  >([
-    [
-      "gender",
-      refData.enums.genders.map((item) => ({
-        value: item.value,
-        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
-      })),
-    ],
-    [
-      "study_mode",
-      refData.enums.studyModes.map((item) => ({
-        value: item.value,
-        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
-      })),
-    ],
-    [
-      "employee_type",
-      refData.enums.employeeTypes.map((item) => ({
-        value: item.value,
-        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
-      })),
-    ],
-    [
-      "employment_type",
-      refData.enums.employmentTypes.map((item) => ({
-        value: item.value,
-        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
-      })),
-    ],
-    [
-      "blood_type",
-      refData.enums.bloodTypes.map((value) => ({ value, label: value })),
-    ],
-    [
-      "guardian_relationship",
-      refData.enums.relationships.map((item) => ({
-        value: item.value,
-        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
-      })),
-    ],
+  const dataSheet = XLSX.utils.aoa_to_sheet([
+    headers,
+    ...Array.from({ length: 100 }, () => columns.map((column) =>
+      column.type === "decimal" || column.type === "number" || column.type === "integer"
+        ? ""
+        : { t: "s", v: "", z: "@" },
+    )),
   ]);
+  dataSheet["!cols"] = headers.map((header) => ({ wch: Math.min(36, Math.max(18, header.length + 6)) }));
+  dataSheet["!rows"] = [{ hpt: 27 }];
+  dataSheet["!autofilter"] = { ref: dataSheet["!ref"]! };
+  columns.forEach((column, index) => {
+    const note = (arabic ? column.descriptionAr : column.descriptionEn) || column.format;
+    if (note) dataSheet[XLSX.utils.encode_cell({ r: 0, c: index })].c = [{ a: "Orbis", t: note }];
+  });
+  XLSX.utils.book_append_sheet(workbook, dataSheet, m.bulk_entry_workbook_data_sheet());
 
-  for (const column of columns.filter((item) => item.type === "enum")) {
-    const labels = new Map(
-      (enumValuesByField.get(column.id) ?? []).map((item) => [
-        item.value,
-        item.label,
-      ]),
-    );
+  const code = m.bulk_entry_workbook_reference_code();
+  const name = m.bulk_entry_workbook_reference_name();
+  const referenceRows: string[][] = [];
+  const addSection = (label: string, fields: string[], rows: string[][]) => {
+    if (rows.length) referenceRows.push([label], fields, ...rows, []);
+  };
+  const itemName = (item: ReferenceItem) => (arabic && item.nameAr) || item.name;
+  for (const key of referenceSources[profile.id]) {
+    if (key === "assessmentSchemes") {
+      addSection(referenceLabels[key](), [code, name, referenceLabels[key](), m.bulk_entry_workbook_reference_meta()],
+        refData[key].flatMap((item) => extractSchemeComponents(item.meta ?? {}).map((component) => [
+          component.code, (arabic && component.name_ar) || component.name, itemName(item), String(component.max_score),
+        ])));
+    } else {
+      addSection(referenceLabels[key](), [code, name, "ID"], refData[key].map((item) => [item.code ?? item.id, itemName(item), item.id]));
+    }
+  }
+
+  const enums = refData.enums;
+  const enumOptions = {
+    gender: enums.genders,
+    study_mode: enums.studyModes,
+    employee_type: enums.employeeTypes,
+    employment_type: enums.employmentTypes,
+    guardian_relationship: enums.relationships,
+  };
+  columns.forEach((column, index) => {
+    const values = enumOptions[column.id as keyof typeof enumOptions] ?? [];
+    const pairs = new Map(values.map((option) => [option.value, arabic ? option.labelAr : option.labelEn]));
     for (const option of column.options ?? []) {
-      labels.set(String(option.value), option.label);
+      if (!pairs.has(String(option.value))) pairs.set(String(option.value), option.label);
     }
-    if (labels.size === 0 && column.allowedValues) {
-      for (const value of column.allowedValues) labels.set(value, value);
+    for (const value of column.allowedValues ?? []) {
+      if (!pairs.has(value)) pairs.set(value, value);
     }
-
-    const fieldLabel = getBulkEntryColumnHeader(
-      profile.id,
-      column.id,
-      column.headerAr,
-    );
-    appendReferenceSection(
-      fieldLabel,
-      [codeHeader, nameHeader],
-      [...labels].map(([value, label]) => [value, label]),
-    );
+    if (column.id === "blood_type") for (const value of enums.bloodTypes) pairs.set(value, value);
+    if (column.type === "boolean") {
+      pairs.set("true", m.bulk_entry_workbook_boolean_yes());
+      pairs.set("false", m.bulk_entry_workbook_boolean_no());
+    }
+    addSection(headers[index]!, [code, name], [...pairs]);
+  });
+  if (referenceRows.length) {
+    const referenceSheet = XLSX.utils.aoa_to_sheet(referenceRows);
+    referenceSheet["!cols"] = [{ wch: 32 }, { wch: 36 }, { wch: 38 }, { wch: 22 }];
+    XLSX.utils.book_append_sheet(workbook, referenceSheet, `_${m.bulk_entry_workbook_reference_sheet()}`);
   }
 
-  for (const column of columns.filter((item) => item.type === "boolean")) {
-    const fieldLabel = getBulkEntryColumnHeader(
-      profile.id,
-      column.id,
-      column.headerAr,
-    );
-    appendReferenceSection(
-      fieldLabel,
-      [codeHeader, nameHeader],
-      [
-        ["true", m.bulk_entry_workbook_boolean_yes()],
-        ["false", m.bulk_entry_workbook_boolean_no()],
-      ],
-    );
-  }
-
-  appendReferenceSection(
-    m.bulk_entry_workbook_teachers(),
-    [codeHeader, nameHeader],
-    refData.teachers.map((item) => [
-      item.code || item.id,
-      item.name || item.nameAr || "",
-    ]),
-  );
-
-  const wsRef = XLSX.utils.aoa_to_sheet(refAoa);
-  wsRef["!cols"] = [{ wch: 28 }, { wch: 32 }, { wch: 36 }, { wch: 32 }];
-  wsRef["!merges"] = referenceMerges;
-  XLSX.utils.book_append_sheet(
-    wb,
-    wsRef,
-    `_${m.bulk_entry_workbook_reference_sheet()}`,
-  );
-
-  // ── Sheet 3: Instructions ──────────────────────────────────────
-  const instructionsAoa = [
+  const guide = XLSX.utils.aoa_to_sheet([
     [m.bulk_entry_workbook_instructions_title()],
-    [""],
-    [
-      m.bulk_entry_workbook_organization(),
-      orgName || m.bulk_entry_workbook_current_organization(),
-    ],
-    [
-      m.bulk_entry_workbook_academic_year(),
-      academicCalendar || m.bulk_entry_workbook_current_year(),
-    ],
-    [
-      m.bulk_entry_workbook_template_type(),
-      getBulkEntryProfileName(profile.id),
-    ],
+    [m.bulk_entry_workbook_template_type(), getBulkEntryProfileName(profile.id)],
+    [m.bulk_entry_workbook_organization(), orgName || m.bulk_entry_workbook_current_organization()],
+    [m.bulk_entry_workbook_academic_year(), academicCalendar || m.bulk_entry_workbook_current_year()],
     [m.bulk_entry_workbook_template_version(), profile.templateVersion],
-    ...(profile.id === "teacher-subjects"
-      ? [[m.bulk_entry_workbook_rule_teacher_subject_assignment()]]
-      : []),
-    [""],
-    [m.bulk_entry_workbook_general_rules()],
+    [],
+    [m.bulk_entry_workbook_input_rule()],
     [m.bulk_entry_workbook_rule_required_fields()],
     [m.bulk_entry_workbook_rule_date_format()],
-    [m.bulk_entry_workbook_rule_unique_ids()],
-    [m.bulk_entry_workbook_rule_reference_sheet()],
-    [m.bulk_entry_workbook_rule_upload()],
-  ];
-
-  const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsAoa);
-  wsInstructions["!cols"] = [{ wch: 80 }];
-  XLSX.utils.book_append_sheet(
-    wb,
-    wsInstructions,
-    m.bulk_entry_workbook_instructions_sheet(),
-  );
-
-  return wb;
+    ...(referenceRows.length ? [[m.bulk_entry_workbook_reference_rule()]] : []),
+    ...(profile.id === "teacher-subjects" ? [[m.bulk_entry_workbook_rule_teacher_subject_assignment()]] : []),
+    [],
+    [m.bulk_entry_workbook_field(), m.bulk_entry_workbook_example(), m.bulk_entry_workbook_reference_meta()],
+    ...columns.map((column, index) => [
+      headers[index], column.example ?? "", (arabic ? column.descriptionAr : column.descriptionEn) || column.format || "",
+    ]),
+  ]);
+  guide["!cols"] = [{ wch: 44 }, { wch: 36 }, { wch: 72 }];
+  XLSX.utils.book_append_sheet(workbook, guide, `_${m.bulk_entry_workbook_instructions_sheet()}`);
+  return workbook;
 }
 
-export async function downloadExcelTemplate(
-  options: GenerateTemplateOptions,
-): Promise<RevealDownloadedLocation | null> {
+export async function downloadExcelTemplate(options: GenerateTemplateOptions) {
   const XLSX = await import("xlsx");
-  const wb = await buildTemplateWorkbook(options);
-  const rawBytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const filename = `Orbis_Template_${options.profile.id}_${Date.now()}.xlsx`;
-
-  try {
-    // Try native Tauri save dialog
-    const savePath = await save({
-      defaultPath: filename,
-      filters: [
-        { name: m.bulk_entry_file_filter_excel(), extensions: ["xlsx"] },
-      ],
-    });
-
-    if (savePath) {
-      await writeFile(savePath, new Uint8Array(rawBytes));
-      return revealDownloadedPath(savePath);
-    }
-  } catch (err) {
-    console.warn(
-      "Native Tauri save dialog not available, falling back to browser download:",
-      err,
-    );
-  }
-
-  // Browser Fallback
-  const blob = new Blob([rawBytes], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  return downloadBlob(blob, filename);
+  const { downloadSpreadsheet } = await import("./workbook-download");
+  const workbook = await buildTemplateWorkbook(options);
+  const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+  return downloadSpreadsheet(bytes, `Orbis-${options.profile.id}-template.xlsx`, "xlsx");
 }

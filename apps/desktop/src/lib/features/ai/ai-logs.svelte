@@ -176,7 +176,7 @@ function formatTime(dtStr: string): string {
   <!-- Cards Grid or AI Empty State -->
   <main>
     {#if filteredLogs.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-4">
         {#each filteredLogs as log (log.id)}
           {@const isCompleted = log.status === "completed"}
           {@const isFailed = log.status === "failed"}

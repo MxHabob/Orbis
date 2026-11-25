@@ -35,7 +35,7 @@ type Insight = {
 };
 
 const insights = $derived.by<Insight[]>(() => {
-  if (!stats) return [];
+  if (type === "greeting" || !stats) return [];
 
   const items: Insight[] = [];
 
@@ -121,6 +121,7 @@ $effect(() => {
   }
   return () => {
     if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
   };
 });
 

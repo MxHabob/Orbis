@@ -132,6 +132,7 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
   },
   {
     id: "account_name",
+    pin: "colPinStart",
     prop: "account_name",
     header: m.common_col_name(),
     name: m.finance_ui_account_name(),

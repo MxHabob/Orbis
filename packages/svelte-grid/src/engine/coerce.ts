@@ -17,7 +17,7 @@ export function coerceValue(
       return { ok: false, value: raw, message: result };
     if (typeof result === "object") {
       if (!result.ok) return result;
-      if (result.value !== undefined) value = result.value;
+      if (result.value !== undefined) return result;
     }
   }
 

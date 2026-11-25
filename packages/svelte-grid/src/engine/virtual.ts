@@ -74,3 +74,29 @@ export function indexFromOffset(
   if (itemSize <= 0 || total <= 0) return 0;
   return Math.min(total - 1, Math.max(0, Math.floor(scroll / itemSize)));
 }
+
+export function scrollForColumn({
+  columnStart,
+  columnWidth,
+  viewportWidth,
+  frozenWidth,
+  scrollLeft,
+  rtl,
+}: {
+  columnStart: number;
+  columnWidth: number;
+  viewportWidth: number;
+  frozenWidth: number;
+  scrollLeft: number;
+  rtl: boolean;
+}): number {
+  const scrolled = Math.abs(scrollLeft);
+  const columnEnd = columnStart + columnWidth;
+  const viewportEnd = scrolled + viewportWidth;
+  if (columnStart >= scrolled + frozenWidth && columnEnd <= viewportEnd) return scrollLeft;
+
+  const next = columnStart < scrolled + frozenWidth || columnWidth > viewportWidth - frozenWidth
+    ? columnStart - frozenWidth
+    : columnEnd - viewportWidth;
+  return Math.max(0, next) * (rtl ? -1 : 1);
+}

@@ -23,8 +23,8 @@ const error = $derived(
 );
 </script>
 
-<div class="h-full min-h-0 flex-1 overflow-y-auto">
-	<div class="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-6 px-4 pb-8 pt-14 sm:px-6">
+<div class="h-full min-h-0 flex-1 overflow-y-auto [container-type:size]">
+	<div class="mx-auto flex w-full max-w-3xl flex-col gap-[clamp(0.75rem,2.7cqh,1.5rem)] px-4 pt-[clamp(0.75rem,calc(12cqh-2.75rem),3.5rem)] pb-[clamp(0.75rem,3cqh,2rem)] sm:px-6">
 		{#if isLoading}
 			<DashboardSkeleton />
 		{:else if error}
@@ -34,12 +34,14 @@ const error = $derived(
 				onRetry={() => statsQuery.refetch()}
 			/>
 		{:else}
-			<div class="flex w-full flex-col items-center pb-2 pt-2 text-center">
-				<WelcomeSection type="both" {stats} {orgId} />
+			<div class="flex w-full flex-col items-center text-center">
+				<WelcomeSection type="greeting" {stats} {orgId} />
 			</div>
 			<QuickActions {orgId} />
 			<WidgetCards {stats} {orgId} />
-			<DesktopBanner />
 		{/if}
 	</div>
 </div>
+{#if !isLoading && !error}
+	<DesktopBanner />
+{/if}

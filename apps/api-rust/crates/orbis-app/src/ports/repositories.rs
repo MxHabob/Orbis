@@ -1050,7 +1050,10 @@ pub trait AutopilotTaskRepository: Send + Sync {
         id: Uuid,
         org_id: Uuid,
         expected_status: TaskStatus,
+        expected_attempts: i32,
     ) -> Result<bool, DomainError>;
+
+    async fn count_by_status(&self, org_id: Uuid) -> Result<Vec<(TaskStatus, u64)>, DomainError>;
 
     /// Find tasks by org with status/task_type filters and pagination
     async fn find_by_org(
@@ -1062,8 +1065,15 @@ pub trait AutopilotTaskRepository: Send + Sync {
         offset: u64,
     ) -> Result<(Vec<AutopilotTask>, u64), DomainError>;
 
-    /// Save (insert or update) an Autopilot task
-    async fn save_task(&self, task: &AutopilotTask) -> Result<(), DomainError>;
+    /// Create a scheduled occurrence once, returning its existing row on conflict.
+    async fn schedule_task(&self, task: &AutopilotTask) -> Result<AutopilotTask, DomainError>;
+
+    /// Persist an execution outcome or dismissal only from the expected state.
+    async fn update_task_state(
+        &self,
+        task: &AutopilotTask,
+        expected_status: TaskStatus,
+    ) -> Result<(), DomainError>;
 
     /// Delete a task by ID
     async fn delete_task(&self, id: Uuid) -> Result<(), DomainError>;

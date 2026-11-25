@@ -21,7 +21,7 @@ import {
   CardAction,
   CardContent,
 } from "@orbis/ui/card";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
 import {
@@ -73,6 +73,7 @@ function subjectName(subject: EnrichedSectionSubject): string {
 const columns: OrbisColumnDef[] = [
   {
     id: "subject_name",
+    pin: "colPinStart",
     prop: "subject_name",
     header: m.common_search_group_subjects(),
     name: m.common_search_group_subjects(),

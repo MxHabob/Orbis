@@ -59,7 +59,7 @@ export function interpretKey(
       return {
         action: "tab",
         rowDelta: 0,
-        colDelta: e.shiftKey ? -dir : dir,
+        colDelta: e.shiftKey ? -1 : 1,
         preventDefault: true,
       };
     return none;
@@ -101,7 +101,7 @@ export function interpretKey(
     return {
       action: "tab",
       rowDelta: 0,
-      colDelta: e.shiftKey ? -dir : dir,
+      colDelta: e.shiftKey ? -1 : 1,
       preventDefault: true,
     };
   if (e.key === "Delete" || e.key === "Backspace") {

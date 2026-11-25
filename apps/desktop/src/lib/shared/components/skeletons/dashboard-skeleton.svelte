@@ -2,31 +2,21 @@
 import { Skeleton } from "@orbis/ui/skeleton";
 </script>
 
-<div class="flex flex-col gap-6 p-6 h-full w-full">
-  <!-- Welcome Area -->
-  <div class="flex items-center gap-4 mb-2">
-    <Skeleton class="h-16 w-16 rounded-full" />
-    <div class="flex flex-col gap-2">
-      <Skeleton class="h-8 w-64 rounded" />
-      <Skeleton class="h-4 w-48 rounded" />
-    </div>
+<div class="flex w-full min-w-0 flex-col items-center gap-[clamp(0.75rem,2.7cqh,1.5rem)]" aria-busy="true">
+  <div class="flex w-full items-center justify-center gap-3">
+    <Skeleton class="size-12 shrink-0 rounded-full" />
+    <Skeleton class="h-8 w-full max-w-56 rounded" />
   </div>
 
-  <!-- Top Stat Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="flex w-full flex-wrap justify-center gap-3">
     {#each Array(4) as _}
-      <Skeleton class="h-32 w-full rounded-xl" />
+      <Skeleton class="h-8 w-20 rounded-md" />
     {/each}
   </div>
 
-  <!-- Main Content Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="lg:col-span-2 flex flex-col gap-6">
-      <Skeleton class="h-64 w-full rounded-xl" />
-      <Skeleton class="h-64 w-full rounded-xl" />
-    </div>
-    <div class="flex flex-col gap-6">
-      <Skeleton class="h-96 w-full rounded-xl" />
-    </div>
+  <div class="grid w-full grid-cols-1 gap-3 @min-[32rem]/workspace:grid-cols-2 @min-[48rem]/workspace:grid-cols-3">
+    {#each Array(6) as _}
+      <Skeleton class="h-[clamp(5rem,15cqh,7rem)] w-full rounded-lg" />
+    {/each}
   </div>
 </div>

@@ -50,6 +50,7 @@ let {
 let isDragging = $state(false);
 let startX = 0;
 let startWidth = 0;
+let requestedWidth: number | undefined;
 let dragTarget: HTMLElement | null = null;
 
 function restorePersistedWidth() {
@@ -95,6 +96,7 @@ function onPointerDown(e: PointerEvent) {
   isDragging = true;
   startX = e.clientX;
   startWidth = viewport.getBoundingClientRect().width;
+  requestedWidth = undefined;
 
   dragTarget = e.currentTarget as HTMLElement;
   dragTarget.setPointerCapture(e.pointerId);
@@ -120,6 +122,7 @@ function onPointerMove(e: PointerEvent) {
     targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
   }
 
+  requestedWidth = targetWidth;
   onWidth?.(targetWidth);
 }
 
@@ -140,18 +143,10 @@ function onPointerUp(e: PointerEvent) {
   }
 
   // Persist final width
-  if (persistId && viewport) {
-    const currentPx = viewport.getBoundingClientRect().width;
-    const currentRem = pxToRem(currentPx);
-    let targetWidth = currentRem;
-    if (collapsible && targetWidth < collapseThreshold) {
-      targetWidth = collapsedWidth;
-    } else {
-      targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
-    }
+  if (persistId && requestedWidth !== undefined) {
     const base =
       parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    localStorage.setItem(`resizer:${persistId}:px`, String(targetWidth * base));
+    localStorage.setItem(`resizer:${persistId}:px`, String(requestedWidth * base));
   }
 }
 
@@ -168,7 +163,7 @@ function onDoubleClick() {
 }
 </script>
 
-<svelte:window on:pointermove={onPointerMove} on:pointerup={onPointerUp} />
+<svelte:window on:pointermove={onPointerMove} on:pointerup={onPointerUp} on:pointercancel={onPointerUp} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div

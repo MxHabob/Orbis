@@ -708,6 +708,10 @@ pub struct ApiDoc;
 pub fn app_router(state: state::AppState) -> Router {
     Router::new()
         .route("/api/v1/health", get(api_health))
+        .route(
+            "/api/v1/live",
+            get(|| async { axum::http::StatusCode::NO_CONTENT }),
+        )
         .merge(iam_routes::routes())
         .merge(org_routes::routes())
         .merge(calendar_routes::routes())
@@ -804,7 +808,14 @@ async fn log_request_performance(request: Request<Body>, next: Next) -> Response
 }
 
 async fn api_health(State(state): State<state::AppState>) -> Response {
-    let database_connected = state.db.execute_unprepared("SELECT 1").await.is_ok();
+    let database_connected = matches!(
+        tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            state.db.execute_unprepared("SELECT 1"),
+        )
+        .await,
+        Ok(Ok(_))
+    );
     let status = if database_connected {
         axum::http::StatusCode::OK
     } else {
@@ -833,6 +844,7 @@ async fn enforce_api_license(
         || path == "/api/v1/system/readiness"
         || path == "/api/v1/system/has-organization"
         || path == "/api/v1/health"
+        || path == "/api/v1/live"
         || path.starts_with("/swagger-ui")
         || path.starts_with("/api-docs")
     {

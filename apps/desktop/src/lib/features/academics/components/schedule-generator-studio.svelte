@@ -774,8 +774,8 @@ const pageError = $derived(
     </div>
   </header>
 
-  <div class="flex min-h-0 flex-1 overflow-hidden">
-    <aside class="flex w-64 shrink-0 flex-col overflow-y-auto border-e border-border/60 bg-card">
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden @min-[46rem]/workspace:flex-row">
+    <aside class="flex max-h-[30dvh] w-full shrink-0 flex-col overflow-y-auto border-b border-border/60 bg-card @min-[46rem]/workspace:max-h-none @min-[46rem]/workspace:w-64 @min-[46rem]/workspace:border-e @min-[46rem]/workspace:border-b-0">
       <details open class="border-b border-border/50">
         <summary class="cursor-pointer px-4 py-3 text-xs font-semibold text-foreground">
           {m.academics_studio_data_filters()}
@@ -968,7 +968,7 @@ const pageError = $derived(
           <div class="col-span-full h-64 animate-pulse rounded-xl border border-border/60 bg-muted/30"></div>
         </div>
       {:else if activeTab === "overview"}
-        <div class="flex min-h-full min-w-[940px] flex-col overflow-hidden rounded-lg border border-border/70 bg-card">
+        <div class="flex min-h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border/70 bg-card">
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
             <div class="flex items-center gap-2">
               <Badge variant="secondary" class="text-[10px]">{m.academics_studio_schedule_tab()}</Badge>
@@ -977,7 +977,7 @@ const pageError = $derived(
                 <span class="text-[10px] text-muted-foreground">· {dateRange(activeYear.start_date, activeYear.end_date)}</span>
               {/if}
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" class="h-7 gap-1 text-[10px]" disabled={!effectiveActivePeriodId} onclick={() => (isTimeSlotSheetOpen = true)}>
                 <ClockRotateRight size={12} />
                 {m.academics_studio_manage_slots()}
@@ -1006,8 +1006,8 @@ const pageError = $derived(
               <Button size="sm" onclick={() => (isTimeSlotSheetOpen = true)}>{m.academics_studio_manage_slots()}</Button>
             </div>
           {:else}
-            <div class="flex-1 overflow-auto">
-              <div class="min-w-[940px]">
+            <div class="min-w-0 flex-1 overflow-auto">
+              <div class="w-full" style:min-width={`max(100%, calc(48px + ${visibleDays.length} * 130px))`}>
                 <div
                   class="sticky top-0 z-10 grid border-b border-border/60 bg-card"
                   style={`grid-template-columns: 48px repeat(${visibleDays.length}, minmax(130px, 1fr))`}

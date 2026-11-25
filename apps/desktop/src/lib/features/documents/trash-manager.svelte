@@ -190,6 +190,7 @@ const trashColumns: OrbisColumnDef[] = [
     cell: ArchiveSelectionCell,
   },
   {
+    pin: "colPinStart",
     id: "name",
     header: m.operations_ui_file(),
     width: 320,
@@ -475,7 +476,7 @@ async function handleBatchPurge() {
   </header>
 
   <!-- Main Content Stage -->
-  <main class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+  <main class="min-h-0 flex-1 overflow-y-auto p-3 @lg/workspace:p-6 scrollbar-hide">
     {#if isLoading}
       <ArchiveLoading />
     {:else if filteredDocs.length === 0}
@@ -510,7 +511,7 @@ async function handleBatchPurge() {
       <!-- Content Views -->
       {#if viewMode === "grid"}
         <!-- Grid View -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,9rem),1fr))] gap-4">
           {#each filteredDocs as doc (doc.id)}
             <TrashDocumentCard
               document={doc}
@@ -524,7 +525,7 @@ async function handleBatchPurge() {
         </div>
       {:else}
         <!-- Table View -->
-        <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden">
+        <div class="h-[clamp(14rem,65dvh,42.5rem)] overflow-hidden">
           <OrbisGrid
             columns={trashColumns}
             source={trashGridSource}

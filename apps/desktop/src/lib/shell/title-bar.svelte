@@ -6,6 +6,7 @@ import * as m from "$lib/paraglide/messages";
 import { authStore, themeStore, uiStore } from "$lib/stores";
 import {
   ArrowsPointingOut,
+  Eye,
   Maximize,
   Minus,
   Moon,
@@ -108,12 +109,12 @@ onMount(() => {
 </script>
 
 <div
-  class="h-13 w-full bg-card border-b border-border/60 select-none flex items-center justify-between px-3.5 text-xs z-50 shrink-0"
+  class="h-13 w-full bg-card border-b border-border/60 select-none flex items-center justify-between gap-1 px-2 sm:px-3.5 text-xs z-50 shrink-0 @container/titlebar"
   data-tauri-drag-region
 >
   <!-- Start Side: Spacing for Mac traffic lights OR Logo + Period Switcher + Breadcrumb -->
   <div
-    class="flex items-center gap-2.5 min-w-0 max-w-[55%]"
+    class="flex items-center gap-1.5 sm:gap-2.5 min-w-0 max-w-[55%] overflow-hidden"
     class:ps-[76px]={isMac}
     data-tauri-drag-region
   >
@@ -135,7 +136,7 @@ onMount(() => {
   <div class="flex-1 h-full min-w-0" data-tauri-drag-region></div>
 
   <!-- End Side: Header Buttons, Sync Indicator, Theme, Focus Mode, Window Controls -->
-  <div class="flex items-center gap-1.5 shrink-0" data-tauri-drag-region>
+  <div class="flex items-center gap-0.5 sm:gap-1.5 shrink-0" data-tauri-drag-region>
     {#if authStore.isAuthenticated && !standaloneWindow}
       <Button
         variant="outline"
@@ -146,8 +147,8 @@ onMount(() => {
         aria-label={m.shared_ui_search()}
       >
         <Search size={14} class="text-muted-foreground" />
-        <span>{m.common_header_search()}</span>
-        <Kbd>{m.common_header_search_shortcut()}</Kbd>
+        <span class="hidden @min-[64rem]/titlebar:inline">{m.common_header_search()}</span>
+        <Kbd class="hidden @min-[76rem]/titlebar:inline-flex">{m.common_header_search_shortcut()}</Kbd>
       </Button>
 
       <Button
@@ -174,8 +175,8 @@ onMount(() => {
           />
           <path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
         </svg>
-        <span class="whitespace-nowrap">{m.shared_ui_ask_orbis()}</span>
-        <Kbd>Ctrl /</Kbd>
+        <span class="hidden whitespace-nowrap @min-[64rem]/titlebar:inline">{m.shared_ui_ask_orbis()}</span>
+        <Kbd class="hidden @min-[76rem]/titlebar:inline-flex">Ctrl /</Kbd>
       </Button>
 
       <NotificationPopover orgId={authStore.orgId ?? ""} />
@@ -221,7 +222,8 @@ onMount(() => {
         aria-label={m.common_titlebar_focus_mode_tooltip()}
         aria-pressed={uiStore.focusMode}
       >
-        <span class="hidden sm:inline">{m.common_titlebar_focus_mode()}</span>
+        <Eye size={14} class="@min-[64rem]/titlebar:hidden" />
+        <span class="hidden @min-[64rem]/titlebar:inline">{m.common_titlebar_focus_mode()}</span>
       </Button>
     {/if}
 

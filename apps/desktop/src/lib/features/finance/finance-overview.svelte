@@ -392,7 +392,7 @@ const visibleTreasuries = $derived(
 );
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide p-6 flex flex-col gap-6 font-sans">
+<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide p-3 @lg/workspace:p-6 flex flex-col gap-6 font-sans @container/finance">
   {#if isLoading}
     <FinanceSkeleton />
   {:else if error}
@@ -465,7 +465,7 @@ const visibleTreasuries = $derived(
         {/if}
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-3 @min-[38rem]/finance:grid-cols-3">
         <Card class="shadow-sm">
           <CardContent class="p-4">
             <p class="text-xs font-medium text-muted-foreground">
@@ -506,7 +506,7 @@ const visibleTreasuries = $derived(
         {feeTemplates}
       />
 
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 {activeCurrency ? '@min-[64rem]/finance:grid-cols-4' : '@min-[64rem]/finance:grid-cols-3'}">
         <BranchReceivablesCard
           branches={branchReceivables}
           {selectedBranchId}
@@ -525,7 +525,7 @@ const visibleTreasuries = $derived(
         {/if}
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 gap-6 @min-[48rem]/finance:grid-cols-3">
         <RecentPaymentsCard {recentPayments} {orgId} />
         <AccountBalancesCard treasuries={visibleTreasuries} {orgId} />
       </div>

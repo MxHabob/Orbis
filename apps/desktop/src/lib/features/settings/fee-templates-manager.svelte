@@ -132,6 +132,7 @@ const columns: OrbisColumnDef[] = [
   },
   {
     id: "name",
+    pin: "colPinStart",
     prop: "name",
     header: m.common_ft_col_name(),
     name: "Template",

@@ -61,12 +61,14 @@ import {
   toggleSort,
   toTsv,
   visibleVariableWindow,
+  scrollForColumn,
   visibleWindow,
   autoscrollDelta,
   colFromOffset,
   rowFromOffset,
   type ContextMenuItem,
 } from "./engine";
+import { headerLayout } from "./engine/headers";
 import { DEFAULT_PAGE_SIZE } from "./data-source";
 
 interface Props {
@@ -81,6 +83,8 @@ interface Props {
   readonly?: boolean;
   rowIdKey?: string;
   rowSize?: number;
+  headerRowSize?: number;
+  fixedRows?: boolean;
   range?: boolean;
   clipboard?: boolean;
   autoSize?: boolean;
@@ -124,6 +128,8 @@ let {
   readonly = false,
   rowIdKey = "id",
   rowSize = 40,
+  headerRowSize = 40,
+  fixedRows = false,
   range = true,
   clipboard = true,
   autoSize = false,
@@ -155,12 +161,21 @@ let {
   onloadmore,
 }: Props = $props();
 
-const HEADER_H = 40;
-const visibleCols = $derived(columns.filter((c) => !c.hidden));
-const hasGroupHeaders = $derived(visibleCols.some((c) => Boolean(c.group)));
-const hasSubHeaders = $derived(visibleCols.some((c) => c.subHeader !== undefined && c.subHeader !== null));
-const headerRowCount = $derived(1 + (hasGroupHeaders ? 1 : 0) + (hasSubHeaders ? 1 : 0));
-const totalHeaderHeight = $derived(HEADER_H * headerRowCount);
+let pinOverrides = $state<Record<string, boolean>>({});
+const visibleCols = $derived.by(() => {
+  const pinned: OrbisColumnDef[] = [];
+  const scrolling: OrbisColumnDef[] = [];
+  for (const column of columns) {
+    if (column.hidden) continue;
+    const override = pinOverrides[columnId(column)];
+    const pin = override ?? isColumnPinnedLeft(column);
+    (pin ? pinned : scrolling).push(override === undefined ? column : { ...column, pin: pin ? "colPinStart" : undefined });
+  }
+  return [...pinned, ...scrolling];
+});
+const header = $derived(headerLayout(visibleCols));
+const headerRowCount = $derived(header.rowCount);
+const totalHeaderHeight = $derived(headerRowSize * headerRowCount);
 let root: HTMLDivElement | null = $state(null);
 let bodyEl: HTMLDivElement | null = $state(null);
 let scrollTop = $state(0);
@@ -476,22 +491,25 @@ function widthOf(col: OrbisColumnDef): number {
 const columnSizes = $derived(visibleCols.map((col) => widthOf(col)));
 const totalWidth = $derived(columnSizes.reduce((sum, width) => sum + width, 0));
 
+const configuredPinCount = $derived(visibleCols.findIndex((col) => !isColumnPinnedLeft(col)));
+const pinCount = $derived(configuredPinCount < 0 ? visibleCols.length : configuredPinCount);
+const pinWidth = $derived(columnSizes.slice(0, pinCount).reduce((sum, width) => sum + width, 0));
+const frozenCount = $derived(pinWidth <= viewportW - 96 ? pinCount : 0);
+const frozenWidth = $derived(frozenCount ? pinWidth : 0);
 const totalHeight = $derived(displayRows.length * rowSize);
 
-const colWindow = $derived.by(() => {
-  if (visibleCols.length < 24 || rtl || hasGroupHeaders)
-    return {
-      start: 0,
-      end: visibleCols.length,
-      offset: 0,
-      count: visibleCols.length,
-    };
-  return visibleVariableWindow(scrollLeft, viewportW, columnSizes, 4);
-});
-
-const windowedCols = $derived(
-  visibleCols.slice(colWindow.start, colWindow.end),
-);
+const scrollingSizes = $derived(columnSizes.slice(frozenCount));
+const colWindow = $derived(visibleCols.length < 24
+  ? { start: 0, end: scrollingSizes.length, offset: 0, count: scrollingSizes.length }
+  : visibleVariableWindow(Math.abs(scrollLeft), viewportW - frozenWidth, scrollingSizes, 4));
+const firstScrollingColumn = $derived(frozenCount + colWindow.start);
+const lastScrollingColumn = $derived(frozenCount + colWindow.end);
+const scrollingColumnOffset = $derived(colWindow.offset);
+const windowedCols = $derived([
+  ...visibleCols.slice(0, frozenCount).map((col, index) => ({ col, index })),
+  ...visibleCols.slice(firstScrollingColumn, lastScrollingColumn)
+    .map((col, index) => ({ col, index: firstScrollingColumn + index })),
+]);
 
 function rowKey(row: GridRow, index: number): string {
   const id = row[rowIdKey];
@@ -664,7 +682,7 @@ function moveActiveAfterEdit(
   if (nextRow >= displayRows.length) {
     if (
       !readonly &&
-      showAddRow &&
+      showAddRow && !fixedRows &&
       displayRows.length === safeSource.length &&
       (rowDelta > 0 || colDelta > 0)
     ) {
@@ -772,44 +790,16 @@ function scrollActiveCellIntoView(row: number, col: number) {
   }
   scrollTop = bodyEl.scrollTop;
 
-  if (rtl) {
-    requestAnimationFrame(() => {
-      if (
-        !bodyEl ||
-        selection.active?.row !== row ||
-        selection.active?.col !== col
-      ) {
-        return;
-      }
+  if (col < frozenCount) return;
 
-      const activeCell = bodyEl.querySelector<HTMLElement>(
-        `[data-grid-r="${row}"][data-grid-c="${col}"]`,
-      );
-      if (!activeCell) return;
-
-      const bodyRect = bodyEl.getBoundingClientRect();
-      const visibleLeft = bodyRect.left + bodyEl.clientLeft;
-      const visibleRight = visibleLeft + bodyEl.clientWidth;
-      const cellRect = activeCell.getBoundingClientRect();
-      if (cellRect.left < visibleLeft) {
-        bodyEl.scrollLeft += cellRect.left - visibleLeft;
-      } else if (cellRect.right > visibleRight) {
-        bodyEl.scrollLeft += cellRect.right - visibleRight;
-      }
-      scrollLeft = bodyEl.scrollLeft;
-    });
-    return;
-  }
-
-  const left = offsetOf(col);
-  const right = left + (columnSizes[col] ?? 0);
-  const visibleLeft = bodyEl.scrollLeft;
-  const visibleRight = visibleLeft + bodyEl.clientWidth;
-  if (left < visibleLeft) {
-    bodyEl.scrollLeft = left;
-  } else if (right > visibleRight) {
-    bodyEl.scrollLeft = right - bodyEl.clientWidth;
-  }
+  bodyEl.scrollLeft = scrollForColumn({
+    columnStart: offsetOf(col),
+    columnWidth: columnSizes[col] ?? 0,
+    viewportWidth: bodyEl.clientWidth,
+    frozenWidth,
+    scrollLeft: bodyEl.scrollLeft,
+    rtl,
+  });
   scrollLeft = bodyEl.scrollLeft;
 }
 
@@ -892,7 +882,7 @@ function updateDisplayedRows(
 }
 
 function deleteSelectedRows() {
-  if (readonly || displayRows.length === 0) return;
+  if (readonly || fixedRows || displayRows.length === 0) return;
   const selectedRows = displayRows.filter((row, index) =>
     isGridRowSelected(row, index),
   );
@@ -1003,7 +993,7 @@ function cutSelection() {
 
 function pasteText(text: string) {
   if (!clipboard || readonly) return;
-  const matrix = parseClipboard(text);
+  const matrix = parseClipboard(text, fixedRows ? "\t" : undefined);
   const start = normalizeRange(currentRange());
   const { rows, result } = applyPaste({
     rows: displayRows,
@@ -1012,6 +1002,7 @@ function pasteText(text: string) {
     startCol: start.startCol,
     matrix,
     createEmptyRow: createEmptyGridRow,
+    fixedRows,
   });
   updateDisplayedRows(
     rows,
@@ -1041,13 +1032,12 @@ function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
   if (!bodyEl || !displayRows.length) return null;
   const rect = bodyEl.getBoundingClientRect();
   const relY = e.clientY - rect.top + bodyEl.scrollTop;
-  const localX = e.clientX - rect.left;
-  const relX = rtl
-    ? bodyEl.scrollWidth - (localX + Math.max(0, bodyEl.scrollLeft))
-    : localX + bodyEl.scrollLeft;
+  const left = rect.left + bodyEl.clientLeft;
+  const inlineX = rtl ? left + bodyEl.clientWidth - e.clientX : e.clientX - left;
+  const relX = inlineX < frozenWidth ? inlineX : inlineX + Math.abs(bodyEl.scrollLeft);
   return {
     row: rowFromOffset(relY, totalHeaderHeight, rowSize, displayRows.length),
-    col: colFromOffset(relX, visibleCols.map(widthOf)),
+    col: colFromOffset(relX, columnSizes),
   };
 }
 
@@ -1115,6 +1105,7 @@ function handleRootKeydown(event: KeyboardEvent) {
 
 function handleKeydown(e: KeyboardEvent) {
   const cmd = interpretKey(e, !!editing, rtl);
+  if (cmd.action === "paste") return;
   if (cmd.preventDefault) e.preventDefault();
   const active = selection.active ?? { row: 0, col: 0 };
   const page = Math.max(1, Math.floor((viewportH - totalHeaderHeight) / rowSize) - 1);
@@ -1164,9 +1155,6 @@ function handleKeydown(e: KeyboardEvent) {
       break;
     case "cut":
       cutSelection();
-      break;
-    case "paste":
-      void pasteFromClipboard();
       break;
     case "selectAll":
       selection = selectScope(
@@ -1250,8 +1238,9 @@ function onContext(row: number, col: number, e: MouseEvent) {
     filtered: (shouldRunClientQuery || usesServerQuery) && Boolean(filter),
   }).filter(
     (item) =>
-      isColumnSortable(visibleCols[col] ?? {}) ||
-      (item.id !== "sort-asc" && item.id !== "sort-desc"),
+      (!fixedRows || (item.id !== "duplicate" && item.id !== "delete-row")) &&
+      (isColumnSortable(visibleCols[col] ?? {}) ||
+        (item.id !== "sort-asc" && item.id !== "sort-desc")),
   );
   menu = {
     x: e.clientX,
@@ -1310,7 +1299,7 @@ function runMenu(id: string) {
       deleteSelectedRows();
       break;
     case "duplicate":
-      if (!readonly) {
+      if (!readonly && !fixedRows) {
         const row = displayRows[active.row];
         const sourceIndex = row ? safeSource.indexOf(row) : -1;
         if (sourceIndex >= 0) {
@@ -1351,7 +1340,10 @@ function runMenu(id: string) {
       if (col) col.hidden = true;
       break;
     case "pin-column":
-      if (col) col.pin = isColumnPinnedLeft(col) ? undefined : "left";
+      if (col) {
+        pinOverrides[columnId(col)] = !isColumnPinnedLeft(col);
+        selection = emptySelection();
+      }
       break;
     default:
       onaction?.({
@@ -1657,229 +1649,7 @@ export function scrollToColumnProp(prop: string) {
   if (i >= 0) scrollToColumnIndex(i);
 }
 
-type HeaderCellModel = {
-  colStart: number;
-  colSpan: number;
-  rowStart: number;
-  rowSpan: number;
-  col: OrbisColumnDef;
-  label: string;
-  kind: "group" | "leaf" | "sub" | "span";
-  key: string;
-};
-
-const headerLevels = $derived.by((): Array<"group" | "leaf" | "sub"> => {
-  const levels: Array<"group" | "leaf" | "sub"> = [];
-  if (hasGroupHeaders) levels.push("group");
-  levels.push("leaf");
-  if (hasSubHeaders) levels.push("sub");
-  return levels;
-});
-
-const headerGridTemplateColumns = $derived.by(() => {
-  if (!windowedCols.length) return "";
-  const parts: string[] = [];
-  if (colWindow.offset > 0) parts.push(`${colWindow.offset}px`);
-  for (const col of windowedCols) parts.push(`${widthOf(col)}px`);
-  return parts.join(" ");
-});
-
-const headerGridColBase = $derived(colWindow.offset > 0 ? 2 : 1);
-
-const headerModel = $derived.by((): HeaderCellModel[] => {
-  const cols = windowedCols;
-  const levels = headerLevels;
-  const rows = levels.length;
-  const out: HeaderCellModel[] = [];
-  if (!cols.length || !rows) return out;
-
-  const base = colWindow.start;
-  let i = 0;
-  while (i < cols.length) {
-    const col = cols[i]!;
-    const globalIdx = base + i;
-    const id = columnId(col);
-    const topSpan = Math.max(1, Math.min(rows, col.headerRowSpan ?? (rows === 1 ? 1 : 1)));
-    const hasGroupLevel = levels[0] === "group";
-    const hasSubLevel = levels[levels.length - 1] === "sub";
-
-    // Columns explicitly spanning multiple header rows from the top (e.g. student name / index)
-    if (topSpan > 1) {
-      const span = Math.min(topSpan, rows);
-      out.push({
-        colStart: globalIdx,
-        colSpan: 1,
-        rowStart: 0,
-        rowSpan: span,
-        col,
-        label: columnHeader(col),
-        kind: "span",
-        key: `span-${id}-${globalIdx}`,
-      });
-      // If there is a remaining sub-header row below the span, render it
-      if (span < rows && hasSubLevel) {
-        for (let r = span; r < rows; r++) {
-          const level = levels[r];
-          if (level === "sub") {
-            out.push({
-              colStart: globalIdx,
-              colSpan: 1,
-              rowStart: r,
-              rowSpan: 1,
-              col,
-              label: col.subHeader ?? "",
-              kind: "sub",
-              key: `sub-${id}-${globalIdx}-${r}`,
-            });
-          } else if (level === "leaf") {
-            out.push({
-              colStart: globalIdx,
-              colSpan: 1,
-              rowStart: r,
-              rowSpan: 1,
-              col,
-              label: columnHeader(col),
-              kind: "leaf",
-              key: `leaf-${id}-${globalIdx}-${r}`,
-            });
-          }
-        }
-      }
-      i++;
-      continue;
-    }
-
-    if (hasGroupLevel) {
-      const group = col.group;
-      if (group != null && String(group) !== "") {
-        // Merge consecutive columns with the same group (and no multi-row top span)
-        let j = i + 1;
-        while (j < cols.length) {
-          const next = cols[j]!;
-          const nextSpan = Math.max(1, Math.min(rows, next.headerRowSpan ?? 1));
-          if (nextSpan > 1) break;
-          if (next.group !== group) break;
-          j++;
-        }
-        out.push({
-          colStart: globalIdx,
-          colSpan: j - i,
-          rowStart: 0,
-          rowSpan: 1,
-          col,
-          label: String(group),
-          kind: "group",
-          key: `group-${globalIdx}-${String(group)}`,
-        });
-        const leafRow = 1;
-        const subRow = hasSubLevel ? 2 : -1;
-        for (let k = i; k < j; k++) {
-          const c = cols[k]!;
-          const cIdx = base + k;
-          const cid = columnId(c);
-          out.push({
-            colStart: cIdx,
-            colSpan: 1,
-            rowStart: leafRow,
-            rowSpan: 1,
-            col: c,
-            label: columnHeader(c),
-            kind: "leaf",
-            key: `leaf-${cid}-${cIdx}`,
-          });
-          if (subRow >= 0) {
-            out.push({
-              colStart: cIdx,
-              colSpan: 1,
-              rowStart: subRow,
-              rowSpan: 1,
-              col: c,
-              label: c.subHeader ?? "",
-              kind: "sub",
-              key: `sub-${cid}-${cIdx}`,
-            });
-          }
-        }
-        i = j;
-        continue;
-      } else {
-        // Ungrouped column inside a grouped grid: span group+leaf, optional sub row
-        if (hasSubLevel) {
-          out.push({
-            colStart: globalIdx,
-            colSpan: 1,
-            rowStart: 0,
-            rowSpan: 2,
-            col,
-            label: columnHeader(col),
-            kind: "span",
-            key: `ungrouped-${id}-${globalIdx}`,
-          });
-          out.push({
-            colStart: globalIdx,
-            colSpan: 1,
-            rowStart: 2,
-            rowSpan: 1,
-            col,
-            label: col.subHeader ?? "",
-            kind: "sub",
-            key: `sub-${id}-${globalIdx}`,
-          });
-        } else {
-          out.push({
-            colStart: globalIdx,
-            colSpan: 1,
-            rowStart: 0,
-            rowSpan: 2,
-            col,
-            label: columnHeader(col),
-            kind: "span",
-            key: `ungrouped-${id}-${globalIdx}`,
-          });
-        }
-        i++;
-        continue;
-      }
-    }
-
-    // No group level: leaf (+ optional sub)
-    if (hasSubLevel) {
-      out.push({
-        colStart: globalIdx,
-        colSpan: 1,
-        rowStart: 0,
-        rowSpan: 1,
-        col,
-        label: columnHeader(col),
-        kind: "leaf",
-        key: `leaf-${id}-${globalIdx}`,
-      });
-      out.push({
-        colStart: globalIdx,
-        colSpan: 1,
-        rowStart: 1,
-        rowSpan: 1,
-        col,
-        label: col.subHeader ?? "",
-        kind: "sub",
-        key: `sub-${id}-${globalIdx}`,
-      });
-    } else {
-      out.push({
-        colStart: globalIdx,
-        colSpan: 1,
-        rowStart: 0,
-        rowSpan: 1,
-        col,
-        label: columnHeader(col),
-        kind: "leaf",
-        key: `leaf-${id}-${globalIdx}`,
-      });
-    }
-    i++;
-  }
-  return out;
-});
+const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}px`).join(" "));
 </script>
 
 <svelte:window
@@ -1900,13 +1670,20 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
   class:has-active-cell={selection.active !== null}
   style:height
   style:--row-h="{rowSize}px"
-  style:--header-h="{totalHeaderHeight}px" style:--header-row-h="{HEADER_H}px"
+  style:--header-h="{totalHeaderHeight}px" style:--header-row-h="{headerRowSize}px"
   dir={rtl ? "rtl" : "ltr"}
   role="grid"
   tabindex="0"
   aria-rowcount={displayRows.length}
   aria-colcount={visibleCols.length}
   onkeydown={handleRootKeydown}
+  onpaste={(event) => {
+    if (!clipboard || readonly || editing || event.target !== root) return;
+    const text = event.clipboardData?.getData("text/plain");
+    if (!text) return;
+    event.preventDefault();
+    pasteText(text);
+  }}
   onfocus={() => measure()}
   {@attach (el) => {
     const node = el as HTMLDivElement;
@@ -1982,7 +1759,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
           {/if}
         </div>
       {/if}
-      {#if toolbarActions || (!readonly && showAddRow)}
+      {#if toolbarActions || (!readonly && !fixedRows && showAddRow)}
         <div
           class="orbis-toolbar-actions"
           class:has-query-controls={showSearch || showFilterButton || toolbarFilters}
@@ -1990,7 +1767,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
           {#if toolbarActions}
             {@render toolbarActions()}
           {/if}
-          {#if !readonly && showAddRow}
+          {#if !readonly && !fixedRows && showAddRow}
             <button
               type="button"
               class="orbis-toolbar-button orbis-add-row"
@@ -2026,16 +1803,13 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
         style:grid-template-rows={headerRowCount > 1 ? `repeat(${headerRowCount}, var(--header-row-h))` : undefined}
       >
         {#if headerRowCount > 1}
-          {#if colWindow.offset > 0}
-            <div class="orbis-hcell orbis-hcell--offset" style:grid-column="1" style:grid-row={`1 / span ${headerRowCount}`}></div>
-          {/if}
-          {#each headerModel as hc (hc.key)}
+          {#each header.cells as hc (hc.key)}
             <div
               class="orbis-hcell"
               class:orbis-hcell--group={hc.kind === "group"}
               class:orbis-hcell--sub={hc.kind === "sub"}
               class:orbis-hcell--span={hc.kind === "span"}
-              style:grid-column={`${hc.colStart - colWindow.start + headerGridColBase} / span ${hc.colSpan}`}
+              style:grid-column={`${hc.colStart + 1} / span ${hc.colSpan}`}
               style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
             >
               <div class="orbis-skeleton-bar" style:width="70%"></div>
@@ -2085,6 +1859,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
   {:else}
     <div
       class="orbis-grid-body"
+      style:--pinned-translation={scrollLeft + "px"}
       onscroll={onScroll}
       {@attach (el) => {
         const node = el as HTMLDivElement;
@@ -2103,15 +1878,11 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
           class="orbis-grid-head"
           class:orbis-grid-head--multi={headerRowCount > 1}
           role="row"
-          style:padding-inline-start={headerRowCount > 1 ? undefined : `${colWindow.offset}px`}
           style:grid-template-columns={headerRowCount > 1 ? headerGridTemplateColumns : undefined}
           style:grid-template-rows={headerRowCount > 1 ? `repeat(${headerRowCount}, var(--header-row-h))` : undefined}
         >
           {#if headerRowCount > 1}
-            {#if colWindow.offset > 0}
-              <div class="orbis-hcell orbis-hcell--offset" style:grid-column="1" style:grid-row={`1 / span ${headerRowCount}`}></div>
-            {/if}
-            {#each headerModel as hc (hc.key)}
+            {#each header.cells as hc (hc.key)}
               {@const c = hc.colStart}
               {@const id = columnId(hc.col)}
               {@const Header = hc.col.headerCell}
@@ -2119,15 +1890,19 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
               {@const isLeafLike = hc.kind === "leaf" || (hc.kind === "span" && hc.colSpan === 1)}
               <div
                 class="orbis-hcell align-{defaultAlign(hc.col)}"
-                class:pinned={isColumnPinnedLeft(hc.col)}
+                class:pinned={c < frozenCount}
+                class:emphasis={hc.col.emphasis && hc.kind !== "group"}
                 class:orbis-hcell--group={hc.kind === "group"}
                 class:orbis-hcell--sub={hc.kind === "sub"}
                 class:orbis-hcell--span={hc.kind === "span"}
                 role="columnheader"
                 tabindex={isLeafLike ? 0 : -1}
                 aria-colindex={c + 1}
+                aria-colspan={hc.colSpan}
+                aria-rowspan={hc.rowSpan}
+                title={hc.label}
                 aria-sort={isLeafLike ? (sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none") : "none"}
-                style:grid-column={`${hc.colStart - colWindow.start + headerGridColBase} / span ${hc.colSpan}`}
+                style:grid-column={`${hc.colStart + 1} / span ${hc.colSpan}`}
                 style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
                 onclick={(e) => { if (isLeafLike) onHeaderClick(hc.col, e); }}
                 onkeydown={(e) => {
@@ -2189,14 +1964,15 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
               </div>
             {/each}
           {:else}
-            {#each windowedCols as col, i (columnId(col) || i)}
-              {@const c = colWindow.start + i}
+            {#each windowedCols as { col, index: c }, i (columnId(col) || c)}
               {@const id = columnId(col)}
               {@const Header = col.headerCell}
               {@const isSelectCol = id === "__selected"}
               <div
                 class="orbis-hcell align-{defaultAlign(col)}"
-                class:pinned={isColumnPinnedLeft(col)}
+                class:pinned={c < frozenCount}
+                class:emphasis={col.emphasis}
+                style:margin-inline-start={i === frozenCount && scrollingColumnOffset ? scrollingColumnOffset + "px" : undefined}
                 role="columnheader"
                 tabindex="0"
                 aria-colindex={c + 1}
@@ -2275,16 +2051,17 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
                 aria-rowindex={r + 1}
                 aria-selected={isGridRowSelected(row, r)}
                 data-row={rowKey(row, r)}
-                style:padding-inline-start="{colWindow.offset}px"
               >
-                {#each windowedCols as col, i (columnId(col) || i)}
-                  {@const c = colWindow.start + i}
+                {#each windowedCols as { col, index: c }, i (columnId(col) || c)}
                   {@const id = columnId(col)}
                   {@const Cell = col.cell}
                   {@const isEdit = editing?.row === r && editing?.col === c}
                   <div
                     class={cellClass(row, col, r, c)}
                     class:is-editing={isEdit}
+                    class:pinned={c < frozenCount}
+                    class:emphasis={col.emphasis}
+                    style:margin-inline-start={i === frozenCount && scrollingColumnOffset ? scrollingColumnOffset + "px" : undefined}
                     role="gridcell"
                     tabindex="-1"
                     data-grid-r={r}
@@ -2347,7 +2124,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
                               commitEdit(e.shiftKey ? -1 : 1, 0);
                             } else if (e.key === "Tab") {
                               e.preventDefault();
-                              commitEdit(0, e.shiftKey ? (rtl ? 1 : -1) : rtl ? -1 : 1);
+                              commitEdit(0, e.shiftKey ? -1 : 1);
                             } else if (e.key === "Escape") {
                               e.preventDefault();
                               cancelEdit();
@@ -2741,7 +2518,28 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
     flex-shrink: 1;
     width: auto;
   }
+  .orbis-hcell.pinned,
+  .orbis-cell.pinned {
+    transform: translateX(var(--pinned-translation, 0px));
+  }
+  .orbis-hcell.pinned {
+    z-index: 2;
+  }
+  .orbis-cell.pinned {
+    position: relative;
+    z-index: 1;
+    background: var(--card);
+  }
+  .orbis-cell.pinned.is-ranged {
+    background: color-mix(in oklab, var(--primary) 14%, var(--card));
+  }
+  .orbis-hcell.emphasis,
+  .orbis-cell.emphasis:not(.is-ranged):not(.is-error) {
+    background: color-mix(in oklab, var(--primary) 10%, var(--card));
+    font-weight: 600;
+  }
   .orbis-hcell--group {
+    background: color-mix(in oklab, var(--primary) 8%, var(--muted));
     justify-content: center;
     text-align: center;
     font-weight: 700;

@@ -353,35 +353,22 @@ impl ConnectionConfig {
                     resolved_path: resolved_path.map(|p| p.to_string_lossy().to_string()),
                 }
             }
-            ConnectionMode::Api => match &self.api {
-                Some(remote) if !remote.server_url.trim().is_empty() => {
-                    let url = remote.server_url.trim();
-                    if url.starts_with("http://") || url.starts_with("https://") {
-                        ConnectionValidation {
-                            is_valid: true,
-                            mode: "api".to_string(),
-                            message: "Orbis API server is configured".to_string(),
-                            resolved_url: Some(url.to_string()),
-                            resolved_path: None,
-                        }
-                    } else {
-                        ConnectionValidation {
-                            is_valid: false,
-                            mode: "api".to_string(),
-                            message: "Server URL must start with http:// or https://".to_string(),
-                            resolved_url: None,
-                            resolved_path: None,
-                        }
-                    }
-                }
-                _ => ConnectionValidation {
-                    is_valid: false,
+            ConnectionMode::Api => {
+                let result = self.api.as_ref()
+                    .ok_or("Remote server URL is required")
+                    .and_then(|remote| normalize_server_url(&remote.server_url));
+                let (message, resolved_url) = match result {
+                    Ok(url) => ("Orbis API server is configured", Some(url)),
+                    Err(error) => (error, None),
+                };
+                ConnectionValidation {
+                    is_valid: resolved_url.is_some(),
                     mode: "api".to_string(),
-                    message: "Remote server URL is required".to_string(),
-                    resolved_url: None,
+                    message: message.to_string(),
+                    resolved_url,
                     resolved_path: None,
-                },
-            },
+                }
+            }
             ConnectionMode::Direct => match &self.direct {
                 Some(direct)
                     if !direct.host.trim().is_empty()
@@ -413,69 +400,83 @@ impl ConnectionConfig {
 
 // ── Remote Health Check ─────────────────────────────────────────────────────
 
-/// Check health of a remote Orbis Server.
-pub async fn check_remote_health(server_url: &str) -> RemoteHealthResult {
-    let health_url = format!("{}/api/v1/health", server_url.trim_end_matches('/'));
-    let start = std::time::Instant::now();
+pub fn normalize_server_url(input: &str) -> Result<String, &'static str> {
+    let url = Url::parse(input.trim()).map_err(|_| "Enter a valid Orbis server URL")?;
+    let host = url.host().ok_or("The Orbis server URL requires a host")?;
+    if !url.username().is_empty() || url.password().is_some() || url.query().is_some() || url.fragment().is_some() {
+        return Err("The Orbis server URL must omit credentials, query parameters, and fragments");
+    }
+    let loopback = match host {
+        url::Host::Domain(name) => name.eq_ignore_ascii_case("localhost"),
+        url::Host::Ipv4(address) => address.is_loopback(),
+        url::Host::Ipv6(address) => address.is_loopback(),
+    };
+    if url.scheme() != "https" && !(url.scheme() == "http" && loopback) {
+        return Err("Use HTTPS for an Orbis server outside this computer");
+    }
 
-    match reqwest::Client::new()
-        .get(&health_url)
-        .timeout(std::time::Duration::from_secs(10))
-        .send()
-        .await
-    {
-        Ok(response) => {
-            let latency = start.elapsed().as_millis() as u64;
-            if response.status().is_success() {
-                match response.json::<serde_json::Value>().await {
-                    Ok(body) => RemoteHealthResult {
-                        reachable: true,
-                        status: body
-                            .get("status")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.to_string()),
-                        version: body
-                            .get("version")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.to_string()),
-                        api_version: body
-                            .get("api_version")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.to_string()),
-                        latency_ms: latency,
-                        error: None,
-                    },
-                    Err(e) => RemoteHealthResult {
-                        reachable: true,
-                        status: Some("ok".to_string()),
-                        version: None,
-                        api_version: None,
-                        latency_ms: latency,
-                        error: Some(format!("Failed to parse health response: {e}")),
-                    },
-                }
-            } else {
-                RemoteHealthResult {
-                    reachable: true,
-                    status: Some(format!("HTTP {}", response.status())),
-                    version: None,
-                    api_version: None,
-                    latency_ms: latency,
-                    error: Some(format!("Server returned HTTP {}", response.status())),
-                }
-            }
+    let base = url.as_str().trim_end_matches('/');
+    Ok(base.strip_suffix("/api/v1").unwrap_or(base).to_owned())
+}
+
+#[derive(Deserialize)]
+struct ServerHealth {
+    status: String,
+    version: String,
+    api_version: String,
+    database_connected: bool,
+}
+
+/// Check whether the configured endpoint can serve Orbis requests.
+pub async fn check_remote_health(server_url: &str) -> RemoteHealthResult {
+    static CLIENT: std::sync::OnceLock<Result<reqwest::Client, reqwest::Error>> =
+        std::sync::OnceLock::new();
+    let start = std::time::Instant::now();
+    let result = async {
+        let base = normalize_server_url(server_url).map_err(str::to_owned)?;
+        let client = CLIENT.get_or_init(|| {
+            reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .connect_timeout(std::time::Duration::from_secs(3))
+                .timeout(std::time::Duration::from_secs(5))
+                .build()
+        }).as_ref().map_err(|_| "Could not initialize the HTTP client".to_string())?;
+        let response = client.get(format!("{base}/api/v1/health"))
+            .send().await.map_err(|error| {
+                if error.is_timeout() {
+                    "The server did not respond before the connection deadline"
+                } else {
+                    "Could not connect to the Orbis server. Check its address and TLS certificate"
+                }.to_string()
+            })?;
+        if !response.status().is_success() {
+            return Err(format!("Orbis readiness check returned HTTP {}", response.status()));
         }
-        Err(e) => {
-            let latency = start.elapsed().as_millis() as u64;
-            RemoteHealthResult {
-                reachable: false,
-                status: None,
-                version: None,
-                api_version: None,
-                latency_ms: latency,
-                error: Some(format!("Connection failed: {e}")),
-            }
+        let health = response.json::<ServerHealth>().await
+            .map_err(|_| "This endpoint did not return an Orbis readiness response".to_string())?;
+        if health.status != "ok" || !health.database_connected || health.api_version.is_empty() {
+            return Err("The Orbis API is not ready to serve requests".to_string());
         }
+        Ok(health)
+    }.await;
+    let latency_ms = start.elapsed().as_millis() as u64;
+    match result {
+        Ok(health) => RemoteHealthResult {
+            reachable: true,
+            status: Some(health.status),
+            version: Some(health.version),
+            api_version: Some(health.api_version),
+            latency_ms,
+            error: None,
+        },
+        Err(error) => RemoteHealthResult {
+            reachable: false,
+            status: None,
+            version: None,
+            api_version: None,
+            latency_ms,
+            error: Some(error),
+        },
     }
 }
 

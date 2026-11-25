@@ -97,6 +97,7 @@ const feesCols: OrbisColumnDef[] = [
   },
   {
     id: "fee_name",
+    pin: "colPinStart",
     prop: "fee_name",
     header: m.finance_fees_col_description(),
     name: m.finance_fees_col_description(),

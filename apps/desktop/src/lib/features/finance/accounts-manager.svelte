@@ -367,6 +367,7 @@ const treasuryCols: OrbisColumnDef[] = [
   },
   {
     id: "name_display",
+    pin: "colPinStart",
     prop: "name_display",
     header: m.finance_ui_account_name(),
     name: m.finance_ui_account_name(),

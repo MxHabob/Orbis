@@ -43,7 +43,7 @@ function getPaymentMethodLabel(method: string): string {
 }
 </script>
 
-<Card class="lg:col-span-2 flex flex-col justify-between text-start shadow-sm min-h-[315px] h-full">
+<Card class="@min-[48rem]/finance:col-span-2 flex flex-col justify-between text-start shadow-sm min-h-[315px] h-full">
   <CardHeader class="py-3 px-4">
     <div class="flex items-center gap-2">
       <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>

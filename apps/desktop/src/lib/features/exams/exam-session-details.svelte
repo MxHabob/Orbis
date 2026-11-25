@@ -371,6 +371,7 @@ const subjectColumns: OrbisColumnDef[] = [
     align: "center",
   },
   {
+    pin: "colPinStart",
     id: "subject_name",
     prop: "subject_name",
     header: m.common_word_subject(),
@@ -549,6 +550,7 @@ const secretColumns: OrbisColumnDef[] = [
     cellClass: "font-mono font-semibold text-primary",
   },
   {
+    pin: "colPinStart",
     id: "student_display",
     prop: "student_display",
     header: m.common_word_student(),
@@ -615,6 +617,7 @@ const proctorGridSource = $derived(
 
 const proctorColumns: OrbisColumnDef[] = [
   {
+    pin: "colPinStart",
     id: "teacher_display",
     prop: "teacher_display",
     header: m.academics_exams_proctor(),

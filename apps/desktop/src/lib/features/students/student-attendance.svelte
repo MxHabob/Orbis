@@ -151,7 +151,7 @@ const rtl = $derived(getLocale() === "ar");
 
 <div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- Attendance Stats -->
-  <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+  <div class="grid grid-cols-1 gap-3 @min-[26rem]/workspace:grid-cols-2 @min-[56rem]/workspace:grid-cols-4">
     <StudentMetricCard
       title={m.academics_attendance_present_days()}
       value={`${formatNumber(presentCount)} ${m.academics_attendance_day_unit()}`}

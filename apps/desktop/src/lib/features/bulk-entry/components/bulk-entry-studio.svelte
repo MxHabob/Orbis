@@ -1,5 +1,9 @@
 <script lang="ts">
-import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { isTauri } from "@tauri-apps/api/core";
+import { confirmStore } from "$lib/stores/confirm.svelte";
+import { useUnsavedGuard } from "$lib/stores/unsaved-guard.svelte";
+import { getActiveImportColumns, isImportColumnRequired } from "../engine/template-columns";
 import * as m from "$lib/paraglide/messages";
 import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { orgContext } from "$lib/stores/org-context.svelte";
@@ -19,7 +23,6 @@ import {
   type GridRowsChangeEvent,
 } from "@orbis/svelte-grid";
 import { toast } from "@orbis/ui";
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { untrack } from "svelte";
 import { executeCommitPipeline } from "../engine/commit-pipeline";
@@ -30,6 +33,7 @@ import { downloadExcelTemplate } from "../engine/template-generator";
 import { validateAllRows } from "../engine/validator";
 import {
   getBulkEntryGridColumns,
+  getBulkEntryColumnHeader,
   getBulkEntryProfileName,
 } from "../localization";
 import { BULK_PROFILES, getBulkProfile } from "../profiles";
@@ -62,21 +66,13 @@ const refDataQuery = createBulkReferenceDataQuery(
   () => orgContext.baseCurrency || "",
 );
 const refData = $derived(refDataQuery.data ?? null);
-const isLoadingRefData = $derived(refDataQuery.isLoading);
 const referenceDataError = $derived(
   refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
 );
-const activeColumnMetadata = $derived(
-  currentProfile.columnMetadata.filter((column) => {
-    if (currentProfile.id !== "students" || !refData?.registrationFields)
-      return true;
-    if (column.id === "full_name_ar" || column.id === "class_name") return true;
-    return (
-      refData.registrationFields[normalizeRegistrationFieldKey(column.id)]
-        ?.active !== false
-    );
-  }),
-);
+const activeColumnMetadata = $derived(getActiveImportColumns(currentProfile, refData?.registrationFields));
+const requiredFields = $derived(activeColumnMetadata.filter((column) =>
+  isImportColumnRequired(selectedProfileId, column, refData?.registrationFields)));
+const arabic = $derived(getLocale() === "ar");
 
 let fileName = $state<string | null>(null);
 let rawRows = $state<BulkRowState[]>([]);
@@ -91,16 +87,38 @@ let previewSummary = $state<BulkPreviewSummary<any> | null>(null);
 let commitResult = $state<BulkCommitResult | null>(null);
 
 let isDraggingFile = $state(false);
+let isReading = $state(false);
+let isSaving = $state(false);
+let isDownloading = $state(false);
+let isExporting = $state(false);
+let isReviewing = $state(false);
+let browserFileInput: HTMLInputElement;
+const isBusy = $derived(isReading || isSaving || isReviewing);
+const ready = $derived(Boolean(refData) && !isBusy);
+const guard = useUnsavedGuard({
+  title: m.common_unsaved_changes(),
+  description: m.bulk_entry_replace_draft(),
+  discardText: m.bulk_entry_discard_draft(),
+  stayText: m.common_action_cancel(),
+});
+$effect(() => guard.setDirty(rawRows.length > 0 && !commitResult));
+
+function confirmReplaceDraft() {
+  if (!rawRows.length || commitResult) return Promise.resolve(true);
+  return confirmStore.prompt({
+    title: m.common_unsaved_changes(),
+    description: m.bulk_entry_replace_draft(),
+    confirmText: m.bulk_entry_discard_draft(),
+    cancelText: m.common_action_cancel(),
+    variant: "destructive",
+  });
+}
 
 // Switch profile handler (clears active staging rows without $effect)
-function handleProfileChange(newProfileId: BulkProfileId) {
+async function handleProfileChange(newProfileId: BulkProfileId) {
+  if (newProfileId === selectedProfileId || isBusy || !await confirmReplaceDraft()) return;
+  handleReset();
   selectedProfileId = newProfileId;
-  rawRows = [];
-  fileName = null;
-  commitResult = null;
-  errorCount = 0;
-  warningCount = 0;
-  validCount = 0;
 }
 
 // Filtered rows for OrbisGrid display
@@ -164,10 +182,12 @@ function handleAddBlankRows(count: number = 5) {
 
 // Paste tabular data from clipboard
 async function handlePasteFromClipboard() {
+  if (isBusy) return;
   if (!refData) {
     toast.warning(m.common_loading());
     return;
   }
+  isReading = true;
   try {
     const text = await navigator.clipboard.readText();
     if (!text || !text.trim()) {
@@ -209,6 +229,8 @@ async function handlePasteFromClipboard() {
     toast.error(
       m.bulk_entry_toast_paste_failed({ reason: err.message || String(err) }),
     );
+  } finally {
+    isReading = false;
   }
 }
 
@@ -238,16 +260,19 @@ function handleClearEmptyRows() {
 
 // Handle template download
 async function handleDownloadTemplate() {
+  if (isDownloading) return;
   if (!refData) {
     toast.warning(m.common_loading());
     return;
   }
+  isDownloading = true;
   try {
     const openFile = await downloadExcelTemplate({
       profile: currentProfile,
       refData,
       orgName: orgContext.displayName,
     });
+    if (openFile === undefined) return;
     toast.success(m.bulk_entry_toast_template_downloaded(), {
       action: openFile ? createShowInFolderToastAction(openFile) : undefined,
     });
@@ -257,47 +282,52 @@ async function handleDownloadTemplate() {
         reason: err.message || String(err),
       }),
     );
+  } finally {
+    isDownloading = false;
   }
 }
 
-// Handle native file selection
-async function handlePickFile() {
+async function loadFile(read: () => ReturnType<typeof pickAndParseFile>) {
+  if (!ready) return;
+  isReading = true;
   try {
-    const res = await pickAndParseFile(currentProfile);
-    if (res) {
-      processLoadedRows(res.fileName, res.rows);
-    }
-  } catch (err: any) {
-    toast.error(
-      m.bulk_entry_toast_file_read_failed({
-        reason: err.message || String(err),
-      }),
-    );
+    if (!await confirmReplaceDraft()) return;
+    const result = await read();
+    if (result) processLoadedRows(result.fileName, result.rows);
+  } catch (error) {
+    toast.error(m.bulk_entry_toast_file_read_failed({
+      reason: error instanceof Error ? error.message : String(error),
+    }));
+  } finally {
+    isReading = false;
   }
 }
 
-// Handle dropped file
-async function handleDropFile(e: DragEvent) {
-  e.preventDefault();
-  isDraggingFile = false;
-  const file = e.dataTransfer?.files?.[0];
-  if (file) {
-    try {
-      const res = await parseDroppedFile(file, currentProfile);
-      processLoadedRows(res.fileName, res.rows);
-    } catch (err: any) {
-      toast.error(
-        m.bulk_entry_toast_file_read_failed({
-          reason: err.message || String(err),
-        }),
-      );
-    }
+function handlePickFile() {
+  if (!ready) return;
+  if (isTauri()) void loadFile(() => pickAndParseFile(currentProfile));
+  else browserFileInput?.click();
+}
+
+function importFile(file: File | undefined) {
+  if (!file || !ready) return;
+  if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
+    toast.error(m.bulk_entry_unsupported_file());
+    return;
   }
+  void loadFile(() => parseDroppedFile(file, currentProfile));
+}
+
+function handleDropFile(event: DragEvent) {
+  event.preventDefault();
+  isDraggingFile = false;
+  importFile(event.dataTransfer?.files[0]);
 }
 
 function processLoadedRows(name: string, loadedRows: BulkRowState[]) {
   if (!refData) return;
   fileName = name;
+  filterMode = "all";
   commitResult = null;
 
   const summary = validateAllRows(loadedRows, currentProfile, refData);
@@ -306,7 +336,7 @@ function processLoadedRows(name: string, loadedRows: BulkRowState[]) {
   warningCount = summary.warningCount;
   validCount = summary.validCount;
 
-  toast.success(m.bulk_entry_toast_imported({ count: loadedRows.length }));
+  toast.success(m.bulk_entry_file_loaded({ count: loadedRows.length }));
 }
 
 // Live cell edit handler from OrbisGrid
@@ -401,15 +431,19 @@ function handleNextError() {
 }
 
 // Export corrected data
-async function handleExportCorrected() {
-  if (rawRows.length === 0) return;
+async function handleExportCorrected(format: "xlsx" | "csv" = "xlsx") {
+  if (rawRows.length === 0 || isExporting || isBusy) return;
+  isExporting = true;
   try {
     const openFile = await exportCorrectedDataset({
       profile: currentProfile,
       rows: rawRows,
-      filenamePrefix: `Orbis_${selectedProfileId}_Data`,
+      filenamePrefix: `Orbis-${selectedProfileId}-review`,
+      format,
+      registrationFields: refData?.registrationFields,
     });
 
+    if (openFile === undefined) return;
     toast.success(m.bulk_entry_toast_data_exported(), {
       action: openFile ? createShowInFolderToastAction(openFile) : undefined,
     });
@@ -417,12 +451,15 @@ async function handleExportCorrected() {
     toast.error(
       m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }),
     );
+  } finally {
+    isExporting = false;
   }
 }
 
 // Review impact before commit
 async function handleReviewImpact() {
-  if (!refData || rawRows.length === 0) return;
+  if (!ready || !refData || rawRows.length === 0) return;
+  isReviewing = true;
   try {
     const plainRows = rawRows.map((r) => r.data);
     previewSummary = await currentProfile.generatePreview(plainRows, refData);
@@ -431,12 +468,15 @@ async function handleReviewImpact() {
     toast.error(
       m.bulk_entry_toast_preview_failed({ reason: err.message || String(err) }),
     );
+  } finally {
+    isReviewing = false;
   }
 }
 
 // Execute Commit
 async function handleConfirmCommit() {
-  if (!refData || rawRows.length === 0) return;
+  if (!refData || rawRows.length === 0 || isSaving) return;
+  isSaving = true;
   isPreviewModalOpen = false;
   const operation = operationStore.start(
     getBulkEntryProfileName(currentProfile.id),
@@ -480,10 +520,13 @@ async function handleConfirmCommit() {
     toast.error(
       m.bulk_entry_toast_save_failed({ reason: err.message || String(err) }),
     );
+  } finally {
+    isSaving = false;
   }
 }
 
 function handleReset() {
+  filterMode = "all";
   rawRows = [];
   fileName = null;
   commitResult = null;
@@ -504,79 +547,27 @@ function handleReset() {
 
 <div class="flex h-full min-h-0 flex-col bg-background p-4 text-foreground sm:p-6">
   <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-    <!-- Minimal Settings-Style Top Bar -->
-    <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
-      <!-- Profile Selection / Mode Tabs -->
-      <div class="flex flex-wrap items-center gap-1.5">
-        {#if !hideProfileSelector}
-          <div class="flex items-center rounded-lg border border-border/60 bg-muted/70 p-0.5">
-            {#each Object.entries(BULK_PROFILES) as [id, prof] (id)}
-              <button
-                type="button"
-                onclick={() => handleProfileChange(id as BulkProfileId)}
-                class="rounded-md px-3 py-1 text-xs font-semibold transition-all {selectedProfileId === id ? 'bg-background text-foreground shadow-xs font-bold' : 'text-muted-foreground hover:text-foreground'}"
-              >
-                {getBulkEntryProfileName(id as BulkProfileId)}
-              </button>
-            {/each}
-          </div>
-        {/if}
-
-        {#if rawRows.length > 0}
-          <Badge variant="outline" class="px-2 py-0.5 text-xs">
-            {rawRows.length} {m.common_students_count_suffix()}
-          </Badge>
-        {/if}
-      </div>
-
-      <!-- Actions Toolbar -->
-      <div class="flex flex-wrap items-center gap-1.5">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isLoadingRefData}
-          onclick={() => handleAddBlankRows(1)}
-          class="h-8 gap-1.5 px-3 text-xs"
-        >
-          <Plus size={14} />
-          <span>{m.bulk_entry_add_row()}</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isLoadingRefData}
-          onclick={handlePasteFromClipboard}
-          class="h-8 gap-1 text-xs"
-          title={m.bulk_entry_paste_from_clipboard()}
-        >
-          <Clipboard size={14} />
-          <span>{m.bulk_entry_paste()}</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={isLoadingRefData}
-          onclick={handleDownloadTemplate}
-          class="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowDownTray size={14} />
-          <span>{m.bulk_entry_template()}</span>
-        </Button>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isLoadingRefData}
-          onclick={handlePickFile}
-          class="h-8 gap-1 text-xs"
-        >
-          <FolderOpen size={14} />
-          <span>{m.bulk_entry_import_file()}</span>
-        </Button>
-      </div>
-    </div>
+    <header class="shrink-0 border-b border-border pb-4">
+      <h1 class="text-xl font-semibold tracking-tight">{m.ui_page_bulk_entry()}</h1>
+      {#if !hideProfileSelector}
+        <nav class="mt-3 flex flex-wrap gap-2" aria-label={m.bulk_entry_workbook_template_type()}>
+          {#each Object.keys(BULK_PROFILES) as id (id)}
+            <Button variant={selectedProfileId === id ? "secondary" : "ghost"}
+              size="sm" aria-pressed={selectedProfileId === id} disabled={isBusy}
+              onclick={() => handleProfileChange(id as BulkProfileId)}>
+              {getBulkEntryProfileName(id as BulkProfileId)}
+            </Button>
+          {/each}
+        </nav>
+      {/if}
+    </header>
+    <input type="file" hidden accept=".xlsx,.xls,.csv" bind:this={browserFileInput}
+      onchange={(event) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        input.value = "";
+        importFile(file);
+      }} />
 
     {#if referenceDataError}
       <div class="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center justify-between gap-3" role="alert">
@@ -597,66 +588,72 @@ function handleReset() {
             commitResult = null;
             filterMode = "errors";
           }}
-          onexportreport={handleExportCorrected}
+          onexportreport={() => handleExportCorrected()}
         />
       </div>
     {:else if rawRows.length === 0}
-      <!-- Minimal Settings-Style Empty Area -->
-      <div
-        class="my-4 flex-1 rounded-xl border border-dashed border-border/80 bg-muted/10 flex flex-col items-center justify-center p-6 text-center transition-all {isDraggingFile ? 'border-primary bg-primary/5' : ''}"
-        ondragover={(e) => { e.preventDefault(); isDraggingFile = true; }}
-        ondragleave={() => { isDraggingFile = false; }}
-        ondrop={handleDropFile}
-        role="region"
-        aria-label={m.bulk_entry_file_drop_area()}
-      >
-        <div class="flex flex-col items-center max-w-sm">
-          <div class="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground mb-3">
-            <FolderOpen size={20} />
+      <div class="min-h-0 flex-1 overflow-y-auto py-5">
+        {#if selectedProfileId === "grades" && orgContext.orgId}
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3">
+            <p class="text-sm">{m.bulk_entry_grade_sheet_hint()}</p>
+            <Button variant="outline" size="sm" href={localizeHref(`/${orgContext.orgId}/academics/grades`)}>{m.academics_nav_grade_entry()}</Button>
           </div>
-          <p class="text-xs font-semibold text-foreground">{m.bulk_entry_empty_title()}</p>
-          <p class="text-[11px] text-muted-foreground mt-0.5 mb-4">
-            {m.bulk_entry_empty_description()}
-          </p>
-
-          <div class="flex items-center gap-2 flex-wrap justify-center">
-            <Button
-              variant="default"
-              size="sm"
-              onclick={() => handleAddBlankRows(1)}
-              disabled={isLoadingRefData}
-              class="h-8 gap-1.5 px-3 text-xs font-semibold shadow-sm"
-            >
-              <Plus size={14} />
-              <span>{m.bulk_entry_add_row()}</span>
+        {/if}
+        <div class="grid gap-4 lg:grid-cols-2">
+          <section class="rounded-xl border border-border bg-card p-5">
+            <ArrowDownTray size={22} class="mb-3 text-primary" />
+            <h2 class="text-base font-semibold">{m.bulk_entry_download_template()}</h2>
+            <p class="mt-1 text-sm leading-relaxed text-muted-foreground">{m.bulk_entry_template_help()}</p>
+            {#if refData && requiredFields.length}
+              <details class="my-4 rounded-lg border border-border px-3 py-2 text-sm">
+                <summary class="cursor-pointer font-medium">{m.bulk_entry_required_fields({ count: requiredFields.length })}</summary>
+                <ul class="mt-2 grid list-inside list-disc gap-1 text-muted-foreground sm:grid-cols-2">
+                  {#each requiredFields as column (column.id)}
+                    <li>{getBulkEntryColumnHeader(selectedProfileId, column.id, arabic ? column.headerAr : column.headerEn, false)}</li>
+                  {/each}
+                </ul>
+              </details>
+            {/if}
+            <Button class="mt-3 gap-2" variant="outline" disabled={!ready || isDownloading} onclick={handleDownloadTemplate}>
+              <ArrowDownTray size={15} /> {m.bulk_entry_download_template()}
             </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              onclick={handlePickFile}
-              disabled={isLoadingRefData}
-              class="h-8 gap-1 text-xs"
-            >
-              <FolderOpen size={14} />
-              <span>{m.bulk_entry_choose_file()}</span>
+          </section>
+          <section
+            class="rounded-xl border border-dashed bg-card p-5 transition-colors {isDraggingFile ? 'border-primary bg-primary/5' : 'border-border'}"
+            ondragover={(event) => { event.preventDefault(); isDraggingFile = ready; }}
+            ondragleave={() => (isDraggingFile = false)}
+            ondrop={handleDropFile}
+            aria-label={m.bulk_entry_file_drop_area()}
+          >
+            <FolderOpen size={22} class="mb-3 text-primary" />
+            <h2 class="text-base font-semibold">{m.bulk_entry_import_file()}</h2>
+            <p class="mt-1 text-sm leading-relaxed text-muted-foreground">{m.bulk_entry_import_help()}</p>
+            <Button class="mt-4 gap-2" disabled={!ready} onclick={handlePickFile}>
+              <FolderOpen size={15} /> {isReading ? m.common_loading() : m.bulk_entry_choose_file()}
             </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onclick={handleDownloadTemplate}
-              disabled={isLoadingRefData}
-              class="h-8 gap-1 text-xs text-muted-foreground"
-            >
-              <ArrowDownTray size={14} />
-              <span>{m.bulk_entry_download_template()}</span>
-            </Button>
-          </div>
+            <div class="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
+              <Button variant="ghost" size="sm" disabled={!ready} onclick={() => handleAddBlankRows(1)}>
+                <Plus size={15} /> {m.bulk_entry_add_row()}
+              </Button>
+              <Button variant="ghost" size="sm" disabled={!ready} onclick={handlePasteFromClipboard}>
+                <Clipboard size={15} /> {m.bulk_entry_paste_from_clipboard()}
+              </Button>
+            </div>
+          </section>
         </div>
       </div>
     {:else}
-      <!-- Central OrbisGrid Workspace -->
+      <div class="flex shrink-0 flex-wrap items-center justify-between gap-2 py-3">
+        <div class="min-w-0" role="status">
+          <h2 class="font-semibold">{m.bulk_entry_review_rows({ count: rawRows.length })}</h2>
+          {#if fileName}<p class="truncate text-xs text-muted-foreground" title={fileName} dir="auto">{fileName}</p>{/if}
+        </div>
+        <div class="flex flex-wrap gap-1">
+          <Button variant="ghost" size="sm" disabled={!ready} onclick={handlePickFile}>{m.bulk_entry_choose_file()}</Button>
+          <Button variant="ghost" size="sm" disabled={!ready} onclick={() => handleAddBlankRows(1)}><Plus size={14} /> {m.bulk_entry_add_row()}</Button>
+          <Button variant="ghost" size="sm" disabled={!ready} onclick={handlePasteFromClipboard}><Clipboard size={14} /> {m.bulk_entry_paste()}</Button>
+        </div>
+      </div>
       <div class="flex-1 min-h-0 min-w-0 w-full overflow-hidden bg-background relative">
         <OrbisGrid
           columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields).map((column) => ({
@@ -666,7 +663,8 @@ function handleReset() {
             sort: false,
           }))}
           source={gridSource}
-          rtl={true}
+          rtl={arabic}
+          readonly={isBusy}
           height="100%"
           clientQuery
           range={true}
@@ -714,7 +712,7 @@ function handleReset() {
             onclick={() => (filterMode = "valid")}
             class="whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition-all {filterMode === 'valid' ? 'bg-emerald-600 text-white' : 'bg-emerald-500/10 text-emerald-600'}"
           >
-            {m.bulk_entry_filter_valid({ count: validCount })}
+            {m.bulk_entry_filter_valid({ count: Math.max(0, validCount - warningCount) })}
           </button>
 
           {#if errorCount > 0}
@@ -732,6 +730,7 @@ function handleReset() {
           <Button
             variant="ghost"
             size="sm"
+            disabled={isBusy}
             onclick={handleClearEmptyRows}
             class="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
             title={m.bulk_entry_clear_empty_rows()}
@@ -743,11 +742,12 @@ function handleReset() {
           <Button
             variant="outline"
             size="sm"
-            onclick={handleExportCorrected}
+            disabled={isBusy || isExporting}
+            onclick={() => handleExportCorrected()}
             class="h-8 gap-1 text-xs"
           >
             <ArrowUpTray size={13} />
-            <span>{m.bulk_entry_export()}</span>
+            <span>{m.bulk_entry_export_review()}</span>
           </Button>
         </div>
 
@@ -761,12 +761,12 @@ function handleReset() {
           <Button
             variant="default"
             size="sm"
-            disabled={validCount === 0}
+            disabled={!ready || validCount === 0}
             onclick={handleReviewImpact}
             class="h-8 gap-1.5 text-xs shadow-xs"
           >
             <CheckCircle size={14} />
-            <span>{m.bulk_entry_commit_and_save({ count: validCount })}</span>
+            <span>{m.bulk_entry_preview_title()}</span>
           </Button>
         </div>
       </div>

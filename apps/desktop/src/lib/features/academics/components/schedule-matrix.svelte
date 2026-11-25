@@ -167,12 +167,12 @@ function getLessonForClassSlot(classId: string, slotId: string) {
       {/each}
     </div>
   {:else}
-  <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
+  <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto">
     <!-- Matrix Grid -->
-    <table class="w-full min-w-[700px] border-collapse text-xs select-none">
+    <table class="w-full min-w-[700px] border-separate border-spacing-0 text-xs select-none">
       <thead class="sticky top-0 z-20 bg-card shadow-2xs">
         <tr class="border-b border-border/60 bg-muted/20">
-          <th class="sticky start-0 z-30 p-2 border-e border-border/60 text-start w-32 min-w-32 font-bold text-muted-foreground bg-muted/20">
+          <th class="sticky start-0 z-30 p-2 border-e border-border/60 text-start w-32 min-w-32 font-bold text-muted-foreground bg-muted">
             {m.common_table_class()}
           </th>
           {#each enrichedSlots as slot (slot.id)}
@@ -250,13 +250,3 @@ function getLessonForClassSlot(classId: string, slotId: string) {
   </div>
   {/if}
 </div>
-
-<style>
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-</style>

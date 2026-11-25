@@ -332,6 +332,7 @@ const columns: OrbisColumnDef[] = [
     align: "center",
   },
   {
+    pin: "colPinStart",
     id: "ref_display",
     prop: "ref_display",
     header: m.finance_ui_voucher_number(),
@@ -515,7 +516,7 @@ function exportCsv() {
           title={m.finance_ui_journal_entry_create_heading()}
           onclose={() => (showAddForm = false)}
         >
-            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-4">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input

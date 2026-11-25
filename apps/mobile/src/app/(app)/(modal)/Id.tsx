@@ -34,7 +34,7 @@ export default function DigitalIdModalScreen() {
     : isGuardian
       ? selectedDependent?.student_id
       : undefined;
-  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+  const { studentId, isLinked, isResolving, identityMissing } =
     useLinkedStudentId(requestedStudentId);
   const studentQuery = useStudentQuery(studentId);
   const student = studentQuery.data;

@@ -27,7 +27,7 @@ export function formatCurrency(
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
-  } catch (e) {
+  } catch {
     // Fallback if the currency code is unrecognized
     return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
       style: "currency",

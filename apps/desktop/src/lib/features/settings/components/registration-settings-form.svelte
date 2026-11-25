@@ -714,6 +714,7 @@ const docGridColumns = $derived<OrbisColumnDef[]>([
     align: "center",
   },
   {
+    pin: "colPinStart",
     id: "doc_name",
     prop: "doc_name",
     header: m.ui_copy_document_title_12e6b59a(),

@@ -10,34 +10,43 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/api";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/api/query-keys";
-import { ApiRequestError } from "@/lib/api/types";
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  dismissNotification,
+} from "@/lib/api/notifications";
 import { useEffectiveContext } from "@/providers/effective-context";
-import type {
-  AcademicContextResponse,
-  AttendanceDto,
-  BatchMarkAttendanceRequest,
-  BatchRecordGradesRequest,
-  BehaviorRecordDto,
-  DashboardCountsDto,
-  SectionDto,
-  EnrollmentDto,
-  ExamScheduleDto,
-  ExamSessionDto,
-  GradeDto,
-  GuardianDto,
-  MarkAttendanceRequest,
-  OrganizationSettingsDto,
-  OrgDto,
-  RecordGradeRequest,
-  ScheduledLessonDto,
-  SectionSubjectDto,
-  StudentDto,
-  StudentFeeDto,
-  SubjectDto,
-  TemplateDto,
-  TimeSlotDto,
-  UserDeviceDto,
-  UserDto,
+import {
+  ApiRequestError,
+  type AcademicContextResponse,
+  type AttendanceDto,
+  type BatchMarkAttendanceRequest,
+  type BatchRecordGradesRequest,
+  type BehaviorRecordDto,
+  type DashboardCountsDto,
+  type SectionDto,
+  type EnrollmentDto,
+  type ExamScheduleDto,
+  type ExamSessionDto,
+  type GradeDto,
+  type GuardianDto,
+  type MarkAttendanceRequest,
+  type OrganizationSettingsDto,
+  type OrgDto,
+  type RecordGradeRequest,
+  type ScheduledLessonDto,
+  type SectionSubjectDto,
+  type StudentDto,
+  type StudentFeeDto,
+  type SubjectDto,
+  type TemplateDto,
+  type TimeSlotDto,
+  type UserDeviceDto,
+  type UserDto,
+  type ListNotificationsParams,
+  type NotificationDto,
 } from "@/lib/api/types";
 
 const STALE_TIME = 1000 * 60 * 5; // 5 minutes cache
@@ -1191,19 +1200,6 @@ export function useBatchRecordGradesMutation() {
 // ═══════════════════════════════════════════════════════════════
 // NOTIFICATION QUERIES & MUTATIONS
 // ═══════════════════════════════════════════════════════════════
-
-import type {
-  ListNotificationsParams,
-  NotificationDto,
-  NotificationPreferenceResponseDto,
-} from "@/lib/api/types";
-import {
-  fetchNotifications,
-  fetchUnreadCount,
-  markNotificationRead,
-  markAllNotificationsRead,
-  dismissNotification,
-} from "@/lib/api/notifications";
 
 const NOTIFICATION_STALE_TIME = 1000 * 60 * 2; // 2 minutes
 

@@ -189,6 +189,7 @@ const gridSource = $derived(
 const documentColumns = $derived<OrbisColumnDef[]>([
   selectionColumn(),
   {
+    pin: "colPinStart",
     id: "name",
     header: m.settings_ui_archive_file_name(),
     width: 320,
@@ -708,7 +709,7 @@ function onContainerDrop(e: DragEvent) {
   </header>
 
   <!-- Main Content Viewport -->
-  <main class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+  <main class="min-h-0 flex-1 overflow-y-auto p-3 @lg/workspace:p-6 space-y-6 scrollbar-hide">
     {#if isLoading}
       <ArchiveLoading />
     {:else if filteredFolders.length === 0 && filteredDocuments.length === 0}
@@ -743,7 +744,7 @@ function onContainerDrop(e: DragEvent) {
             </h4>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))] gap-3.5">
             {#each filteredFolders as folder (folder.id)}
               <FolderCard
                 {folder}
@@ -767,7 +768,7 @@ function onContainerDrop(e: DragEvent) {
           </div>
 
           {#if viewMode === "grid"}
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
+            <div class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,9rem),1fr))] gap-3.5">
               {#each filteredDocuments as doc (doc.id)}
                 <ArchiveDocumentCard
                   document={doc}
@@ -781,7 +782,7 @@ function onContainerDrop(e: DragEvent) {
             </div>
           {:else}
             <!-- Table View -->
-            <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden">
+            <div class="h-[clamp(14rem,65dvh,42.5rem)] overflow-hidden">
               <OrbisGrid
                 columns={documentColumns}
                 source={gridSource}

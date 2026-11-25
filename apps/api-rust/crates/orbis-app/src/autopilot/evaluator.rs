@@ -3,39 +3,26 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::ports::repositories::{
-    AcademicCalendarRepository, AcademicPeriodRepository, EnrollmentRepository, PolicyRepository,
-    StudentFeeRepository,
-};
+use crate::ports::repositories::{AcademicCalendarRepository, AcademicPeriodRepository};
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
 use orbis_domain::entities::academic_calendar::AcademicCalendarStatus;
 use orbis_domain::entities::academic_period::PeriodKind;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::errors::DomainError;
-use orbis_domain::queries::filters::StudentFeeFilter;
 
 pub struct AutopilotEvaluator {
-    pub policy_repo: Arc<dyn PolicyRepository>,
     pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
-    pub enrollment_repo: Arc<dyn EnrollmentRepository>,
-    pub student_fee_repo: Arc<dyn StudentFeeRepository>,
 }
 
 impl AutopilotEvaluator {
     pub fn new(
-        policy_repo: Arc<dyn PolicyRepository>,
         year_repo: Arc<dyn AcademicCalendarRepository>,
         period_repo: Arc<dyn AcademicPeriodRepository>,
-        enrollment_repo: Arc<dyn EnrollmentRepository>,
-        student_fee_repo: Arc<dyn StudentFeeRepository>,
     ) -> Self {
         Self {
-            policy_repo,
             year_repo,
             period_repo,
-            enrollment_repo,
-            student_fee_repo,
         }
     }
 
@@ -54,11 +41,11 @@ impl AutopilotEvaluator {
         }
 
         // ── 1. Academic Year Lifecycle ──────────────────────────────────
+        let periods = self.period_repo.find_by_org(org_id).await?;
         let years = self.year_repo.find_by_org(org_id).await?;
         for year in &years {
-            if year.status == AcademicCalendarStatus::Planning
-                && year.starts_at.map_or(false, |d| d <= now)
-            {
+            let starts_at = year.starts_at.unwrap_or(year.start_date);
+            if year.status == AcademicCalendarStatus::Planning && starts_at <= now {
                 tasks.push(AutopilotTask::new(
                     org_id,
                     TaskType::YearActivate,
@@ -69,14 +56,17 @@ impl AutopilotEvaluator {
                         "Academic year '{}' start date has arrived",
                         year.name
                     )),
-                    now,
+                    starts_at,
                 ));
             }
 
             if year.status == AcademicCalendarStatus::Active {
-                let periods = self.period_repo.find_by_year(year.id).await?;
-                if !periods.is_empty()
-                    && periods
+                let year_periods: Vec<_> = periods
+                    .iter()
+                    .filter(|period| period.year_id == year.id)
+                    .collect();
+                if !year_periods.is_empty()
+                    && year_periods
                         .iter()
                         .all(|p| p.state.to_string() == "closed" || p.is_locked)
                 {
@@ -90,29 +80,36 @@ impl AutopilotEvaluator {
                             "All periods in year '{}' are closed. Ready for year closing",
                             year.name
                         )),
-                        now,
+                        year.start_date,
                     ));
                 }
             }
 
             if year.status == AcademicCalendarStatus::Closed && settings.autopilot.auto_promotion {
-                tasks.push(AutopilotTask::new(
-                    org_id,
-                    TaskType::PromotionDryRun,
-                    Some(year.id),
-                    Some("academic_calendar".to_string()),
-                    RiskLevel::Medium,
-                    Some(format!(
-                        "Year '{}' is closing — progression dry-run recommended",
-                        year.name
-                    )),
-                    now,
-                ));
+                if let Some(period) = periods
+                    .iter()
+                    .filter(|period| {
+                        period.year_id == year.id && period.period_kind == PeriodKind::Teaching
+                    })
+                    .max_by_key(|period| (period.end_date, period.id))
+                {
+                    tasks.push(AutopilotTask::new(
+                        org_id,
+                        TaskType::PromotionDryRun,
+                        Some(period.id),
+                        Some("academic_period".into()),
+                        RiskLevel::Medium,
+                        Some(format!(
+                            "Year '{}' is closed; progression preview recommended",
+                            year.name
+                        )),
+                        period.end_date,
+                    ));
+                }
             }
         }
 
         // ── 2. Academic Period Lifecycle Gates ─────────────────────────
-        let periods = self.period_repo.find_by_org(org_id).await?;
         for period in &periods {
             let period_state_str = period.state.to_string();
 
@@ -129,7 +126,7 @@ impl AutopilotEvaluator {
                     Some("academic_period".to_string()),
                     RiskLevel::Medium,
                     Some(format!("Period '{}' start date has arrived", period.name)),
-                    now,
+                    period.start_date,
                 ));
             }
 
@@ -137,6 +134,7 @@ impl AutopilotEvaluator {
             if let Some(enroll_start) = period.enrollment_starts_at {
                 if !period.is_enrollment_open
                     && enroll_start <= now
+                    && period.enrollment_ends_at.is_none_or(|end| now <= end)
                     && period_state_str == "active_teaching"
                     && settings.autopilot.auto_open_enrollment
                 {
@@ -150,7 +148,7 @@ impl AutopilotEvaluator {
                             "Enrollment start date reached for period '{}'",
                             period.name
                         )),
-                        now,
+                        enroll_start,
                     ));
                 }
             }
@@ -171,7 +169,7 @@ impl AutopilotEvaluator {
                             "Enrollment deadline passed for period '{}'",
                             period.name
                         )),
-                        now,
+                        enroll_end,
                     ));
                 }
             }
@@ -180,6 +178,7 @@ impl AutopilotEvaluator {
             if let Some(grade_start) = period.grade_entry_starts_at {
                 if !period.is_grade_entry_open
                     && grade_start <= now
+                    && period.grade_entry_ends_at.is_none_or(|end| now <= end)
                     && (period_state_str == "active_teaching"
                         || period_state_str == "grade_submission")
                 {
@@ -193,7 +192,7 @@ impl AutopilotEvaluator {
                             "Grade entry window started for period '{}'",
                             period.name
                         )),
-                        now,
+                        grade_start,
                     ));
                 }
             }
@@ -211,17 +210,15 @@ impl AutopilotEvaluator {
                             "Grade entry deadline passed for period '{}'",
                             period.name
                         )),
-                        now,
+                        grade_end,
                     ));
                 }
             }
 
             // Auto-lock period after end date + grace days
             let grace_duration = chrono::Duration::days(settings.autopilot.grace_days as i64);
-            if !period.is_locked
-                && (period.end_date + grace_duration) < now
-                && settings.autopilot.auto_period_lock
-            {
+            let lock_at = period.end_date + grace_duration;
+            if !period.is_locked && lock_at < now && settings.autopilot.auto_period_lock {
                 tasks.push(AutopilotTask::new(
                     org_id,
                     TaskType::PeriodLock,
@@ -232,29 +229,7 @@ impl AutopilotEvaluator {
                         "Period '{}' ended and grace period expired — auto-locking",
                         period.name
                     )),
-                    now,
-                ));
-            }
-        }
-
-        // ── 3. Overdue Financial Fees ─────────────────────────────────
-        if settings.autopilot.auto_fee_assignment {
-            let mut filter = StudentFeeFilter::default();
-            filter.is_overdue = Some(true);
-            filter.status = Some("pending".to_string());
-            let overdue_result = self.student_fee_repo.list(org_id, filter).await?;
-            for fee in overdue_result.items {
-                tasks.push(AutopilotTask::new(
-                    org_id,
-                    TaskType::LateFeeReminder,
-                    Some(fee.id),
-                    Some("student_fee".to_string()),
-                    RiskLevel::Low,
-                    Some(format!(
-                        "Student fee {} is overdue since {:?}",
-                        fee.id, fee.due_date
-                    )),
-                    now,
+                    lock_at,
                 ));
             }
         }

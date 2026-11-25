@@ -54,6 +54,7 @@ function studentName(student: any): string {
 const columns: OrbisColumnDef[] = [
   {
     id: "__selected",
+    pin: "colPinStart",
     prop: "__selected",
     header: "",
     name: "",
@@ -65,6 +66,7 @@ const columns: OrbisColumnDef[] = [
   },
   {
     id: "student_name",
+    pin: "colPinStart",
     prop: "student_name",
     header: m.common_student_name(),
     name: m.common_student_name(),

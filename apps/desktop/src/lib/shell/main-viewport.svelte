@@ -124,15 +124,14 @@ function getFallbackLabel(
 </script>
 
 <SashLayer>
-	<div class="relative flex h-full w-full flex-1 items-stretch">
+	<div class="relative flex h-full w-full min-w-0 flex-1 items-stretch">
 		{#if left && !standaloneWindow}
 			<div
-				class="relative flex h-full shrink-0 flex-col"
+				class="relative flex h-full min-w-0 shrink-0 flex-col {right && !standaloneWindow ? 'max-w-[30%]' : 'max-w-[35%]'}"
 				class:me-2={finalLeftWidth > COLLAPSED_WIDTH}
 				class:overflow-hidden={finalLeftWidth === COLLAPSED_WIDTH}
 				bind:this={leftDiv}
 				style:width="{finalLeftWidth}rem"
-				style:min-width="{finalLeftWidth}rem"
 			>
 				{#if finalLeftWidth === COLLAPSED_WIDTH}
 					<!-- Collapsed vertical strip -->
@@ -190,7 +189,7 @@ function getFallbackLabel(
 		{/if}
 
 		<div
-			class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden"
+			class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden @container/workspace"
 			class:no-left={!left || standaloneWindow}
 		>
 			{@render middle()}
@@ -198,12 +197,11 @@ function getFallbackLabel(
 
 		{#if right && !standaloneWindow}
 			<div
-				class="relative flex h-full shrink-0 flex-col"
+				class="relative flex h-full min-w-0 shrink-0 flex-col {left ? 'max-w-[30%]' : 'max-w-[35%]'}"
 				class:ms-2={finalRightWidth > COLLAPSED_WIDTH}
 				class:overflow-hidden={finalRightWidth === COLLAPSED_WIDTH}
 				bind:this={rightDiv}
 				style:width="{finalRightWidth}rem"
-				style:min-width="{finalRightWidth}rem"
 			>
 				<Resizer
 					viewport={rightDiv}

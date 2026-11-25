@@ -443,6 +443,7 @@ const columns: OrbisColumnDef[] = [
     align: "center",
   },
   {
+    pin: "colPinStart",
     id: "receipt_display",
     prop: "receipt_display",
     header: m.finance_ui_voucher_number(),
@@ -627,7 +628,7 @@ function exportCsv() {
           contentClass="gap-5"
           onclose={() => (showAddForm = false)}
         >
-              <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <div class="grid min-w-0 grid-cols-1 gap-3 @min-[30rem]/workspace:grid-cols-2 @min-[72rem]/workspace:grid-cols-5">
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
                   <Input

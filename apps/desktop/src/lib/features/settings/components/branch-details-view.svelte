@@ -4,6 +4,7 @@ Comprehensive inner view for an organizational branch / campus.
 Shows live telemetry, classes, rooms, child sub-units, staff directory, and operational details.
 -->
 <script lang="ts">
+import { getLocale } from "$lib/paraglide/runtime";
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";

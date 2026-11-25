@@ -118,6 +118,10 @@ export interface OrbisColumnDef {
   aggregate?: AggregateFn;
   /** Merged/group header label above this column (e.g. subject name). Consecutive columns with the same group merge. */
   group?: string;
+  /** Nested merged headers, from outermost to innermost. */
+  groupPath?: readonly string[];
+  /** Visually distinguish calculated columns in a worksheet. */
+  emphasis?: boolean;
   /** Secondary header label below the main header (e.g. max score / limit row). */
   subHeader?: string;
   /** Number of header rows this column's header should span from the top (use to span all header rows for identity columns). */

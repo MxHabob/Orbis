@@ -113,17 +113,17 @@ function handleKeyDown(e: KeyboardEvent) {
   {orgId}
   className="h-full w-full min-w-0 flex-1 overflow-hidden"
 >
-<div class="flex h-full max-w-full bg-background">
+<div class="flex h-full min-w-0 max-w-full bg-background">
 	{#if !standalone && !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}
-	<div class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+	<div class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 		<div
 			class="flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden"
 		>
-			<div class="flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden">
+			<div class="flex min-h-0 min-w-0 flex-1 items-stretch overflow-hidden @container/workspace">
 				<LicenseFeatureGate feature={requiredFeature} {licenseReady} {orgId}>
 					{@render children()}
 				</LicenseFeatureGate>
@@ -142,7 +142,7 @@ function handleKeyDown(e: KeyboardEvent) {
 					onclick={() => uiStore.setAskOrbis(false)}
 				></button>
 				<div
-					class="z-50"
+					class="z-50 max-w-[calc(100%-0.5rem)]"
 					style="position:absolute; inset-block-start:1.25rem; inset-block-end:1.25rem; inset-inline-end:0.25rem; inline-size:{askOrbisWidth + 0.875}rem;"
 				>
 					<LicenseFeatureGate

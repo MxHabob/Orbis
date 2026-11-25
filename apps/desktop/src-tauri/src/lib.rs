@@ -127,17 +127,18 @@ pub fn run() {
                     event.urls().iter().map(|url| url.to_string()).collect();
                 features::deep_link::handle_deep_link(&app_handle_for_deep_links, url_strings);
             });
-            // Dynamically calculate window size based on primary monitor resolution (flexible size)
-            let (width, height) = if let Ok(Some(monitor)) = app.primary_monitor() {
-                let size = monitor.size();
-                let scale = monitor.scale_factor();
-                let mut w = (size.width as f64 * 0.8) / scale;
-                let mut h = (size.height as f64 * 0.8) / scale;
-                if w < 900.0 { w = 900.0; }
-                if h < 600.0 { h = 600.0; }
-                (w, h)
+            let (width, height, min_width, min_height) = if let Ok(Some(monitor)) = app.primary_monitor() {
+                let area = monitor.work_area().size.to_logical::<f64>(monitor.scale_factor());
+                let min_width = area.width.min(760.0);
+                let min_height = area.height.min(520.0);
+                (
+                    (area.width * 0.8).max(min_width),
+                    (area.height * 0.8).max(min_height),
+                    min_width,
+                    min_height,
+                )
             } else {
-                (1200.0, 750.0)
+                (1200.0, 750.0, 760.0, 520.0)
             };
             let win_builder = WebviewWindowBuilder::new(
                 app,
@@ -146,7 +147,7 @@ pub fn run() {
             )
             .title("Orbis")
             .inner_size(width, height)
-            .min_inner_size(900.0, 600.0)
+            .min_inner_size(min_width, min_height)
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OrbisDesktop/1.0")
             .visible(false)
             .center()

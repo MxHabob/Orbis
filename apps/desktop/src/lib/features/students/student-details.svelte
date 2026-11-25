@@ -657,7 +657,7 @@ async function resetStudentDetails() {
 
         {#if evaluationLoading}
           <div class="flex flex-col gap-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 @min-[50rem]/workspace:grid-cols-3 gap-6">
               <Skeleton class="lg:col-span-2 h-65 rounded-xl" />
               <Skeleton class="h-65 rounded-xl" />
             </div>
@@ -666,7 +666,7 @@ async function resetStudentDetails() {
         {:else}
           <div class="flex flex-col gap-6">
             <!-- Live Performance Metrics Cards Strip -->
-            <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <div class="grid grid-cols-1 gap-3 @min-[26rem]/workspace:grid-cols-2 @min-[56rem]/workspace:grid-cols-4">
               <!-- Metric 1: Academic Result -->
               <StudentMetricCard
                 title={m.academics_card_average_grade()}
@@ -741,7 +741,7 @@ async function resetStudentDetails() {
             </div>
 
             {#if classId}
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="grid grid-cols-1 @min-[50rem]/workspace:grid-cols-3 gap-6">
                 <!-- Left: Attendance Trends Card (2/3 width) -->
                 <div class="lg:col-span-2">
                   <AttendanceTrendsCard {orgId} selectedClass={classId} />
@@ -790,7 +790,7 @@ async function resetStudentDetails() {
               <span class="text-xs font-bold text-foreground">{m.students_student_detail_row_status_title()}</span>
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_status_desc()}</span>
             </div>
-            <div class="w-full md:w-80 shrink-0 flex items-center gap-2">
+            <div class="w-full @min-[50rem]/workspace:w-80 shrink-0 flex items-center gap-2">
               <Switch
                 id="student_status_switch"
                 checked={isActiveState}
@@ -835,7 +835,7 @@ async function resetStudentDetails() {
               <span class="text-xs font-bold text-foreground">{m.common_bulk_col_dob()} *</span>
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_birth_date_desc()}</span>
             </div>
-            <div class="w-full md:w-80 shrink-0 grid grid-cols-3 gap-2">
+            <div class="w-full @min-[50rem]/workspace:w-80 shrink-0 grid grid-cols-3 gap-2">
               <Select bind:value={birthDay} type="single">
                 <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between border border-input px-2">
                   <span class="truncate">{birthDay || m.common_form_day()}</span>
@@ -883,7 +883,7 @@ async function resetStudentDetails() {
               <span class="text-xs font-bold text-foreground">{m.common_form_sex()} *</span>
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_sex_desc()}</span>
             </div>
-            <div class="w-full md:w-80 shrink-0">
+            <div class="w-full @min-[50rem]/workspace:w-80 shrink-0">
               <Select type="single" value={sex} onValueChange={(v) => sex = v ?? "male"}>
                 <SelectTrigger class="h-9 w-full text-xs">
                   {sex === "male" ? m.common_form_male() : m.common_form_female()}

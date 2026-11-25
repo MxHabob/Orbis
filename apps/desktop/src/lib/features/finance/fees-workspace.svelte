@@ -445,6 +445,7 @@ const columns: OrbisColumnDef[] = [
   },
   {
     id: "student_display",
+    pin: "colPinStart",
     prop: "student_display",
     header: m.finance_ui_student_name(),
     name: m.finance_ui_student_name(),
@@ -585,7 +586,7 @@ async function exportCsv() {
   <div class="flex min-h-0 w-full flex-1 flex-col gap-4" in:fade={{ duration: 150 }}>
     
     <!-- Top KPI Metric Cards (Matching FinanceOverview Aesthetic) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
+    <div class="grid grid-cols-1 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-4 gap-4 shrink-0">
       <Card class="p-4 shadow-sm border-border/40 bg-card flex flex-col justify-between">
         <div class="flex items-center justify-between text-muted-foreground text-xs font-semibold">
           <span>{m.finance_ui_total_fees_due()}</span>

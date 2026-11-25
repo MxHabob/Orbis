@@ -8,6 +8,22 @@ import {
   normalizeSpreadsheetHeader,
 } from "./header-mapping";
 
+const legacyNameColumns: Record<string, string> = {
+  firstnamear: "legacy_first_name_ar",
+  الاسمالأولعربي: "legacy_first_name_ar",
+  firstnamearabic: "legacy_first_name_ar",
+  middlenamear: "legacy_middle_name_ar",
+  اسمالأبعربي: "legacy_middle_name_ar",
+  middlenamarabic: "legacy_middle_name_ar",
+  lastnamear: "legacy_last_name_ar",
+  اسمالعائلةعربي: "legacy_last_name_ar",
+  lastnamearabic: "legacy_last_name_ar",
+  firstname: "legacy_first_name",
+  firstnameenglish: "legacy_first_name",
+  lastname: "legacy_last_name",
+  lastnameenglish: "legacy_last_name",
+};
+
 export interface ParsedFileResult {
   fileName: string;
   totalRowsCount: number;
@@ -60,37 +76,34 @@ export async function parseSpreadsheetBytes(
   profile: BulkImportProfile<any, any>,
 ): Promise<ParsedFileResult> {
   const XLSX = await import("xlsx");
-  const workbook = XLSX.read(bytes, { type: "array", cellDates: true });
+  const workbook = XLSX.read(bytes, { type: "array", cellDates: true, raw: true });
 
-  // Use the first non-reference sheet
-  const targetSheetName =
-    workbook.SheetNames.find(
-      (name) =>
-        !name.startsWith("_") && !name.toLowerCase().includes("instruction"),
-    ) ||
-    workbook.SheetNames[0] ||
-    m.bulk_entry_parser_default_sheet();
-
-  const worksheet = workbook.Sheets[targetSheetName];
-  if (!worksheet) {
-    throw new Error(m.bulk_entry_parser_no_data_sheet());
-  }
-
-  // Convert worksheet to raw array of rows
-  const rawData: unknown[][] = XLSX.utils.sheet_to_json(worksheet, {
-    header: 1,
-    defval: "",
-    raw: false,
-    dateNF: "YYYY-MM-DD",
+  const candidateSheets = workbook.SheetNames.filter((name, index) =>
+    !name.startsWith("_") && !name.toLowerCase().includes("instruction") &&
+    !workbook.Workbook?.Sheets?.[index]?.Hidden,
+  );
+  const sheetName = candidateSheets.find((name) => {
+    const sheet = workbook.Sheets[name];
+    const range = sheet?.["!ref"];
+    if (!range) return false;
+    const { s: start, e: end } = XLSX.utils.decode_range(range);
+    for (let column = start.c; column <= end.c; column++) {
+      const cell = sheet[XLSX.utils.encode_cell({ c: column, r: start.r })];
+      if (findSpreadsheetColumn(String(cell?.v ?? ""), profile.columnMetadata,
+        (meta) => getBulkEntryColumnHeader(profile.id, meta.id, meta.headerAr))) return true;
+      if ((profile.id === "students" || profile.id === "employees") &&
+          legacyNameColumns[normalizeSpreadsheetHeader(String(cell?.v ?? ""))]) return true;
+    }
+    return false;
   });
 
-  if (rawData.length < 2) {
-    throw new Error(m.bulk_entry_parser_empty_file());
-  }
-
-  const rawHeaders = (rawData[0] as string[]).map((h) =>
-    String(h || "").trim(),
-  );
+  if (!sheetName) throw new Error(m.bulk_entry_parser_unrecognized_columns());
+  const worksheet = workbook.Sheets[sheetName]!;
+  const rowOffset = XLSX.utils.decode_range(worksheet["!ref"]!).s.r;
+  const rawData: unknown[][] = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1, defval: "", raw: false, dateNF: "YYYY-MM-DD",
+  });
+  const rawHeaders = (rawData[0] ?? []).map((header) => String(header ?? "").trim());
   const columnMap: Record<number, string> = {};
 
   // Map header column indices to profile column metadata IDs
@@ -111,44 +124,27 @@ export async function parseSpreadsheetBytes(
 
     if (profile.id === "students" || profile.id === "employees") {
       const normalizedHeader = normalizeSpreadsheetHeader(headerText);
-      const legacyStudentHeaders: Record<string, string> = {
-        firstnamear: "legacy_first_name_ar",
-        الاسمالأولعربي: "legacy_first_name_ar",
-        firstnamearabic: "legacy_first_name_ar",
-        middlenamear: "legacy_middle_name_ar",
-        اسمالأبعربي: "legacy_middle_name_ar",
-        middlenamarabic: "legacy_middle_name_ar",
-        lastnamear: "legacy_last_name_ar",
-        اسمالعائلةعربي: "legacy_last_name_ar",
-        lastnamearabic: "legacy_last_name_ar",
-        firstname: "legacy_first_name",
-        firstnameenglish: "legacy_first_name",
-        lastname: "legacy_last_name",
-        lastnameenglish: "legacy_last_name",
-      };
-      const legacyColumnId = legacyStudentHeaders[normalizedHeader];
+      const legacyColumnId = legacyNameColumns[normalizedHeader];
       if (legacyColumnId) columnMap[c] = legacyColumnId;
     }
   }
 
+  const mappedColumns = Object.values(columnMap);
+  if (new Set(mappedColumns).size !== mappedColumns.length) {
+    throw new Error(m.bulk_entry_parser_duplicate_columns());
+  }
+  const mappedIndexes = Object.keys(columnMap).map(Number);
   const rows: BulkRowState[] = [];
 
   for (let r = 1; r < rawData.length; r++) {
     const line = rawData[r] as unknown[];
-    if (
-      !line ||
-      line.every(
-        (cell) =>
-          cell === null || cell === undefined || String(cell).trim() === "",
-      )
-    ) {
-      continue; // skip completely empty rows
-    }
+    if (!line || mappedIndexes.every((index) => !String(line[index] ?? "").trim())) continue;
+    const excelRow = rowOffset + r + 1;
 
     const rowData: Record<string, unknown> = {
       __idx: rows.length + 1,
-      rowNumber: r + 1,
-      id: `import-row-${r + 1}`,
+      rowNumber: excelRow,
+      id: `import-row-${excelRow}`,
     };
 
     for (let c = 0; c < line.length; c++) {
@@ -195,7 +191,7 @@ export async function parseSpreadsheetBytes(
     }
 
     rows.push({
-      rowNumber: r + 1,
+      rowNumber: excelRow,
       data: rowData,
       errors: new Map(),
       warnings: new Map(),
@@ -204,6 +200,7 @@ export async function parseSpreadsheetBytes(
     });
   }
 
+  if (!rows.length) throw new Error(m.bulk_entry_parser_empty_file());
   return {
     fileName,
     totalRowsCount: rows.length,
