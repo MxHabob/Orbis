@@ -223,10 +223,12 @@ class NotificationStore {
     if (typeof EventSource === "undefined") return;
 
     try {
+      const endpoint = baseUrl.replace(/\/+$/, "");
+      if (localStorage.getItem("orbis_connection_scope") !== `api:${endpoint}`) return;
       const token = localStorage.getItem("orbis_token");
       if (!token) return;
 
-      const url = `${baseUrl.replace(/\/$/, "")}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
+      const url = `${endpoint}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
       const es = new EventSource(url);
       es.addEventListener("notification", (e) => {
         try {

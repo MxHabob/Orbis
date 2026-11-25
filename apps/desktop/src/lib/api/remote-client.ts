@@ -331,6 +331,13 @@ export function mapStudentDtoToDetail(
   };
 }
 
+function unwrapHttpResponse<T>(body: unknown): T {
+  if (body !== null && typeof body === "object" && "data" in body) {
+    return body.data as T;
+  }
+  return body as T;
+}
+
 export class RemoteClient implements OrbisApiClient {
   private baseUrl: string;
   private token: string | null = null;
@@ -367,7 +374,7 @@ export class RemoteClient implements OrbisApiClient {
     if (res.error) {
       throw new ApiRequestError(res.response?.status || 500, res.error);
     }
-    return res.data as T;
+    return unwrapHttpResponse<T>(res.data);
   }
 
   // ── Auth & MFA & Devices ────────────────────────────────────
@@ -2276,8 +2283,7 @@ export class RemoteClient implements OrbisApiClient {
       }
       throw new ApiRequestError(res.status, errBody);
     }
-    const json = await res.json();
-    return json?.data !== undefined ? json.data : json;
+    return unwrapHttpResponse<T>(await res.json());
   }
 
   async getAccountStatement(
@@ -2690,9 +2696,22 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async systemHasOrganization(): Promise<boolean> {
-    return this.call(
-      sdk.getSystemHasOrgEndpoint({ client: this.client }),
-    ) as any;
+    const result: unknown = await this.call(
+      sdk.getSystemHasOrgEndpoint({
+        client: this.client,
+        signal: AbortSignal.timeout(5_000),
+        redirect: "error",
+      }),
+    );
+    if (
+      result === null ||
+      typeof result !== "object" ||
+      !("has_organization" in result) ||
+      typeof result.has_organization !== "boolean"
+    ) {
+      throw new Error("Orbis API returned an invalid organization status");
+    }
+    return result.has_organization;
   }
 
   async systemGetReadiness(): Promise<OrganizationReadiness> {
@@ -2920,7 +2939,7 @@ export class RemoteClient implements OrbisApiClient {
     try {
       const response = await fetch(
         `${serverUrl.replace(/\/$/, "")}/api/v1/health`,
-        { signal: AbortSignal.timeout(10_000) },
+        { signal: AbortSignal.timeout(5_000), redirect: "error" },
       );
       const latency_ms = Math.round(performance.now() - startedAt);
       const body = (await response.json().catch(() => ({}))) as Record<
@@ -2935,17 +2954,20 @@ export class RemoteClient implements OrbisApiClient {
           error: `Orbis API returned HTTP ${response.status}`,
         };
       }
+      const ready =
+        body.status === "ok" &&
+        body.database_connected === true &&
+        typeof body.version === "string" &&
+        typeof body.api_version === "string" &&
+        body.api_version.length > 0;
       return {
-        reachable: body.database_connected !== false,
+        reachable: ready,
         latency_ms,
-        status: typeof body.status === "string" ? body.status : "ok",
+        status: typeof body.status === "string" ? body.status : undefined,
         version: typeof body.version === "string" ? body.version : undefined,
         api_version:
           typeof body.api_version === "string" ? body.api_version : undefined,
-        error:
-          body.database_connected === false
-            ? "Orbis API is reachable but its database is unavailable"
-            : undefined,
+        error: ready ? undefined : "This endpoint did not return a ready Orbis API response",
       };
     } catch (error) {
       return {
@@ -2973,7 +2995,7 @@ export class RemoteClient implements OrbisApiClient {
 
   async connectionRunMigrations(): Promise<MigrationResultDto> {
     throw new Error(
-      "Database migrations must be applied from the connected desktop database.",
+      "Run orbis-server migrate on the host administering the database.",
     );
   }
 

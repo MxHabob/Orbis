@@ -9,7 +9,7 @@ use orbis_infra::repositories::{
 use orbis_infra::security::{bcrypt::BcryptHasher, jwt::JwtTokenService};
 use orbis_server::app_router;
 use orbis_server::state::AppState;
-use sea_orm::Database;
+use sea_orm::{ConnectOptions, Database};
 use std::net::IpAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -127,7 +127,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Connecting to configured server database");
 
     // Connect to database
-    let db = Database::connect(&db_url).await?;
+    let max_connections = match std::env::var("ORBIS_DB_MAX_CONNECTIONS") {
+        Ok(value) => value
+            .parse::<u32>()
+            .ok()
+            .filter(|count| *count > 0)
+            .ok_or("ORBIS_DB_MAX_CONNECTIONS must be a positive integer")?,
+        Err(std::env::VarError::NotPresent) => 10,
+        Err(error) => return Err(error.into()),
+    };
+    let mut database_options = ConnectOptions::new(db_url);
+    database_options
+        .max_connections(max_connections)
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .acquire_timeout(std::time::Duration::from_secs(3))
+        .sqlx_logging(false);
+    let db = Database::connect(database_options).await?;
 
     use orbis_infra::migration::Migrator;
     use sea_orm_migration::{MigratorTrait, SchemaManager};

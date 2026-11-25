@@ -380,6 +380,17 @@ describe("worksheet layout", () => {
     expect(cells.filter((cell) => cell.kind === "sub").map((cell) => cell.label)).toEqual(["20", "30", "50"]);
   });
 
+  test("grouped headers do not span the boundary between pinned and scrolling columns", () => {
+    const { cells } = headerLayout([
+      { id: "name", group: "Record", pin: "colPinStart" },
+      { id: "status", group: "Record", pin: "colPinStart" },
+      { id: "score", group: "Record" },
+      { id: "notes", group: "Record" },
+    ]);
+    expect(cells.filter((cell) => cell.kind === "group").map(({ colStart, colSpan }) => [colStart, colSpan]))
+      .toEqual([[0, 2], [2, 2]]);
+  });
+
   test("fixed rosters retain invalid target values and never append students", () => {
     const roster = [{ score: 7 }];
     const { rows: pasted, result } = applyPaste({

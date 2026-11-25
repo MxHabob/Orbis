@@ -5,6 +5,8 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { api } from "$lib/api/client";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
@@ -141,11 +143,8 @@ async function browseDatabasePath() {
 
 async function continueToOrganization() {
   const hasOrg = await api.systemHasOrganization();
-  goto(
-    new URL(
-      localizeHref(hasOrg ? "/login" : "/onboarding"),
-      window.location.href,
-    ),
+  await goto(
+    resolve(localizeHref(hasOrg ? "/login" : "/onboarding") as Pathname),
     { replaceState: true },
   );
 }
@@ -198,20 +197,20 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
           ? customDatabasePath.trim()
           : undefined,
     });
+    localStorage.removeItem("orbis_connection_scope");
 
-    if (values.mode === "api") {
-      configureApiClient("api", values.serverUrl.trim());
-    } else {
-      configureApiClient("local");
-    }
     try {
       const result = await api.connectionConnect();
       if (result.connected) {
+        if (result.mode === "api") {
+          configureApiClient("api", result.server_url);
+        }
         await continueToOrganization();
       } else {
         throw new Error(result.message || m.setup_connection_failed());
       }
     } catch (error) {
+      configureApiClient("local");
       const message = error instanceof Error ? error.message : String(error);
       const migrationMatch = message.match(/SCHEMA_MIGRATION_REQUIRED:(\d+):/);
       if (values.mode === "direct" && migrationMatch) {

@@ -20,6 +20,7 @@ use crate::state::AppState;
 /// - **Authenticated path**: reads `Authorization: Bearer <token>`, validates JWT via
 ///   `AppState::token_service`, and populates `tenant_id` + `actor` from claims.
 /// - **Unauthenticated path**: rejected unconditionally.
+#[derive(Clone)]
 pub struct AuthContext(pub RequestContext);
 
 impl std::ops::Deref for AuthContext {
@@ -37,9 +38,12 @@ impl FromRequestParts<AppState> for AuthContext {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
+        if let Some(context) = parts.extensions.get::<Self>() {
+            return Ok(context.clone());
+        }
         let request_id = Uuid::new_v4();
 
-        // Extract bearer token from Authorization header or query param (?token=... or ?access_token=...)
+        // EventSource clients cannot supply an Authorization header.
         let token_header = parts
             .headers
             .get(header::AUTHORIZATION)
@@ -48,12 +52,15 @@ impl FromRequestParts<AppState> for AuthContext {
             .map(|s| s.to_string());
 
         let token = token_header.or_else(|| {
+            if parts.uri.path() != "/api/v1/notifications/stream" {
+                return None;
+            }
             parts.uri.query().and_then(|q| {
                 q.split('&').find_map(|pair| {
                     let mut split = pair.splitn(2, '=');
                     let key = split.next()?;
                     let val = split.next()?;
-                    if key == "token" || key == "access_token" {
+                    if key == "token" {
                         Some(val.to_string())
                     } else {
                         None
@@ -79,13 +86,15 @@ impl FromRequestParts<AppState> for AuthContext {
                 let org_id = Uuid::parse_str(&claims.org_id)
                     .map_err(|_| ApiError::unauthorized("Invalid org ID in token"))?;
 
-                Ok(AuthContext(RequestContext {
+                let context = AuthContext(RequestContext {
                     tenant_id: org_id,
                     actor: Actor::User(user_id),
                     request_id: request_id.to_string(),
                     source: orbis_app::context::ActionSource::Api,
                     org_unit_path: None,
-                }))
+                });
+                parts.extensions.insert(context.clone());
+                Ok(context)
             }
             None => Err(ApiError::unauthorized("Missing Authorization header")
                 .with_request_id(request_id.to_string())),

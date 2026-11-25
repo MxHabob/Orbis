@@ -36,6 +36,7 @@ pub struct ActiveSession {
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
+    database_target: Arc<str>,
     /// The active session for the current desktop application.
     /// Set during login/session hydration and used by `make_ctx()` to scope all queries.
     pub active_session: Arc<std::sync::RwLock<Option<ActiveSession>>>,
@@ -148,6 +149,10 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub(crate) fn uses_database(&self, database_url: &str) -> bool {
+        self.database_target.as_ref() == database_url
+    }
+
     pub async fn init(
         app_data_dir: &std::path::Path,
         db_url: &str,
@@ -686,6 +691,7 @@ impl AppState {
 
         let state = Self {
             db,
+            database_target: Arc::from(db_url),
             active_session,
             org_repo: org_repo.clone(),
             org_unit_repo,

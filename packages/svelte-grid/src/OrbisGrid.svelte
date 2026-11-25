@@ -496,6 +496,14 @@ const pinCount = $derived(configuredPinCount < 0 ? visibleCols.length : configur
 const pinWidth = $derived(columnSizes.slice(0, pinCount).reduce((sum, width) => sum + width, 0));
 const frozenCount = $derived(pinWidth <= viewportW - 96 ? pinCount : 0);
 const frozenWidth = $derived(frozenCount ? pinWidth : 0);
+const pinnedOffsets = $derived.by(() => {
+  let offset = 0;
+  return columnSizes.slice(0, frozenCount).map((width) => {
+    const start = offset;
+    offset += width;
+    return start + "px";
+  });
+});
 const totalHeight = $derived(displayRows.length * rowSize);
 
 const scrollingSizes = $derived(columnSizes.slice(frozenCount));
@@ -1649,7 +1657,22 @@ export function scrollToColumnProp(prop: string) {
   if (i >= 0) scrollToColumnIndex(i);
 }
 
-const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}px`).join(" "));
+const headerTracks = $derived(columnSizes.map((width) => width + "px"));
+const headerGridTemplateColumns = $derived(headerTracks.join(" "));
+const groupedHeaderPanes = $derived([
+  ...(frozenCount ? [{
+    start: 0,
+    pinned: true,
+    tracks: headerTracks.slice(0, frozenCount).join(" "),
+    cells: header.cells.filter((cell) => cell.colStart < frozenCount),
+  }] : []),
+  ...(frozenCount < visibleCols.length ? [{
+    start: frozenCount,
+    pinned: false,
+    tracks: headerTracks.slice(frozenCount).join(" "),
+    cells: header.cells.filter((cell) => cell.colStart >= frozenCount),
+  }] : []),
+]);
 </script>
 
 <svelte:window
@@ -1859,7 +1882,6 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
   {:else}
     <div
       class="orbis-grid-body"
-      style:--pinned-translation={scrollLeft + "px"}
       onscroll={onScroll}
       {@attach (el) => {
         const node = el as HTMLDivElement;
@@ -1876,91 +1898,98 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
       <div class="orbis-spacer" style:height="{totalHeaderHeight + totalHeight}px" style:width="{totalWidth}px">
         <div
           class="orbis-grid-head"
-          class:orbis-grid-head--multi={headerRowCount > 1}
           role="row"
-          style:grid-template-columns={headerRowCount > 1 ? headerGridTemplateColumns : undefined}
           style:grid-template-rows={headerRowCount > 1 ? `repeat(${headerRowCount}, var(--header-row-h))` : undefined}
         >
           {#if headerRowCount > 1}
-            {#each header.cells as hc (hc.key)}
-              {@const c = hc.colStart}
-              {@const id = columnId(hc.col)}
-              {@const Header = hc.col.headerCell}
-              {@const isSelectCol = id === "__selected"}
-              {@const isLeafLike = hc.kind === "leaf" || (hc.kind === "span" && hc.colSpan === 1)}
+            {#each groupedHeaderPanes as pane (pane.pinned)}
               <div
-                class="orbis-hcell align-{defaultAlign(hc.col)}"
-                class:pinned={c < frozenCount}
-                class:emphasis={hc.col.emphasis && hc.kind !== "group"}
-                class:orbis-hcell--group={hc.kind === "group"}
-                class:orbis-hcell--sub={hc.kind === "sub"}
-                class:orbis-hcell--span={hc.kind === "span"}
-                role="columnheader"
-                tabindex={isLeafLike ? 0 : -1}
-                aria-colindex={c + 1}
-                aria-colspan={hc.colSpan}
-                aria-rowspan={hc.rowSpan}
-                title={hc.label}
-                aria-sort={isLeafLike ? (sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none") : "none"}
-                style:grid-column={`${hc.colStart + 1} / span ${hc.colSpan}`}
-                style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
-                onclick={(e) => { if (isLeafLike) onHeaderClick(hc.col, e); }}
-                onkeydown={(e) => {
-                  if (!isLeafLike) return;
-                  if ((e.key === "Enter" || e.key === " ") && !isCheckboxTarget(e.target)) {
-                    e.preventDefault();
-                    sortColumn(hc.col, e.shiftKey);
-                  }
-                }}
+                class="orbis-header-pane orbis-grid-head--multi"
+                class:pinned={pane.pinned}
+                role="presentation"
+                style:grid-template-columns={pane.tracks}
+                style:grid-template-rows={`repeat(${headerRowCount}, var(--header-row-h))`}
               >
-                {#if isLeafLike}
-                  {#if Header}
-                    <Header row={{}} column={{ ...hc.col, id }} />
-                  {:else if isSelectCol}
-                    {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
-                    {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
-                    <Checkbox
-                      checked={isAllSelected}
-                      indeterminate={isSomeSelected}
-                      aria-label="Select all"
-                      onclick={(e: MouseEvent) => {
-                        e.stopPropagation();
-                        const selected = !isAllSelected;
-                        const selectedIds = displayRows.map((row, idx) => rowKey(row, idx));
-                        if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
-                          if (selected) {
-                            selection = selectScope(selectedIds, "filtered", [], []);
-                          } else {
-                            selection = emptySelection();
-                          }
-                          onselection?.(selection);
-                        }
-                        onaction?.({
-                          actionId: "select-all",
-                          row: {},
-                          rowIndex: -1,
-                          prop: id,
-                          originalEvent: e,
-                          selected,
-                          selectedIds,
-                        });
-                      }}
-                    />
-                  {:else}
-                    <span class="hlabel">{hc.label}</span>
-                  {/if}
-                  <button
-                    type="button"
-                    class="resize-handle"
-                    aria-label="Resize column"
-                    onpointerdown={(e) => onResizeStart(hc.col, e)}
-                    onclick={(e) => e.stopPropagation()}
-                    onkeydown={(e) => e.stopPropagation()}
-                    ondblclick={(e) => onResizeDblClick(hc.col, e)}
-                  ></button>
-                {:else}
-                  <span class="hlabel hlabel--static">{hc.label}</span>
-                {/if}
+                {#each pane.cells as hc (hc.key)}
+                  {@const c = hc.colStart}
+                  {@const id = columnId(hc.col)}
+                  {@const Header = hc.col.headerCell}
+                  {@const isSelectCol = id === "__selected"}
+                  {@const isLeafLike = hc.kind === "leaf" || (hc.kind === "span" && hc.colSpan === 1)}
+                  <div
+                    class="orbis-hcell align-{defaultAlign(hc.col)}"
+                    class:emphasis={hc.col.emphasis && hc.kind !== "group"}
+                    class:orbis-hcell--group={hc.kind === "group"}
+                    class:orbis-hcell--sub={hc.kind === "sub"}
+                    class:orbis-hcell--span={hc.kind === "span"}
+                    role="columnheader"
+                    tabindex={isLeafLike ? 0 : -1}
+                    aria-colindex={c + 1}
+                    aria-colspan={hc.colSpan}
+                    aria-rowspan={hc.rowSpan}
+                    title={hc.label}
+                    aria-sort={isLeafLike ? (sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none") : "none"}
+                    style:grid-column={`${c - pane.start + 1} / span ${hc.colSpan}`}
+                    style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
+                    onclick={(e) => { if (isLeafLike) onHeaderClick(hc.col, e); }}
+                    onkeydown={(e) => {
+                      if (!isLeafLike) return;
+                      if ((e.key === "Enter" || e.key === " ") && !isCheckboxTarget(e.target)) {
+                        e.preventDefault();
+                        sortColumn(hc.col, e.shiftKey);
+                      }
+                    }}
+                  >
+                    {#if isLeafLike}
+                      {#if Header}
+                        <Header row={{}} column={{ ...hc.col, id }} />
+                      {:else if isSelectCol}
+                        {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
+                        {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
+                        <Checkbox
+                          checked={isAllSelected}
+                          indeterminate={isSomeSelected}
+                          aria-label="Select all"
+                          onclick={(e: MouseEvent) => {
+                            e.stopPropagation();
+                            const selected = !isAllSelected;
+                            const selectedIds = displayRows.map((row, idx) => rowKey(row, idx));
+                            if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
+                              if (selected) {
+                                selection = selectScope(selectedIds, "filtered", [], []);
+                              } else {
+                                selection = emptySelection();
+                              }
+                              onselection?.(selection);
+                            }
+                            onaction?.({
+                              actionId: "select-all",
+                              row: {},
+                              rowIndex: -1,
+                              prop: id,
+                              originalEvent: e,
+                              selected,
+                              selectedIds,
+                            });
+                          }}
+                        />
+                      {:else}
+                        <span class="hlabel">{hc.label}</span>
+                      {/if}
+                      <button
+                        type="button"
+                        class="resize-handle"
+                        aria-label="Resize column"
+                        onpointerdown={(e) => onResizeStart(hc.col, e)}
+                        onclick={(e) => e.stopPropagation()}
+                        onkeydown={(e) => e.stopPropagation()}
+                        ondblclick={(e) => onResizeDblClick(hc.col, e)}
+                      ></button>
+                    {:else}
+                      <span class="hlabel hlabel--static">{hc.label}</span>
+                    {/if}
+                  </div>
+                {/each}
               </div>
             {/each}
           {:else}
@@ -1971,6 +2000,7 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
               <div
                 class="orbis-hcell align-{defaultAlign(col)}"
                 class:pinned={c < frozenCount}
+                style:inset-inline-start={pinnedOffsets[c]}
                 class:emphasis={col.emphasis}
                 style:margin-inline-start={i === frozenCount && scrollingColumnOffset ? scrollingColumnOffset + "px" : undefined}
                 role="columnheader"
@@ -2039,7 +2069,7 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
             {/each}
           {/if}
         </div>
-        <div class="orbis-window" style:transform="translateY({rowWindow.offset}px)">
+        <div class="orbis-window" style:padding-block-start="{rowWindow.offset}px">
           {#each { length: rowWindow.count } as _, i (rowWindow.start + i)}
             {@const r = rowWindow.start + i}
             {@const row = displayRows[r]}
@@ -2060,6 +2090,7 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
                     class={cellClass(row, col, r, c)}
                     class:is-editing={isEdit}
                     class:pinned={c < frozenCount}
+                    style:inset-inline-start={pinnedOffsets[c]}
                     class:emphasis={col.emphasis}
                     style:margin-inline-start={i === frozenCount && scrollingColumnOffset ? scrollingColumnOffset + "px" : undefined}
                     role="gridcell"
@@ -2492,7 +2523,7 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
     flex-shrink: 0;
     z-index: 3;
   }
-  .orbis-grid-head.orbis-grid-head--multi {
+  .orbis-grid-head--multi {
     display: grid;
     grid-auto-flow: row dense;
     align-items: stretch;
@@ -2518,15 +2549,22 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
     flex-shrink: 1;
     width: auto;
   }
+  .orbis-header-pane {
+    flex: none;
+  }
+  .orbis-header-pane.pinned,
   .orbis-hcell.pinned,
   .orbis-cell.pinned {
-    transform: translateX(var(--pinned-translation, 0px));
+    position: sticky;
   }
+  .orbis-header-pane.pinned {
+    inset-inline-start: 0;
+  }
+  .orbis-header-pane.pinned,
   .orbis-hcell.pinned {
     z-index: 2;
   }
   .orbis-cell.pinned {
-    position: relative;
     z-index: 1;
     background: var(--card);
   }
@@ -2657,6 +2695,7 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
     contain: layout style;
   }
   .orbis-row {
+    box-sizing: border-box;
     display: flex;
     height: var(--row-h);
     border-bottom: 1px solid var(--border);
@@ -2670,6 +2709,7 @@ const headerGridTemplateColumns = $derived(columnSizes.map((width) => `${width}p
     background: color-mix(in oklab, var(--primary) 8%, transparent);
   }
   .orbis-cell {
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     height: 100%;

@@ -54,6 +54,20 @@ Use `GET /api/v1/live` to check that the API process can serve requests.
 Use `GET /api/v1/health` for traffic readiness. It returns HTTP 503 if the
 database cannot answer within the probe deadline.
 
+### Client connections
+
+Configure Desktop with the externally visible HTTPS URL of the API or its
+reverse proxy. HTTP is supported by Desktop for localhost development. Browser
+clients hosted on a different origin need their exact origins in the comma-separated
+`ORBIS_WEB_ORIGINS` setting, such as `https://orbis.school.example`. The packaged
+Tauri origins and local Desktop development origins are included by the API.
+
+The API uses up to 10 database connections per replica by default. Set
+`ORBIS_DB_MAX_CONNECTIONS` to a positive integer and size it against the total
+number of replicas and PostgreSQL's connection budget. Leave room for migrations,
+backups, and other applications. Connection and pool acquisition have bounded
+wait times.
+
 ### Applying an upgrade
 
 On Linux and macOS, the installer stops an active service before replacing the

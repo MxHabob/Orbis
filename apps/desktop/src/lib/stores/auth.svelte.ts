@@ -7,7 +7,8 @@ import type {
   EffectiveContextDto,
   LoginResponse,
 } from "$lib/api/types";
-import { extractErrorMessage } from "$lib/api";
+import { extractErrorMessage, getConnectionScope, setRemoteSessionToken } from "$lib/api";
+import { ApiRequestError } from "$lib/api/remote-client";
 import { effectiveContext } from "./effective-context.svelte";
 import { systemStore } from "./system.svelte";
 
@@ -41,6 +42,7 @@ class AuthStore {
       this.restorePromise = null;
       localStorage.setItem("orbis_token", res.token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
+      localStorage.setItem("orbis_connection_scope", getConnectionScope());
       if (res.effective_context) {
         effectiveContext.setEffectiveContext(res.effective_context);
       }
@@ -65,6 +67,8 @@ class AuthStore {
     this.restorePromise = null;
     localStorage.setItem("orbis_token", res.token);
     localStorage.setItem("orbis_user", JSON.stringify(res.user));
+    localStorage.setItem("orbis_connection_scope", getConnectionScope());
+    setRemoteSessionToken(res.token);
     if (res.effective_context) {
       effectiveContext.setEffectiveContext(res.effective_context);
     }
@@ -84,6 +88,7 @@ class AuthStore {
     systemStore.reset();
     localStorage.removeItem("orbis_token");
     localStorage.removeItem("orbis_user");
+    localStorage.removeItem("orbis_connection_scope");
   }
 
   private restorePromise: Promise<void> | null = null;
@@ -98,12 +103,19 @@ class AuthStore {
 
   private async _restore() {
     try {
+      if (localStorage.getItem("orbis_connection_scope") !== getConnectionScope()) {
+        localStorage.removeItem("orbis_token");
+        localStorage.removeItem("orbis_user");
+        localStorage.removeItem("orbis_connection_scope");
+        return;
+      }
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
       if (token && userStr) {
         try {
           this.token = token;
           this.user = JSON.parse(userStr);
+          setRemoteSessionToken(token);
           const res = await api.getSession();
           if (res?.user) {
             this.user = res.user;
@@ -117,6 +129,7 @@ class AuthStore {
           console.warn("Session revalidation notice:", e);
           const errMessage = extractErrorMessage(e);
           if (
+            (e instanceof ApiRequestError && e.status === 401) ||
             errMessage.toLowerCase().includes("unauthorized") ||
             errMessage.toLowerCase().includes("revoked") ||
             errMessage.toLowerCase().includes("invalid token")
@@ -125,6 +138,8 @@ class AuthStore {
             this.user = null;
             localStorage.removeItem("orbis_token");
             localStorage.removeItem("orbis_user");
+            localStorage.removeItem("orbis_connection_scope");
+            setRemoteSessionToken(null);
           }
         }
       }

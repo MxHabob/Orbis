@@ -10,7 +10,7 @@
  * both LocalClient (Tauri IPC) and RemoteClient (HTTP).
  */
 
-import { api, configureApiClient } from "$lib/api";
+import { api, configureApiClient, isDesktopApp } from "$lib/api";
 import type { StartupPhase, ConnectionConfig } from "$lib/api/types";
 
 export interface StartupState {
@@ -28,21 +28,9 @@ export interface StartupState {
 export async function resolveStartupPhase(): Promise<StartupState> {
   try {
     // Step 1: Load connection config
-    let config = await api.connectionGetConfig();
-    if (config.mode === "api") {
-      const baseUrl = config.api?.server_url;
-      if (!baseUrl) {
-        return {
-          phase: "connection_setup",
-          config,
-          connected: false,
-          error: "The saved API connection does not have a server URL.",
-        };
-      }
-      configureApiClient("api", baseUrl);
-      config = await api.connectionGetConfig();
-    }
-    const validation = await api.connectionValidate();
+    const connection = isDesktopApp ? configureApiClient("local") : api;
+    const config = await connection.connectionGetConfig();
+    const validation = await connection.connectionValidate();
 
     if (!validation.is_valid) {
       return {
@@ -54,7 +42,10 @@ export async function resolveStartupPhase(): Promise<StartupState> {
     }
 
     try {
-      await api.connectionConnect();
+      const connected = await connection.connectionConnect();
+      if (connected.mode === "api") {
+        configureApiClient("api", connected.server_url);
+      }
     } catch (e) {
       return {
         phase: "connection_setup",
@@ -68,13 +59,12 @@ export async function resolveStartupPhase(): Promise<StartupState> {
     let hasOrg: boolean;
     try {
       hasOrg = await api.systemHasOrganization();
-    } catch {
-      // AppState not available — need connection setup
+    } catch (error) {
       return {
         phase: "connection_setup",
         config,
         connected: false,
-        error: "Database not connected",
+        error: error instanceof Error ? error.message : String(error),
       };
     }
 

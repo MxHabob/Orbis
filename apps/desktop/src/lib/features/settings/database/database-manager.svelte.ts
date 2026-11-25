@@ -6,7 +6,8 @@
  */
 
 import { api } from "$lib/api/client";
-import { configureApiClient } from "$lib/api";
+import { LocalClient } from "$lib/api/local-client";
+import { isDesktopApp } from "$lib/api/runtime";
 import type {
   DatabaseStatusDto,
   ConnectionConfig,
@@ -20,6 +21,7 @@ import type {
 import { confirmStore } from "$lib/stores";
 
 export class DatabaseManagerController {
+  private readonly connection = isDesktopApp ? new LocalClient() : api;
   status = $state<DatabaseStatusDto | null>(null);
   config = $state<ConnectionConfig | null>(null);
   settings = $state<DatabaseSettingsDto | null>(null);
@@ -86,7 +88,7 @@ export class DatabaseManagerController {
     this.isCheckingHealth = true;
     this.healthResult = null;
     try {
-      const result = await api.connectionCheckRemoteHealth(serverUrl);
+      const result = await this.connection.connectionCheckRemoteHealth(serverUrl);
       this.healthResult = result;
       return result;
     } finally {
@@ -115,17 +117,15 @@ export class DatabaseManagerController {
     this.operationSuccess = null;
 
     try {
-      configureApiClient("local");
-      this.config = await api.connectionSetConfig(params);
-      if (params.mode === "api") {
-        configureApiClient("api", params.serverUrl);
-      } else {
-        configureApiClient("local");
+      if (params.mode === "api" && params.serverUrl) {
+        const health = await this.connection.connectionCheckRemoteHealth(params.serverUrl);
+        if (!health.reachable) {
+          throw new Error(health.error || "Unable to connect to Orbis API");
+        }
       }
-      await api.connectionConnect();
-      this.operationSuccess =
-        "Connection configuration updated and connected successfully.";
-      await this.refresh();
+      this.config = await this.connection.connectionSetConfig(params);
+      localStorage.removeItem("orbis_connection_scope");
+      this.operationSuccess = "Connection saved. Restart Orbis to apply it.";
     } catch (e) {
       this.operationError = e instanceof Error ? e.message : String(e);
       throw e;
@@ -151,12 +151,9 @@ export class DatabaseManagerController {
     this.operationError = null;
 
     try {
-      configureApiClient("local");
-      this.config = await api.connectionReset();
-      configureApiClient("local");
-      await api.connectionConnect();
-      this.operationSuccess = "Connection reset to default local database.";
-      await this.refresh();
+      this.config = await this.connection.connectionReset();
+      localStorage.removeItem("orbis_connection_scope");
+      this.operationSuccess = "Connection reset. Restart Orbis to choose a connection.";
     } catch (e) {
       this.operationError = e instanceof Error ? e.message : String(e);
     } finally {

@@ -5,6 +5,7 @@
  */
 
 import { client } from "./gen/client.gen.js";
+import { createClient, createConfig } from "./gen/client/index.js";
 import * as sdk from "./gen/sdk.gen.js";
 
 export { client as heyApiClient } from "./gen/client.gen.js";
@@ -40,38 +41,15 @@ client.setConfig({
 
 /**
  * MAIN CLIENT FACTORY
- * Configures the global @orbis/sdk client with interceptors for dynamic headers,
+ * Creates an independent client with interceptors for dynamic headers,
  * URL resolution, and authentication recovery.
  */
 export const createOrbisClient = (options: OrbisClientOptions) => {
   const { baseUrl } = options;
 
-  client.setConfig({ baseUrl });
+  const client = createClient(createConfig({ baseUrl }));
 
-  /**
-   * REQUEST INTERCEPTOR: Header Injection & URL Normalization
-   */
-  client.interceptors.request.use(async (request, reqOptions: any) => {
-    let finalUrl = request.url;
-    const configBaseUrl = client.getConfig().baseUrl;
-
-    // Ensure URL is absolute
-    if (
-      configBaseUrl &&
-      !finalUrl.startsWith("http") &&
-      !finalUrl.startsWith("//")
-    ) {
-      finalUrl = `${configBaseUrl.replace(/\/$/, "")}/${finalUrl.replace(/^\//, "")}`;
-    } else if (
-      configBaseUrl &&
-      typeof window !== "undefined" &&
-      window.location?.origin &&
-      finalUrl.startsWith(window.location.origin)
-    ) {
-      const relativePath = finalUrl.slice(window.location.origin.length);
-      finalUrl = `${configBaseUrl.replace(/\/$/, "")}/${relativePath.replace(/^\//, "")}`;
-    }
-
+  client.interceptors.request.use(async (request, reqOptions) => {
     const headers = new Headers(request.headers);
 
     // Inject custom dynamic headers (e.g. Bearer token from secure storage)
@@ -81,34 +59,27 @@ export const createOrbisClient = (options: OrbisClientOptions) => {
           ? await options.headers()
           : options.headers;
       Object.entries(extraHeaders).forEach(([k, v]) => {
-        if (v) {
-          headers.set(k, v as string);
+        if (v && !headers.has(k)) {
+          headers.set(k, v);
         }
       });
     }
 
-    // Inject per-request headers if present
-    if (reqOptions?.headers) {
-      const extraHeaders =
-        typeof reqOptions.headers === "function"
-          ? await reqOptions.headers()
-          : reqOptions.headers;
-      Object.entries(extraHeaders).forEach(([k, v]) => {
-        if (v) {
-          headers.set(k, v as string);
-        }
-      });
+    if (reqOptions.baseUrl !== client.getConfig().baseUrl) {
+      throw new Error("The Orbis API endpoint changed before this request was sent");
     }
 
     // Body handling for React Native fetch polyfill
     const requestBody =
-      reqOptions?.serializedBody ?? reqOptions?.body ?? request.body;
+      reqOptions.serializedBody ?? request.body;
 
-    return new Request(finalUrl, {
+    return new Request(request.url, {
       method: request.method,
       headers: headers,
       body: requestBody,
       credentials: "omit",
+      signal: request.signal,
+      redirect: request.redirect,
       // @ts-expect-error - Required for streaming requests in fetch environments
       duplex: "half",
     });
@@ -127,10 +98,19 @@ export const createOrbisClient = (options: OrbisClientOptions) => {
     return response;
   });
 
-  return {
-    client,
-    ...sdk,
-  };
+  // The generated module exports endpoints only. Bind each export while
+  // preserving its generated request and response types for callers.
+  const endpoints = Object.fromEntries(
+    Object.entries(sdk).map(([name, endpoint]) => [
+      name,
+      (requestOptions: { client?: typeof client } = {}) =>
+        (endpoint as (options: unknown) => unknown)({
+          ...requestOptions,
+          client: requestOptions.client ?? client,
+        }),
+    ]),
+  ) as unknown as typeof sdk;
+  return { ...endpoints, client };
 };
 
 export type OrbisClient = ReturnType<typeof createOrbisClient>;

@@ -67,6 +67,7 @@ export type {
 import type { OrbisApiClient } from "./types";
 import { LocalClient } from "./local-client";
 import { RemoteClient } from "./remote-client";
+import { queryClient } from "./query-client";
 
 let _instance: OrbisApiClient | null = null;
 let _configuredMode: "local" | "api" | null = null;
@@ -113,6 +114,7 @@ export function configureApiClient(
     return _instance;
   }
 
+  if (_instance) queryClient.clear();
   _configuredMode = mode;
   _configuredBaseUrl = normalizedBaseUrl;
   _instance =
@@ -120,10 +122,21 @@ export function configureApiClient(
   return _instance;
 }
 
+export function getConnectionScope(): string {
+  getApiClient();
+  return _configuredMode === "api" ? `api:${_configuredBaseUrl}` : "local";
+}
+
+export function setRemoteSessionToken(token: string | null): void {
+  const client = getApiClient();
+  if (client instanceof RemoteClient) client.setToken(token);
+}
+
 /**
  * Reset the singleton (useful for tests or logout flows).
  */
 export function resetApiClient(): void {
+  queryClient.clear();
   _instance = null;
   _configuredMode = null;
   _configuredBaseUrl = null;
