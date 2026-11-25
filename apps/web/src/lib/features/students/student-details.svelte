@@ -3,6 +3,8 @@
   Student profile, evaluation analytics dashboard, and details form.
 -->
 <script lang="ts">
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
+
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -592,9 +594,6 @@ async function saveStudentDetails(e?: Event) {
               student_id: targetStudentId,
               section_id: classId,
               student_number: studentNumber || targetStudentId.slice(0, 8),
-            })
-            .catch((err) => {
-              console.warn("Enroll student warning:", err);
             });
         }
       }
@@ -609,6 +608,7 @@ async function saveStudentDetails(e?: Event) {
       queryKey: queryKeys.student.detail(studentId),
     });
   } catch (e: unknown) {
+    if (periodOverrides.handleError(orgId, e)) return;
     console.error("Save error:", e);
     toast.error(extractErrorMessage(e));
   } finally {

@@ -9,6 +9,7 @@ use crate::ports::repositories::{
     StudentGuardianRepository, StudentRepository,
 };
 use chrono::{Datelike, NaiveDate, Utc};
+use orbis_domain::entities::academic_period::AcademicPeriodState;
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
 use orbis_domain::entities::organization::InstitutionType;
 use orbis_domain::entities::override_request::{
@@ -19,7 +20,7 @@ use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::entities::student::{AcademicStanding, Student, StudentDetail, StudentStatus};
 use orbis_domain::entities::student_fee::{FeeStatus, StudentFee};
 use orbis_domain::entities::student_guardian::StudentGuardian;
-use orbis_domain::errors::DomainError;
+use orbis_domain::errors::{DomainError, PeriodOverrideTarget};
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
@@ -59,7 +60,7 @@ fn capacity_override_request(
         org_id,
         override_type: OverrideType::CapacityOverride,
         risk_level: RiskLevel::Medium,
-        entity_type: "enrollment".to_string(),
+        entity_type: "student".to_string(),
         entity_id: student_id,
         field_name: Some("class_id".to_string()),
         old_value: None,
@@ -68,8 +69,9 @@ fn capacity_override_request(
         requested_by,
         requested_by_name: None,
         status: OverrideStatus::Pending,
-        current_approver_role: Some("admin".to_string()),
+        current_approver_role: None,
         approval_chain: vec![],
+        approval_policy_version: None,
         resolved_by: None,
         resolved_by_name: None,
         resolved_at: None,
@@ -95,7 +97,7 @@ fn admission_override_request(
         org_id,
         override_type: OverrideType::AdmissionApproval,
         risk_level: RiskLevel::Low,
-        entity_type: "enrollment".to_string(),
+        entity_type: "student".to_string(),
         entity_id: student_id,
         field_name: None,
         old_value: None,
@@ -104,8 +106,9 @@ fn admission_override_request(
         requested_by,
         requested_by_name: None,
         status: OverrideStatus::Pending,
-        current_approver_role: Some("registrar".to_string()),
+        current_approver_role: None,
         approval_chain: vec![],
+        approval_policy_version: None,
         resolved_by: None,
         resolved_by_name: None,
         resolved_at: None,
@@ -221,7 +224,7 @@ pub struct BulkRegisterStudentsInput {
     pub dry_run: Option<bool>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct BulkRegisterStudentResult {
     pub total: usize,
     pub succeeded: usize,
@@ -229,6 +232,7 @@ pub struct BulkRegisterStudentResult {
     pub is_atomic: bool,
     pub is_dry_run: bool,
     pub items: Vec<BulkRegisterItemResult>,
+    pub override_targets: Vec<PeriodOverrideTarget>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -456,6 +460,56 @@ fn collect_name_duplicate_matches(
 }
 
 impl StudentService {
+    async fn validate_enrollment_period(
+        &self,
+        ctx: &RequestContext,
+        period_id: Uuid,
+        section_id: Option<Uuid>,
+        late_allowed: bool,
+    ) -> Result<(), DomainError> {
+        let period = self
+            .period_repo
+            .find_by_id(period_id)
+            .await?
+            .filter(|period| period.org_id == ctx.tenant_id)
+            .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
+        if let Some(section_id) = section_id {
+            self.section_repo
+                .find_by_id(section_id)
+                .await?
+                .filter(|section| section.org_id == ctx.tenant_id && section.is_active)
+                .ok_or_else(|| DomainError::NotFound("Section not found".into()))?;
+        }
+        if period.can_enroll_students()
+            || (late_allowed
+                && period.is_enrollment_open
+                && !period.is_locked
+                && !matches!(
+                    period.state,
+                    AcademicPeriodState::Closed | AcademicPeriodState::Archived
+                )
+                && period
+                    .enrollment_ends_at
+                    .is_some_and(|end| end < Utc::now()))
+        {
+            return Ok(());
+        }
+        if period.state != AcademicPeriodState::Archived
+            && let Some(user) = ctx.user_id()
+            && self
+                .permission_checker
+                .has_permission(user, ctx.tenant_id, Permission::WorkflowWrite.as_str())
+                .await?
+        {
+            return Err(DomainError::PeriodOverrideRequired(vec![
+                PeriodOverrideTarget::enrollment(period_id, section_id),
+            ]));
+        }
+        Err(DomainError::BusinessRule(
+            "Registration is closed for this academic period".into(),
+        ))
+    }
+
     pub fn new(
         student_repo: Arc<dyn StudentRepository>,
         person_repo: Arc<dyn PersonRepository>,
@@ -705,6 +759,55 @@ impl StudentService {
         let numbering_schema = admission_cfg.numbering;
         let admission_policy = admission_cfg.policy;
 
+        // Resolve and validate the enrollment period before creating any records.
+        // For schools: auto-resolve the Annual period from the active calendar
+        // For universities/institutes: use the explicitly provided period_id
+        let resolved_period_id = if let Some(pid) = input.initial_period_id {
+            Some(pid)
+        } else if !is_draft {
+            // Auto-resolve for schools: find the Annual period in the active calendar
+            let org = self.org_repo.find_by_id(org_id).await?;
+            let institution_type = org
+                .as_ref()
+                .map(|o| InstitutionType::from_str_loose(&o.institution_type))
+                .unwrap_or(InstitutionType::School);
+            if institution_type == InstitutionType::School {
+                if let Some(calendar) = self.calendar_repo.find_current(org_id).await? {
+                    let periods = self.period_repo.find_by_year(calendar.id).await?;
+                    periods
+                        .into_iter()
+                        .find(|p| p.period_type.is_annual())
+                        .map(|p| p.id)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if !is_draft {
+            if !org_settings.enrollment.registration_enabled {
+                return Err(DomainError::BusinessRule(
+                    "Student registration is disabled by organization policy".into(),
+                ));
+            }
+            if let Some(period_id) = resolved_period_id {
+                let late_allowed = org_settings.enrollment.allow_late_enrollment
+                    || org_settings.academic.allow_late_enrollment
+                    || admission_policy.allow_late_enrollment;
+                self.validate_enrollment_period(
+                    ctx,
+                    period_id,
+                    input.initial_section_id,
+                    late_allowed,
+                )
+                .await?;
+            }
+        }
+
         // 1. Enforce duplicate-identity policies
         if !admission_policy.allow_duplicate_national_id {
             if let Some(nid) = input.national_id.as_deref() {
@@ -872,51 +975,7 @@ impl StudentService {
         let mut created_override_req: Option<AcademicOverrideRequest> = None;
         let mut auto_assigned_fees_count = 0usize;
 
-        // 5. Resolve enrollment period
-        // For schools: auto-resolve the Annual period from the active calendar
-        // For universities/institutes: use the explicitly provided period_id
-        let resolved_period_id = if let Some(pid) = input.initial_period_id {
-            Some(pid)
-        } else if !is_draft {
-            // Auto-resolve for schools: find the Annual period in the active calendar
-            let org = self.org_repo.find_by_id(org_id).await?;
-            let institution_type = org
-                .as_ref()
-                .map(|o| InstitutionType::from_str_loose(&o.institution_type))
-                .unwrap_or(InstitutionType::School);
-            if institution_type == InstitutionType::School {
-                if let Some(calendar) = self.calendar_repo.find_current(org_id).await? {
-                    let periods = self.period_repo.find_by_year(calendar.id).await?;
-                    periods
-                        .into_iter()
-                        .find(|p| p.period_type.is_annual())
-                        .map(|p| p.id)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
         if let Some(period_id) = resolved_period_id.filter(|_| !is_draft) {
-            if let Ok(Some(period)) = self.period_repo.find_by_id(period_id).await {
-                let now = Utc::now();
-                let window_open = period.is_enrollment_open
-                    && period
-                        .enrollment_starts_at
-                        .is_none_or(|started| started <= now)
-                    && period.enrollment_ends_at.is_none_or(|ends| ends >= now);
-                let late_allowed = org_settings.academic.allow_late_enrollment
-                    || admission_policy.allow_late_enrollment;
-                if !window_open && !late_allowed {
-                    return Err(DomainError::Validation(
-                        "Enrollment is outside the configured period window".into(),
-                    ));
-                }
-            }
             let mode = input.study_mode.unwrap_or(StudyMode::Regular);
             let mut enrollment_status = EnrollmentStatus::Active;
 
@@ -1059,6 +1118,7 @@ impl StudentService {
             .student_repo
             .find_by_id(student_id)
             .await?
+            .filter(|student| student.org_id == org_id && org_id == ctx.tenant_id)
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
         let completing_draft = student.status == StudentStatus::Inactive;
@@ -1099,16 +1159,20 @@ impl StudentService {
         let max_class_capacity = org_settings.enrollment.max_class_size_default.max(0);
         let mut enrollment_status = EnrollmentStatus::Active;
 
-        if completing_draft {
-            if !org_settings.enrollment.registration_enabled {
-                return Err(DomainError::Validation(
-                    "Student registration is disabled by organization policy".to_string(),
-                ));
-            }
-            if requires_approval {
-                enrollment_status = EnrollmentStatus::PendingApproval;
-            }
+        if !org_settings.enrollment.registration_enabled {
+            return Err(DomainError::BusinessRule(
+                "Student registration is disabled by organization policy".into(),
+            ));
         }
+        if completing_draft && requires_approval {
+            enrollment_status = EnrollmentStatus::PendingApproval;
+        }
+
+        let late_allowed = org_settings.enrollment.allow_late_enrollment
+            || org_settings.academic.allow_late_enrollment
+            || admission_policy.allow_late_enrollment;
+        self.validate_enrollment_period(ctx, period_id, section_id, late_allowed)
+            .await?;
 
         let mut enrollment = Enrollment::new(
             org_id,
@@ -1828,6 +1892,11 @@ impl StudentService {
         // ─────────────────────────────────────────────────────────────────
         // STAGE 1: INTRA-BATCH INTEGRITY & CONFLICT PRE-VALIDATION
         // ─────────────────────────────────────────────────────────────────
+        let late_allowed = org_settings.enrollment.allow_late_enrollment
+            || org_settings.academic.allow_late_enrollment
+            || admission_policy.allow_late_enrollment;
+        let mut period_checks = HashMap::new();
+        let mut override_targets = std::collections::BTreeSet::new();
         let mut pre_errors: HashMap<usize, String> = HashMap::new();
         let mut seen_nids: HashMap<String, usize> = HashMap::new();
         let mut seen_passports: HashMap<String, usize> = HashMap::new();
@@ -2035,24 +2104,33 @@ impl StudentService {
 
             // 6. Cumulative Class Capacity & Multi-Enrollment Simulation
             if !item.registration.is_draft {
+                if !org_settings.enrollment.registration_enabled {
+                    pre_errors.insert(
+                        row,
+                        "Student registration is disabled by organization policy".into(),
+                    );
+                    continue;
+                }
                 if let Some(period_id) = item.registration.initial_period_id {
-                    if let Ok(Some(period)) = self.period_repo.find_by_id(period_id).await {
-                        let now = Utc::now();
-                        let window_open = period.is_enrollment_open
-                            && period
-                                .enrollment_starts_at
-                                .is_none_or(|started| started <= now)
-                            && period.enrollment_ends_at.is_none_or(|ends| ends >= now);
-                        let late_allowed = org_settings.enrollment.allow_late_enrollment
-                            || org_settings.academic.allow_late_enrollment
-                            || admission_policy.allow_late_enrollment;
-                        if !window_open && !late_allowed {
-                            pre_errors.insert(
-                                row,
-                                "Enrollment is outside the configured period window".to_string(),
-                            );
-                            continue;
-                        }
+                    let section_id = item.registration.initial_section_id;
+                    let key = (period_id, section_id);
+                    if let std::collections::hash_map::Entry::Vacant(entry) =
+                        period_checks.entry(key)
+                    {
+                        let result = self
+                            .validate_enrollment_period(ctx, period_id, section_id, late_allowed)
+                            .await;
+                        entry.insert(result.map_err(|error| {
+                            (
+                                error.to_string(),
+                                error.period_override_targets().unwrap_or_default().to_vec(),
+                            )
+                        }));
+                    }
+                    if let Some(Err((message, targets))) = period_checks.get(&key) {
+                        override_targets.extend(targets.iter().copied());
+                        pre_errors.insert(row, message.clone());
+                        continue;
                     }
                 }
                 if let Some(class_id) = item.registration.initial_section_id {
@@ -2099,6 +2177,11 @@ impl StudentService {
         // ─────────────────────────────────────────────────────────────────
         // STAGE 2: ATOMIC ALL-OR-NOTHING / DRY-RUN DECISION GATE
         // ─────────────────────────────────────────────────────────────────
+        if !override_targets.is_empty() && is_atomic && !is_dry_run {
+            return Err(DomainError::PeriodOverrideRequired(
+                override_targets.into_iter().collect(),
+            ));
+        }
         if !pre_errors.is_empty() && is_atomic {
             let mut results = Vec::with_capacity(total);
             for item in &items {
@@ -2129,6 +2212,7 @@ impl StudentService {
                 is_atomic: true,
                 is_dry_run,
                 items: results,
+                override_targets: vec![],
             });
         }
 
@@ -2170,6 +2254,7 @@ impl StudentService {
                 is_atomic,
                 is_dry_run: true,
                 items: results,
+                override_targets: vec![],
             });
         }
 
@@ -2313,6 +2398,9 @@ impl StudentService {
                     });
                 }
                 Err(err) => {
+                    if let Some(targets) = err.period_override_targets() {
+                        override_targets.extend(targets.iter().copied());
+                    }
                     failed += 1;
                     results.push(BulkRegisterItemResult {
                         row_index: row_idx,
@@ -2332,6 +2420,7 @@ impl StudentService {
             is_atomic,
             is_dry_run: false,
             items: results,
+            override_targets: override_targets.into_iter().collect(),
         })
     }
 }

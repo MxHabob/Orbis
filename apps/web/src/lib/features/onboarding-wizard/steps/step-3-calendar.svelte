@@ -9,7 +9,7 @@ import {
   type AcademicPeriodDto,
   type CalendarDefaultsDto,
 } from "$lib/api";
-import { orgContext, systemStore } from "$lib/stores";
+import { orgContext } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -23,7 +23,6 @@ import {
 } from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
-import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
@@ -72,12 +71,6 @@ let editingPeriodEndDate = $state("");
 let editingPeriodKind = $state("teaching");
 let isUpdatingRecord = $state(false);
 
-const stepTasks = $derived(
-  getTasksForStep("calendar", systemStore.onboardingTasks),
-);
-const isTaskComplete = $derived(
-  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
-);
 const selectedYear = $derived(
   years.find((year) => String(year.id) === selectedYearId),
 );
@@ -654,11 +647,8 @@ async function deleteYear(year: AcademicCalendarDto) {
 
 <div class="space-y-6">
   <OnboardingStepHeader
-    stepNumber={3}
     title={m.onboarding_step3_title()}
     description={m.onboarding_step3_subtitle()}
-    isRequired={true}
-    status={isTaskComplete ? "completed" : years.length > 0 ? "in_progress" : "not_started"}
   />
 
 

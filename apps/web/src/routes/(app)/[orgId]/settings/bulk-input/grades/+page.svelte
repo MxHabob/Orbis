@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { BulkEntryStudio } from "$lib/features/bulk-entry";
+import { page } from "$app/state";
+import ExamControl from "$lib/features/exams/exam-control.svelte";
 </script>
 
 <svelte:head>
@@ -8,5 +9,5 @@ import { BulkEntryStudio } from "$lib/features/bulk-entry";
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">
-  <BulkEntryStudio initialProfileId="grades" />
+  <ExamControl orgId={page.params.orgId || ""} bulk />
 </div>

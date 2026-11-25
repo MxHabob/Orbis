@@ -17,7 +17,7 @@ use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::gateways::{NotificationPort, NotificationRequest};
-use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::iam::{PermissionCheckerPort, PermissionScope};
 use crate::ports::repositories::{
     GroupRepository, IntegrationRepository, OrganizationRepository, PersonRepository,
     SessionRepository, UserIdentityRepository, UserRepository,
@@ -200,6 +200,34 @@ impl IdentityProvisioningService {
         self.permission_checker
             .check(ctx, Permission::UserWrite)
             .await?;
+        if org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden(
+                "Account belongs to another organization".into(),
+            ));
+        }
+        if !input.group_ids.is_empty() {
+            let actor = ctx.user_id().ok_or_else(|| {
+                DomainError::Forbidden("An administrator is required to assign groups".into())
+            })?;
+            if self
+                .permission_checker
+                .role_scope(actor, org_id, "super_admin")
+                .await?
+                != PermissionScope::Organization
+            {
+                return Err(DomainError::Forbidden(
+                    "Assigning access groups requires a super administrator".into(),
+                ));
+            }
+            for group_id in &input.group_ids {
+                let group = self.group_repo.find_by_id(*group_id).await?;
+                if !group.is_some_and(|group| group.org_id == org_id && group.status == "active") {
+                    return Err(DomainError::Validation(
+                        "Access group is unavailable in this organization".into(),
+                    ));
+                }
+            }
+        }
 
         // 1. Fetch Person
         let person = self
@@ -372,6 +400,9 @@ impl IdentityProvisioningService {
             .find_by_id(user_id)
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("User {} not found", user_id)))?;
+        if user.org_id != ctx.tenant_id {
+            return Err(DomainError::NotFound("User not found".into()));
+        }
 
         let person = self
             .person_repo

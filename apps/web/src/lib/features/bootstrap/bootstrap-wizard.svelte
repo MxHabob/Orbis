@@ -15,7 +15,7 @@ import { createMutation } from "@tanstack/svelte-query";
 import { api } from "$lib/api/client";
 import type { BootstrapRequest, BootstrapResult } from "$lib/api/types";
 import { authStore, licenseStore } from "$lib/stores";
-import { LoadingIndicator, toast } from "@orbis/ui";
+import { Button, LoadingIndicator, toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import {
@@ -34,6 +34,7 @@ import StepReview from "./components/step-review.svelte";
 import MfaEnrollModal from "$lib/features/auth/components/mfa-enroll-modal.svelte";
 import OnboardingHeader from "./components/onboarding-header.svelte";
 import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
+import { applySetupRegion, detectSetupRegion } from "./setup-regions";
 import { buildBootstrapRequest } from "./bootstrap-request";
 import {
   type BootstrapValidationCode,
@@ -65,6 +66,7 @@ let isComplete = $state(false);
 let postBootstrapError = $state<string | null>(null);
 let bootstrapResult = $state<BootstrapResult | null>(null);
 let isCheckingBootstrap = $state(true);
+let bootstrapStatusError = $state<string | null>(null);
 let isMfaEnrollmentOpen = $state(false);
 
 const steps: Array<{ id: OnboardingStep }> = [
@@ -88,6 +90,8 @@ function navigateToWorkspace(organizationId: string) {
 }
 
 async function initializeBootstrap() {
+  isCheckingBootstrap = true;
+  bootstrapStatusError = null;
   try {
     await authStore.restore();
     const status = await api.bootstrapGetStatus();
@@ -102,28 +106,11 @@ async function initializeBootstrap() {
       }
       return;
     }
+    applySetupRegion(form.values, detectSetupRegion() ?? form.values.countryCode);
   } catch (error) {
-    console.error("Failed to check bootstrap status:", error);
-    toast.error(extractErrorMessage(error));
-  }
-
-  await loadEnvironment();
-  isCheckingBootstrap = false;
-}
-
-// Silent background environment detection and calibration
-async function loadEnvironment() {
-  try {
-    const data = await api.bootstrapDetectEnvironment();
-    if (data) {
-      form.setField("countryCode", data.country_code || "SA");
-      form.setField("timezone", data.timezone || "Asia/Riyadh");
-      form.setField("baseCurrencyCode", data.currency_code || "SAR");
-      form.setField("isHijriEnabled", data.is_hijri_recommended ?? true);
-      form.setField("dateFormat", data.date_format || "YYYY-MM-DD");
-    }
-  } catch (err) {
-    console.warn("Silent environment detection completed with defaults:", err);
+    bootstrapStatusError = extractErrorMessage(error);
+  } finally {
+    isCheckingBootstrap = false;
   }
 }
 
@@ -297,7 +284,8 @@ function enterWorkspace() {
   }
   const orgId = bootstrapResult?.organization_id || authStore.orgId;
   if (orgId) {
-    goto(resolve(localizeHref(`/${orgId}`) as Pathname), {
+    const destination = bootstrapResult?.setup_required ? `/${orgId}/onboarding` : `/${orgId}`;
+    goto(resolve(localizeHref(destination) as Pathname), {
       replaceState: true,
     });
   } else {

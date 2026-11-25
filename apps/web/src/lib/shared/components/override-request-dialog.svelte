@@ -1,244 +1,116 @@
-<!--
-@component OverrideRequestDialog
-Shared dialog for creating override/approval requests.
-
-Used when a user attempts an action that is currently blocked
-(e.g., editing grades after grade_entry_close, late enrollment).
-Calls `api.submitOverride()` and shows success/error feedback.
-
-Usage:
-  <OverrideRequestDialog
-    bind:open={showOverride}
-    orgId={data.orgId}
-    overrideType="grade_modification"
-    entityType="grade"
-    entityId={gradeId}
-    riskLevel="medium"
-    onSuccess={() => toast.success(m.shared_ui_override_submitted())}
-  />
--->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
-import * as m from "$lib/paraglide/messages";
-
-import { api, extractErrorMessage } from "$lib/api";
-import { authStore } from "$lib/stores";
-import { toast } from "@orbis/ui";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-} from "@orbis/ui/dialog";
+import { createQuery } from "@tanstack/svelte-query";
+import { LoadingIndicator, toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { Textarea } from "@orbis/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
 import { Label } from "@orbis/ui/label";
-import { Badge } from "@orbis/ui/badge";
-import {
-  AdjustmentsHorizontal,
-  ArrowPath,
-  InfoCircle,
-  UserBadgeCheck,
-} from "@orbis/icons";
+import { Textarea } from "@orbis/ui/textarea";
+import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
+import { l } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
+import { academicContext } from "$lib/stores";
 
-interface Props {
-  open: boolean;
-  orgId: string;
-  overrideType: string;
-  entityType: string;
-  entityId: string;
-  riskLevel?: "low" | "medium" | "high" | "critical";
-  fieldName?: string;
-  oldValue?: string;
-  newValue?: string;
-  onSuccess?: () => void;
+let { orgId }: { orgId: string } = $props();
+const request = $derived(periodOverrides.request?.orgId === orgId ? periodOverrides.request : null);
+const target = $derived(request?.targets[0]);
+const period = $derived(academicContext.allPeriods.find((item) => item.id === target?.period_id));
+let reason = $state("");
+let submitting = $state(false);
+
+const targetLabel = createQuery(() => {
+  const current = target;
+  return {
+    queryKey: ["period-override-label", orgId, current?.entity_type, current?.entity_id],
+    enabled: current?.entity_type === "section" || current?.entity_type === "section_subject",
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async () => {
+      if (current?.entity_type === "section_subject") {
+        const assignment = await api.getSectionSubject(current.entity_id);
+        const [section, subject] = await Promise.all([
+          api.getSection(assignment.section_id), api.getSubject(assignment.subject_id),
+        ]);
+        return [l(section.name_ar, section.name), l(subject.name_ar, subject.name)].filter(Boolean).join(" · ");
+      }
+      if (current?.entity_type === "section") {
+        const section = await api.getSection(current.entity_id);
+        return l(section.name_ar, section.name);
+      }
+      return "";
+    },
+  };
+});
+
+function dismiss() {
+  if (submitting) return;
+  reason = "";
+  periodOverrides.dismiss();
 }
 
-let {
-  open = $bindable(false),
-  orgId,
-  overrideType,
-  entityType,
-  entityId,
-  riskLevel = "medium",
-  fieldName,
-  oldValue,
-  newValue,
-  onSuccess,
-}: Props = $props();
-
-let reason = $state("");
-let isSubmitting = $state(false);
-
-// Derived labels
-const riskBadgeVariant = $derived.by(() => {
-  switch (riskLevel) {
-    case "low":
-      return "secondary" as const;
-    case "medium":
-      return "default" as const;
-    case "high":
-      return "destructive" as const;
-    case "critical":
-      return "destructive" as const;
-    default:
-      return "default" as const;
-  }
-});
-
-const riskLabel = $derived.by(() => {
-  switch (riskLevel) {
-    case "low":
-      return m.common_override_risk_low();
-    case "medium":
-      return m.common_override_risk_medium();
-    case "high":
-      return m.common_override_risk_high();
-    case "critical":
-      return m.common_override_risk_critical();
-    default:
-      return riskLevel;
-  }
-});
-
-const typeLabel = $derived.by(() => {
-  switch (overrideType) {
-    case "grade_modification":
-      return m.common_override_type_grade();
-    case "late_enrollment":
-      return m.common_override_type_enrollment();
-    case "attendance_correction":
-      return m.common_override_type_attendance();
-    case "fee_waiver":
-      return m.common_override_type_fee();
-    case "period_unlock":
-      return m.common_override_type_unlock();
-    case "deadline_extension":
-      return m.common_override_type_deadline();
-    case "promotion_override":
-      return m.common_override_type_promotion();
-    default:
-      return overrideType;
-  }
-});
-
-const approvalChainPreview = $derived.by(() => {
-  switch (riskLevel) {
-    case "low":
-      return m.common_override_chain_auto();
-    case "medium":
-      return m.common_override_chain_manager();
-    case "high":
-      return m.common_override_chain_admin();
-    case "critical":
-      return m.common_override_chain_full();
-    default:
-      return "";
-  }
-});
-
-async function submit() {
-  if (!reason.trim()) {
-    toast.error(m.common_override_reason_required());
-    return;
-  }
-  isSubmitting = true;
+async function submit(event: SubmitEvent) {
+  event.preventDefault();
+  if (!request || !target || submitting || !reason.trim()) return;
+  const current = request;
+  submitting = true;
   try {
-    await api.submitOverride({
-      override_type: overrideType,
-      risk_level: riskLevel,
-      entity_type: entityType,
-      entity_id: entityId,
-      field_name: fieldName,
-      old_value: oldValue,
-      new_value: newValue,
-      reason: reason.trim(),
-    });
+    await api.submitOverride({ ...target, reason: reason.trim() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.workflow.all });
     toast.success(m.common_override_submitted());
-    reason = "";
-    open = false;
-    onSuccess?.();
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
+    if (periodOverrides.request === current) {
+      const remaining = current.targets.slice(1);
+      if (remaining.length) {
+        periodOverrides.open(orgId, remaining);
+      } else {
+        reason = "";
+        periodOverrides.dismiss();
+      }
+    }
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   } finally {
-    isSubmitting = false;
+    submitting = false;
   }
 }
 </script>
 
-<Dialog bind:open>
+<Dialog open={Boolean(target)} onOpenChange={(open) => { if (!open) dismiss(); }}>
   <DialogContent class="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle class="flex items-center gap-2">
-        <UserBadgeCheck class="size-5 text-primary" />
-        {m.common_override_request_title()}
-      </DialogTitle>
-    </DialogHeader>
+    {#if target}
+      <DialogHeader>
+        <DialogTitle>
+          {target.override_type === "grade_change" ? m.common_override_type_grade() : m.common_override_type_enrollment()}
+        </DialogTitle>
+        <DialogDescription>
+          {target.override_type === "grade_change" ? m.common_override_grade_closed() : m.common_override_enrollment_closed()}
+        </DialogDescription>
+      </DialogHeader>
 
-    <div class="flex flex-col gap-4 py-2">
-      <!-- Override Type + Risk -->
-      <div class="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-muted-foreground">
-            {m.common_word_type()}
-          </span>
-          <span class="text-sm font-medium">{typeLabel}</span>
-        </div>
-        <Badge variant={riskBadgeVariant} class="text-xs">
-          {#if riskLevel === "high" || riskLevel === "critical"}
-            <InfoCircle class="size-3 me-1" />
-          {/if}
-          {riskLabel}
-        </Badge>
-      </div>
-
-      <!-- Value Change (if applicable) -->
-      {#if oldValue || newValue}
-        <div class="flex items-center gap-2 text-xs bg-muted/30 rounded-lg p-3">
-          {#if fieldName}
-            <span class="text-muted-foreground">{fieldName}:</span>
-          {/if}
-          {#if oldValue}
-            <span class="line-through text-muted-foreground">{oldValue}</span>
-            <span class="text-muted-foreground">→</span>
-          {/if}
-          {#if newValue}
-            <span class="font-medium text-foreground">{newValue}</span>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Reason -->
-      <div class="flex flex-col gap-2">
-        <Label for="override-reason">
-          {m.common_promo_reason()} *
-        </Label>
-        <Textarea
-          id="override-reason"
-          bind:value={reason}
-          placeholder={m.common_override_reason_placeholder()}
-          rows={3}
-        />
-      </div>
-
-      <!-- Approval Chain Preview -->
-      <div class="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-center gap-2">
-        <UserBadgeCheck class="size-3.5 shrink-0" />
-        {approvalChainPreview}
-      </div>
-    </div>
-
-    <DialogFooter class="flex-nowrap shrink-0">
-      <Button variant="outline" onclick={() => { open = false; }} disabled={isSubmitting}>
-        {m.common_action_cancel()}
-      </Button>
-      <Button onclick={submit} disabled={isSubmitting || !reason.trim()}>
-        {#if isSubmitting}
-          <LoadingIndicator class="size-4 me-2"  size={16} />
+      <form class="flex flex-col gap-4" onsubmit={submit}>
+        {#if period || targetLabel.data}
+          <div class="rounded-md bg-muted px-3 py-2 text-sm">
+            {#if targetLabel.data}<p class="font-medium">{targetLabel.data}</p>{/if}
+            {#if period}<p class="text-muted-foreground">{l(period.name_ar, period.name)}</p>{/if}
+          </div>
         {/if}
-        {m.common_override_submit()}
-      </Button>
-    </DialogFooter>
+        {#if request && request.targets.length > 1}
+          <p class="text-sm text-muted-foreground">{m.common_override_targets_remaining({ count: request.targets.length })}</p>
+        {/if}
+        <div class="flex flex-col gap-2">
+          <Label for="override-reason">{m.common_promo_reason()}</Label>
+          <Textarea id="override-reason" bind:value={reason} rows={3} required
+            placeholder={m.common_override_reason_placeholder()} disabled={submitting} />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onclick={dismiss} disabled={submitting}>
+            {m.common_action_cancel()}
+          </Button>
+          <Button type="submit" disabled={submitting || !reason.trim()}>
+            {#if submitting}<LoadingIndicator class="me-2 size-4" size={16} />{/if}
+            {m.common_override_submit()}
+          </Button>
+        </DialogFooter>
+      </form>
+    {/if}
   </DialogContent>
 </Dialog>

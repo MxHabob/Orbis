@@ -1,22 +1,20 @@
-<!--
-  @component OnboardingHub
-  Authoritative, minimalist DAG setup orchestrator for post-bootstrap institution configuration.
-  Built with clean typography, UI design tokens, and uncluttered layout.
--->
-<script lang="ts">
-import * as m from "$lib/paraglide/messages";
+﻿<script lang="ts">
 import { page } from "$app/state";
-import { goto } from "$app/navigation";
-import { resolve } from "$app/paths";
-import type { Pathname } from "$app/types";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
+import { Search } from "@orbis/icons";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Card, CardContent } from "@orbis/ui/card";
+import { Input } from "@orbis/ui/input";
+import { Progress } from "@orbis/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import type { OnboardingTaskStatus, SetupTaskDto } from "$lib/api/types";
 import { effectiveContext, systemStore } from "$lib/stores";
-import type {
-  OnboardingTaskCategory,
-  OnboardingTaskStatus,
-  SetupTaskDto,
-} from "$lib/api/types";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
+import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { navigateOnboardingRoute } from "$lib/features/onboarding-wizard/navigation";
+import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
+import { filterSetupTasks, type SetupTaskFilter } from "$lib/features/onboarding-wizard/task-filters";
 import {
   deriveSteps,
   findNextIncompleteStep,
@@ -24,463 +22,211 @@ import {
   isTaskAccessible,
 } from "$lib/features/onboarding-wizard/onboarding-steps";
 
-// @orbis/ui components
-import { Button } from "@orbis/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@orbis/ui/card";
-import { Badge } from "@orbis/ui/badge";
-import { Progress } from "@orbis/ui/progress";
-import { Input } from "@orbis/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
-
 const orgId = $derived(page.params.orgId!);
-const isArabic = $derived(getLocale().startsWith("ar"));
-
-// Filter States
-let searchQuery = $state("");
-let selectedCategory = $state<string>("all");
-let selectedStatus = $state<string>("all");
-let isLoadingOnboarding = $state(false);
-let onboardingLoadFailed = $state(false);
-
-async function loadState() {
-  isLoadingOnboarding = true;
-  onboardingLoadFailed = false;
-  try {
-    systemStore.onboardingState = await fetchLatestOnboardingState(orgId);
-  } catch (error) {
-    console.error("Failed to load the onboarding overview state:", error);
-    systemStore.onboardingState = null;
-    onboardingLoadFailed = true;
-  } finally {
-    isLoadingOnboarding = false;
-  }
-}
-
+const isArabic = $derived(getLocale() === "ar");
 const onboardingState = $derived(systemStore.onboardingState);
-const tasks = $derived(systemStore.onboardingTasks);
-const steps = $derived(
-  deriveSteps(tasks, (permission) =>
-    effectiveContext.hasPermission(permission),
-  ),
-);
+const tasks = $derived(onboardingState?.tasks ?? []);
 const categories = $derived(onboardingState?.categories ?? []);
+const steps = $derived(deriveSteps(tasks, (permission) => effectiveContext.hasPermission(permission)));
+const recommendedTask = $derived(onboardingState?.recommended_next_task);
+const canOpenRecommended = $derived(isTaskAccessible(steps, recommendedTask?.id));
+const guidedStep = $derived(
+  findNextIncompleteStep(steps) ?? steps.find((step) => step.id === "review" && step.isAccessible),
+);
 
-// Category label translations
-function getCategoryLabel(cat: string) {
-  const c = categories.find((item) => item.category === cat);
-  if (c) return isArabic ? c.label_ar : c.label;
-  switch (cat) {
-    case "organization":
-      return m.ui_onboarding_progress_organization();
-    case "calendar":
-      return m.ui_onboarding_progress_calendar();
-    case "academics":
-      return m.ui_onboarding_progress_academics();
-    case "assessment":
-      return m.ui_onboarding_progress_assessment();
-    case "finance":
-      return m.ui_onboarding_progress_finance();
-    case "students":
-      return m.ui_onboarding_progress_students();
-    case "templates":
-      return m.ui_onboarding_progress_documents();
-    case "integrations":
-      return m.ui_onboarding_progress_integrations();
-    default:
-      return cat;
+let search = $state("");
+let category = $state("all");
+let filter = $state<SetupTaskFilter>("all");
+let isRefreshing = $state(false);
+let refreshFailed = $state(false);
+
+const filters = [
+  { value: "all", label: m.common_filter_all },
+  { value: "required", label: m.ui_onboarding_progress_required_2 },
+  { value: "pending", label: m.ui_onboarding_progress_pending },
+  { value: "blocked", label: m.onboarding_task_status_blocked },
+  { value: "completed", label: m.common_exams_status_completed },
+] satisfies { value: SetupTaskFilter; label: () => string }[];
+const statusLabels = {
+  completed: m.common_exams_status_completed,
+  in_progress: m.onboarding_task_status_in_progress,
+  blocked: m.onboarding_task_status_blocked,
+  not_started: m.onboarding_task_status_not_started,
+  optional: m.onboarding_task_status_optional,
+  not_applicable: m.onboarding_task_status_not_applicable,
+} satisfies Record<OnboardingTaskStatus, () => string>;
+
+const activeFilter = $derived(filters.find((option) => option.value === filter) ?? filters[0]);
+const filteredTasks = $derived(filterSetupTasks(tasks, { category, status: filter, search }));
+
+function localized(english: string, arabic?: string | null) {
+  return (isArabic ? arabic : english) || english || arabic || "";
+}
+
+function categoryLabel(value: string) {
+  const match = categories.find((item) => item.category === value);
+  return match ? localized(match.label, match.label_ar) : "";
+}
+
+function resetFilters() {
+  search = "";
+  category = "all";
+  filter = "all";
+}
+
+async function refresh() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  refreshFailed = false;
+  try {
+    const requestedOrg = orgId;
+    const result = await fetchLatestOnboardingState(requestedOrg);
+    if (page.params.orgId !== requestedOrg) return;
+    if (result.org_id !== requestedOrg) throw new Error(m.onboarding_state_load_failed());
+    systemStore.onboardingState = result;
+  } catch {
+    refreshFailed = true;
+  } finally {
+    isRefreshing = false;
   }
 }
 
-const selectedCategoryLabel = $derived.by(() => {
-  if (selectedCategory === "all")
-    return m.ui_onboarding_progress_all_categories();
-  const c = categories.find((item) => item.category === selectedCategory);
-  if (c) return isArabic ? c.label_ar : c.label;
-  return getCategoryLabel(selectedCategory);
-});
-
-// Status Display Helper
-function getStatusInfo(status: OnboardingTaskStatus) {
-  switch (status) {
-    case "completed":
-      return {
-        label: m.common_exams_status_completed(),
-        variant: "outline" as const,
-        classes:
-          "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5",
-      };
-    case "in_progress":
-      return {
-        label: m.ui_onboarding_progress_in_progress(),
-        variant: "secondary" as const,
-        classes: "text-amber-600 dark:text-amber-400 bg-amber-500/10",
-      };
-    case "blocked":
-      return {
-        label: m.ui_onboarding_progress_blocked(),
-        variant: "secondary" as const,
-        classes: "text-muted-foreground bg-muted/60",
-      };
-    case "optional":
-      return {
-        label: m.ui_onboarding_progress_optional(),
-        variant: "outline" as const,
-        classes: "text-muted-foreground",
-      };
-    case "not_applicable":
-      return {
-        label: m.onboarding_task_status_not_applicable(),
-        variant: "outline" as const,
-        classes: "text-muted-foreground",
-      };
-    default:
-      return {
-        label: m.ui_onboarding_progress_not_started(),
-        variant: "secondary" as const,
-        classes: "text-muted-foreground",
-      };
-  }
-}
-
-// Filtered Tasks
-const filteredTasks = $derived.by(() => {
-  return tasks.filter((t) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchEn =
-        t.title.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q);
-      const matchAr = t.title_ar.includes(q) || t.description_ar.includes(q);
-      if (!matchEn && !matchAr) return false;
-    }
-
-    if (selectedCategory !== "all" && t.category !== selectedCategory) {
-      return false;
-    }
-
-    return true;
-  });
-});
-
-async function handleNavigate(task: SetupTaskDto) {
+function openTask(task: SetupTaskDto) {
   const step = findStepForTask(steps, task.id);
-  if (!isTaskAccessible(steps, task.id)) return;
-  await goto(
-    resolve(localizeHref(`/${orgId}/onboarding/${step?.route ?? ""}`) as Pathname),
-  );
+  if (step && isTaskAccessible(steps, task.id)) {
+    return navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`);
+  }
 }
 
-async function startGuidedSetup() {
-  const target =
-    findNextIncompleteStep(steps) ??
-    steps.find((step) => step.id === "review" && step.isAccessible);
-  if (!target) return;
-  await goto(
-    resolve(localizeHref(`/${orgId}/onboarding/${target.route}`) as Pathname),
-  );
+function openGuidedSetup() {
+  if (guidedStep) return navigateOnboardingRoute(`/${orgId}/onboarding/${guidedStep.route}`);
 }
 </script>
 
 <svelte:head>
-  <title>{m.ui_onboarding_progress_institution_onboarding_readiness()} — Orbis</title>
+  <title>{m.ui_onboarding_progress_institution_onboarding_readiness()} – Orbis</title>
 </svelte:head>
 
-{#if isLoadingOnboarding}
-  <div class="flex min-h-64 items-center justify-center px-4 py-10">
-    <p class="text-sm text-muted-foreground" role="status" aria-live="polite">
-      {m.onboarding_state_loading()}
-    </p>
-  </div>
-{:else if onboardingLoadFailed}
-  <div class="mx-auto flex min-h-64 w-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
-    <div class="w-full space-y-4 rounded-2xl border border-destructive/30 bg-card p-6 text-start">
-      <p class="text-sm font-semibold text-destructive" role="alert">
+{#if onboardingState}
+  <div class="space-y-6">
+    <header class="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
+      <div class="space-y-2">
+        <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">{m.ui_onboarding_progress_institution_setup_readiness()}</h1>
+        <p class="max-w-2xl text-sm text-muted-foreground">{m.shared_ui_onboarding_intro()}</p>
+      </div>
+      <Button variant="outline" size="sm" onclick={refresh} disabled={isRefreshing} aria-busy={isRefreshing}>
+        {isRefreshing ? m.common_control_loading() : m.common_control_refresh()}
+      </Button>
+    </header>
+
+    {#if refreshFailed}
+      <p class="rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
         {m.onboarding_state_load_failed()}
       </p>
-      <Button variant="outline" size="sm" onclick={loadState}>
-        {m.onboarding_retry()}
-      </Button>
-    </div>
-  </div>
-{:else}
-<div class="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 pb-20">
-  <!-- Minimal Page Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-5">
-    <div>
-      <h1 class="text-xl font-semibold tracking-tight text-foreground">
-        {m.ui_onboarding_progress_institution_setup_readiness()}
-      </h1>
-      <p class="text-xs text-muted-foreground mt-1">
-        {m.shared_ui_onboarding_intro()}
-      </p>
-    </div>
+    {/if}
 
-    <div class="flex items-center gap-2">
-      <Button
-        variant="default"
-        size="sm"
-        onclick={startGuidedSetup}
-        class="h-9 text-xs font-semibold bg-primary text-primary-foreground shadow-xs"
-      >
-        <span>{m.onboarding_hub_launch_wizard()}</span>
-      </Button>
-
-
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={loadState}
-        disabled={isLoadingOnboarding || systemStore.isLoading}
-        class="h-9 text-xs"
-      >
-        <span>{m.common_control_refresh()}</span>
-      </Button>
-    </div>
-  </div>
-
-  <!-- Overall Progress Card -->
-  <Card class="border-border/60 shadow-xs">
-    <CardContent class="p-5 space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold text-foreground">
-              {m.ui_onboarding_progress_overall_readiness()}
-            </span>
-            <span class="text-sm font-mono font-medium text-primary">
-              {onboardingState?.progress_percentage ?? 0}%
-            </span>
+    <Card>
+      <CardContent class="space-y-4 p-4 sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="space-y-1">
+            <h2 class="text-base font-semibold">{m.ui_onboarding_progress_overall_readiness()}</h2>
+            <p class="text-sm text-muted-foreground">
+              {m.shared_ui_onboarding_tasks_completed({ completed: onboardingState.completed_tasks, total: onboardingState.total_tasks })}
+            </p>
           </div>
-          <p class="text-xs text-muted-foreground">
-            {m.shared_ui_onboarding_tasks_completed({
-              completed: onboardingState?.completed_tasks ?? 0,
-              total: onboardingState?.total_tasks ?? 0,
-            })}
-          </p>
-        </div>
-
-        <div class="flex items-center flex-wrap gap-2 text-xs">
-          <Badge variant="outline" class="font-normal">
-            {m.ui_onboarding_progress_required()}
-            <span class="font-medium ms-1 font-mono">{onboardingState?.required_completed ?? 0}/{onboardingState?.required_tasks ?? 0}</span>
+          <Badge variant={onboardingState.is_institution_ready ? "outline" : "secondary"}>
+            {onboardingState.is_institution_ready ? m.ui_onboarding_progress_ready_for_operations() : m.ui_onboarding_progress_in_preparation()}
           </Badge>
-
-          {#if (onboardingState?.blocked_tasks ?? 0) > 0}
-            <Badge variant="secondary" class="font-normal text-muted-foreground">
-              {m.ui_onboarding_progress_blocked_2()}
-              <span class="font-medium ms-1 font-mono">{onboardingState?.blocked_tasks}</span>
-            </Badge>
-          {/if}
-
-          {#if onboardingState?.is_institution_ready}
-            <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 font-normal">
-              {m.ui_onboarding_progress_ready_for_operations()}
-            </Badge>
-          {:else}
-            <Badge variant="secondary" class="text-amber-600 dark:text-amber-400 font-normal">
-              {m.ui_onboarding_progress_in_preparation()}
-            </Badge>
-          {/if}
         </div>
-      </div>
+        <div class="flex items-center gap-3">
+          <Progress value={onboardingState.progress_percentage} max={100} class="h-2" aria-label={m.ui_onboarding_progress_overall_readiness()} />
+          <span class="shrink-0 text-sm font-medium tabular-nums" dir="ltr">{onboardingState.progress_percentage}%</span>
+        </div>
+        {#if (recommendedTask && canOpenRecommended) || guidedStep}
+          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            {#if recommendedTask && canOpenRecommended}
+              <div class="space-y-1">
+                <p class="text-xs text-muted-foreground">{m.ui_onboarding_progress_recommended_next_step()}</p>
+                <h3 class="text-sm font-medium">{localized(recommendedTask.title, recommendedTask.title_ar)}</h3>
+              </div>
+              <Button size="sm" onclick={() => openTask(recommendedTask)}>
+                {m.ui_onboarding_progress_configure()}
+              </Button>
+            {:else}
+              <Button size="sm" onclick={openGuidedSetup}>{m.onboarding_hub_launch_wizard()}</Button>
+            {/if}
+          </div>
+        {/if}
+      </CardContent>
+    </Card>
 
-      <Progress value={onboardingState?.progress_percentage ?? 0} max={100} class="h-1.5" />
-    </CardContent>
-  </Card>
-
-  <!-- Recommended Next Action (Subtle Notice) -->
-  {#if onboardingState?.recommended_next_task && isTaskAccessible(steps, onboardingState.recommended_next_task.id)}
-    {@const next = onboardingState.recommended_next_task}
-    <div class="rounded-xl border border-border/80 bg-muted/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="space-y-0.5">
-        <span class="text-[11px] font-medium text-muted-foreground">
-          {m.ui_onboarding_progress_recommended_next_step()}
-        </span>
-        <h3 class="text-sm font-semibold text-foreground">
-          {isArabic ? next.title_ar : next.title}
-        </h3>
-        <p class="text-xs text-muted-foreground">
-          {isArabic ? next.description_ar : next.description}
-        </p>
-      </div>
-
-      <Button
-        variant="default"
-        size="sm"
-        onclick={() => handleNavigate(next)}
-        class="h-8 text-xs shrink-0"
-      >
-        <span>{m.ui_onboarding_progress_configure()}</span>
-      </Button>
-    </div>
-  {/if}
-
-  <!-- Toolbar: Search & Status Filters -->
-  <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
-    <div class="relative flex-1 max-w-sm">
-      <Input
-        type="text"
-        placeholder={m.ui_onboarding_progress_search_tasks()}
-        bind:value={searchQuery}
-        class="h-9 text-xs"
-      />
-    </div>
-
-    <div class="flex items-center flex-wrap gap-1.5 text-xs">
-      <!-- Status Buttons -->
-      <div class="flex items-center gap-1 p-0.5 rounded-lg border border-border/60 bg-muted/30">
-        <button
-          type="button"
-          onclick={() => (selectedStatus = "all")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'all' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
-        >
-          {m.common_filter_all()} ({tasks.length})
-        </button>
-        <button
-          type="button"
-          onclick={() => (selectedStatus = "required")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'required' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
-        >
-          {m.ui_onboarding_progress_required_2()} ({tasks.filter((t) => t.is_required).length})
-        </button>
-        <button
-          type="button"
-          onclick={() => (selectedStatus = "pending")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'pending' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
-        >
-          {m.ui_onboarding_progress_pending()} ({tasks.filter((t) => t.status !== 'completed').length})
-        </button>
-        <button
-          type="button"
-          onclick={() => (selectedStatus = "blocked")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'blocked' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
-        >
-          {m.ui_onboarding_progress_blocked_3()} ({tasks.filter((t) => t.status === 'blocked').length})
-        </button>
-        <button
-          type="button"
-          onclick={() => (selectedStatus = "completed")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedStatus === 'completed' ? 'bg-background text-foreground shadow-xs font-medium' : 'text-muted-foreground hover:text-foreground'}"
-        >
-          {m.ui_onboarding_progress_done()} ({tasks.filter((t) => t.status === 'completed').length})
-        </button>
-      </div>
-
-      <!-- Category Filter Dropdown -->
-      {#if categories.length > 0}
-        <Select
-          type="single"
-          value={selectedCategory}
-          onValueChange={(v) => (selectedCategory = v ?? "all")}
-        >
-          <SelectTrigger class="h-9 text-xs">
-            {selectedCategoryLabel}
+    <section aria-label={m.ui_onboarding_progress_search_tasks()} class="space-y-3">
+      <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)_minmax(0,12rem)]">
+        <Input type="search" bind:value={search} placeholder={m.ui_onboarding_progress_search_tasks()} aria-label={m.ui_onboarding_progress_search_tasks()} />
+        <Select type="single" value={category} onValueChange={(value) => (category = value ?? "all")}>
+          <SelectTrigger class="w-full" aria-label={m.ui_onboarding_progress_all_categories()}>
+            {categoryLabel(category) || m.ui_onboarding_progress_all_categories()}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.ui_onboarding_progress_all_categories()}</SelectItem>
-            {#each categories as cat (cat.category)}
-              <SelectItem value={cat.category}>
-                {isArabic ? cat.label_ar : cat.label} ({cat.completed_tasks}/{cat.total_tasks})
-              </SelectItem>
+            {#each categories as item (item.category)}
+              <SelectItem value={item.category}>{localized(item.label, item.label_ar)}</SelectItem>
             {/each}
           </SelectContent>
         </Select>
-      {/if}
-    </div>
-  </div>
-
-  <!-- Tasks Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-    {#each filteredTasks as task (task.id)}
-      {@const statusInfo = getStatusInfo(task.status)}
-      {@const isBlocked = task.status === "blocked"}
-      {@const isComplete = task.status === "completed"}
-      {@const step = findStepForTask(steps, task.id)}
-      {@const isAccessible = isTaskAccessible(steps, task.id)}
-
-      <Card class="border-border/60 shadow-xs hover:border-border transition-colors flex flex-col justify-between {isBlocked ? 'opacity-70 bg-muted/10' : ''}">
-        <CardContent class="p-4 space-y-3">
-          <!-- Header: Title, Category & Status Badge -->
-          <div class="flex items-start justify-between gap-3">
-            <div class="space-y-0.5">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <h3 class="text-sm font-semibold text-foreground">
-                  {isArabic ? task.title_ar : task.title}
-                </h3>
-                {#if task.is_required}
-                  <Badge variant="outline" class="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground">
-                    {m.ui_onboarding_progress_required_3()}
-                  </Badge>
-                {/if}
-              </div>
-              <span class="text-[11px] text-muted-foreground">
-                {getCategoryLabel(task.category)}
-              </span>
-            </div>
-
-            <Badge
-              variant={statusInfo.variant}
-              class="text-[11px] px-2 py-0.5 font-normal {statusInfo.classes}"
-            >
-              {statusInfo.label}
-            </Badge>
-          </div>
-
-          <!-- Description -->
-          <p class="text-xs text-muted-foreground leading-relaxed">
-            {isArabic ? task.description_ar : task.description}
-          </p>
-
-          <!-- Prerequisite condition (if blocked or helpful) -->
-          {#if isBlocked && task.blocking_reason}
-            <div class="text-[11px] text-muted-foreground border-t border-border/40 pt-2">
-              <span class="font-medium text-foreground">{m.ui_onboarding_progress_prerequisite()}</span>
-              <span class="ms-1">{isArabic && task.blocking_reason_ar ? task.blocking_reason_ar : task.blocking_reason}</span>
-            </div>
-          {/if}
-        </CardContent>
-
-        <!-- Footer: Action Button -->
-        <CardFooter class="px-4 py-3 border-t border-border/40 bg-muted/10 flex items-center justify-between gap-3">
-          <span class="text-[11px] font-mono text-muted-foreground">
-            {task.progress}%
-          </span>
-
-          <Button
-            variant={isComplete ? "outline" : "default"}
-            size="sm"
-            disabled={!isAccessible}
-            onclick={() => handleNavigate(task)}
-            class="h-8 text-xs font-medium"
-          >
-            {#if isComplete}
-              <span>{m.ui_onboarding_progress_review()}</span>
-            {:else if isBlocked}
-              <span>{m.academics_exams_center_locked()}</span>
-            {:else}
-              <span>{m.ui_setup_card_configure()}</span>
-            {/if}
-          </Button>
-        </CardFooter>
-      </Card>
-    {:else}
-      <div class="col-span-full py-16 text-center text-muted-foreground space-y-1">
-        <p class="text-sm font-medium">{m.ui_onboarding_progress_no_tasks_match_your_filters()}</p>
-        <p class="text-xs">{m.ui_onboarding_progress_try_adjusting_your_search_query_or_status_filter()}</p>
+        <Select type="single" value={filter} onValueChange={(value) => {
+          filter = filters.find((option) => option.value === value)?.value ?? "all";
+        }}>
+          <SelectTrigger class="w-full" aria-label={m.common_status()}>{activeFilter.label()}</SelectTrigger>
+          <SelectContent>
+            {#each filters as option (option.value)}
+              <SelectItem value={option.value}>{option.label()}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
       </div>
-    {/each}
+
+      <Card>
+        {#if filteredTasks.length}
+          <ul class="divide-y divide-border" aria-live="polite">
+            {#each filteredTasks as task (task.id)}
+              {@const accessible = isTaskAccessible(steps, task.id)}
+              {@const group = categoryLabel(task.category)}
+              <li class="grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:px-6">
+                <div class="min-w-0 space-y-1.5">
+                  {#if group}<p class="text-xs text-muted-foreground">{group}</p>{/if}
+                  <h3 class="text-sm font-semibold">{localized(task.title, task.title_ar)}</h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">{localized(task.description, task.description_ar)}</p>
+                  {#if task.status === "blocked" && (task.blocking_reason || task.blocking_reason_ar)}
+                    <p class="text-xs leading-relaxed text-muted-foreground">
+                      <span class="font-medium">{m.ui_onboarding_progress_prerequisite()}</span>
+                      {localized(task.blocking_reason ?? "", task.blocking_reason_ar)}
+                    </p>
+                  {/if}
+                </div>
+                <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                  {#if task.is_required && task.status !== "completed"}
+                    <Badge variant="outline">{m.ui_onboarding_progress_required_3()}</Badge>
+                  {/if}
+                  <Badge variant="secondary">{statusLabels[task.status]()}</Badge>
+                  {#if accessible}
+                    <Button variant="outline" size="sm" onclick={() => openTask(task)}>
+                      {task.status === "completed" ? m.ui_onboarding_progress_review() : m.ui_onboarding_progress_configure()}
+                    </Button>
+                  {/if}
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <EmptyState icon={Search}
+            title={m.ui_onboarding_progress_no_tasks_match_your_filters()}
+            description={m.ui_onboarding_progress_try_adjusting_your_search_query_or_status_filter()}
+            actionLabel={m.academics_reports_reset_filters()}
+            onaction={resetFilters}
+          />
+        {/if}
+      </Card>
+    </section>
   </div>
-</div>
 {/if}

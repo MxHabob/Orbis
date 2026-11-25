@@ -29,7 +29,6 @@ use uuid::Uuid;
 pub struct ActiveSession {
     pub user_id: Uuid,
     pub org_id: Uuid,
-    pub active_unit_id: Option<Uuid>,
     pub token: String,
 }
 
@@ -522,7 +521,7 @@ impl AppState {
 
         let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
             override_repo.clone(),
-            workflow_repo.clone(),
+            org_unit_repo.clone(),
             event_bus.clone(),
             permission_checker.clone(),
         ));
@@ -824,14 +823,6 @@ impl AppState {
     pub fn set_active_session(&self, session: ActiveSession) {
         if let Ok(mut guard) = self.active_session.write() {
             *guard = Some(session);
-        }
-    }
-
-    pub fn set_active_unit(&self, unit_id: Option<Uuid>) {
-        if let Ok(mut guard) = self.active_session.write() {
-            if let Some(ref mut session) = *guard {
-                session.active_unit_id = unit_id;
-            }
         }
     }
 

@@ -16,21 +16,19 @@ import {
 import { navigateOnboardingRoute } from "../navigation";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { l } from "$lib/core/i18n";
-import type { SetupTaskDto } from "$lib/api";
+import { extractErrorMessage, type SetupTaskDto } from "$lib/api";
 
 let { orgId }: { orgId: string } = $props();
 
 let isRefreshing = $state(false);
 let isLaunching = $state(false);
-let launchSuccess = $state(false);
 async function refreshDAG(): Promise<boolean> {
   isRefreshing = true;
   try {
     await refreshOnboardingState(orgId, m.onboarding_step8_err_readiness());
     return true;
-  } catch (err: any) {
-    console.error("Failed to refresh onboarding DAG state:", err);
-    toast.error(err?.message || m.onboarding_step8_err_readiness());
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
     return false;
   } finally {
     isRefreshing = false;
@@ -74,18 +72,13 @@ async function handleCompleteAndLaunch() {
   try {
     if (!(await refreshDAG())) return;
     if (!systemStore.isInstitutionReady) {
-      toast.error(m.onboarding_step8_err_readiness());
+      toast.error(m.onboarding_step8_launch_prerequisite());
       return;
     }
 
-    launchSuccess = true;
-
-    setTimeout(async () => {
-      await navigateOnboardingRoute(`/${orgId}`);
-    }, 900);
-  } catch (err: any) {
-    console.error("Failed to complete onboarding:", err);
-    toast.error(err?.message || m.onboarding_step8_err_launch());
+    await navigateOnboardingRoute(`/${orgId}`);
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   } finally {
     isLaunching = false;
   }
@@ -94,12 +87,8 @@ async function handleCompleteAndLaunch() {
 
 <div class="space-y-6">
   <OnboardingStepHeader
-    stepNumber={10}
-    totalSteps={10}
     title={m.onboarding_step8_title()}
     description={m.onboarding_step8_subtitle()}
-    isRequired={true}
-    status={isReady ? "completed" : "in_progress"}
   />
 
   {#if isRefreshing && !systemStore.onboardingState}
@@ -120,23 +109,6 @@ async function handleCompleteAndLaunch() {
       <Button variant="outline" size="sm" onclick={refreshDAG}>
         {m.onboarding_step8_recheck_btn()}
       </Button>
-      </CardContent>
-    </Card>
-  {:else if launchSuccess}
-    <Card>
-      <CardContent class="items-center space-y-4 bg-emerald-500/10 p-8 text-center animate-in fade-in zoom-in duration-300">
-      <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-500 text-white text-3xl font-bold shadow-lg shadow-emerald-500/30">
-        ✓
-      </div>
-      <h2 class="text-2xl font-bold text-foreground">
-        {m.onboarding_step8_congrats_title()}
-      </h2>
-      <p class="text-sm text-muted-foreground max-w-md mx-auto">
-        {m.onboarding_step8_congrats_desc()}
-      </p>
-      <div class="flex justify-center pt-2">
-        <LoadingIndicator size={24} class="size-6 text-primary" />
-      </div>
       </CardContent>
     </Card>
   {:else}
@@ -195,8 +167,7 @@ async function handleCompleteAndLaunch() {
       title={m.onboarding_step8_checklist_title()}
       description={m.onboarding_step8_checklist_desc()}
     >
-      <Card>
-        <CardContent class="divide-y divide-border/40 overflow-hidden p-0">
+      <ul class="divide-y divide-border">
         {#each tasks as task (task.id)}
           {@const step = findStepForTask(steps, task.id)}
           {@const statusLabel = task.status === "completed"
@@ -210,7 +181,7 @@ async function handleCompleteAndLaunch() {
                   : task.status === "not_applicable"
                     ? m.onboarding_task_status_not_applicable()
                     : m.onboarding_task_status_not_started()}
-          <div class="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-muted/30">
+          <li class="flex flex-wrap items-center justify-between gap-3 py-3">
             <div class="min-w-0 flex-1 space-y-1">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-sm font-medium text-foreground">
@@ -250,20 +221,21 @@ async function handleCompleteAndLaunch() {
                 {m.onboarding_step8_configure_btn()}
               </Button>
             {/if}
-          </div>
+          </li>
         {/each}
-        </CardContent>
-      </Card>
+      </ul>
     </OnboardingSection>
 
-    <!-- Inline Action & Final Launch Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+      {#if !isReady}
+        <p class="text-sm text-muted-foreground">{m.onboarding_step8_launch_prerequisite()}</p>
+      {/if}
       <Button
         variant="default"
         size="lg"
-        disabled={isLaunching}
+        disabled={!isReady || isLaunching || isRefreshing}
         onclick={handleCompleteAndLaunch}
-        class="text-sm font-bold shadow-md bg-emerald-600 hover:bg-emerald-700 text-white px-6"
+        class="ms-auto"
       >
         {isLaunching ? m.onboarding_step8_launching_btn() : m.onboarding_step8_launch_btn()}
       </Button>

@@ -4,8 +4,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, queryKeys } from "$lib/api";
-import { systemStore } from "$lib/stores";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -20,8 +19,6 @@ import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
-import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
@@ -29,6 +26,7 @@ import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
+let profileError = $state<string | null>(null);
 const queryClient = useQueryClient();
 const saveOrganizationMutation = createMutation(() => ({
   mutationFn: (request: {
@@ -66,54 +64,47 @@ let ministryName = $state("");
 let regionName = $state("");
 let organizationMetadata = $state<Record<string, unknown>>({});
 
-const stepTasks = $derived(
-  getTasksForStep("organization", systemStore.onboardingTasks),
-);
-const isTaskComplete = $derived(
-  stepTasks.every((t) => t.status === "completed"),
-);
 
-onMount(async () => {
+onMount(() => { void loadOrganization(); });
+
+async function loadOrganization() {
+  isLoading = true;
+  profileError = null;
   try {
-    isLoading = true;
-    const org =
-      await api.getCurrentOrg();
-    if (org) {
-      name = org.name || name;
-      nameAr = org.name_ar || nameAr;
-      slug = org.slug || slug;
-      baseCurrencyCode =
-        org.base_currency_code || (org as any).currency || baseCurrencyCode;
-      timezone = org.timezone || timezone;
-      locale = org.locale || locale;
-      isHijriEnabled = Boolean(
-        org.is_hijri_enabled ?? (org as any).hijri_enabled ?? isHijriEnabled,
-      );
-      const metadata =
-        org.metadata &&
-        typeof org.metadata === "object" &&
-        !Array.isArray(org.metadata)
-          ? (org.metadata as Record<string, unknown>)
-          : {};
-      organizationMetadata = metadata;
-      countryName =
-        typeof metadata.country_name === "string" ? metadata.country_name : "";
-      ministryName =
-        typeof metadata.ministry_name === "string"
-          ? metadata.ministry_name
-          : "";
-      regionName =
-        typeof metadata.region_name === "string" ? metadata.region_name : "";
-    }
-  } catch (err: any) {
-    console.error("Failed to load organization profile:", err);
-    toast.error(err?.message || m.common_action_failed());
+    const org = await api.getCurrentOrg();
+    if (org.id !== orgId) throw new Error(m.onboarding_state_load_failed());
+
+    name = org.name || name;
+    nameAr = org.name_ar || nameAr;
+    slug = org.slug || slug;
+    baseCurrencyCode = org.base_currency_code || baseCurrencyCode;
+    timezone = org.timezone || timezone;
+    locale = org.locale || locale;
+    isHijriEnabled = org.is_hijri_enabled ?? isHijriEnabled;
+    const metadata =
+      org.metadata &&
+      typeof org.metadata === "object" &&
+      !Array.isArray(org.metadata)
+        ? (org.metadata as Record<string, unknown>)
+        : {};
+    organizationMetadata = metadata;
+    countryName =
+      typeof metadata.country_name === "string" ? metadata.country_name : "";
+    ministryName =
+      typeof metadata.ministry_name === "string"
+        ? metadata.ministry_name
+        : "";
+    regionName =
+      typeof metadata.region_name === "string" ? metadata.region_name : "";
+  } catch (err) {
+    profileError = extractErrorMessage(err);
   } finally {
     isLoading = false;
   }
-});
+}
 
 async function saveOrganization() {
+  if (isLoading || profileError || isSaving) return;
   if (!name.trim()) {
     toast.error(m.onboarding_step1_err_name());
     return;
@@ -147,20 +138,16 @@ async function saveOrganization() {
     // Refresh onboarding DAG state
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step1_saved_success();
-  } catch (err: any) {
-    console.error("Failed to save organization profile:", err);
-    toast.error(err?.message || m.common_action_failed());
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   }
 }
 </script>
 
 <div class="space-y-6">
   <OnboardingStepHeader
-    stepNumber={1}
     title={m.onboarding_step1_title()}
     description={m.onboarding_step1_subtitle()}
-    isRequired={true}
-    status={isTaskComplete ? "completed" : "in_progress"}
   />
 
 
@@ -175,6 +162,11 @@ async function saveOrganization() {
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <LoadingIndicator size={16} class="size-4 text-primary" />
       <span>{m.common_control_loading()}</span>
+    </div>
+  {:else if profileError}
+    <div class="space-y-3 rounded-lg border border-border p-4">
+      <p class="text-sm text-destructive" role="alert">{profileError}</p>
+      <Button variant="outline" onclick={loadOrganization}>{m.onboarding_retry()}</Button>
     </div>
   {:else}
     <!-- Basic Identity Section -->
@@ -270,9 +262,13 @@ async function saveOrganization() {
           <Label class="text-xs font-semibold">
             {m.onboarding_step1_locale()}
           </Label>
-          <Select type="single" bind:value={locale}>
+          <Select
+            type="single"
+            value={locale.startsWith("ar") ? "ar" : "en"}
+            onValueChange={(value) => { if (value) locale = value; }}
+          >
             <SelectTrigger class="w-full">
-              {locale === "ar" ? m.onboarding_step1_locale_ar() : m.onboarding_step1_locale_en()}
+              {locale.startsWith("ar") ? m.onboarding_step1_locale_ar() : m.onboarding_step1_locale_en()}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ar">{m.onboarding_step1_locale_ar()}</SelectItem>

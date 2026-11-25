@@ -9,6 +9,7 @@
 
 import { authStore } from "./auth.svelte";
 import { academicContext } from "./academic-context.svelte";
+import { getConnectionScope } from "$lib/api";
 import type {
   UserDto,
   OrgUnitDto,
@@ -27,9 +28,7 @@ export interface ScopeFilter {
 
 class EffectiveContextStore {
   // ── State ───────────────────────────────────────────────────
-  activeOrgUnitId = $state<string | null>(
-    localStorage.getItem("orbis_active_org_unit_id") || null,
-  );
+  activeOrgUnitId = $state<string | null>(null);
   activeClassId = $state<string | null>(
     localStorage.getItem("orbis_active_class_id") || null,
   );
@@ -71,6 +70,8 @@ class EffectiveContextStore {
   // ── Methods ─────────────────────────────────────────────────
   setEffectiveContext(ctx?: EffectiveContextDto | null) {
     if (!ctx) return;
+    const branchKey = this.branchPreferenceKey();
+    this.activeOrgUnitId = branchKey ? localStorage.getItem(branchKey) : null;
     if (ctx.effective_role) {
       this.effectiveRole = ctx.effective_role;
     }
@@ -106,11 +107,18 @@ class EffectiveContextStore {
 
   setOrgUnit(unitId: string | null) {
     this.activeOrgUnitId = unitId;
+    const key = this.branchPreferenceKey();
+    if (!key) return;
     if (unitId) {
-      localStorage.setItem("orbis_active_org_unit_id", unitId);
+      localStorage.setItem(key, unitId);
     } else {
-      localStorage.removeItem("orbis_active_org_unit_id");
+      localStorage.removeItem(key);
     }
+  }
+
+  private branchPreferenceKey(): string | null {
+    if (!authStore.orgId || !authStore.userId) return null;
+    return `orbis_dashboard_unit:${JSON.stringify([getConnectionScope(), authStore.orgId, authStore.userId])}`;
   }
 
   setClass(classId: string | null) {
@@ -168,7 +176,6 @@ class EffectiveContextStore {
     this.dependents = [];
     this.selectedDependentId = null;
     this.userPermissions = new Set();
-    localStorage.removeItem("orbis_active_org_unit_id");
     localStorage.removeItem("orbis_active_class_id");
     localStorage.removeItem("orbis_selected_dependent_id");
   }

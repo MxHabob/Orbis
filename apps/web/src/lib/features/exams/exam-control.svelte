@@ -1,21 +1,27 @@
 ﻿<script lang="ts">
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
+import { gradePeriodOverride, isGradePeriodOverrideable } from "$lib/api/period-override";
+
 import { onMount, untrack } from "svelte";
 import * as XLSX from "xlsx";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { api, extractErrorMessage, type RecordGradeItemRequest } from "$lib/api";
-import { academicContext, authStore, uiStore } from "$lib/stores";
+import { academicContext, authStore, effectiveContext, uiStore } from "$lib/stores";
 import { useUnsavedGuard } from "$lib/stores/unsaved-guard.svelte";
 import { confirmStore } from "$lib/stores/confirm.svelte";
 import { toast } from "@orbis/ui";
-import type { GridRowsChangeEvent, OrbisColumnDef } from "@orbis/svelte-grid";
+import type { GridRowsChangeEvent } from "@orbis/svelte-grid";
 import { ControlGrid } from "../academics";
+import { orgContext } from "$lib/stores/org-context.svelte";
+import BulkGradeWorkbooks from "./components/bulk-grade-workbooks.svelte";
+import { buildGradeWorkbook, downloadGradeWorkbook, isGradeWorkbook, reviewGradeWorkbook } from "./grade-workbook";
 import {
-  gradeStatus, loadClassGradeSheet, parseSheetScore, savedScore, withSheetTotals,
+  buildGradeGridColumns, isGradeEntryOpen, loadClassGradeSheet, makeGradeItem, parseSheetScore, savedScore, withSheetTotals,
   type SheetComponent, type SheetRow, type SheetScore, type SheetSubject,
 } from "./class-grade-sheet";
 
-let { orgId }: { orgId: string } = $props();
+let { orgId, bulk = false }: { orgId: string; bulk?: boolean } = $props();
 
 let classId = $state<string | null>(null);
 let periodId = $state<string | null>(null);
@@ -31,14 +37,28 @@ let isExporting = $state(false);
 let isCalculating = $state(false);
 let importInput: HTMLInputElement;
 let loadVersion = 0;
+let rosterPeriodId = $state<string | null>(null);
+let scopeCanEnter = $state<boolean | null>(null);
+let bulkBusy = $state(false);
+let reviewingBulkWorkbook = $state(false);
 const guard = useUnsavedGuard({ title: m.common_unsaved_changes() });
 const period = $derived(academicContext.allPeriods.find((item) => item.id === periodId));
-const canEdit = $derived(Boolean(period?.is_grade_entry_open && !period.is_locked && !academicContext.isReadOnly));
+const entryOpen = $derived(scopeCanEnter ?? isGradeEntryOpen(period));
+const canWriteGrades = $derived(effectiveContext.hasPermission("grade:write") && !academicContext.isReadOnly);
+const canEdit = $derived(entryOpen && canWriteGrades);
 const arabic = $derived(getLocale() === "ar");
-const subjectLabel = (subject: SheetSubject) => (arabic && subject.name_ar) || subject.name;
-const studentLabel = (row: SheetRow) => arabic ? row.student_name_ar : row.student_name;
 const visibleSubjects = $derived(subjects.filter((subject) =>
   subject.components.length > 0 && (!subjectId || subjectId === "all" || subject.id === subjectId)));
+const canRequestOverride = $derived(
+  canWriteGrades && effectiveContext.hasPermission("workflow:write") &&
+  isGradePeriodOverrideable(period) && visibleSubjects.length > 0,
+);
+function requestGradeOverride() {
+  const activePeriodId = periodId;
+  if (activePeriodId) {
+    periodOverrides.open(orgId, visibleSubjects.map((subject) => gradePeriodOverride(activePeriodId, subject.id)));
+  }
+}
 const visibleRows = $derived(!studentId || studentId === "all" ? rows : rows.filter((row) => row.student_id === studentId));
 const selectedComponents = $derived(visibleSubjects.flatMap((subject) =>
   subject.components.map((component) => ({
@@ -53,19 +73,7 @@ const pending = $derived.by(() => {
         const value = row[component.field] as SheetScore | undefined;
         const saved = row.savedGrades[component.field];
         if (value == null || value === savedScore(saved) || component.historical) continue;
-        items.push({
-          student_id: row.student_id,
-          enrollment_id: row.enrollment_id ?? saved?.enrollment_id,
-          period_id: periodId,
-          section_subject_id: subject.id,
-          component_code: component.code,
-          score: String(typeof value === "number" ? value : 0),
-          max_score: String(component.max_score),
-          is_absent: value === gradeStatus.absent(),
-          is_excused: value === gradeStatus.excused(),
-          is_exempt: value === gradeStatus.exempt(),
-          notes: saved?.notes ?? null,
-        });
+        items.push(makeGradeItem(periodId, subject, component, row, value));
       }
     }
   }
@@ -84,57 +92,27 @@ function validateScore(raw: unknown, row: SheetRow, component: SheetComponent) {
   return { ok: true, value };
 }
 
-const columns = $derived.by((): OrbisColumnDef[] => {
-  const result: OrbisColumnDef[] = [
-    { id: "__rowIndex", header: "#", width: 48, pin: "colPinStart", readonly: true, align: "center", sort: false },
-    { id: arabic ? "student_name_ar" : "student_name", header: m.common_word_student(), width: 210, pin: "colPinStart", readonly: true, sort: true },
-  ];
-  for (const subject of visibleSubjects) {
-    const group = subjectLabel(subject);
-    for (const component of subject.components) {
-      result.push({
-        id: component.field,
-        group,
-        header: (arabic && component.name_ar) || component.name || component.code,
-        subHeader: String(component.max_score),
-        align: "center",
-        width: 118,
-        editor: "text",
-        readonly: !canEdit || component.historical,
-        sort: true,
-        validate: (value, row) => validateScore(value, row as SheetRow, component),
-      });
-    }
-    result.push({
-      id: `total_${subject.id}`, group, header: m.common_grades_col_total(),
-      subHeader: String(subject.components.reduce((sum, item) => sum + item.max_score, 0)),
-      width: 84, readonly: true, align: "center", emphasis: true, type: "number",
-    });
-  }
-  if (!subjectId || subjectId === "all") {
-    result.push(
-      { id: "total", header: m.exams_grade_sheet_grand_total(), width: 122, readonly: true, align: "center", emphasis: true, type: "number" },
-      { id: "percentage", header: m.common_control_col_percentage(), width: 80, readonly: true, align: "center", type: "percentage" },
-    );
-    if (academicContext.gradeScaleItems.length) {
-      result.push({ id: "grade_letter", header: m.common_control_col_grade(), width: 96, readonly: true, align: "center", type: "badge" });
-    }
-  }
-  return result;
-});
+const columns = $derived(buildGradeGridColumns(visibleSubjects, {
+  arabic,
+  validate: canEdit ? validateScore : undefined,
+  showTotals: !subjectId || subjectId === "all",
+  showGrade: academicContext.gradeScaleItems.length > 0,
+}));
 
 onMount(() => {
   classId = academicContext.selectedClassId || null;
   periodId = uiStore.getPreference(
     { userId: authStore.userId, organizationId: orgId },
     "exams.selectedPeriodId", "", (value): value is string => typeof value === "string",
-  ) || academicContext.effectivePeriodId || null;
+  ) || null;
 });
 
 $effect(() => {
   const periods = academicContext.allPeriods;
-  if (periods.length && !periods.some((item) => item.id === periodId)) {
-    periodId = academicContext.activePeriod?.id ?? periods[0]!.id;
+  if (periodId && periods.length && !periods.some((item) => item.id === periodId)) periodId = null;
+  if (!periodId) {
+    const available = periods.filter(isGradeEntryOpen);
+    if (available.length === 1) periodId = available[0]!.id;
   }
 });
 
@@ -159,13 +137,18 @@ async function refresh(selectedClass = classId, selectedPeriod = periodId) {
   const version = ++loadVersion;
   subjects = [];
   rows = [];
+  rosterPeriodId = null;
+  scopeCanEnter = null;
   loadError = false;
   isLoading = Boolean(selectedClass && selectedPeriod);
   if (!selectedClass || !selectedPeriod) return;
   try {
-    const sheet = await loadClassGradeSheet(selectedClass, selectedPeriod);
+    const periods = await api.listAcademicPeriods();
+    const sheet = await loadClassGradeSheet(selectedClass, selectedPeriod, periods);
     if (version !== loadVersion) return;
     subjects = sheet.subjects;
+    rosterPeriodId = sheet.rosterPeriodId;
+    scopeCanEnter = sheet.canEnter;
     rows = sheet.rows.map((row) => withSheetTotals(row, sheet.subjects, academicContext.gradeScaleItems));
   } catch (error) {
     if (version !== loadVersion) return;
@@ -219,7 +202,7 @@ async function save() {
     });
     toast.success(m.common_control_save_success({ total: String(result.count) }));
   } catch (error) {
-    toast.error(extractErrorMessage(error));
+    if (!periodOverrides.handleError(orgId, error)) toast.error(extractErrorMessage(error));
   } finally {
     isSaving = false;
   }
@@ -244,45 +227,68 @@ async function calculateRankings() {
 }
 
 async function exportWorkbook() {
-  if (!selectedComponents.length || !visibleRows.length) return;
+  if (!classId || !period || !rosterPeriodId || !subjects.length || !rows.length || bulkBusy) return;
+  const scope = { classId, rosterPeriodId, rows, subjects, canEnter: canEdit };
+  const selectedPeriod = period;
   isExporting = true;
   try {
-    const workbook = XLSX.utils.book_new();
-    const data = visibleRows.map((row) => ({
-      student_id: row.student_id,
-      enrollment_id: row.enrollment_id ?? "",
-      student_name: studentLabel(row),
-      ...Object.fromEntries(selectedComponents.map(({ key, component }) => [key, row[component.field] ?? ""])),
-      total: visibleSubjects.length === 1 ? row[`total_${visibleSubjects[0]!.id}`] : row.total,
-      percentage: row.percentage,
-      grade_letter: row.grade_letter,
-    }));
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(data), "Grades");
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([
-      { key: "period_id", value: periodId },
-      { key: "class_id", value: classId },
-      { key: "section_subject_id", value: visibleSubjects.length === 1 ? visibleSubjects[0]!.id : "" },
-      ...selectedComponents.map(({ subject, component, key }) => ({
-        key: `component:${key}`,
-        value: `${subjectLabel(subject)} / ${(arabic && component.name_ar) || component.name} (${component.max_score})`,
-      })),
-    ]), "Context");
-    const filename = `grades-${classId?.slice(0, 8)}.xlsx`;
-    if ("__TAURI_INTERNALS__" in window) {
-      const [{ save: chooseFile }, { writeFile }] = await Promise.all([
-        import("@tauri-apps/plugin-dialog"), import("@tauri-apps/plugin-fs"),
-      ]);
-      const path = await chooseFile({ defaultPath: filename, filters: [{ name: "Excel", extensions: ["xlsx"] }] });
-      if (!path) return;
-      await writeFile(path, new Uint8Array(XLSX.write(workbook, { bookType: "xlsx", type: "array" })));
-    } else {
-      XLSX.writeFile(workbook, filename);
+    const section = await api.getSection(scope.classId);
+    const workbook = buildGradeWorkbook({
+      orgId, periodId: selectedPeriod.id, orgName: orgContext.displayName,
+      periodLabel: (arabic && selectedPeriod.name_ar) || selectedPeriod.name,
+      yearLabel: arabic ? academicContext.yearLabelAr : academicContext.yearLabel, arabic,
+    }, [{ ...scope, className: (arabic && section.name_ar) || section.name }]);
+    if (await downloadGradeWorkbook(workbook, "orbis-grades-" + section.id.slice(0, 8) + ".xlsx")) {
+      toast.success(m.common_action_export());
     }
-    toast.success(m.common_action_export());
   } catch (error) {
     toast.error(extractErrorMessage(error));
   } finally {
     isExporting = false;
+  }
+}
+
+async function stageClassWorkbook(workbook: XLSX.WorkBook) {
+  const sectionId = classId;
+  const selectedPeriodId = periodId;
+  if (!sectionId || !selectedPeriodId) return;
+  const [periods, section] = await Promise.all([api.listAcademicPeriods(), api.getSection(sectionId)]);
+  const plan = await reviewGradeWorkbook(workbook, { orgId, periodId: selectedPeriodId }, async (scopeId) => {
+    if (scopeId !== sectionId) throw new Error(m.exams_workbook_use_bulk());
+    return {
+      ...await loadClassGradeSheet(scopeId, selectedPeriodId, periods),
+      classId: scopeId, className: (arabic && section.name_ar) || section.name,
+    };
+  }, arabic);
+  if (plan.errors.length) {
+    toast.error(plan.errors[0]);
+    return;
+  }
+  const byId = new Map(rows.map((row) => [row.student_id, row]));
+  const byStudent = new Map<string, Record<string, SheetScore>>();
+  for (const change of plan.changes) {
+    const row = byId.get(change.studentId);
+    const saved = row?.savedGrades[change.field];
+    const current = row?.[change.field] ?? null;
+    if (!row || (saved?.updated_at ?? null) !== change.revision ||
+        (current !== savedScore(saved) && current !== change.after)) {
+      toast.error(m.exams_workbook_grade_changed());
+      return;
+    }
+    const edits = byStudent.get(change.studentId) ?? {};
+    edits[change.field] = change.after;
+    byStudent.set(change.studentId, edits);
+  }
+  rows = rows.map((row) => {
+    const edits = byStudent.get(row.student_id);
+    return edits ? withSheetTotals({ ...row, ...edits }, subjects, academicContext.gradeScaleItems) : row;
+  });
+  if (plan.changes.length) {
+    subjectId = "all";
+    studentId = "all";
+    toast.success(m.exams_workbook_staged({ count: plan.changes.length }));
+  } else {
+    toast.warning(m.exams_workbook_no_changes());
   }
 }
 
@@ -294,6 +300,10 @@ async function importWorkbook(event: Event) {
   isImporting = true;
   try {
     const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    if (isGradeWorkbook(workbook)) {
+      await stageClassWorkbook(workbook);
+      return;
+    }
     const sheet = workbook.Sheets.Grades ?? workbook.Sheets[workbook.SheetNames[0] ?? ""];
     if (!sheet) throw new Error(m.common_control_no_data());
     const context = workbook.Sheets.Context;
@@ -357,8 +367,10 @@ async function importWorkbook(event: Event) {
   {isLoading}
   {loadError}
   {canEdit}
+  {entryOpen}
   {isDirty}
-  {busy}
+  busy={busy || bulkBusy}
+  workbookReview={reviewingBulkWorkbook}
   {isSaving}
   {isExporting}
   {isImporting}
@@ -369,5 +381,22 @@ async function importWorkbook(event: Event) {
   onCalculate={calculateRankings}
   onExport={exportWorkbook}
   onImport={() => importInput?.click()}
-/>
+  onRequestOverride={canRequestOverride ? requestGradeOverride : undefined}
+>
+  {#snippet children()}
+    {#if bulk && period}
+      {#key orgId + ":" + period.id}
+        <BulkGradeWorkbooks
+          {orgId}
+          {period}
+          blocked={busy || isDirty || isExporting}
+          canEdit={canWriteGrades}
+          onBusyChange={(value) => (bulkBusy = value)}
+          onReviewChange={(value) => (reviewingBulkWorkbook = value)}
+          onSaved={() => { if (classId) void refresh(); }}
+        />
+      {/key}
+    {/if}
+  {/snippet}
+</ControlGrid>
 <input bind:this={importInput} type="file" accept=".xlsx,.xls" class="hidden" onchange={importWorkbook} />

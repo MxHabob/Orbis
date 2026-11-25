@@ -1159,6 +1159,7 @@ mod tests {
             status: orbis_domain::entities::override_request::OverrideStatus::Pending,
             current_approver_role: Some("admin".into()),
             approval_chain: vec![],
+            approval_policy_version: None,
             resolved_by: None,
             resolved_by_name: None,
             resolved_at: None,

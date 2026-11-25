@@ -187,10 +187,7 @@ const canSubmit = $derived(
     !classesQuery.isError &&
     ((state.isEditMode &&
       state.originalStudent?.student?.status !== "inactive") ||
-      (state.admissionPolicy.registrationEnabled &&
-        !!currentPeriod &&
-        (currentPeriod.is_enrollment_open ||
-          state.admissionPolicy.allowLateEnrollment))),
+      (state.admissionPolicy.registrationEnabled && !!currentPeriod)),
 );
 const canSaveDraft = $derived(
   !state.isInitializing && !state.initializationFailed,
@@ -205,12 +202,6 @@ async function handleSave(saveAsDraft = false) {
       return;
     }
     if (!currentPeriod) {
-      return;
-    }
-    if (
-      !currentPeriod.is_enrollment_open &&
-      !state.admissionPolicy.allowLateEnrollment
-    ) {
       return;
     }
   }

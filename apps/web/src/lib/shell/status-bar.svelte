@@ -13,8 +13,8 @@ import {
 import { api, isDesktopApp } from "$lib/api";
 import {
   createOrganizationQuery,
-  createOrgUnitsQuery,
 } from "$lib/features/settings/queries";
+import { createDashboardAccessQuery, dashboardBranch } from "$lib/features/dashboard/queries";
 import { createprogressionJobsQuery } from "$lib/features/academics/promotion-queries";
 import { updateManager } from "$lib/features/system/update-manager.svelte";
 import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
@@ -39,7 +39,7 @@ import SystemClock from "./system-clock.svelte";
 
 const orgId = $derived(authStore.orgId);
 const organizationQuery = createOrganizationQuery(() => orgId);
-const orgUnitsQuery = createOrgUnitsQuery(() => orgId);
+const dashboardAccess = createDashboardAccessQuery(() => orgId, () => authStore.userId);
 const progressionJobsQuery = createprogressionJobsQuery(() => orgId);
 let operationOpen = $state(false);
 let licenseOpen = $state(false);
@@ -89,17 +89,11 @@ let dismissedUpdateVersion = $state(readDismissedUpdateVersion());
 const organizationName = $derived(
   l(organizationQuery.data?.name_ar, organizationQuery.data?.name ?? ""),
 );
-const branches = $derived(
-  (orgUnitsQuery.data ?? []).filter(
-    (unit) => unit.is_active && unit.unit_type === "branch",
-  ),
-);
 const branchName = $derived.by(() => {
-  if (orgUnitsQuery.isError) return m.common_error_occurred();
-  if (!effectiveContext.activeOrgUnitId) return m.shared_ui_all_branches();
-  const branch = branches.find(
-    (unit) => unit.id === effectiveContext.activeOrgUnitId,
-  );
+  const access = dashboardAccess.data;
+  const branchId = dashboardBranch(access, effectiveContext.activeOrgUnitId);
+  if (!branchId) return access?.organization_wide ? m.shared_ui_all_branches() : "";
+  const branch = access?.units.find((unit) => unit.id === branchId);
   return branch
     ? l(branch.name_ar, branch.name)
     : m.shared_ui_selected_branch();
@@ -413,11 +407,11 @@ async function retrySolverSetup() {
   <div class="flex min-w-0 flex-1 items-center overflow-hidden">
     <div
       class="flex h-7 min-w-0 max-w-[42vw] shrink items-center gap-1.5 border-e border-border/60 px-2.5"
-      title={orgUnitsQuery.error
-        ? `${organizationName} · ${String(orgUnitsQuery.error)}`
+      title={dashboardAccess.error
+        ? `${organizationName} · ${String(dashboardAccess.error)}`
         : `${organizationName} · ${branchName}`}
     >
-      {#if orgUnitsQuery.isError}
+      {#if dashboardAccess.isError}
         <XMark size={13} class="shrink-0 text-destructive" />
       {:else}
         <BuildingOffice size={13} class="shrink-0" />

@@ -525,7 +525,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
         override_repo.clone(),
-        workflow_repo.clone(),
+        org_unit_repo.clone(),
         event_bus.clone(),
         permission_checker.clone(),
     ));

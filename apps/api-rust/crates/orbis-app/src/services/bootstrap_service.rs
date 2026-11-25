@@ -622,7 +622,7 @@ impl BootstrapService {
     ///
     /// If only an organization exists (no admin), it will complete the
     /// bootstrap by creating the admin — this handles crash recovery.
-    pub async fn execute(&self, req: BootstrapRequest) -> Result<BootstrapResult, DomainError> {
+    pub async fn execute(&self, mut req: BootstrapRequest) -> Result<BootstrapResult, DomainError> {
         let _bootstrap_guard = self.bootstrap_lock.lock().await;
         let _database_guard = self.system_repo.acquire_bootstrap_lock().await?;
         // ── Step 1: Validate request ──────────────────────────
@@ -654,6 +654,17 @@ impl BootstrapService {
         };
 
         let org_id = org.id;
+        if has_org {
+            req.institution_type = org.institution_type.clone();
+            req.country_code = org
+                .metadata
+                .as_ref()
+                .and_then(|metadata| metadata.get("country_code"))
+                .and_then(|value| value.as_str())
+                .map(str::to_owned)
+                .or(req.country_code);
+            req.base_currency_code = org.base_currency_code.clone().or(req.base_currency_code);
+        }
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
         let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(
             req.country_code.as_deref(),
@@ -837,12 +848,15 @@ impl BootstrapService {
                 }
             });
         org.code = Some(auto_code);
-        org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
+        org.date_format = req
+            .date_format
+            .clone()
+            .or_else(|| Some(country_profile.default_date_format().to_string()));
         org.format_locale = req.format_locale.clone();
         org.time_format = req.time_format.clone();
         org.is_hijri_enabled = req
             .is_hijri_enabled
-            .unwrap_or(country_profile.country_code == "YE");
+            .unwrap_or_else(|| country_profile.recommends_hijri());
         org.base_currency_code = req
             .base_currency_code
             .clone()
@@ -1087,7 +1101,7 @@ impl BootstrapService {
     // Internal: Seed System Currencies
     // ─────────────────────────────────────────────────────────
 
-    /// Seed standard reference currencies (SAR, USD, AED, YER, EUR, GBP, KWD, BHD, QAR, OMR).
+    /// Seed reference currencies used by the setup region catalog.
     async fn seed_system_currencies(
         &self,
         org_id: Uuid,
@@ -1133,6 +1147,23 @@ impl BootstrapService {
             ),
             ("QAR", "Qatari Riyal", Some("ريال قطري"), "ر.ق", "after", 2),
             ("OMR", "Omani Rial", Some("ريال عماني"), "ر.ع", "after", 3),
+            (
+                "EGP",
+                "Egyptian Pound",
+                Some("جنيه مصري"),
+                "ج.م",
+                "after",
+                2,
+            ),
+            (
+                "JOD",
+                "Jordanian Dinar",
+                Some("دينار أردني"),
+                "د.أ",
+                "after",
+                3,
+            ),
+            ("IQD", "Iraqi Dinar", Some("دينار عراقي"), "د.ع", "after", 3),
         ];
 
         for (code, name, name_ar, symbol, pos, dec) in standard_currencies {
@@ -1210,6 +1241,11 @@ impl BootstrapService {
     /// Idempotent — skips roles that already exist.
     async fn create_system_roles(&self, org_id: Uuid) -> Result<(), DomainError> {
         let now = Utc::now();
+        let principal_exists = self
+            .role_repo
+            .find_by_id(org_id, "principal")
+            .await?
+            .is_some();
 
         let system_roles = vec![
             ("super_admin", "Super Administrator", Some("مدير النظام")),
@@ -1243,6 +1279,20 @@ impl BootstrapService {
         // Create admin permissions for super_admin and org_admin roles
         self.create_admin_permissions(org_id, "super_admin").await?;
         self.create_admin_permissions(org_id, "org_admin").await?;
+        if !principal_exists {
+            let principal_permissions = ["read", "write", "approve"].map(|action| RolePermission {
+                id: Uuid::new_v4(),
+                role_id: "principal".into(),
+                org_id,
+                resource: "workflow".into(),
+                action: action.into(),
+                condition: None,
+                created_at: now,
+            });
+            self.role_repo
+                .save_role_permissions(org_id, "principal", &principal_permissions)
+                .await?;
+        }
         Ok(())
     }
 

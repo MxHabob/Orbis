@@ -5165,6 +5165,19 @@
       "get": {
         "tags": ["Organization"],
         "operationId": "get_dashboard",
+    "parameters": [
+      {
+        "name": "org_unit_id",
+        "in": "query",
+        "description": "Restrict metrics to an authorized unit and its descendants",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "nullable": true
+        }
+      }
+    ],
         "responses": {
           "200": {
             "description": "Dashboard statistics",
@@ -5176,6 +5189,31 @@
           }
         },
         "security": [{ "bearer": [] }]
+      }
+    },
+    "/api/v1/organizations/current/dashboard/access": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "get_dashboard_access",
+        "responses": {
+          "200": {
+            "description": "Dashboard branch options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardAccessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/api/v1/organizations/current/settings": {
@@ -9465,7 +9503,8 @@
           "failed",
           "is_atomic",
           "is_dry_run",
-          "items"
+          "items",
+          "override_targets"
         ],
         "properties": {
           "failed": { "type": "integer", "minimum": 0 },
@@ -9477,8 +9516,22 @@
               "$ref": "#/components/schemas/BulkRegisterItemResultDto"
             }
           },
+          "override_targets": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PeriodOverrideTargetDto" }
+          },
           "succeeded": { "type": "integer", "minimum": 0 },
           "total": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "PeriodOverrideTargetDto": {
+        "type": "object",
+        "required": ["entity_id", "entity_type", "override_type", "period_id"],
+        "properties": {
+          "entity_id": { "type": "string", "format": "uuid" },
+          "entity_type": { "type": "string" },
+          "override_type": { "type": "string" },
+          "period_id": { "type": "string", "format": "uuid" }
         }
       },
       "BulkScheduleLessonsRequest": {
@@ -10317,6 +10370,44 @@
           "symbol_position": { "type": "string" }
         }
       },
+    "DashboardAccessDto": {
+      "type": "object",
+      "required": [
+        "organization_wide",
+        "units"
+      ],
+      "properties": {
+        "organization_wide": {
+          "type": "boolean"
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/DashboardBranchDto"
+          }
+        }
+      }
+    },
+    "DashboardBranchDto": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_ar": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
       "DashboardCountsDto": {
         "type": "object",
         "required": [
@@ -13458,19 +13549,17 @@
           "override_type",
           "entity_type",
           "entity_id",
-          "reason",
-          "approver_role"
+          "reason"
         ],
         "properties": {
-          "approver_role": { "type": "string" },
           "entity_id": { "type": "string", "format": "uuid" },
           "entity_type": { "type": "string" },
           "field_name": { "type": "string", "nullable": true },
           "new_value": { "type": "string", "nullable": true },
           "old_value": { "type": "string", "nullable": true },
           "override_type": { "type": "string" },
-          "reason": { "type": "string" },
-          "risk_level": { "type": "string", "nullable": true }
+          "period_id": { "type": "string", "format": "uuid", "nullable": true },
+          "reason": { "type": "string" }
         }
       },
       "TeachingAssignmentInfo": {

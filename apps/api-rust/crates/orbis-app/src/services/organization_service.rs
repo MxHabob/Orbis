@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
-use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::iam::{PermissionCheckerPort, PermissionScope};
 use crate::ports::repositories::{
     DashboardCounts, DashboardRepository, OrgUnitRepository, OrganizationRepository,
     SettingsRepository,
@@ -80,6 +80,45 @@ pub struct OrganizationService {
     pub dashboard_repo: Arc<dyn DashboardRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+}
+
+#[derive(serde::Serialize)]
+pub struct DashboardBranch {
+    pub id: Uuid,
+    pub name: String,
+    pub name_ar: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+pub struct DashboardAccess {
+    pub organization_wide: bool,
+    pub units: Vec<DashboardBranch>,
+}
+
+fn descendants(units: &[OrgUnit], roots: &[Uuid]) -> std::collections::HashSet<Uuid> {
+    let mut children = std::collections::HashMap::<Uuid, Vec<Uuid>>::new();
+    let active: std::collections::HashSet<_> = units
+        .iter()
+        .filter(|unit| unit.is_active)
+        .map(|unit| unit.id)
+        .collect();
+    for unit in units.iter().filter(|unit| unit.is_active) {
+        if let Some(parent) = unit.parent_id {
+            children.entry(parent).or_default().push(unit.id);
+        }
+    }
+    let mut pending: Vec<_> = roots
+        .iter()
+        .copied()
+        .filter(|id| active.contains(id))
+        .collect();
+    let mut visited = std::collections::HashSet::new();
+    while let Some(id) = pending.pop() {
+        if visited.insert(id) {
+            pending.extend(children.get(&id).into_iter().flatten().copied());
+        }
+    }
+    visited
 }
 
 impl OrganizationService {
@@ -220,19 +259,28 @@ impl OrganizationService {
         org_id: Uuid,
         req: CreateOrgUnitInput,
     ) -> Result<OrgUnit, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::OrgUnitWrite)
-            .await?;
+        if org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden(
+                "Cannot create a branch in another organization".into(),
+            ));
+        }
 
         let now = Utc::now();
         let unit_id = Uuid::new_v4();
 
         let (path, depth) = if let Some(pid) = req.parent_id {
-            let parent = self.org_unit_repo.find_by_id(pid).await?.ok_or_else(|| {
-                DomainError::NotFound(format!("Parent OrgUnit {} not found", pid))
-            })?;
+            let parent = self
+                .authorized_unit(ctx, pid, Permission::OrgUnitWrite)
+                .await?;
             (format!("{}.{}", parent.path, unit_id), parent.depth + 1)
         } else {
+            if self.operation_scope(ctx, Permission::OrgUnitWrite).await?
+                != PermissionScope::Organization
+            {
+                return Err(DomainError::Forbidden(
+                    "Creating a root unit requires organization-wide permission".into(),
+                ));
+            }
             (unit_id.to_string(), 0)
         };
 
@@ -285,15 +333,9 @@ impl OrganizationService {
         id: Uuid,
         req: UpdateOrgUnitRequest,
     ) -> Result<OrgUnit, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::OrgUnitWrite)
-            .await?;
-
         let mut unit = self
-            .org_unit_repo
-            .find_by_id(id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("OrgUnit {} not found", id)))?;
+            .authorized_unit(ctx, id, Permission::OrgUnitWrite)
+            .await?;
 
         let now = Utc::now();
 
@@ -343,12 +385,15 @@ impl OrganizationService {
         if let Some(new_parent_id) = req.parent_id {
             if Some(new_parent_id) != unit.parent_id {
                 let parent = self
-                    .org_unit_repo
-                    .find_by_id(new_parent_id)
-                    .await?
-                    .ok_or_else(|| {
-                        DomainError::NotFound(format!("Parent OrgUnit {} not found", new_parent_id))
-                    })?;
+                    .authorized_unit(ctx, new_parent_id, Permission::OrgUnitWrite)
+                    .await?;
+                if parent.id == unit.id
+                    || !self.org_unit_repo.find_children(unit.id).await?.is_empty()
+                {
+                    return Err(DomainError::Validation(
+                        "Only leaf units can be moved to a different parent".into(),
+                    ));
+                }
                 unit.parent_id = Some(new_parent_id);
                 unit.path = format!("{}.{}", parent.path, unit.id);
                 unit.depth = parent.depth + 1;
@@ -371,25 +416,33 @@ impl OrganizationService {
     }
 
     /// List org units for an organization
-    pub async fn list_org_units(&self, org_id: Uuid) -> Result<Vec<OrgUnit>, DomainError> {
-        self.org_unit_repo.find_by_org(org_id).await
+    pub async fn list_org_units(&self, ctx: &RequestContext) -> Result<Vec<OrgUnit>, DomainError> {
+        let scope = self.operation_scope(ctx, Permission::OrgUnitRead).await?;
+        let units = self.org_unit_repo.find_by_org(ctx.tenant_id).await?;
+        Ok(dashboard_units(&scope, &units)
+            .into_iter()
+            .cloned()
+            .collect())
     }
 
     /// Get org unit by ID
-    pub async fn get_org_unit(&self, id: Uuid) -> Result<Option<OrgUnit>, DomainError> {
-        self.org_unit_repo.find_by_id(id).await
+    pub async fn get_org_unit(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<Option<OrgUnit>, DomainError> {
+        match self.authorized_unit(ctx, id, Permission::OrgUnitRead).await {
+            Ok(unit) => Ok(Some(unit)),
+            Err(DomainError::NotFound(_)) => Ok(None),
+            Err(error) => Err(error),
+        }
     }
 
     /// Delete org unit
     pub async fn delete_org_unit(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::OrgUnitDelete)
-            .await?;
         let unit = self
-            .org_unit_repo
-            .find_by_id(id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound(format!("OrgUnit {} not found", id)))?;
+            .authorized_unit(ctx, id, Permission::OrgUnitDelete)
+            .await?;
 
         self.org_unit_repo.delete(id).await?;
 
@@ -473,8 +526,141 @@ impl OrganizationService {
         Ok(settings)
     }
 
-    /// Get dashboard counts and metrics
-    pub async fn get_dashboard_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError> {
-        self.dashboard_repo.get_counts(org_id).await
+    async fn operation_scope(
+        &self,
+        ctx: &RequestContext,
+        permission: Permission,
+    ) -> Result<PermissionScope, DomainError> {
+        let actor_id = ctx
+            .actor
+            .id()
+            .ok_or_else(|| DomainError::Unauthorized("Authentication required".into()))?;
+        self.permission_checker
+            .permission_scope(actor_id, ctx.tenant_id, permission.as_str())
+            .await
     }
+
+    async fn authorized_unit(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        permission: Permission,
+    ) -> Result<OrgUnit, DomainError> {
+        let missing = || DomainError::NotFound(format!("OrgUnit {id} not found"));
+        let unit = self
+            .org_unit_repo
+            .find_by_id(id)
+            .await?
+            .filter(|unit| unit.org_id == ctx.tenant_id)
+            .ok_or_else(missing)?;
+        if let PermissionScope::Units(roots) = self.operation_scope(ctx, permission).await? {
+            let units = self.org_unit_repo.find_by_org(ctx.tenant_id).await?;
+            if !descendants(&units, &roots).contains(&id) {
+                return Err(missing());
+            }
+        }
+        Ok(unit)
+    }
+
+    pub async fn get_dashboard_access(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<DashboardAccess, DomainError> {
+        let scope = self.operation_scope(ctx, Permission::DashboardRead).await?;
+        let units = self.org_unit_repo.find_by_org(ctx.tenant_id).await?;
+        let mut visible: Vec<_> = dashboard_units(&scope, &units)
+            .into_iter()
+            .filter(|unit| {
+                matches!(unit.unit_type.as_str(), "branch" | "campus")
+                    || matches!(&scope, PermissionScope::Units(roots) if roots.contains(&unit.id))
+            })
+            .collect();
+        visible.sort_by(|left, right| left.name.cmp(&right.name).then(left.id.cmp(&right.id)));
+        Ok(DashboardAccess {
+            organization_wide: scope == PermissionScope::Organization,
+            units: visible
+                .into_iter()
+                .map(|unit| DashboardBranch {
+                    id: unit.id,
+                    name: unit.name.clone(),
+                    name_ar: unit.name_ar.clone(),
+                })
+                .collect(),
+        })
+    }
+
+    pub async fn get_dashboard_counts(
+        &self,
+        ctx: &RequestContext,
+        selected_unit: Option<Uuid>,
+    ) -> Result<DashboardCounts, DomainError> {
+        let scope = self.operation_scope(ctx, Permission::DashboardRead).await?;
+        if !scope.has_access() {
+            return Err(DomainError::Forbidden(
+                "Dashboard access is not granted".into(),
+            ));
+        }
+        let finance = self.operation_scope(ctx, Permission::FinanceRead).await?;
+        if selected_unit.is_none() && scope == PermissionScope::Organization {
+            return self
+                .dashboard_repo
+                .get_counts(
+                    ctx.tenant_id,
+                    None,
+                    finance == PermissionScope::Organization,
+                )
+                .await;
+        }
+
+        let units = self.org_unit_repo.find_by_org(ctx.tenant_id).await?;
+        let accessible = dashboard_units(&scope, &units);
+        let selected = selected_unit
+            .map(|id| {
+                accessible
+                    .iter()
+                    .find(|unit| unit.id == id)
+                    .copied()
+                    .ok_or_else(|| {
+                        DomainError::Forbidden(
+                            "The selected branch is outside your dashboard scope".into(),
+                        )
+                    })
+            })
+            .transpose()?;
+        let selected_descendants = selected.map(|root| descendants(&units, &[root.id]));
+        let unit_ids: Vec<_> = accessible
+            .iter()
+            .filter(|unit| {
+                selected_descendants
+                    .as_ref()
+                    .is_none_or(|ids| ids.contains(&unit.id))
+            })
+            .map(|unit| unit.id)
+            .collect();
+        if unit_ids.is_empty() {
+            return Err(DomainError::Forbidden(
+                "No active branch grants dashboard access".into(),
+            ));
+        }
+        let finance_units: std::collections::HashSet<_> = dashboard_units(&finance, &units)
+            .into_iter()
+            .map(|unit| unit.id)
+            .collect();
+        let include_finance = unit_ids.iter().all(|id| finance_units.contains(id));
+        self.dashboard_repo
+            .get_counts(ctx.tenant_id, Some(&unit_ids), include_finance)
+            .await
+    }
+}
+
+fn dashboard_units<'a>(scope: &PermissionScope, units: &'a [OrgUnit]) -> Vec<&'a OrgUnit> {
+    let active: Vec<_> = units.iter().filter(|unit| unit.is_active).collect();
+    let PermissionScope::Units(ids) = scope else {
+        return active;
+    };
+    let allowed = descendants(units, ids);
+    active
+        .into_iter()
+        .filter(|unit| allowed.contains(&unit.id))
+        .collect()
 }

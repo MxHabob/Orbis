@@ -7,7 +7,6 @@ import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui/button";
 import { ArrowUpTray, DocumentChartBar, Plus, XMark } from "@orbis/icons";
-import { academicContext } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -18,8 +17,6 @@ import { toast } from "@orbis/ui";
 import { confirmStore } from "$lib/stores";
 import { extractErrorMessage } from "$lib/api";
 import { goto } from "$app/navigation";
-import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
-import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, l } from "$lib/core/i18n";
@@ -35,8 +32,6 @@ const students = $derived(
   directory.studentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
 );
 const classes = $derived(directory.classesQuery.data ?? []);
-
-let showOverrideDialog = $state(false);
 
 let printDialogOpen = $state(false);
 let isDeletingStudents = $state(false);
@@ -223,38 +218,14 @@ async function deleteSelectedStudents() {
                   onprimary={() => goto(localizeHref(`/${orgId}/students/new`))}
                 >
                   {#snippet primary()}
-                    {#if academicContext.effectivePeriodId}
-                      <PeriodGateAction
-                        gateType="enrollment"
-                        periodId={academicContext.effectivePeriodId}
-                        classId={directory.selectedClassId ?? undefined}
-                        label={m.common_new()}
-                        size="sm"
-                        onAction={() => goto(localizeHref(`/${orgId}/students/new`))}
-                        onDraft={() => goto(localizeHref(`/${orgId}/students/new?draft=true`))}
-                        onOverride={() => { showOverrideDialog = true; }}
-                      >
-                        {#snippet allowed()}
-                          <Button
-                            size="sm"
-                            class="rounded-e-none gap-1.5"
-                            onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
-                          >
-                            <Plus class="size-4" />
-                            <span>{m.common_new()}</span>
-                          </Button>
-                        {/snippet}
-                      </PeriodGateAction>
-                    {:else}
-                      <Button
-                        size="sm"
-                        class="rounded-e-none gap-1.5"
-                        onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
-                      >
-                        <Plus class="size-4" />
-                        <span>{m.common_new()}</span>
-                      </Button>
-                    {/if}
+                    <Button
+                      size="sm"
+                      class="rounded-e-none gap-1.5"
+                      onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
+                    >
+                      <Plus class="size-4" />
+                      <span>{m.common_new()}</span>
+                    </Button>
                   {/snippet}
                 </SplitActionMenu>
               {/snippet}
@@ -347,13 +318,4 @@ async function deleteSelectedStudents() {
     entityLabels={selectedStudentLabels}
   />
 
-  <OverrideRequestDialog
-    bind:open={showOverrideDialog}
-    {orgId}
-    overrideType="late_enrollment"
-    entityType="enrollment"
-    entityId={directory.selectedClassId ?? ""}
-    riskLevel="medium"
-    onSuccess={() => { toast.success(m.common_override_submitted()); }}
-  />
 </div>

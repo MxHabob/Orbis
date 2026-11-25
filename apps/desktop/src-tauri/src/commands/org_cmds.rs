@@ -225,15 +225,29 @@ pub async fn org_update_settings(
 
 #[tauri::command]
 pub async fn org_get_dashboard(
+    org_unit_id: Option<Uuid>,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<DashboardCounts>, String> {
     let ctx = make_ctx(&state);
     let counts = state
         .organization_service
-        .get_dashboard_counts(ctx.tenant_id)
+        .get_dashboard_counts(&ctx, org_unit_id)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(counts))
+}
+
+#[tauri::command]
+pub async fn org_get_dashboard_access(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<orbis_app::services::organization_service::DashboardAccess>, String> {
+    let ctx = make_ctx(&state);
+    state
+        .organization_service
+        .get_dashboard_access(&ctx)
+        .await
+        .map(ok)
+        .map_err(|error| error.to_string())
 }
 
 // ── OrgUnits ────────────────────────────────────────────────────
@@ -480,7 +494,7 @@ pub async fn org_list_units(
     let ctx = make_ctx(&state);
     let units = state
         .organization_service
-        .list_org_units(ctx.tenant_id)
+        .list_org_units(&ctx)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(units.into_iter().map(unit_to_dto).collect()))
@@ -491,10 +505,11 @@ pub async fn org_get_unit(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OrgUnitDto>, String> {
+    let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let u = state
         .organization_service
-        .get_org_unit(uid)
+        .get_org_unit(&ctx, uid)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "OrgUnit not found".to_string())?;
@@ -510,17 +525,4 @@ pub async fn org_delete_unit(id: String, state: State<'_, AppState>) -> Result<(
         .delete_org_unit(&ctx, uid)
         .await
         .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn org_select_unit(
-    unit_id: Option<String>,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
-    let uid = match unit_id {
-        Some(s) if !s.is_empty() => Some(Uuid::parse_str(&s).map_err(|_| "Invalid unit ID")?),
-        _ => None,
-    };
-    state.set_active_unit(uid);
-    Ok(())
 }

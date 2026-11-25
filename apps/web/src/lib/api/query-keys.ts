@@ -24,6 +24,8 @@ export const queryKeys = {
       [...queryKeys.org.all, "settings", orgId ?? "current"] as const,
     dashboard: (orgId?: string) =>
       [...queryKeys.org.all, "dashboard", orgId ?? "current"] as const,
+    dashboardAccess: (orgId: string, userId: string) =>
+      [...queryKeys.org.all, "dashboard-access", orgId, userId] as const,
     units: (orgId?: string) =>
       [...queryKeys.org.all, "units", orgId ?? "current"] as const,
     unit: (id: string) => [...queryKeys.org.all, "unit", id] as const,

@@ -5,6 +5,9 @@
   Supports numeric scores and status tokens (absent/excused/exempt).
 -->
 <script lang="ts">
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
+import { gradePeriodOverride, isGradePeriodOverrideable } from "$lib/api/period-override";
+
 import { LoadingIndicator } from "@orbis/ui";
 import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -12,7 +15,7 @@ import { toast } from "@orbis/ui";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { academicContext } from "$lib/stores";
+import { academicContext, effectiveContext } from "$lib/stores";
 import { OrbisGrid, type CellEditEvent } from "@orbis/svelte-grid";
 import { Refresh } from "@orbis/icons";
 import {
@@ -50,10 +53,12 @@ const selectedPeriod = $derived(
   periods.find((p) => String(p.id) === selectedPeriodId),
 );
 const isPeriodLocked = $derived(Boolean(selectedPeriod?.is_locked));
-const isGradeEntryOpen = $derived(Boolean(selectedPeriod?.is_grade_entry_open));
+const isGradeEntryOpen = $derived(Boolean(selectedPeriod?.can_enter_grades));
 const canEnterGrades = $derived(
-  !isPeriodLocked && isGradeEntryOpen && !academicContext.isReadOnly,
+  !isPeriodLocked && isGradeEntryOpen && !academicContext.isReadOnly && effectiveContext.hasPermission("grade:write"),
 );
+const canRequestOverride = $derived(!academicContext.isReadOnly && effectiveContext.hasPermission("grade:write")
+  && effectiveContext.hasPermission("workflow:write") && isGradePeriodOverrideable(selectedPeriod));
 
 const studentsQuery = createClassStudentsQuery(() => classId);
 const gradesQuery = createGradesQuery(() => SectionSubjectId);
@@ -385,7 +390,7 @@ async function handleSaveAll() {
     isDirty = false;
     gradesQuery.refetch();
   } catch (e: any) {
-    toast.error(extractErrorMessage(e) || m.common_grades_save_error());
+    if (!periodOverrides.handleError(orgId, e)) toast.error(extractErrorMessage(e) || m.common_grades_save_error());
   } finally {
     isSaving = false;
   }
@@ -393,14 +398,14 @@ async function handleSaveAll() {
 </script>
 
 <div class="h-full min-h-0 w-full font-sans flex flex-col">
-  {#if selectedPeriod && isPeriodLocked}
-    <div class="shrink-0 mx-3 mt-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
-      <p class="text-[11px] font-medium text-destructive">{m.common_control_period_locked_title()}</p>
-      <p class="text-[10px] text-muted-foreground">{m.common_control_period_locked_desc()}</p>
-    </div>
-  {:else if selectedPeriod && !isGradeEntryOpen}
-    <div class="shrink-0 mx-3 mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-      <p class="text-[11px] font-medium text-amber-600">{m.common_control_entry_closed_title()}</p>
+  {#if selectedPeriod && !isGradeEntryOpen}
+    <div class="mx-3 mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted p-3 text-sm">
+      <p>{isPeriodLocked ? m.common_control_period_locked_title() : m.common_control_entry_closed_title()}</p>
+      {#if canRequestOverride}
+        <Button variant="outline" size="sm" onclick={() => periodOverrides.open(orgId, [gradePeriodOverride(selectedPeriodId, SectionSubjectId)])}>
+          {m.shared_ui_request_override()}
+        </Button>
+      {/if}
       <p class="text-[10px] text-muted-foreground">{m.common_control_entry_closed_desc()}</p>
     </div>
   {/if}

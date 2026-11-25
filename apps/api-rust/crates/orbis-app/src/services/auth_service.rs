@@ -546,7 +546,36 @@ impl AuthService {
         Ok(user)
     }
 
-    /// Get user by ID
+    /// Resolve an access token against the current session and account.
+    pub async fn authenticated_user(&self, token: &str) -> Result<User, DomainError> {
+        let invalid = || DomainError::Unauthorized("Invalid or expired user session".into());
+        let claims = self
+            .token_service
+            .validate_token(token)
+            .await
+            .map_err(|_| invalid())?;
+        let user_id = Uuid::parse_str(&claims.sub).map_err(|_| invalid())?;
+        let org_id = Uuid::parse_str(&claims.org_id).map_err(|_| invalid())?;
+        let session = self
+            .session_repo
+            .find_by_token(token)
+            .await?
+            .filter(|session| {
+                session.user_id == user_id && !session.is_revoked && session.expires_at > Utc::now()
+            })
+            .ok_or_else(invalid)?;
+        self.user_repo
+            .find_by_id(user_id)
+            .await?
+            .filter(|user| {
+                user.org_id == org_id
+                    && !user.is_deleted
+                    && user.status.eq_ignore_ascii_case("active")
+                    && (!user.is_mfa_enabled || session.is_mfa_verified)
+            })
+            .ok_or_else(invalid)
+    }
+
     pub async fn get_user(&self, id: Uuid) -> Result<Option<User>, DomainError> {
         self.user_repo.find_by_id(id).await
     }

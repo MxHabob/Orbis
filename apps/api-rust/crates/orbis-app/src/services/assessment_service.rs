@@ -11,7 +11,7 @@ use crate::services::calculation_engine::{
     AcademicCalculationEngine, AstNode, CalcEngine, apply_rounding,
 };
 use chrono::{NaiveDate, Utc};
-use orbis_domain::entities::academic_period::{AcademicPeriod, PeriodKind};
+use orbis_domain::entities::academic_period::{AcademicPeriod, AcademicPeriodState, PeriodKind};
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult, PeriodComponentScores,
     StudentAnnualReportCard, StudentCertificateReportCard, StudentTermReportCard,
@@ -27,14 +27,119 @@ use orbis_domain::entities::gpa_record::CumulativeGpaRecord;
 use orbis_domain::entities::grade::Grade;
 use orbis_domain::entities::section_subject::SectionSubject;
 use orbis_domain::entities::student::{AcademicStanding, Student};
-use orbis_domain::errors::DomainError;
+use orbis_domain::errors::{DomainError, PeriodOverrideTarget};
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{AttendanceFilter, GradeFilter, PaginatedList};
 use rust_decimal::Decimal;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
+
+fn validate_grade_period(
+    periods: &HashMap<Uuid, AcademicPeriod>,
+    org_id: Uuid,
+    grade_period_id: Uuid,
+    offering: &SectionSubject,
+) -> Result<(), DomainError> {
+    let invalid_context = || {
+        DomainError::Unauthorized(
+            "Section subject is not valid for this organization and period".into(),
+        )
+    };
+    if offering.org_id != org_id {
+        return Err(invalid_context());
+    }
+    let Some(grade_period) = periods.get(&grade_period_id) else {
+        return if periods.is_empty() && offering.period_id == grade_period_id {
+            Ok(())
+        } else {
+            Err(invalid_context())
+        };
+    };
+    if grade_period.org_id != org_id {
+        return Err(invalid_context());
+    }
+    let mut current = grade_period;
+    let mut archived = current.state == AcademicPeriodState::Archived;
+    let mut locked = current.is_locked;
+    while current.id != offering.period_id {
+        current = current
+            .parent_id
+            .and_then(|id| periods.get(&id))
+            .filter(|period| period.org_id == org_id && period.year_id == grade_period.year_id)
+            .ok_or_else(invalid_context)?;
+        archived |= current.state == AcademicPeriodState::Archived;
+        locked |= current.is_locked;
+    }
+    if archived {
+        return Err(DomainError::BusinessRule(
+            "Grades in archived periods cannot be edited".into(),
+        ));
+    }
+    if !grade_period.period_kind.has_grade_entry() {
+        return Err(DomainError::BusinessRule(
+            "Grades are unavailable for this type of academic period".into(),
+        ));
+    }
+    if locked || !grade_period.can_enter_grades() {
+        return Err(DomainError::PeriodOverrideRequired(vec![
+            PeriodOverrideTarget::grade(grade_period_id, offering.id),
+        ]));
+    }
+    Ok(())
+}
+
+fn resolve_grade_component(
+    org_id: Uuid,
+    scheme: Option<&AssessmentScheme>,
+    assigned_scheme: bool,
+    component_code: Option<&str>,
+    component_id: Option<Uuid>,
+) -> Result<(Option<String>, Option<Decimal>), DomainError> {
+    let code = component_code
+        .map(str::trim)
+        .filter(|code| !code.is_empty());
+    let Some(scheme) = scheme else {
+        return Ok((code.map(str::to_owned), None));
+    };
+    if scheme.org_id != org_id {
+        return Err(DomainError::Unauthorized(
+            "Assessment scheme belongs to another organization".into(),
+        ));
+    }
+    if component_code.is_none() && component_id.is_none() {
+        return Ok((None, None));
+    }
+    let legacy_id = component_id.map(|id| id.to_string());
+    let component = scheme.components.iter().find(|component| {
+        let candidate = component.code.trim();
+        code.is_some_and(|code| candidate.eq_ignore_ascii_case(code))
+            || legacy_id
+                .as_deref()
+                .is_some_and(|id| candidate.eq_ignore_ascii_case(id))
+    });
+    let Some(component) = component else {
+        if !assigned_scheme {
+            return Ok((code.map(str::to_owned), None));
+        }
+        return Err(DomainError::Validation(
+            "The assessment component is not defined by the section subject's assessment scheme"
+                .into(),
+        ));
+    };
+    let candidate = component.code.trim();
+    if component_code.is_some_and(|code| !candidate.eq_ignore_ascii_case(code.trim()))
+        || legacy_id
+            .as_deref()
+            .is_some_and(|id| !candidate.eq_ignore_ascii_case(id))
+    {
+        return Err(DomainError::Validation(
+            "Assessment component code and legacy ID do not match".into(),
+        ));
+    }
+    Ok((Some(component.code.clone()), Some(component.max_score)))
+}
 
 fn validate_assessment_components(
     scheme_max_score: Decimal,
@@ -216,6 +321,27 @@ pub struct AssessmentService {
 }
 
 impl AssessmentService {
+    async fn grade_period_error(
+        &self,
+        ctx: &RequestContext,
+        error: DomainError,
+    ) -> Result<DomainError, DomainError> {
+        if error.period_override_targets().is_some() {
+            let allowed = if let Some(user) = ctx.user_id() {
+                self.permission_checker
+                    .has_permission(user, ctx.tenant_id, Permission::WorkflowWrite.as_str())
+                    .await?
+            } else {
+                false
+            };
+            if !allowed {
+                return Ok(DomainError::BusinessRule(
+                    "Grade entry is closed for this academic period".into(),
+                ));
+            }
+        }
+        Ok(error)
+    }
     pub fn new(
         scheme_repo: Arc<dyn AssessmentSchemeRepository>,
         grade_repo: Arc<dyn GradeRepository>,
@@ -291,6 +417,36 @@ impl AssessmentService {
         }
     }
 
+    async fn load_grade_period_chain(
+        &self,
+        period_id: Uuid,
+        periods: &mut HashMap<Uuid, AcademicPeriod>,
+    ) -> Result<(), DomainError> {
+        let Some(repo) = &self.period_repo else {
+            return Ok(());
+        };
+        let mut next = Some(period_id);
+        let mut seen = HashSet::new();
+        while let Some(id) = next {
+            if !seen.insert(id) {
+                return Err(DomainError::Validation(
+                    "Invalid academic period hierarchy".into(),
+                ));
+            }
+            if let Some(period) = periods.get(&id) {
+                next = period.parent_id;
+            } else {
+                let period = repo
+                    .find_by_id(id)
+                    .await?
+                    .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
+                next = period.parent_id;
+                periods.insert(id, period);
+            }
+        }
+        Ok(())
+    }
+
     /// Record or update a student grade
     async fn validate_grade_context(
         &self,
@@ -302,22 +458,9 @@ impl AssessmentService {
         component_id: Option<Uuid>,
         enrollment_id: Option<Uuid>,
     ) -> Result<ValidatedGradeContext, DomainError> {
-        if let Some(period_repo) = &self.period_repo {
-            let period = period_repo
-                .find_by_id(period_id)
-                .await?
-                .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
-            if period.org_id != org_id {
-                return Err(DomainError::Unauthorized(
-                    "Academic period belongs to another organization".into(),
-                ));
-            }
-            if !period.can_enter_grades() {
-                return Err(DomainError::BusinessRule(
-                    "Grade entry is not open for this academic period".into(),
-                ));
-            }
-        }
+        let mut periods = HashMap::new();
+        self.load_grade_period_chain(period_id, &mut periods)
+            .await?;
 
         if let Some(student_repo) = &self.student_repo {
             let student = student_repo
@@ -336,56 +479,31 @@ impl AssessmentService {
             .find_by_id(section_subject_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
-        if section_subject.org_id != org_id || section_subject.period_id != period_id {
-            return Err(DomainError::Unauthorized(
-                "Section subject is not valid for this organization and period".into(),
-            ));
-        }
+        validate_grade_period(&periods, org_id, period_id, &section_subject)?;
 
-        let mut resolved_component_code = component_code
-            .map(str::trim)
-            .filter(|code| !code.is_empty())
-            .map(str::to_owned);
-        let mut component_max_score = None;
-        if section_subject.scheme_id.is_some() {
-            let scheme_id = section_subject.scheme_id.expect("checked above");
-            let scheme = self
-                .scheme_repo
-                .find_by_id(scheme_id)
+        let scheme = if let Some(id) = section_subject.scheme_id {
+            Some(
+                self.scheme_repo
+                    .find_by_id(id)
+                    .await?
+                    .ok_or_else(|| DomainError::NotFound("Assessment scheme not found".into()))?,
+            )
+        } else if component_code.is_some() || component_id.is_some() {
+            self.scheme_repo
+                .find_by_org(org_id)
                 .await?
-                .ok_or_else(|| DomainError::NotFound("Assessment scheme not found".into()))?;
-            if scheme.org_id != org_id {
-                return Err(DomainError::Unauthorized(
-                    "Assessment scheme belongs to another organization".into(),
-                ));
-            }
-            if component_code.is_some() || component_id.is_some() {
-                let matched_component = scheme.components.iter().find(|component| {
-                    component_code
-                        .is_some_and(|code| component.code.trim().eq_ignore_ascii_case(code.trim()))
-                        || component_id.is_some_and(|id| {
-                            component.code.trim().eq_ignore_ascii_case(&id.to_string())
-                        })
-                });
-                let Some(component) = matched_component else {
-                    return Err(DomainError::Validation(
-                        "The assessment component is not defined by the section subject's assessment scheme".into(),
-                    ));
-                };
-                if component_code
-                    .is_some_and(|code| !component.code.trim().eq_ignore_ascii_case(code.trim()))
-                    || component_id.is_some_and(|id| {
-                        !component.code.trim().eq_ignore_ascii_case(&id.to_string())
-                    })
-                {
-                    return Err(DomainError::Validation(
-                        "Assessment component code and legacy ID do not match".into(),
-                    ));
-                }
-                resolved_component_code = Some(component.code.clone());
-                component_max_score = Some(component.max_score);
-            }
-        }
+                .into_iter()
+                .find(|scheme| scheme.is_default)
+        } else {
+            None
+        };
+        let (resolved_component_code, component_max_score) = resolve_grade_component(
+            org_id,
+            scheme.as_ref(),
+            section_subject.scheme_id.is_some(),
+            component_code,
+            component_id,
+        )?;
 
         if let Some(enrollment_repo) = &self.enrollment_repo {
             let enrollment = if let Some(enrollment_id) = enrollment_id {
@@ -398,7 +516,10 @@ impl AssessmentService {
                     .find_by_student(student_id)
                     .await?
                     .into_iter()
-                    .find(|item| item.period_id == period_id)
+                    .find(|item| {
+                        item.period_id == section_subject.period_id
+                            && item.section_id == Some(section_subject.section_id)
+                    })
                     .ok_or_else(|| {
                         DomainError::NotFound("Active enrollment not found for this period".into())
                     })?
@@ -406,7 +527,7 @@ impl AssessmentService {
 
             if enrollment.org_id != org_id
                 || enrollment.student_id != student_id
-                || enrollment.period_id != period_id
+                || enrollment.period_id != section_subject.period_id
                 || enrollment.section_id != Some(section_subject.section_id)
             {
                 return Err(DomainError::Unauthorized(
@@ -444,7 +565,7 @@ impl AssessmentService {
             .check(ctx, Permission::GradeWrite)
             .await?;
 
-        let context = self
+        let context = match self
             .validate_grade_context(
                 org_id,
                 period_id,
@@ -454,7 +575,11 @@ impl AssessmentService {
                 component_id,
                 None,
             )
-            .await?;
+            .await
+        {
+            Ok(context) => context,
+            Err(error) => return Err(self.grade_period_error(ctx, error).await?),
+        };
         let max_score = resolve_grade_max_score(context.component_max_score, max_score)?;
         if score < Decimal::ZERO || score > max_score {
             return Err(DomainError::Validation(format!(
@@ -537,14 +662,9 @@ impl AssessmentService {
         }
 
         let mut periods: HashMap<Uuid, AcademicPeriod> = HashMap::new();
-        if let Some(period_repo) = &self.period_repo {
-            for period_id in &period_ids {
-                let period = period_repo
-                    .find_by_id(*period_id)
-                    .await?
-                    .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
-                periods.insert(*period_id, period);
-            }
+        for period_id in period_ids {
+            self.load_grade_period_chain(period_id, &mut periods)
+                .await?;
         }
 
         let mut students: HashMap<Uuid, Student> = HashMap::new();
@@ -581,6 +701,21 @@ impl AssessmentService {
                 .ok_or_else(|| DomainError::NotFound("Assessment scheme not found".into()))?;
             schemes.insert(*scheme_id, scheme);
         }
+
+        let default_scheme = if items.iter().any(|item| {
+            section_subjects
+                .get(&item.section_subject_id)
+                .is_some_and(|subject| subject.scheme_id.is_none())
+                && (item.component_code.is_some() || item.component_id.is_some())
+        }) {
+            self.scheme_repo
+                .find_by_org(org_id)
+                .await?
+                .into_iter()
+                .find(|scheme| scheme.is_default)
+        } else {
+            None
+        };
 
         let mut enrollments_by_id: HashMap<Uuid, Enrollment> = HashMap::new();
         let mut enrollments_by_student: HashMap<Uuid, Vec<Enrollment>> = HashMap::new();
@@ -621,21 +756,9 @@ impl AssessmentService {
             }
         }
         let mut submitted_keys = HashSet::with_capacity(items.len());
+        let mut override_targets = BTreeSet::new();
 
         for item in items {
-            if let Some(period) = periods.get(&item.period_id) {
-                if period.org_id != org_id {
-                    return Err(DomainError::Unauthorized(
-                        "Academic period belongs to another organization".into(),
-                    ));
-                }
-                if !period.can_enter_grades() {
-                    return Err(DomainError::BusinessRule(
-                        "Grade entry is not open for this academic period".into(),
-                    ));
-                }
-            }
-
             if let Some(student) = students.get(&item.student_id) {
                 if student.org_id != org_id {
                     return Err(DomainError::Unauthorized(
@@ -647,59 +770,30 @@ impl AssessmentService {
             let section_subject = section_subjects
                 .get(&item.section_subject_id)
                 .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
-            if section_subject.org_id != org_id || section_subject.period_id != item.period_id {
-                return Err(DomainError::Unauthorized(
-                    "Section subject is not valid for this organization and period".into(),
-                ));
+            match validate_grade_period(&periods, org_id, item.period_id, section_subject) {
+                Ok(()) => {}
+                Err(DomainError::PeriodOverrideRequired(targets)) => {
+                    override_targets.extend(targets);
+                    continue;
+                }
+                Err(error) => return Err(error),
             }
 
-            let mut resolved_component_code = item
-                .component_code
-                .as_deref()
-                .map(str::trim)
-                .filter(|code| !code.is_empty())
-                .map(str::to_owned);
-            let mut component_max_score = None;
-            let mut resolved_component_id = item.component_id;
-            if let Some(scheme_id) = section_subject.scheme_id {
-                let scheme = schemes
-                    .get(&scheme_id)
-                    .ok_or_else(|| DomainError::NotFound("Assessment scheme not found".into()))?;
-                if scheme.org_id != org_id {
-                    return Err(DomainError::Unauthorized(
-                        "Assessment scheme belongs to another organization".into(),
-                    ));
-                }
-                if item.component_code.is_some() || item.component_id.is_some() {
-                    let matched_component = scheme.components.iter().find(|component| {
-                        item.component_code.as_deref().is_some_and(|code| {
-                            component.code.trim().eq_ignore_ascii_case(code.trim())
-                        }) || item.component_id.is_some_and(|id| {
-                            component.code.trim().eq_ignore_ascii_case(&id.to_string())
-                        })
-                    });
-                    let Some(component) = matched_component else {
-                        return Err(DomainError::Validation(
-                            "The assessment component is not defined by the section subject's assessment scheme".into(),
-                        ));
-                    };
-                    if item.component_code.as_deref().is_some_and(|code| {
-                        !component.code.trim().eq_ignore_ascii_case(code.trim())
-                    }) || item.component_id.is_some_and(|id| {
-                        !component.code.trim().eq_ignore_ascii_case(&id.to_string())
-                    }) {
-                        return Err(DomainError::Validation(
-                            "Assessment component code and legacy ID do not match".into(),
-                        ));
-                    }
-                    resolved_component_code = Some(component.code.clone());
-                    component_max_score = Some(component.max_score);
-                    // Keep component_id as provided when present; scheme components are identified by code.
-                    if resolved_component_id.is_none() {
-                        resolved_component_id = item.component_id;
-                    }
-                }
-            }
+            let scheme =
+                match section_subject.scheme_id {
+                    Some(id) => Some(schemes.get(&id).ok_or_else(|| {
+                        DomainError::NotFound("Assessment scheme not found".into())
+                    })?),
+                    None => default_scheme.as_ref(),
+                };
+            let resolved_component_id = item.component_id;
+            let (resolved_component_code, component_max_score) = resolve_grade_component(
+                org_id,
+                scheme,
+                section_subject.scheme_id.is_some(),
+                item.component_code.as_deref(),
+                item.component_id,
+            )?;
 
             let resolved_enrollment_id = if self.enrollment_repo.is_some() {
                 let enrollment = if let Some(enrollment_id) = item.enrollment_id {
@@ -709,7 +803,12 @@ impl AssessmentService {
                 } else {
                     enrollments_by_student
                         .get(&item.student_id)
-                        .and_then(|list| list.iter().find(|en| en.period_id == item.period_id))
+                        .and_then(|list| {
+                            list.iter().find(|en| {
+                                en.period_id == section_subject.period_id
+                                    && en.section_id == Some(section_subject.section_id)
+                            })
+                        })
                         .ok_or_else(|| {
                             DomainError::NotFound(
                                 "Active enrollment not found for this period".into(),
@@ -719,7 +818,7 @@ impl AssessmentService {
 
                 if enrollment.org_id != org_id
                     || enrollment.student_id != item.student_id
-                    || enrollment.period_id != item.period_id
+                    || enrollment.period_id != section_subject.period_id
                     || enrollment.section_id != Some(section_subject.section_id)
                 {
                     return Err(DomainError::Unauthorized(
@@ -794,6 +893,10 @@ impl AssessmentService {
             grades.push(grade);
         }
 
+        if !override_targets.is_empty() {
+            let error = DomainError::PeriodOverrideRequired(override_targets.into_iter().collect());
+            return Err(self.grade_period_error(ctx, error).await?);
+        }
         self.grade_repo.save_batch(&grades).await?;
 
         for g in &grades {
@@ -836,6 +939,17 @@ impl AssessmentService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
+        let mut periods = HashMap::new();
+        self.load_grade_period_chain(grade.period_id, &mut periods)
+            .await?;
+        let offering = self
+            .section_subject_repo
+            .find_by_id(grade.section_subject_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
+        if let Err(error) = validate_grade_period(&periods, org_id, grade.period_id, &offering) {
+            return Err(self.grade_period_error(ctx, error).await?);
+        }
         self.grade_repo.delete(grade_id).await?;
 
         let _ = self
@@ -2707,6 +2821,94 @@ mod assessment_service_tests {
             created_at: None,
             updated_at: None,
         }
+    }
+
+    fn grading_period(org_id: Uuid, year_id: Uuid, parent_id: Option<Uuid>) -> AcademicPeriod {
+        use orbis_domain::entities::academic_period::{AcademicPeriodState, PeriodType};
+        let now = Utc::now();
+        AcademicPeriod {
+            id: Uuid::new_v4(),
+            org_id,
+            year_id,
+            parent_id,
+            name: "Grading period".into(),
+            name_ar: None,
+            code: None,
+            period_type: PeriodType::Custom,
+            period_kind: PeriodKind::Teaching,
+            state: AcademicPeriodState::GradeSubmission,
+            start_date: now,
+            end_date: now,
+            hijri_start: None,
+            hijri_end: None,
+            enrollment_starts_at: None,
+            enrollment_ends_at: None,
+            is_enrollment_open: false,
+            grade_entry_starts_at: None,
+            grade_entry_ends_at: None,
+            is_grade_entry_open: true,
+            exam_starts_at: None,
+            exam_ends_at: None,
+            is_locked: false,
+            locked_at: None,
+            locked_by: None,
+            sort_order: None,
+            metadata: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    #[test]
+    fn grades_can_use_parent_offerings_but_not_sibling_or_locked_periods() {
+        let mut offering = section_subject(Uuid::new_v4());
+        let parent = grading_period(offering.org_id, Uuid::new_v4(), None);
+        let child = grading_period(parent.org_id, parent.year_id, Some(parent.id));
+        let sibling = grading_period(parent.org_id, parent.year_id, Some(parent.id));
+        let mut periods = HashMap::from([
+            (parent.id, parent.clone()),
+            (child.id, child.clone()),
+            (sibling.id, sibling.clone()),
+        ]);
+
+        offering.period_id = parent.id;
+        assert!(validate_grade_period(&periods, offering.org_id, child.id, &offering).is_ok());
+
+        offering.period_id = sibling.id;
+        assert!(matches!(
+            validate_grade_period(&periods, offering.org_id, child.id, &offering),
+            Err(DomainError::Unauthorized(_))
+        ));
+
+        offering.period_id = parent.id;
+        periods.get_mut(&parent.id).unwrap().is_locked = true;
+        assert!(matches!(
+            validate_grade_period(&periods, offering.org_id, child.id, &offering),
+            Err(DomainError::PeriodOverrideRequired(_))
+        ));
+    }
+
+    #[test]
+    fn grade_deadline_and_administrative_closure_return_an_exact_target() {
+        let mut offering = section_subject(Uuid::new_v4());
+        let mut period = grading_period(offering.org_id, Uuid::new_v4(), None);
+        offering.period_id = period.id;
+        let expected = [PeriodOverrideTarget::grade(period.id, offering.id)];
+        period.grade_entry_ends_at = Some(Utc::now() - chrono::Duration::seconds(1));
+        let mut periods = HashMap::from([(period.id, period.clone())]);
+        let error = validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
+        assert_eq!(error.period_override_targets(), Some(expected.as_slice()));
+
+        period.grade_entry_ends_at = None;
+        period.is_grade_entry_open = false;
+        periods.insert(period.id, period.clone());
+        let error = validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
+        assert_eq!(error.period_override_targets(), Some(expected.as_slice()));
+
+        period.state = AcademicPeriodState::Archived;
+        periods.insert(period.id, period.clone());
+        let error = validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
+        assert!(error.period_override_targets().is_none());
     }
 
     fn lesson(

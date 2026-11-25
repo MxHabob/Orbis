@@ -1,21 +1,8 @@
 <script lang="ts">
-import type { OnboardingStepStatus } from "./onboarding-steps";
-
-let {
-  actionButton = undefined,
-}: {
-  stepNumber?: number;
-  totalSteps?: number;
-  title?: string;
-  description?: string;
-  isRequired?: boolean;
-  status?: OnboardingStepStatus;
-  actionButton?: any;
-} = $props();
+let { title, description }: { title: string; description: string } = $props();
 </script>
 
-{#if actionButton}
-  <div class="mb-4 flex items-center justify-end">
-    {@render actionButton()}
-  </div>
-{/if}
+<header class="space-y-2 border-b border-border pb-5">
+  <h1 class="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{title}</h1>
+  <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+</header>

@@ -1,4 +1,36 @@
+use serde::Serialize;
 use thiserror::Error;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+pub struct PeriodOverrideTarget {
+    pub override_type: &'static str,
+    pub entity_type: &'static str,
+    pub entity_id: Uuid,
+    pub period_id: Uuid,
+}
+
+impl PeriodOverrideTarget {
+    pub fn grade(period_id: Uuid, section_subject_id: Uuid) -> Self {
+        Self {
+            override_type: "grade_change",
+            entity_type: "section_subject",
+            entity_id: section_subject_id,
+            period_id,
+        }
+    }
+
+    pub fn enrollment(period_id: Uuid, section_id: Option<Uuid>) -> Self {
+        let (entity_type, entity_id) =
+            section_id.map_or(("academic_period", period_id), |id| ("section", id));
+        Self {
+            override_type: "late_enrollment",
+            entity_type,
+            entity_id,
+            period_id,
+        }
+    }
+}
 
 #[derive(Error, Debug)]
 pub enum DomainError {
@@ -10,6 +42,8 @@ pub enum DomainError {
     Conflict(String),
     #[error("Business rule violation: {0}")]
     BusinessRule(String),
+    #[error("The academic period is closed for this operation")]
+    PeriodOverrideRequired(Vec<PeriodOverrideTarget>),
     #[error("Authentication failed")]
     AuthenticationFailed,
     #[error("Unauthorized: {0}")]
@@ -30,6 +64,15 @@ pub enum DomainError {
     LicenseRequired(String),
     #[error("The application key must be claimed before activation")]
     LicenseKeyRequiresClaim,
+}
+
+impl DomainError {
+    pub fn period_override_targets(&self) -> Option<&[PeriodOverrideTarget]> {
+        match self {
+            Self::PeriodOverrideRequired(targets) => Some(targets),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Error, Debug, Clone)]

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { goto } from "$app/navigation";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { isTauri } from "@tauri-apps/api/core";
 import { confirmStore } from "$lib/stores/confirm.svelte";
@@ -24,7 +25,7 @@ import {
 } from "@orbis/svelte-grid";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { untrack } from "svelte";
+import { tick, untrack } from "svelte";
 import { executeCommitPipeline } from "../engine/commit-pipeline";
 import { exportCorrectedDataset } from "../engine/exporter";
 import { parseDroppedFile, pickAndParseFile } from "../engine/file-parser";
@@ -118,6 +119,11 @@ function confirmReplaceDraft() {
 async function handleProfileChange(newProfileId: BulkProfileId) {
   if (newProfileId === selectedProfileId || isBusy || !await confirmReplaceDraft()) return;
   handleReset();
+  if (newProfileId === "grades" && orgContext.orgId) {
+    await tick();
+    await goto(localizeHref("/" + orgContext.orgId + "/settings/bulk-input/grades"));
+    return;
+  }
   selectedProfileId = newProfileId;
 }
 

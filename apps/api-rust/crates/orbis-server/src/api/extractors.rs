@@ -1,7 +1,7 @@
 //! Auth extractors for the HTTP API layer.
 //!
 //! Provides `AuthContext` — an Axum extractor that reads the `Authorization: Bearer <token>`
-//! header, validates the JWT via the shared `TokenService` in `AppState`, and produces
+//! header, validates the session via the shared authentication service, and produces
 //! a `RequestContext` for downstream handlers.
 
 use axum::{
@@ -17,8 +17,7 @@ use crate::state::AppState;
 
 /// Extractor that produces a validated `RequestContext` from the incoming request.
 ///
-/// - **Authenticated path**: reads `Authorization: Bearer <token>`, validates JWT via
-///   `AppState::token_service`, and populates `tenant_id` + `actor` from claims.
+/// - **Authenticated path**: validates the bearer token and retrieves the active user.
 /// - **Unauthenticated path**: rejected unconditionally.
 #[derive(Clone)]
 pub struct AuthContext(pub RequestContext);
@@ -71,24 +70,17 @@ impl FromRequestParts<AppState> for AuthContext {
 
         match token.as_deref() {
             Some(token_str) => {
-                // Enterprise DI: Delegate 100% of token verification to the injected TokenService
-                let claims = state
-                    .token_service
-                    .validate_token(token_str)
+                let user = state
+                    .auth_service
+                    .authenticated_user(token_str)
                     .await
-                    .map_err(|e| {
-                        ApiError::unauthorized(format!("Invalid or expired token: {}", e))
-                            .with_request_id(request_id.to_string())
+                    .map_err(|error| {
+                        ApiError::from(error).with_request_id(request_id.to_string())
                     })?;
 
-                let user_id = Uuid::parse_str(&claims.sub)
-                    .map_err(|_| ApiError::unauthorized("Invalid user ID in token"))?;
-                let org_id = Uuid::parse_str(&claims.org_id)
-                    .map_err(|_| ApiError::unauthorized("Invalid org ID in token"))?;
-
                 let context = AuthContext(RequestContext {
-                    tenant_id: org_id,
-                    actor: Actor::User(user_id),
+                    tenant_id: user.org_id,
+                    actor: Actor::User(user.id),
                     request_id: request_id.to_string(),
                     source: orbis_app::context::ActionSource::Api,
                     org_unit_path: None,

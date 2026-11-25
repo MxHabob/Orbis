@@ -4,8 +4,40 @@ use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use uuid::Uuid;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PermissionScope {
+    Organization,
+    Units(Vec<Uuid>),
+}
+
+impl PermissionScope {
+    pub fn has_access(&self) -> bool {
+        match self {
+            Self::Organization => true,
+            Self::Units(units) => !units.is_empty(),
+        }
+    }
+}
+
 #[async_trait]
 pub trait PermissionCheckerPort: Send + Sync {
+    async fn role_scope(
+        &self,
+        _user_id: Uuid,
+        _org_id: Uuid,
+        _role: &str,
+    ) -> Result<PermissionScope, DomainError> {
+        Ok(PermissionScope::Units(Vec::new()))
+    }
+
+    async fn permission_scope(
+        &self,
+        _user_id: Uuid,
+        _org_id: Uuid,
+        _permission: &str,
+    ) -> Result<PermissionScope, DomainError> {
+        Ok(PermissionScope::Units(Vec::new()))
+    }
     /// Checks if the actor in the RequestContext has the required permission.
     /// System and Autopilot bypass permissions.
     async fn check(&self, ctx: &RequestContext, permission: Permission) -> Result<(), DomainError>;

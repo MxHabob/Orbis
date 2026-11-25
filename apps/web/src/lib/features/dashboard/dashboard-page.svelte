@@ -12,14 +12,19 @@ import WidgetCards from "./components/widget-cards.svelte";
 import DesktopBanner from "./components/desktop-banner.svelte";
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
+import { authStore, effectiveContext } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
-const statsQuery = createDashboardStatsQuery(() => orgId);
+const { stats: statsQuery, access } = createDashboardStatsQuery(
+  () => orgId,
+  () => authStore.userId,
+  () => effectiveContext.activeOrgUnitId,
+);
 const stats = $derived(statsQuery.data ?? null);
-const isLoading = $derived(statsQuery.isLoading);
+const isLoading = $derived(access.isLoading || statsQuery.isLoading);
 const error = $derived(
-  statsQuery.error ? extractErrorMessage(statsQuery.error) : null,
+  access.error || statsQuery.error ? extractErrorMessage(access.error ?? statsQuery.error) : null,
 );
 </script>
 
@@ -31,7 +36,7 @@ const error = $derived(
 			<ErrorState
 				title={m.common_error_load_overview()}
 				message={error}
-				onRetry={() => statsQuery.refetch()}
+				onRetry={() => access.isError ? access.refetch() : statsQuery.refetch()}
 			/>
 		{:else}
 			<div class="flex w-full flex-col items-center text-center">

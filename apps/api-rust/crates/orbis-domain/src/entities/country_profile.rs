@@ -339,18 +339,50 @@ impl CountryProfile {
         }
     }
 
-    /// Resolve profile by country code, defaulting to Yemen.
+    /// Resolve regional defaults without inheriting another country's academic policy.
     pub fn resolve(code: Option<&str>) -> Self {
-        match code.map(|c| c.trim().to_uppercase()).as_deref() {
-            Some("YE") | None => Self::yemen(),
-            _ => {
-                let mut p = Self::yemen();
-                if let Some(c) = code {
-                    p.country_code = c.to_uppercase();
-                }
-                p
-            }
+        let code = code
+            .map(str::trim)
+            .filter(|code| !code.is_empty())
+            .unwrap_or("YE")
+            .to_ascii_uppercase();
+        if code == "YE" {
+            return Self::yemen();
         }
+
+        let region = setup_regions().iter().find(|region| region.code == code);
+        let now = Utc::now();
+        Self {
+            id: Uuid::nil(),
+            name: region.map_or_else(|| code.clone(), |region| region.name.clone()),
+            name_ar: region.map_or_else(|| code.clone(), |region| region.name_ar.clone()),
+            default_locale: region.map_or_else(|| "en".into(), |region| region.language.clone()),
+            default_timezone: region.map_or_else(|| "UTC".into(), |region| region.timezone.clone()),
+            default_currency: region.map_or_else(|| "USD".into(), |region| region.currency.clone()),
+            default_calendar: "gregorian".into(),
+            metadata: serde_json::json!({}),
+            country_code: code,
+            is_active: true,
+            version: 1,
+            stages: Vec::new(),
+            grading_policy: None,
+            authorities: Vec::new(),
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    pub fn recommends_hijri(&self) -> bool {
+        setup_regions()
+            .iter()
+            .any(|region| region.code == self.country_code && region.hijri)
+    }
+
+    pub fn default_date_format(&self) -> &'static str {
+        setup_regions()
+            .iter()
+            .find(|region| region.code == self.country_code)
+            .map_or("YYYY-MM-DD", |region| region.date_format.as_str())
     }
 
     /// Resolve regulatory/ministry authority for an institution type under this country profile.
@@ -382,5 +414,48 @@ impl CountryProfile {
                 .collect(),
             _ => self.stages.iter().collect(),
         }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct SetupRegion {
+    code: String,
+    name: String,
+    name_ar: String,
+    language: String,
+    timezone: String,
+    currency: String,
+    hijri: bool,
+    date_format: String,
+}
+
+fn setup_regions() -> &'static [SetupRegion] {
+    static REGIONS: std::sync::OnceLock<Vec<SetupRegion>> = std::sync::OnceLock::new();
+    REGIONS.get_or_init(|| {
+        serde_json::from_str(include_str!("setup-regions.json"))
+            .expect("invalid setup region catalog")
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CountryProfile;
+
+    #[test]
+    fn regional_defaults_do_not_copy_yemeni_academic_policy() {
+        let profile = CountryProfile::resolve(Some(" us "));
+        assert_eq!(profile.country_code, "US");
+        assert_eq!(profile.default_currency, "USD");
+        assert_eq!(profile.default_timezone, "America/New_York");
+        assert_eq!(profile.default_date_format(), "MM/DD/YYYY");
+        assert!(!profile.recommends_hijri());
+        assert!(profile.stages.is_empty());
+        assert!(profile.authorities.is_empty());
+        assert!(profile.grading_policy.is_none());
+
+        let yemen = CountryProfile::resolve(Some("YE"));
+        assert_eq!(yemen.default_currency, "YER");
+        assert!(yemen.recommends_hijri());
+        assert!(yemen.grading_policy.is_some());
     }
 }

@@ -1,4 +1,5 @@
-﻿import { api, type GradeDto, type StudentDetailDto } from "$lib/api";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+﻿import type { AcademicPeriodDto, GradeDto, RecordGradeItemRequest, StudentDetailDto } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import {
   extractSchemeComponents,
@@ -16,6 +17,8 @@ export interface SheetComponent extends AssessmentColumnConfig {
 
 export interface SheetSubject {
   id: string;
+  schemeId?: string;
+  schemeRevision?: string;
   name: string;
   name_ar?: string | null;
   components: SheetComponent[];
@@ -57,7 +60,8 @@ export function parseSheetScore(raw: unknown, max: number): SheetScore | undefin
   const value = String(raw ?? "").trim();
   if (!value) return null;
   if (["غ", "absent", gradeStatus.absent()].includes(value.toLowerCase())) return gradeStatus.absent();
-  if (value === gradeStatus.excused() || value === gradeStatus.exempt()) return value;
+  if (value.toLowerCase() === "excused" || value === "\u0645\u0639\u0630\u0648\u0631" || value === "بعذر" || value === gradeStatus.excused()) return gradeStatus.excused();
+  if (value.toLowerCase() === "exempt" || value === "معفى" || value === gradeStatus.exempt()) return gradeStatus.exempt();
   const normalized = value
     .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x660))
     .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x6f0))
@@ -96,6 +100,7 @@ export function withSheetTotals(row: SheetRow, subjects: SheetSubject[], scale: 
 }
 
 async function loadStudents(classId: string, periodId: string) {
+  const { api } = await import("$lib/api");
   const students: StudentDetailDto[] = [];
   let page = 1;
   let totalPages = 1;
@@ -108,12 +113,72 @@ async function loadStudents(classId: string, periodId: string) {
   return students;
 }
 
-export async function loadClassGradeSheet(classId: string, periodId: string) {
-  const [students, offerings, subjects, schemes] = await Promise.all([
-    loadStudents(classId, periodId),
-    api.listSectionSubjects(classId, periodId),
-    api.listSubjects(),
-    api.listAssessmentSchemes(),
+export function isGradeEntryOpen(period: AcademicPeriodDto | undefined): boolean {
+  return Boolean(period && !period.is_locked && period.can_enter_grades);
+}
+
+export function gradePeriodChain(periodId: string, periods: AcademicPeriodDto[]): AcademicPeriodDto[] {
+  const byId = new Map(periods.map((period) => [period.id, period]));
+  const first = byId.get(periodId);
+  const chain: AcademicPeriodDto[] = [];
+  const seen = new Set<string>();
+  let current = first;
+  while (current && current.year_id === first?.year_id && !seen.has(current.id)) {
+    chain.push(current);
+    seen.add(current.id);
+    current = current.parent_id ? byId.get(current.parent_id) : undefined;
+  }
+  return chain;
+}
+
+export function makeGradeItem(
+  periodId: string,
+  subject: SheetSubject,
+  component: SheetComponent,
+  row: SheetRow,
+  value: Exclude<SheetScore, null>,
+): RecordGradeItemRequest {
+  const saved = row.savedGrades[component.field];
+  return {
+    student_id: row.student_id,
+    enrollment_id: row.enrollment_id ?? saved?.enrollment_id,
+    period_id: periodId,
+    section_subject_id: subject.id,
+    component_code: component.code,
+    score: String(typeof value === "number" ? value : 0),
+    max_score: String(component.max_score),
+    is_absent: value === gradeStatus.absent(),
+    is_excused: value === gradeStatus.excused(),
+    is_exempt: value === gradeStatus.exempt(),
+    notes: saved?.notes ?? null,
+  };
+}
+
+export async function loadGradeSheetReferences() {
+  const { api } = await import("$lib/api");
+  return Promise.all([api.listSubjects(), api.listAssessmentSchemes()]);
+}
+
+export async function loadClassGradeSheet(
+  classId: string,
+  periodId: string,
+  periods: AcademicPeriodDto[] = [],
+  references?: Awaited<ReturnType<typeof loadGradeSheetReferences>>,
+) {
+  const { api } = await import("$lib/api");
+  const chain = gradePeriodChain(periodId, periods);
+  let rosterPeriodId = periodId;
+  let offerings = await api.listSectionSubjects(classId, rosterPeriodId);
+  for (const ancestor of chain.slice(1)) {
+    if (offerings.length) break;
+    const inherited = await api.listSectionSubjects(classId, ancestor.id);
+    if (!inherited.length) continue;
+    rosterPeriodId = ancestor.id;
+    offerings = inherited;
+  }
+  const [students, [subjects, schemes]] = await Promise.all([
+    loadStudents(classId, rosterPeriodId),
+    references ?? loadGradeSheetReferences(),
   ]);
   const subjectById = new Map(subjects.map((subject) => [subject.id, subject]));
   const schemeById = new Map(schemes.map((scheme) => [scheme.id, scheme]));
@@ -167,10 +232,61 @@ export async function loadClassGradeSheet(classId: string, periodId: string) {
     }
     return {
       id: offering.id,
+      schemeId: scheme?.id,
+      schemeRevision: scheme?.updated_at,
       name: subject?.name || subject?.name_ar || offering.subject_id,
       name_ar: subject?.name_ar,
       components: [...components.values()],
     };
   }));
-  return { rows, subjects: groups };
+  const rosterIndex = chain.findIndex((period) => period.id === rosterPeriodId);
+  const canEnter = isGradeEntryOpen(chain[0]) && !chain.slice(1, rosterIndex + 1).some((period) => period.is_locked);
+  return { rows, subjects: groups, rosterPeriodId, canEnter };
+}
+
+export function buildGradeGridColumns(
+  visibleSubjects: SheetSubject[],
+  { arabic, validate, showTotals = true, showGrade = false }: {
+    arabic: boolean;
+    validate?: (value: unknown, row: SheetRow, component: SheetComponent) => ReturnType<NonNullable<OrbisColumnDef["validate"]>>;
+    showTotals?: boolean;
+    showGrade?: boolean;
+  },
+): OrbisColumnDef[] {
+  const result: OrbisColumnDef[] = [
+    { id: "__rowIndex", header: "#", width: 48, pin: "colPinStart", readonly: true, align: "center", sort: false },
+    { id: arabic ? "student_name_ar" : "student_name", header: m.common_word_student(), width: 210, pin: "colPinStart", readonly: true, sort: true },
+  ];
+  for (const subject of visibleSubjects) {
+    const group = (arabic && subject.name_ar) || subject.name;
+    for (const component of subject.components) {
+      result.push({
+        id: component.field,
+        group,
+        header: (arabic && component.name_ar) || component.name || component.code,
+        subHeader: String(component.max_score),
+        align: "center",
+        width: 118,
+        editor: "text",
+        readonly: !validate || component.historical,
+        sort: true,
+        validate: validate ? (value, row) => validate(value, row as SheetRow, component) : undefined,
+      });
+    }
+    result.push({
+      id: `total_${subject.id}`, group, header: m.common_grades_col_total(),
+      subHeader: String(subject.components.reduce((sum, item) => sum + item.max_score, 0)),
+      width: 84, readonly: true, align: "center", emphasis: true, type: "number",
+    });
+  }
+  if (showTotals) {
+    result.push(
+      { id: "total", header: m.exams_grade_sheet_grand_total(), width: 122, readonly: true, align: "center", emphasis: true, type: "number" },
+      { id: "percentage", header: m.common_control_col_percentage(), width: 80, readonly: true, align: "center", type: "percentage" },
+    );
+    if (showGrade) {
+      result.push({ id: "grade_letter", header: m.common_control_col_grade(), width: 96, readonly: true, align: "center", type: "badge" });
+    }
+  }
+  return result;
 }

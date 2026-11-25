@@ -4,7 +4,6 @@ import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { api, type OrgUnitDto, type RoomDto } from "$lib/api";
-import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -19,7 +18,6 @@ import {
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
-import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
@@ -59,12 +57,6 @@ const ROOM_TYPES = [
   { value: "other", label: m.onboarding_room_type_other() },
 ];
 
-const stepTasks = $derived(
-  getTasksForStep("structure", systemStore.onboardingTasks),
-);
-const isTaskComplete = $derived(
-  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
-);
 
 function applyBranchPreset() {
   unitCode = `BR-${String(orgUnits.length + 1).padStart(2, "0")}`;
@@ -181,11 +173,8 @@ async function deleteRoom(room: RoomDto) {
 
 <div class="space-y-6">
   <OnboardingStepHeader
-    stepNumber={2}
     title={m.onboarding_step2_title()}
     description={m.onboarding_step2_subtitle()}
-    isRequired={true}
-    status={isTaskComplete ? "completed" : orgUnits.length > 0 ? "in_progress" : "not_started"}
   />
 
 

@@ -8,6 +8,8 @@ let { data, children }: { data: LayoutData; children: Snippet } = $props();
 const orgId = $derived(data?.orgId ?? page.params.orgId);
 </script>
 
-<OnboardingFrame {orgId}>
-  {@render children()}
-</OnboardingFrame>
+{#key orgId}
+  <OnboardingFrame {orgId}>
+    {@render children()}
+  </OnboardingFrame>
+{/key}

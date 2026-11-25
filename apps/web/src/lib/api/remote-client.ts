@@ -36,6 +36,7 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
+  DashboardAccessDto,
   AcademicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
@@ -264,6 +265,8 @@ import type {
   LicenseStateDto,
   ActivateKeyRequest,
 } from "./types";
+
+import { parsePeriodOverrideTargets, periodOverrideTargets } from "./period-override";
 
 export class ApiRequestError extends Error {
   constructor(
@@ -519,8 +522,13 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
-  async getDashboard(): Promise<DashboardCountsDto> {
-    return this.call(sdk.getDashboard({ client: this.client }));
+  async getDashboard(orgUnitId?: string): Promise<DashboardCountsDto> {
+    const path = "/api/v1/organizations/current/dashboard";
+    return this.fetchApi(orgUnitId ? `${path}?${new URLSearchParams({ org_unit_id: orgUnitId })}` : path);
+  }
+
+  async getDashboardAccess(): Promise<DashboardAccessDto> {
+    return this.fetchApi("/api/v1/organizations/current/dashboard/access");
   }
 
   // ── OrgUnits ────────────────────────────────────────────────
@@ -548,8 +556,6 @@ export class RemoteClient implements OrbisApiClient {
   async deleteOrgUnit(id: string): Promise<void> {
     await this.call(sdk.deleteOrgUnit({ client: this.client, path: { id } }));
   }
-
-  async selectOrgUnit(_id?: string): Promise<void> {}
 
   // ── Calendar ────────────────────────────────────────────────
   async createacademicCalendar(
@@ -1009,6 +1015,7 @@ export class RemoteClient implements OrbisApiClient {
           succeeded: normalized.succeeded,
           failed: normalized.failed,
           result: normalized,
+          override_targets: parsePeriodOverrideTargets(result.override_targets),
         });
       },
       (error) => {
@@ -1016,6 +1023,7 @@ export class RemoteClient implements OrbisApiClient {
           ...job,
           status: "failed",
           error: error instanceof Error ? error.message : String(error),
+          override_targets: periodOverrideTargets(error),
         });
       },
     );
@@ -1848,7 +1856,7 @@ export class RemoteClient implements OrbisApiClient {
     req: SubmitOverrideRequestInput,
   ): Promise<OverrideRequestDto> {
     return this.call(
-      sdk.submitOverride({ client: this.client, body: req as any }),
+      sdk.submitOverride({ client: this.client, body: req }),
     );
   }
 

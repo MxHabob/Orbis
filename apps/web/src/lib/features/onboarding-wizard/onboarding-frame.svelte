@@ -1,6 +1,7 @@
 <script lang="ts">
+import { afterNavigate } from "$app/navigation";
 import { page } from "$app/state";
-import { onMount } from "svelte";
+import { onDestroy, onMount } from "svelte";
 import { createOnboardingStateQuery } from "./onboarding-queries";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
@@ -12,11 +13,7 @@ import { Card, CardContent } from "@orbis/ui/card";
 import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
 import SetupWizardHeader from "$lib/shared/components/setup-wizard-header.svelte";
 import SetupWizardFooter from "$lib/shared/components/setup-wizard-footer.svelte";
-import {
-  deriveSteps,
-  findNextIncompleteStep,
-  findStepForTask,
-} from "./onboarding-steps";
+import { deriveSteps } from "./onboarding-steps";
 import { navigateOnboardingRoute } from "./navigation";
 
 let { orgId, children }: { orgId: string; children: Snippet } = $props();
@@ -25,9 +22,17 @@ let isLoadingState = $state(true);
 let stateLoadError = $state(false);
 const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
 
-const currentPath = $derived(page.url.pathname);
+const currentPath = $derived(page.url.pathname.replace(/\/$/, ""));
 
-onMount(loadOnboardingState);
+afterNavigate(({ from, to }) => {
+  if (from?.url.pathname !== to?.url.pathname) {
+    document.getElementById("onboarding-viewport")?.scrollTo(0, 0);
+  }
+});
+
+let disposed = false;
+onDestroy(() => { disposed = true; });
+onMount(() => { void loadOnboardingState(); });
 
 async function loadOnboardingState() {
   isLoadingState = true;
@@ -36,7 +41,8 @@ async function loadOnboardingState() {
   systemStore.onboardingState = null;
   try {
     const result = await onboardingStateQuery.refetch();
-    if (result.isError || !result.data) {
+    if (disposed) return;
+    if (result.isError || result.data?.org_id !== orgId) {
       systemStore.onboardingState = null;
       stateLoadError = true;
       return;
@@ -44,6 +50,7 @@ async function loadOnboardingState() {
     systemStore.onboardingState = result.data;
     hasLoadedState = true;
   } catch (error) {
+    if (disposed) return;
     console.error("Failed to load onboarding state:", error);
     systemStore.onboardingState = null;
     stateLoadError = true;
@@ -59,20 +66,20 @@ const steps = $derived(
 );
 const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 
+const previousStepIndex = $derived(
+  steps.findLastIndex((step, index) => index < currentStepIndex && step.isAccessible),
+);
+const nextStepIndex = $derived(
+  steps.findIndex((step, index) => index > currentStepIndex && step.isAccessible),
+);
+
 const currentStepIndex = $derived(
   steps.findIndex((step) => currentPath.endsWith(`/onboarding/${step.route}`)),
 );
 const currentStep = $derived(
   currentStepIndex >= 0 ? steps[currentStepIndex] : null,
 );
-const navigationStepIndex = $derived(
-  currentStepIndex >= 0
-    ? currentStepIndex
-    : steps.findIndex((step) => step.status === "in_progress"),
-);
-const stepPosition = $derived(
-  `${Math.max(navigationStepIndex + 1, 1)} / ${steps.length}`,
-);
+const stepPosition = $derived(currentStep ? `${currentStepIndex + 1} / ${steps.length}` : "");
 
 async function exitSetup() {
   await navigateOnboardingRoute(`/${orgId}`);
@@ -89,40 +96,6 @@ async function goToStep(index: number) {
   }
 }
 
-async function goToPrev() {
-  if (currentStepIndex > 0) {
-    await goToStep(currentStepIndex - 1);
-  } else if (currentStepIndex === 0) {
-    await goToOverview();
-  }
-}
-
-async function goToNext() {
-  if (currentStepIndex === -1) {
-    const recommendedStep = findStepForTask(
-      steps,
-      systemStore.onboardingState?.recommended_next_task?.id,
-    );
-    const next =
-      recommendedStep?.isAccessible && recommendedStep.status !== "completed"
-        ? recommendedStep
-        : findNextIncompleteStep(steps);
-    if (next) {
-      await goToStep(steps.indexOf(next));
-    } else {
-      await goToStep(steps.length - 1);
-    }
-  } else if (currentStepIndex < steps.length - 2) {
-    const next = steps
-      .slice(currentStepIndex + 1)
-      .find((step) => step.isAccessible);
-    if (next) {
-      await goToStep(steps.indexOf(next));
-    }
-  } else if (currentStepIndex === steps.length - 2) {
-    await goToStep(steps.length - 1);
-  }
-}
 </script>
 
 <SetupWorkspace
@@ -131,9 +104,7 @@ async function goToNext() {
   {#snippet header()}
     <SetupWizardHeader
       contextLabel={systemStore.onboardingState?.org_name || orgId}
-      stepLabel={navigationStepIndex >= 0
-        ? steps[navigationStepIndex]?.label ?? m.onboarding_stages_title()
-        : m.onboarding_stages_title()}
+      stepLabel={currentStep?.label ?? m.common_nav_overview()}
       {stepPosition}
       progressValue={hasLoadedState ? overallProgress : 0}
       ariaLabel={m.onboarding_stages_title()}
@@ -195,15 +166,15 @@ async function goToNext() {
   {/if}
 
   {#snippet footer()}
-    {#if hasLoadedState}
+    {#if hasLoadedState && currentStep}
       <SetupWizardFooter
         backLabel={m.ui_onboarding_onboarding_footer_back()}
         nextLabel={m.ui_onboarding_onboarding_footer_continue()}
         secondaryLabel={m.common_nav_overview()}
-        canGoBack={currentStepIndex > 0}
-        canGoNext={currentStepIndex < steps.length - 1}
-        onBack={goToPrev}
-        onNext={currentStepIndex < steps.length - 1 ? goToNext : undefined}
+        canGoBack={previousStepIndex >= 0}
+        canGoNext={nextStepIndex >= 0}
+        onBack={previousStepIndex >= 0 ? () => goToStep(previousStepIndex) : undefined}
+        onNext={nextStepIndex >= 0 ? () => goToStep(nextStepIndex) : undefined}
         onSecondary={goToOverview}
       />
     {/if}

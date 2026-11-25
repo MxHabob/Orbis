@@ -1,10 +1,11 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import {
-  COUNTRIES_LIST,
   COLOR_PRESETS,
   type OnboardingFormModel,
 } from "../types";
+import { setupCurrencies, setupRegions, regionName, applySetupRegion } from "../setup-regions";
+import { getLocale } from "$lib/paraglide/runtime";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -27,12 +28,8 @@ let {
   errors?: Record<string, string>;
 } = $props();
 
-function selectCountry(countryCode: string) {
-  form.countryCode = countryCode;
-  const country = COUNTRIES_LIST.find((item) => item.code === countryCode);
-  if (country?.defaultCurrency) form.baseCurrencyCode = country.defaultCurrency;
-  if (country?.defaultTimezone) form.timezone = country.defaultTimezone;
-}
+const country = $derived(setupRegions.find((region) => region.code === form.countryCode));
+const language = $derived(getLocale());
 </script>
 
 <section class="mx-auto w-full max-w-3xl space-y-6 py-2">
@@ -52,16 +49,15 @@ function selectCountry(countryCode: string) {
         <Select
           type="single"
           value={form.countryCode}
-          onValueChange={(value) => value && selectCountry(value)}
+          onValueChange={(value) => value && applySetupRegion(form, value)}
         >
           <SelectTrigger id="org-country" class="h-10 w-full">
-            {@const selectedCountry = COUNTRIES_LIST.find((item) => item.code === form.countryCode)}
-            {selectedCountry ? `${selectedCountry.flag} ${selectedCountry.name()}` : form.countryCode}
+            {country ? regionName(country, language) : form.countryCode}
           </SelectTrigger>
           <SelectContent>
-            {#each COUNTRIES_LIST as country (country.code)}
-              <SelectItem value={country.code}>
-                {country.flag} {country.name()}
+            {#each setupRegions as region (region.code)}
+              <SelectItem value={region.code}>
+                {regionName(region, language)}
               </SelectItem>
             {/each}
           </SelectContent>
@@ -75,7 +71,6 @@ function selectCountry(countryCode: string) {
         <Input
           id="org-city"
           type="text"
-          placeholder={m.ui_onboarding_organization_e_g_riyadh()}
           bind:value={form.city}
           class="h-10"
         />
@@ -117,7 +112,11 @@ function selectCountry(countryCode: string) {
       <Select
         type="single"
         value={form.locale}
-        onValueChange={(value) => (form.locale = value ?? form.locale)}
+        onValueChange={(value) => {
+          if (!value) return;
+          form.locale = value;
+          form.formatLocale = new Intl.Locale(value).language + "-" + form.countryCode;
+        }}
       >
         <SelectTrigger
           id="org-locale"
@@ -144,7 +143,8 @@ function selectCountry(countryCode: string) {
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <CurrencySelector
         bind:currentCurrency={form.baseCurrencyCode}
-        compact={true}
+        currencyOptions={setupCurrencies}
+        compact
         title={m.ui_onboarding_organization_base_currency()}
       />
       <div class="space-y-1.5">

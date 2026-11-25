@@ -456,8 +456,8 @@ fn parse_academic_standing(standing_str: &str) -> Option<AcademicStanding> {
 pub async fn student_register_student(
     request: RegisterStudentRequest,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<StudentDetailDto>, String> {
-    let ctx = make_ctx(&state);
+) -> Result<ApiResponse<StudentDetailDto>, serde_json::Value> {
+    let ctx = super::iam_cmds::authenticated_ctx(&state).await?;
     let person_id = request.person_id.and_then(|id| Uuid::parse_str(&id).ok());
     let user_id = request.user_id.and_then(|id| Uuid::parse_str(&id).ok());
     let initial_period_id = request
@@ -512,7 +512,7 @@ pub async fn student_register_student(
         .student_service
         .register_student(&ctx, ctx.tenant_id, input)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(super::workflow_cmds::period_command_error)?;
     record_student_audit(
         &state,
         &ctx,
@@ -726,8 +726,8 @@ pub async fn student_transfer_class(
 pub async fn student_enroll_student(
     request: EnrollStudentInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<EnrollmentDto>, String> {
-    let ctx = make_ctx(&state);
+) -> Result<ApiResponse<EnrollmentDto>, serde_json::Value> {
+    let ctx = super::iam_cmds::authenticated_ctx(&state).await?;
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let class_id = request.class_id.and_then(|c| Uuid::parse_str(&c).ok());
@@ -745,7 +745,7 @@ pub async fn student_enroll_student(
             study_mode,
         )
         .await
-        .map_err(|err| err.to_string())?;
+        .map_err(super::workflow_cmds::period_command_error)?;
 
     Ok(ok(enrollment_to_dto(e)))
 }
@@ -962,7 +962,7 @@ pub struct BulkTransferStudentCommandResultDto {
     pub items: Vec<BulkTransferStudentCommandItemResult>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug)]
 pub struct BulkRegisterJobDto {
     pub id: String,
     pub status: String,
@@ -972,6 +972,7 @@ pub struct BulkRegisterJobDto {
     pub failed: usize,
     pub result: Option<BulkRegisterStudentCommandResultDto>,
     pub error: Option<String>,
+    pub override_targets: Vec<orbis_domain::errors::PeriodOverrideTarget>,
 }
 
 #[derive(Clone, Default)]
@@ -1068,20 +1069,22 @@ pub async fn student_start_bulk_register_job(
         failed: 0,
         result: None,
         error: None,
+        override_targets: Vec::new(),
     };
     jobs.jobs.write().await.insert(job_id.clone(), job.clone());
 
     let app_state = state.inner().clone();
-    let ctx = make_ctx(&app_state);
+    let ctx = super::iam_cmds::authenticated_ctx(&app_state).await?;
     let registry = jobs.inner().clone();
     let domain_items = to_domain_bulk_items(items);
 
     tauri::async_runtime::spawn(async move {
-        let chunk_size = 100usize;
+        let chunk_size = if atomic.unwrap_or(true) { total.max(1) } else { 100 };
         let mut processed = 0usize;
         let mut succeeded = 0usize;
         let mut failed = 0usize;
         let mut result_items = Vec::new();
+        let mut override_targets = std::collections::BTreeSet::new();
 
         for chunk in domain_items.chunks(chunk_size) {
             let chunk_res = app_state
@@ -1099,6 +1102,7 @@ pub async fn student_start_bulk_register_job(
 
             match chunk_res {
                 Ok(res) => {
+                    override_targets.extend(res.override_targets);
                     succeeded += res.succeeded;
                     failed += res.failed;
                     processed += res.total;
@@ -1113,6 +1117,9 @@ pub async fn student_start_bulk_register_job(
                     }));
                 }
                 Err(error) => {
+                    if let Some(targets) = error.period_override_targets() {
+                        override_targets.extend(targets.iter().copied());
+                    }
                     let reason = error.to_string();
                     processed += chunk.len();
                     failed += chunk.len();
@@ -1147,6 +1154,7 @@ pub async fn student_start_bulk_register_job(
             current.status = "completed".to_string();
             current.processed = total;
             current.result = Some(result);
+            current.override_targets = override_targets.into_iter().collect();
         }
     });
 

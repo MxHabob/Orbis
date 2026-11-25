@@ -3,7 +3,6 @@ import { LoadingIndicator, toast } from "@orbis/ui";
 import { createQuery } from "@tanstack/svelte-query";
 import * as m from "$lib/paraglide/messages";
 import { api, queryKeys } from "$lib/api";
-import { effectiveContext, systemStore } from "$lib/stores";
 import {
   apps,
   categories,
@@ -18,7 +17,6 @@ import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import AppDetailSheet from "$lib/features/ai/components/integrations/app-detail-sheet.svelte";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
-import { deriveSteps } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { Check, Sparkles } from "@orbis/icons";
 
@@ -47,11 +45,6 @@ const integrationsQuery = createQuery(() => ({
 const connectedIntegrations = $derived(integrationsQuery.data ?? []);
 const isLoading = $derived(integrationsQuery.isLoading);
 
-const stepStatus = $derived(
-  deriveSteps(systemStore.onboardingTasks, (permission) =>
-    effectiveContext.hasPermission(permission),
-  ).find((step) => step.id === "integrations")?.status ?? "not_started",
-);
 
 async function loadData() {
   try {
@@ -121,11 +114,8 @@ function refreshAfterIntegrationChange() {
 <div class="space-y-6">
   <!-- Onboarding Step Indicator & Title -->
   <OnboardingStepHeader
-    stepNumber={9}
     title={m.onboarding_step_integrations_title()}
     description={m.onboarding_step_integrations_subtitle()}
-    isRequired={false}
-    status={stepStatus}
   />
 
   <!-- Integrations Gallery Header with Centered Search -->

@@ -4,15 +4,14 @@ import { onDestroy } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import {
   type OnboardingFormModel,
-  CURRENCY_OPTIONS,
-  TIMEZONE_OPTIONS,
-  COUNTRIES_LIST,
   EDUCATIONAL_TRACK_OPTIONS,
   ORGANIZATION_SIZE_OPTIONS,
 } from "../types";
+import { setupRegions, regionName } from "../setup-regions";
 import type { BootstrapResult } from "$lib/api/types";
 import { getBlueprint } from "@orbis/blueprints";
 import { getLocale } from "$lib/paraglide/runtime";
+import { LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Card, CardContent } from "@orbis/ui/card";
@@ -52,15 +51,8 @@ let {
 const avatarController = new AvatarController();
 let productKey = $state("");
 let productKeyError = $state<string | null>(null);
-let setupStage = $state(0);
 const blueprint = $derived(getBlueprint(form.institutionType));
-const tz = $derived(TIMEZONE_OPTIONS.find((t) => t.value === form.timezone));
-const cur = $derived(
-  CURRENCY_OPTIONS.find((c) => c.code === form.baseCurrencyCode),
-);
-const country = $derived(
-  COUNTRIES_LIST.find((c) => c.code === form.countryCode),
-);
+const country = $derived(setupRegions.find((region) => region.code === form.countryCode));
 const track = $derived(
   EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack),
 );
@@ -98,17 +90,6 @@ $effect(() => {
 
 onDestroy(() => avatarController.destroy());
 
-$effect(() => {
-  if (!isSubmitting) return;
-
-  setupStage = 0;
-  const stageTimeouts = [
-    window.setTimeout(() => (setupStage = 1), 1600),
-    window.setTimeout(() => (setupStage = 2), 4200),
-  ];
-
-  return () => stageTimeouts.forEach((timeout) => window.clearTimeout(timeout));
-});
 
 async function submitProductKey() {
   const key = productKey.trim();
@@ -125,20 +106,8 @@ async function submitProductKey() {
 </script>
 
 {#if isSubmitting}
-  <section class="flex min-h-[64vh] items-center justify-center px-4 text-center" role="status">
-    <div class="min-h-20">
-      {#key setupStage}
-        <p class="setup-message max-w-5xl text-3xl font-medium leading-relaxed tracking-tight text-foreground sm:text-5xl lg:text-6xl" aria-live="polite">
-          {#if setupStage === 0}
-            {m.ui_onboarding_setup_getting_everything_ready()}
-          {:else if setupStage === 1}
-            {m.ui_onboarding_setup_preparing_institution_workspace()}
-          {:else}
-            {m.ui_onboarding_setup_almost_done({ name: administratorName })}
-          {/if}
-        </p>
-      {/key}
-    </div>
+  <section class="flex min-h-64 items-center justify-center" role="status">
+    <LoadingIndicator size="lg" label={m.ui_onboarding_setup_getting_everything_ready()} />
   </section>
 {:else if isComplete}
   <section class="mx-auto flex min-h-[64vh] max-w-4xl flex-col items-center justify-center px-4 py-10 text-center">
@@ -291,17 +260,22 @@ async function submitProductKey() {
         <div class="space-y-3 text-xs">
           <div class="flex justify-between items-center">
             <span class="text-muted-foreground">{m.ui_onboarding_review_country_region()}</span>
-            <span class="font-semibold text-foreground">{country?.flag} {country?.name()}</span>
+            <span class="font-semibold text-foreground">{country ? regionName(country, getLocale()) : form.countryCode}</span>
           </div>
 
           <div class="flex justify-between items-center gap-4">
             <span class="shrink-0 text-muted-foreground">{m.ui_onboarding_organization_timezone()}</span>
-            <span class="text-end font-semibold text-foreground">{tz?.label() ?? form.timezone}</span>
+            <span class="text-end font-semibold text-foreground">{form.timezone}</span>
           </div>
 
           <div class="flex justify-between items-center">
             <span class="text-muted-foreground">{m.setup_bootstrap_currency_label()}</span>
-            <span class="font-semibold text-foreground font-mono">{cur?.code} ({cur?.symbol()})</span>
+            <span class="font-semibold text-foreground font-mono">{form.baseCurrencyCode}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-muted-foreground">{m.settings_general_date_format()}</span>
+            <span class="font-mono font-semibold text-foreground" dir="ltr">{form.dateFormat}</span>
           </div>
 
           <div class="flex justify-between items-center">
@@ -331,26 +305,3 @@ async function submitProductKey() {
     </div>
   </div>
 {/if}
-
-<style>
-  .setup-message {
-    animation: setup-message-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  @keyframes setup-message-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .setup-message {
-      animation: none;
-    }
-  }
-</style>

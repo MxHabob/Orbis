@@ -1,3 +1,4 @@
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -750,6 +751,7 @@ export class StudentFormState {
           if (!polled) break;
           registrationJobState = polled;
         }
+        if (periodOverrides.open(this.orgId, registrationJobState.override_targets ?? [])) return;
         if (registrationJobState.status === "failed") {
           throw new Error(
             registrationJobState.error || "Student registration failed.",
@@ -1090,6 +1092,7 @@ export class StudentFormState {
         ),
       );
     } catch (e) {
+      if (periodOverrides.handleError(this.orgId, e)) return;
       console.error("Save error:", e);
       toast.error(
         m.common_form_error_save({

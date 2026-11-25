@@ -4,6 +4,8 @@
 -->
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
+import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
 import {
   authStore,
   systemStore,
@@ -31,7 +33,8 @@ let licenseReady = $state(false);
 const isOnboarding = $derived(page.url.pathname.includes("/onboarding"));
 const standaloneWindow = isStandaloneWindow(page.url);
 
-afterNavigate(({ to }) => {
+afterNavigate(({ from, to }) => {
+  if (from?.url.pathname !== to?.url.pathname) periodOverrides.dismiss();
   if (!standaloneWindow || !to?.url || isStandaloneWindow(to.url)) return;
 
   const url = new URL(to.url);
@@ -86,6 +89,7 @@ $effect(() => {
       >
         {@render children()}
       </AppChrome>
+      <OverrideRequestDialog orgId={data.orgId} />
     {/if}
   {/key}
 {:else}

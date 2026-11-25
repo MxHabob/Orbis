@@ -20,6 +20,7 @@ pub struct Model {
     pub status: String,
     pub current_approver_role: Option<String>,
     pub approval_chain: Json,
+    pub approval_policy_version: Option<i32>,
     pub resolved_by: Option<Uuid>,
     pub resolved_by_name: Option<String>,
     pub resolved_at: Option<DateTimeUtc>,

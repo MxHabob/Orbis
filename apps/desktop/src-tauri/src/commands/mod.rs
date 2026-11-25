@@ -195,12 +195,12 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         org_cmds::org_get_settings,
         org_cmds::org_update_settings,
         org_cmds::org_get_dashboard,
+        org_cmds::org_get_dashboard_access,
         org_cmds::org_create_unit,
         org_cmds::org_update_unit,
         org_cmds::org_list_units,
         org_cmds::org_get_unit,
         org_cmds::org_delete_unit,
-        org_cmds::org_select_unit,
         // ── Calendar ────────────────────────────────────────────
         calendar_cmds::calendar_create_year,
         calendar_cmds::calendar_update_year,
@@ -591,7 +591,6 @@ fn required_feature(command: &str) -> Option<&'static str> {
             | "org_delete_unit"
             | "org_list_units"
             | "org_get_unit"
-            | "org_select_unit"
     ) {
         Some("multi_branch")
     } else if command.starts_with("exam_") {

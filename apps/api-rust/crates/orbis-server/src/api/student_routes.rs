@@ -393,6 +393,15 @@ pub struct BulkRegisterStudentsResponse {
     pub is_atomic: bool,
     pub is_dry_run: bool,
     pub items: Vec<BulkRegisterItemResultDto>,
+    pub override_targets: Vec<PeriodOverrideTargetDto>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct PeriodOverrideTargetDto {
+    pub override_type: &'static str,
+    pub entity_type: &'static str,
+    pub entity_id: Uuid,
+    pub period_id: Uuid,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -881,6 +890,16 @@ pub async fn bulk_register_students(
         is_atomic: res.is_atomic,
         is_dry_run: res.is_dry_run,
         items: items_dto,
+        override_targets: res
+            .override_targets
+            .into_iter()
+            .map(|target| PeriodOverrideTargetDto {
+                override_type: target.override_type,
+                entity_type: target.entity_type,
+                entity_id: target.entity_id,
+                period_id: target.period_id,
+            })
+            .collect(),
     }))
 }
 

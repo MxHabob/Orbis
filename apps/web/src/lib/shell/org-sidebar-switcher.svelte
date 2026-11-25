@@ -18,11 +18,14 @@ import {
   AvatarFallback,
 } from "@orbis/ui";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api } from "$lib/api/client";
 import { l } from "$lib/core/i18n/locale";
 import { authStore, effectiveContext } from "$lib/stores";
 import { onMount } from "svelte";
+import { createDashboardAccessQuery, dashboardBranch } from "$lib/features/dashboard/queries";
 
 let {
   orgId,
@@ -36,17 +39,17 @@ let {
   primaryColor?: string;
 } = $props();
 
-let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>(
-  [],
-);
+const access = createDashboardAccessQuery(() => orgId, () => authStore.userId);
+const branches = $derived(access.data?.units ?? []);
+const activeBranch = $derived(dashboardBranch(access.data, effectiveContext.activeOrgUnitId));
 let organizations = $state<{ id: string; label: string }[]>([]);
 
 const orgNameDisplay = $derived(l(orgNameAr, orgName) ?? "");
 const orgInitials = $derived(orgNameDisplay.trim().charAt(0).toUpperCase());
 const currentBranchLabel = $derived.by(() => {
-  if (!effectiveContext.activeOrgUnitId) return m.shared_ui_all_branches();
+  if (!activeBranch) return access.data?.organization_wide ? m.shared_ui_all_branches() : "";
   const currentBranch = branches.find(
-    (branch) => branch.id === effectiveContext.activeOrgUnitId,
+    (branch) => branch.id === activeBranch,
   );
   return currentBranch
     ? l(currentBranch.name_ar, currentBranch.name)
@@ -88,40 +91,30 @@ onMount(() => {
       : [currentOrganization, ...organizations];
   }
 
-  api
-    .listOrgUnits()
-    .then((units) => {
-      branches = units.filter(
-        (unit) => unit.is_active && unit.unit_type === "branch",
-      );
-    })
-    .catch((error: unknown) => {
-      console.error("Failed to load organization branches:", error);
-    });
 });
 
 function handleNavigate(path: string) {
-  goto(localizeHref(path));
+  return goto(resolve(localizeHref(path) as Pathname));
 }
 
-async function handleBranchSelect(id: string) {
-  await api.selectOrgUnit(id);
+function handleBranchSelect(id: string) {
+  if (!branches.some((branch) => branch.id === id)) return;
   effectiveContext.setOrgUnit(id);
   effectiveContext.setClass(null);
-  await goto(localizeHref(`/${orgId}`));
+  return handleNavigate(`/${orgId}`);
 }
 
 function handleOrganizationSelect(id: string) {
   effectiveContext.setOrgUnit(null);
   effectiveContext.setClass(null);
-  goto(localizeHref(`/${id}`));
+  return handleNavigate(`/${id}`);
 }
 
-async function handleAllBranchesSelect() {
-  await api.selectOrgUnit();
+function handleAllBranchesSelect() {
+  if (!access.data?.organization_wide) return;
   effectiveContext.setOrgUnit(null);
   effectiveContext.setClass(null);
-  await goto(localizeHref(`/${orgId}`));
+  return handleNavigate(`/${orgId}`);
 }
 </script>
 
@@ -184,20 +177,23 @@ async function handleAllBranchesSelect() {
         </DropdownMenuSub>
       {/if}
 
+      {#if branches.length > 1 || (access.data?.organization_wide && branches.length > 0)}
       <DropdownMenuSub>
         <DropdownMenuSubTrigger class="cursor-pointer px-3 py-1.5 text-xs rounded">
-          <span>{m.common_header_switch_branch()}</span>
+          <span>{m.dashboard_branch_filter()}</span>
           <span class="ms-auto max-w-24 truncate text-[10px] text-muted-foreground">
             {currentBranchLabel}
           </span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent class="w-52 p-1 z-50 shadow-md rounded-md">
+          {#if access.data?.organization_wide}
           <DropdownMenuItem
             class="cursor-pointer px-3 py-1.5 text-xs rounded"
             onclick={handleAllBranchesSelect}
           >
             {m.shared_ui_all_branches()}
           </DropdownMenuItem>
+          {/if}
           {#each branches as branch (branch.id)}
             <DropdownMenuItem
               class="cursor-pointer px-3 py-1.5 text-xs rounded"
@@ -208,6 +204,7 @@ async function handleAllBranchesSelect() {
           {/each}
         </DropdownMenuSubContent>
       </DropdownMenuSub>
+      {/if}
 
       <DropdownMenuSeparator class="bg-border/50" />
 

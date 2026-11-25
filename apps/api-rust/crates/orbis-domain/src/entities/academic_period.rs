@@ -241,7 +241,7 @@ impl AcademicPeriod {
             let now = Utc::now();
             let after_start = self.grade_entry_starts_at.map(|s| now >= s).unwrap_or(true);
             let before_end = self.grade_entry_ends_at.map(|e| now <= e).unwrap_or(true);
-            self.is_grade_entry_open || (after_start && before_end)
+            self.is_grade_entry_open && after_start && before_end
         } else {
             false
         }
@@ -259,7 +259,7 @@ impl AcademicPeriod {
         let now = Utc::now();
         let after_start = self.enrollment_starts_at.map(|s| now >= s).unwrap_or(true);
         let before_end = self.enrollment_ends_at.map(|e| now <= e).unwrap_or(true);
-        self.is_enrollment_open || (after_start && before_end)
+        self.is_enrollment_open && after_start && before_end
     }
 
     /// Whether this period is a top-level term (direct child of the academic year).

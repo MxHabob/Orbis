@@ -8,7 +8,6 @@ import {
   type DocumentRequirementDto,
   type OrganizationSettingsDto,
 } from "$lib/api";
-import { systemStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -24,7 +23,6 @@ import {
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
-import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
@@ -95,12 +93,6 @@ const PRESET_DOCUMENTS = [
   },
 ];
 
-const stepTasks = $derived(
-  getTasksForStep("operations", systemStore.onboardingTasks),
-);
-const isTaskComplete = $derived(
-  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
-);
 const studentNumberPreview = $derived.by(() => {
   const parts: string[] = [];
   if (studentNumberPrefix.trim())
@@ -289,11 +281,8 @@ function conditionLabel(condition: string): string {
 
 <div class="space-y-6">
   <OnboardingStepHeader
-    stepNumber={8}
     title={m.onboarding_step7_title()}
     description={m.onboarding_step7_subtitle()}
-    isRequired={true}
-    status={isTaskComplete ? "completed" : docRequirements.length > 0 ? "in_progress" : "not_started"}
   />
 
   {#if isLoading}

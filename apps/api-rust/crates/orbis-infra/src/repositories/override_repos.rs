@@ -8,13 +8,184 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use uuid::Uuid;
 
 use crate::models::override_request::{self, Entity as OverrideEntity};
+use crate::models::{
+    academic_period, enrollment, grade, section, section_subject, student, student_fee,
+};
 
 pub struct OverrideRepoImpl {
     pub db: DatabaseConnection,
 }
 
+fn target_missing() -> DomainError {
+    DomainError::NotFound("Override target not found".into())
+}
+
+fn database_error(error: sea_orm::DbErr) -> DomainError {
+    DomainError::Internal(error.to_string())
+}
+
+impl OverrideRepoImpl {
+    async fn period(&self, org_id: Uuid, id: Uuid) -> Result<academic_period::Model, DomainError> {
+        academic_period::Entity::find_by_id(id)
+            .filter(academic_period::Column::OrgId.eq(org_id))
+            .one(&self.db)
+            .await
+            .map_err(database_error)?
+            .ok_or_else(target_missing)
+    }
+
+    async fn student_unit(&self, org_id: Uuid, id: Uuid) -> Result<Option<Uuid>, DomainError> {
+        student::Entity::find_by_id(id)
+            .filter(student::Column::OrgId.eq(org_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .one(&self.db)
+            .await
+            .map_err(database_error)?
+            .map(|student| student.org_unit_id)
+            .ok_or_else(target_missing)
+    }
+
+    async fn section_unit(&self, org_id: Uuid, id: Uuid) -> Result<Option<Uuid>, DomainError> {
+        section::Entity::find_by_id(id)
+            .filter(section::Column::OrgId.eq(org_id))
+            .filter(section::Column::IsDeleted.eq(false))
+            .one(&self.db)
+            .await
+            .map_err(database_error)?
+            .map(|section| section.org_unit_id)
+            .ok_or_else(target_missing)
+    }
+}
+
 #[async_trait]
 impl OverrideRequestRepository for OverrideRepoImpl {
+    async fn target_units(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+        linked_section_id: Option<Uuid>,
+        period_id: Option<Uuid>,
+    ) -> Result<Vec<Option<Uuid>>, DomainError> {
+        let period = match period_id {
+            Some(id) => Some(self.period(org_id, id).await?),
+            None => None,
+        };
+        let mut units = match entity_type {
+            "academic_period" if period_id == Some(entity_id) => vec![None],
+            "section_subject" => {
+                let assignment = section_subject::Entity::find_by_id(entity_id)
+                    .filter(section_subject::Column::OrgId.eq(org_id))
+                    .one(&self.db)
+                    .await
+                    .map_err(database_error)?
+                    .ok_or_else(target_missing)?;
+                let mut current = period.ok_or_else(target_missing)?;
+                let calendar = current.calendar_id;
+                let mut visited = std::collections::HashSet::new();
+                while current.id != assignment.period_id {
+                    if !visited.insert(current.id) {
+                        return Err(target_missing());
+                    }
+                    current = self
+                        .period(org_id, current.parent_id.ok_or_else(target_missing)?)
+                        .await?;
+                    if current.calendar_id != calendar {
+                        return Err(target_missing());
+                    }
+                }
+                vec![self.section_unit(org_id, assignment.section_id).await?]
+            }
+            "student" => vec![self.student_unit(org_id, entity_id).await?],
+            "class" | "section" => vec![self.section_unit(org_id, entity_id).await?],
+            "enrollment" => {
+                let enrollment = enrollment::Entity::find_by_id(entity_id)
+                    .filter(enrollment::Column::OrgId.eq(org_id))
+                    .one(&self.db)
+                    .await
+                    .map_err(database_error)?
+                    .ok_or_else(target_missing)?;
+                let mut units = vec![self.student_unit(org_id, enrollment.student_id).await?];
+                if let Some(section_id) = enrollment.section_id {
+                    units.push(self.section_unit(org_id, section_id).await?);
+                }
+                units
+            }
+            "grade" => {
+                let grade = grade::Entity::find_by_id(entity_id)
+                    .filter(grade::Column::OrgId.eq(org_id))
+                    .one(&self.db)
+                    .await
+                    .map_err(database_error)?
+                    .ok_or_else(target_missing)?;
+                let assignment = section_subject::Entity::find_by_id(grade.section_subject_id)
+                    .filter(section_subject::Column::OrgId.eq(org_id))
+                    .one(&self.db)
+                    .await
+                    .map_err(database_error)?
+                    .ok_or_else(target_missing)?;
+                vec![
+                    self.student_unit(org_id, grade.student_id).await?,
+                    self.section_unit(org_id, assignment.section_id).await?,
+                ]
+            }
+            "fee" | "student_fee" => {
+                let fee = student_fee::Entity::find_by_id(entity_id)
+                    .filter(student_fee::Column::OrgId.eq(org_id))
+                    .one(&self.db)
+                    .await
+                    .map_err(database_error)?
+                    .ok_or_else(target_missing)?;
+                vec![self.student_unit(org_id, fee.student_id).await?]
+            }
+            _ => {
+                return Err(DomainError::Validation(
+                    "Unsupported override target type".into(),
+                ));
+            }
+        };
+        if let Some(section_id) = linked_section_id {
+            units.push(self.section_unit(org_id, section_id).await?);
+        }
+        units.sort_unstable();
+        units.dedup();
+        Ok(units)
+    }
+
+    async fn save_decision(
+        &self,
+        request: &AcademicOverrideRequest,
+        expected_updated_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(), DomainError> {
+        let active = override_to_active_model(request)?;
+        let result = OverrideEntity::update_many()
+            .set(override_request::ActiveModel {
+                status: active.status,
+                current_approver_role: active.current_approver_role,
+                approval_chain: active.approval_chain,
+                approval_policy_version: active.approval_policy_version,
+                resolved_by: active.resolved_by,
+                resolved_by_name: active.resolved_by_name,
+                resolved_at: active.resolved_at,
+                resolution_notes: active.resolution_notes,
+                updated_at: active.updated_at,
+                ..Default::default()
+            })
+            .filter(override_request::Column::Id.eq(request.id))
+            .filter(override_request::Column::OrgId.eq(request.org_id))
+            .filter(override_request::Column::Status.eq(OverrideStatus::Pending.to_string()))
+            .filter(override_request::Column::UpdatedAt.eq(expected_updated_at))
+            .exec(&self.db)
+            .await
+            .map_err(database_error)?;
+        if result.rows_affected != 1 {
+            return Err(DomainError::Conflict(
+                "The override changed before the decision was saved".into(),
+            ));
+        }
+        Ok(())
+    }
+
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicOverrideRequest>, DomainError> {
         let model = OverrideEntity::find_by_id(id)
             .one(&self.db)
@@ -52,25 +223,15 @@ impl OverrideRequestRepository for OverrideRepoImpl {
             .filter(override_request::Column::EntityType.eq(entity_type))
             .filter(override_request::Column::EntityId.eq(entity_id))
             .filter(override_request::Column::Status.eq("approved"))
+            .filter(
+                sea_orm::Condition::any()
+                    .add(override_request::Column::ExpiresAt.is_null())
+                    .add(override_request::Column::ExpiresAt.gt(chrono::Utc::now())),
+            )
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_model_to_domain))
-    }
-
-    async fn find_pending_for_role(
-        &self,
-        org_id: Uuid,
-        role: &str,
-    ) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
-        let models = OverrideEntity::find()
-            .filter(override_request::Column::OrgId.eq(org_id))
-            .filter(override_request::Column::Status.eq("pending"))
-            .filter(override_request::Column::CurrentApproverRole.eq(role))
-            .all(&self.db)
-            .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_model_to_domain).collect())
     }
 
     async fn save(&self, r: &AcademicOverrideRequest) -> Result<(), DomainError> {
@@ -117,6 +278,7 @@ pub(crate) fn override_to_active_model(
         status: Set(r.status.to_string()),
         current_approver_role: Set(r.current_approver_role.clone()),
         approval_chain: Set(chain_json),
+        approval_policy_version: Set(r.approval_policy_version),
         resolved_by: Set(r.resolved_by),
         resolved_by_name: Set(r.resolved_by_name.clone()),
         resolved_at: Set(r.resolved_at),
@@ -133,16 +295,7 @@ fn map_model_to_domain(m: override_request::Model) -> AcademicOverrideRequest {
     AcademicOverrideRequest {
         id: m.id,
         org_id: m.org_id,
-        override_type: match m.override_type.as_str() {
-            "grade_change" => OverrideType::GradeChange,
-            "prerequisite_bypass" => OverrideType::PrerequisiteBypass,
-            "late_enrollment" => OverrideType::LateEnrollment,
-            "capacity_override" => OverrideType::CapacityOverride,
-            "credit_overload" => OverrideType::CreditOverload,
-            "discount_override" => OverrideType::DiscountOverride,
-            "standing_override" => OverrideType::AcademicStandingOverride,
-            _ => OverrideType::Custom(0),
-        },
+        override_type: m.override_type.parse().unwrap_or(OverrideType::Custom(0)),
         risk_level: match m.risk_level.as_str() {
             "low" => RiskLevel::Low,
             "high" => RiskLevel::High,
@@ -158,15 +311,16 @@ fn map_model_to_domain(m: override_request::Model) -> AcademicOverrideRequest {
         requested_by: m.requested_by,
         requested_by_name: m.requested_by_name,
         status: match m.status.as_str() {
+            "pending" => OverrideStatus::Pending,
             "approved" => OverrideStatus::Approved,
             "rejected" => OverrideStatus::Rejected,
             "expired" => OverrideStatus::Expired,
             "executed" => OverrideStatus::Executed,
-            "cancelled" => OverrideStatus::Cancelled,
-            _ => OverrideStatus::Pending,
+            _ => OverrideStatus::Cancelled,
         },
         current_approver_role: m.current_approver_role,
         approval_chain: chain,
+        approval_policy_version: m.approval_policy_version,
         resolved_by: m.resolved_by,
         resolved_by_name: m.resolved_by_name,
         resolved_at: m.resolved_at,
@@ -175,5 +329,45 @@ fn map_model_to_domain(m: override_request::Model) -> AcademicOverrideRequest {
         metadata: m.metadata.unwrap_or_default(),
         created_at: m.created_at,
         updated_at: m.updated_at,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Duration, Utc};
+    use sea_orm::{ConnectionTrait, Database, Schema};
+
+    #[tokio::test]
+    async fn a_stale_decision_cannot_overwrite_an_intermediate_approval() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        let backend = db.get_database_backend();
+        let table = Schema::new(backend).create_table_from_entity(OverrideEntity);
+        db.execute(backend.build(&table)).await.unwrap();
+        let repo = OverrideRepoImpl { db };
+        let now = Utc::now();
+        let mut request: AcademicOverrideRequest = serde_json::from_value(serde_json::json!({
+            "id": Uuid::new_v4(), "org_id": Uuid::new_v4(), "entity_type": "grade",
+            "entity_id": Uuid::new_v4(), "override_type": "grade_change", "risk_level": "high",
+            "reason": "Correction", "requested_by": Uuid::new_v4(), "status": "pending",
+            "approval_chain": [], "created_at": now, "updated_at": now, "metadata": {}
+        }))
+        .unwrap();
+        repo.save(&request).await.unwrap();
+        let mut stale = repo.find_by_id(request.id).await.unwrap().unwrap();
+        let expected = stale.updated_at;
+        request.current_approver_role = Some("org_admin".into());
+        request.updated_at = expected + Duration::seconds(1);
+        repo.save_decision(&request, expected).await.unwrap();
+
+        stale.status = OverrideStatus::Rejected;
+        stale.updated_at = expected + Duration::seconds(2);
+        assert!(matches!(
+            repo.save_decision(&stale, expected).await,
+            Err(DomainError::Conflict(_))
+        ));
+        let stored = repo.find_by_id(request.id).await.unwrap().unwrap();
+        assert_eq!(stored.status, OverrideStatus::Pending);
+        assert_eq!(stored.current_approver_role.as_deref(), Some("org_admin"));
     }
 }

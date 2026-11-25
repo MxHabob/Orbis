@@ -18,6 +18,7 @@ import {
 } from "$lib/features/students/registration-effects";
 import * as m from "$lib/paraglide/messages";
 import { operationStore } from "$lib/stores";
+import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -890,6 +891,7 @@ export const studentImportProfile: BulkImportProfile<
       if (latestJob.status === "failed") {
         throw new Error(latestJob.error || "Bulk student import failed");
       }
+      periodOverrides.open(orgId, latestJob.override_targets ?? []);
       if (!latestJob.result) {
         throw new Error("Bulk student import did not produce a result");
       }

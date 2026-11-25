@@ -27,6 +27,7 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
+  DashboardAccessDto,
   AcademicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
@@ -355,8 +356,11 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<OrganizationSettingsDto> {
     return unwrap(await invoke("org_update_settings", { settings }));
   }
-  async getDashboard(): Promise<DashboardCountsDto> {
-    return unwrap(await invoke("org_get_dashboard"));
+  async getDashboard(orgUnitId?: string): Promise<DashboardCountsDto> {
+    return unwrap(await invoke("org_get_dashboard", { orgUnitId }));
+  }
+  async getDashboardAccess(): Promise<DashboardAccessDto> {
+    return unwrap(await invoke("org_get_dashboard_access"));
   }
 
   // ── OrgUnits ────────────────────────────────────────────────
@@ -377,9 +381,6 @@ export class LocalClient implements OrbisApiClient {
   }
   async deleteOrgUnit(id: string): Promise<void> {
     await invoke("org_delete_unit", { id });
-  }
-  async selectOrgUnit(id?: string): Promise<void> {
-    await invoke("org_select_unit", { unitId: id ?? null });
   }
 
   // ── Calendar ────────────────────────────────────────────────

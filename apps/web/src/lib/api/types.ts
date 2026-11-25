@@ -477,6 +477,7 @@ export interface BulkRegisterJobDto {
   failed: number;
   result?: BulkRegisterStudentCommandResultDto;
   error?: string;
+  override_targets?: import("./period-override").PeriodOverrideTarget[];
 }
 
 export interface BulkTransferStudentCommandItem {
@@ -769,26 +770,7 @@ export interface PrerequisiteCheckResultDto {
   failure_reason?: string | null;
 }
 
-export interface SubmitOverrideRequestInput {
-  override_type: string;
-  risk_level?: string;
-  entity_type: string;
-  entity_id: string;
-  field_name?: string;
-  old_value?: string;
-  new_value?: string;
-  reason: string;
-  approval_chain?: ApprovalStepDto[];
-  metadata?: Record<string, unknown>;
-  overrideType?: string;
-  riskLevel?: string;
-  entityType?: string;
-  entityId?: string;
-  fieldName?: string;
-  oldValue?: string;
-  newValue?: string;
-  approvalChain?: ApprovalStepDto[];
-}
+export type SubmitOverrideRequestInput = SubmitOverrideRequest;
 
 export interface ApproveOverrideInput {
   request_id: string;
@@ -1887,6 +1869,11 @@ export interface ActivateKeyRequest {
 // UNIFIED CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
 
+export interface DashboardAccessDto {
+  organization_wide: boolean;
+  units: { id: string; name: string; name_ar?: string | null }[];
+}
+
 export interface OrbisApiClient {
   // ── Auth & MFA & Devices ────────────────────────────────────
   login(req: LoginRequest): Promise<LoginResponse>;
@@ -1922,7 +1909,8 @@ export interface OrbisApiClient {
   updateSettings(
     settings: OrganizationSettingsDto,
   ): Promise<OrganizationSettingsDto>;
-  getDashboard(): Promise<DashboardCountsDto>;
+  getDashboard(orgUnitId?: string): Promise<DashboardCountsDto>;
+  getDashboardAccess(): Promise<DashboardAccessDto>;
 
   // ── OrgUnits ────────────────────────────────────────────────
   createOrgUnit(req: CreateOrgUnitRequest): Promise<OrgUnitDto>;
@@ -1930,7 +1918,6 @@ export interface OrbisApiClient {
   listOrgUnits(): Promise<OrgUnitDto[]>;
   getOrgUnit(id: string): Promise<OrgUnitDto>;
   deleteOrgUnit(id: string): Promise<void>;
-  selectOrgUnit(id?: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
   createacademicCalendar(req: CreateYearRequest): Promise<AcademicCalendarDto>;

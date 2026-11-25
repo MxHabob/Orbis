@@ -26,14 +26,14 @@ let {
 </script>
 
 <Card>
-  <CardHeader class="gap-0 px-5 pt-5 sm:px-6 sm:pt-6">
+  <CardHeader class="gap-0 border-b border-border/60 px-4 py-4 sm:px-6">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0 space-y-1.5">
         <CardTitle class="text-sm font-semibold tracking-tight text-foreground sm:text-base">
           {title}
         </CardTitle>
         {#if description}
-          <CardDescription class="sr-only">
+          <CardDescription class="max-w-2xl text-sm leading-relaxed">
             {description}
           </CardDescription>
         {/if}
@@ -49,7 +49,7 @@ let {
       {/if}
     </div>
   </CardHeader>
-  <CardContent class="space-y-4 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+  <CardContent class="space-y-4 p-4 sm:p-6">
     {@render children()}
   </CardContent>
 </Card>

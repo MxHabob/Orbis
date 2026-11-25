@@ -834,6 +834,23 @@ pub trait PromotionRepository: Send + Sync {
 
 #[async_trait]
 pub trait OverrideRequestRepository: Send + Sync {
+    /// Resolve current ownership from persisted resources. Each entry represents
+    /// one affected resource, with None requiring an organization-wide grant.
+    async fn target_units(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+        linked_section_id: Option<Uuid>,
+        period_id: Option<Uuid>,
+    ) -> Result<Vec<Option<Uuid>>, DomainError>;
+
+    /// Compare and set a pending decision so concurrent requests cannot advance it twice.
+    async fn save_decision(
+        &self,
+        request: &AcademicOverrideRequest,
+        expected_updated_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(), DomainError>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicOverrideRequest>, DomainError>;
     async fn find_by_org(
         &self,
@@ -847,11 +864,6 @@ pub trait OverrideRequestRepository: Send + Sync {
         entity_type: &str,
         entity_id: Uuid,
     ) -> Result<Option<AcademicOverrideRequest>, DomainError>;
-    async fn find_pending_for_role(
-        &self,
-        org_id: Uuid,
-        role: &str,
-    ) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
     async fn save(&self, req: &AcademicOverrideRequest) -> Result<(), DomainError>;
 }
 
@@ -994,7 +1006,12 @@ pub struct DashboardCounts {
 
 #[async_trait]
 pub trait DashboardRepository: Send + Sync {
-    async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError>;
+    async fn get_counts(
+        &self,
+        org_id: Uuid,
+        units: Option<&[Uuid]>,
+        include_finance: bool,
+    ) -> Result<DashboardCounts, DomainError>;
 }
 
 // =========================================================================

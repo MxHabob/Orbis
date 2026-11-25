@@ -39,6 +39,7 @@ export type AcademicContextResponse = {
 };
 
 export type AcademicPeriodDto = {
+  can_enter_grades?: boolean;
   code?: string | null;
   created_at: string;
   end_date: string;
@@ -779,8 +780,16 @@ export type BulkRegisterStudentsResponse = {
   is_atomic: boolean;
   is_dry_run: boolean;
   items: Array<BulkRegisterItemResultDto>;
+  override_targets: Array<PeriodOverrideTargetDto>;
   succeeded: number;
   total: number;
+};
+
+export type PeriodOverrideTargetDto = {
+  entity_id: string;
+  entity_type: string;
+  override_type: string;
+  period_id: string;
 };
 
 export type BulkScheduleLessonsRequest = {
@@ -2744,15 +2753,14 @@ export type SubjectDto = {
 };
 
 export type SubmitOverrideRequest = {
-  approver_role: string;
   entity_id: string;
   entity_type: string;
   field_name?: string | null;
   new_value?: string | null;
   old_value?: string | null;
   override_type: string;
+  period_id?: string | null;
   reason: string;
-  risk_level?: string | null;
 };
 
 export type TeachingAssignmentInfo = {
