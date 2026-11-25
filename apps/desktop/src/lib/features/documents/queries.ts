@@ -1,6 +1,7 @@
 import {
   createQuery,
   createInfiniteQuery,
+  type InfiniteData,
   createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
@@ -229,7 +230,7 @@ export function useDocuments(
   return createInfiniteQuery<
     DocumentPageResult,
     Error,
-    DocumentPageResult,
+    InfiniteData<DocumentPageResult>,
     readonly unknown[],
     string | undefined
   >(() => {

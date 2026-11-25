@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { onMount } from "svelte";
+import { createQuery } from "@tanstack/svelte-query";
+import { createPeriodsQuery } from "$lib/features/academics/queries";
 import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
@@ -22,102 +23,75 @@ let {
   isEditing?: boolean;
 } = $props();
 
-let summary = $state<any>(null);
-let isLoading = $state(true);
+const recordsQuery = createQuery(() => ({
+  queryKey: ["behavior-summary-records", orgId],
+  queryFn: () => api.listAllBehavior(),
+  enabled: !!orgId,
+}));
+const periodsQuery = createPeriodsQuery(() => orgId);
+const enrollmentQuery = createQuery(() => {
+  const classId = selectedClass;
+  const termId = selectedTerm;
+  return {
+    queryKey: ["behavior-summary-enrollment", orgId, classId, termId],
+    enabled: !!orgId && (classId !== "all" || termId !== "all"),
+    queryFn: async () => {
+      const students = new Set<string>();
+      const enrollmentIds = new Set<string>();
+      const pageSize = 100;
+      for (let page = 1; ; page++) {
+        const batch = await api.listEnrollments({
+          class_id: classId === "all" ? undefined : classId,
+          period_id: termId === "all" ? undefined : termId,
+          page,
+          page_size: pageSize,
+        });
+        const previousSize = enrollmentIds.size;
+        for (const enrollment of batch) {
+          enrollmentIds.add(enrollment.id);
+          students.add(enrollment.student_id);
+        }
+        // Local clients may return the full list without applying pagination.
+        if (batch.length < pageSize || enrollmentIds.size === previousSize) return students;
+      }
+    },
+  };
+});
 
-// Interactive Hover State
+const isLoading = $derived(recordsQuery.isLoading || periodsQuery.isLoading || enrollmentQuery.isLoading);
+const failed = $derived(recordsQuery.isError || periodsQuery.isError || enrollmentQuery.isError);
 let hoveredIndex = $state<number | null>(null);
 
-async function loadData() {
-  isLoading = true;
-  try {
-    // Query stats to extract behavior details
-    const res = await api.getDashboard();
-    if (
-      res &&
-      res.behavior_summary &&
-      ((res.behavior_summary as any).critical_count ||
-        (res.behavior_summary as any).major_count ||
-        (res.behavior_summary as any).minor_count)
-    ) {
-      summary = res.behavior_summary as any;
-    } else {
-      summary = null;
-    }
-  } catch (e) {
-    console.error("Error loading behavior reports:", e);
-    summary = null;
-  } finally {
-    isLoading = false;
+const summary = $derived.by(() => {
+  if (failed) return null;
+  const selectedPeriod = periodsQuery.data?.find((item) => item.id === selectedTerm);
+  if (selectedTerm !== "all" && !selectedPeriod) return null;
+  const cutoff = new Date();
+  if (period === "3-months" || period === "6-months") {
+    cutoff.setMonth(cutoff.getMonth() - (period === "3-months" ? 3 : 6));
+  } else {
+    cutoff.setMonth(0, 1);
   }
-}
-
-$effect(() => {
-  if (orgId || selectedClass || selectedTerm || period) {
-    loadData();
-  }
+  cutoff.setHours(0, 0, 0, 0);
+  const lowerBound = period === "all" ? -Infinity : cutoff.getTime();
+  const termStart = selectedPeriod ? Date.parse(selectedPeriod.start_date) : -Infinity;
+  const termEnd = selectedPeriod ? new Date(selectedPeriod.end_date).setHours(23, 59, 59, 999) : Infinity;
+  const scoped = selectedClass !== "all" || selectedTerm !== "all";
+  const records = (recordsQuery.data ?? []).filter((record) => {
+    const date = Date.parse(record.created_at);
+    return (!scoped || enrollmentQuery.data?.has(record.student_id)) &&
+      date >= Math.max(lowerBound, termStart) && date <= termEnd;
+  });
+  const positive = records.filter((record) => record.record_type === "positive").length;
+  const negative = records.filter((record) => record.record_type === "negative").length;
+  return records.length ? { total_records: records.length, positive, negative, other: records.length - positive - negative } : null;
 });
 
-const listItems = $derived.by(() => {
-  if (!summary) return [];
-  const critical = summary.critical_count ?? 0;
-  const major = summary.major_count ?? 0;
-  const minor = summary.minor_count ?? 0;
-  const total = critical + major + minor || 1;
-
-  return [
-    {
-      name: "critical",
-      label: m.common_override_risk_critical(),
-      value: critical,
-      percent: Math.round((critical / total) * 100),
-      color: "bg-destructive",
-    },
-    {
-      name: "major",
-      label: m.reports_behavior_major(),
-      value: major,
-      percent: Math.round((major / total) * 100),
-      color: "bg-orange-500",
-    },
-    {
-      name: "minor",
-      label: m.reports_behavior_minor(),
-      value: minor,
-      percent: Math.round((minor / total) * 100),
-      color: "bg-primary",
-    },
-  ];
-});
-
-// Determine display items list (uses placeholders when empty)
-const displayItems = $derived(
-  summary && listItems.length > 0
-    ? listItems
-    : [
-        {
-          name: "critical",
-          label: m.common_override_risk_critical(),
-          value: 0,
-          percent: 0,
-          color: "bg-destructive",
-        },
-        {
-          name: "major",
-          label: m.reports_behavior_major(),
-          value: 0,
-          percent: 0,
-          color: "bg-orange-500",
-        },
-        {
-          name: "minor",
-          label: m.reports_behavior_minor(),
-          value: 0,
-          percent: 0,
-          color: "bg-primary",
-        },
-      ],
-);
+const displayItems = $derived([
+  { name: "positive", label: m.academics_behavior_type_positive(), value: summary?.positive ?? 0, color: "bg-primary" },
+  { name: "negative", label: m.academics_behavior_type_negative(), value: summary?.negative ?? 0, color: "bg-destructive" },
+  { name: "other", label: m.common_rooms_type_other(), value: summary?.other ?? 0, color: "bg-muted-foreground" },
+].map((item) => ({ ...item, percent: Math.round(item.value * 100 / (summary?.total_records || 1)) })));
 </script>
 
 <div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm">
@@ -135,7 +109,7 @@ const displayItems = $derived(
       </div>
       <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
         <span class="h-1.5 w-1.5 rounded-full bg-rose-500 {summary ? 'animate-pulse' : ''}"></span>
-        {m.reports_behavior_severity_title()} {#if summary}• Total: <span class="text-foreground font-mono">{summary.total_records}</span>{/if}
+        {m.academics_behavior_records_title()} {#if summary}• Total: <span class="text-foreground font-mono">{summary.total_records}</span>{/if}
       </div>
     </div>
 
@@ -151,7 +125,7 @@ const displayItems = $derived(
         >
           <!-- Category Label -->
           <span class="w-[60px] font-bold text-muted-foreground text-start lowercase tracking-tight select-none">
-            {item.name}
+            {item.label}
           </span>
 
           <!-- Progress Bar Bar (Tactile Sunken Track) -->
@@ -175,9 +149,9 @@ const displayItems = $derived(
       <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
       {#if !summary}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">{m.reports_behavior_empty_title()}</span>
+          <span class="font-bold text-xs text-foreground/90">{failed ? m.common_action_failed() : m.academics_behavior_empty_title()}</span>
           <span class="text-[9px] text-muted-foreground max-w-[280px] leading-relaxed">
-            {m.reports_behavior_empty_desc()}
+            {failed ? "" : m.academics_behavior_empty_desc()}
           </span>
         </div>
       {/if}

@@ -181,12 +181,12 @@ const classHeaderActions = $derived<SplitActionItem[]>([
               size="sm"
             />
           </div>
-          {#if classData.grade_level}
+          {#if classData.level}
             <Badge
               variant="outline"
               class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
             >
-              {classData.grade_level}
+              {classData.level}
             </Badge>
           {/if}
         {/if}

@@ -94,8 +94,8 @@ function handleSendToBack() {
 
 function handleSetAsBackground() {
   if (!selectedNode || selectedNode.type !== "Image") return;
-  const { src, fallbackSrc, assetRef } = selectedNode.props;
-  const source = src && !src.startsWith("{{") ? src : fallbackSrc || src || "";
+  const { src, assetRef } = selectedNode.props;
+  const source = src && !src.startsWith("{{") ? src : src || "";
   store.setPageBackground(assetRef, source, selectedNode.id);
   onclose();
 }
@@ -149,7 +149,7 @@ function handleSelectAll() {
         <span class="context-menu-shortcut">Ctrl+D</span>
       </button>
 
-      {#if selectedNode?.type === "Image" && (selectedNode.props.assetRef || selectedNode.props.src || selectedNode.props.fallbackSrc)}
+      {#if selectedNode?.type === "Image" && (selectedNode.props.assetRef || selectedNode.props.src)}
         <button type="button" class="context-menu-item" onclick={handleSetAsBackground}>
           <Photo size={12} />
           <span>{m.template_set_as_background()}</span>

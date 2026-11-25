@@ -1,9 +1,9 @@
 //! Exam routes — Sessions, Schedules, Seating, Secrets, Proctors.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post},
-    Json, Router,
 };
 use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};

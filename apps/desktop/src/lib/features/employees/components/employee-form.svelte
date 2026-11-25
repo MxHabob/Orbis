@@ -48,7 +48,7 @@ import { z } from "zod";
 
 interface Props {
   orgId: string;
-  mode?: "create" | "edit";
+  mode?: "create" | "edit" | "preview";
   employee?: EmployeeDetailDto | null;
   onSuccess?: (emp: EmployeeDetailDto) => void;
   onCancel?: () => void;
@@ -232,6 +232,7 @@ const isSaving = $derived(
 );
 
 async function handleSubmit() {
+  if (mode === "preview") return;
   const submitted = await form.submit(async () => {
     const { fullNameAr, fullNameEn } = form.values;
     const namePartsAr = splitPersonName(fullNameAr || fullNameEn, "موظف");
@@ -469,7 +470,7 @@ function handleCancelClick() {
             kind="person-name"
             requestSuggestion={suggestLocalTranslation}
             arRequired
-            disabled={isSaving}
+            disabled={isSaving || mode === "preview"}
             loadingMessage={m.bilingual_entry_loading()}
             failureMessage={m.bilingual_entry_failure()}
           />
@@ -483,7 +484,7 @@ function handleCancelClick() {
                 placeholder="10XXXXXXXX"
                 class="text-xs font-mono h-9"
                 bind:value={nationalId}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -495,14 +496,14 @@ function handleCancelClick() {
                 placeholder="A1234567"
                 class="text-xs font-mono h-9"
                 bind:value={passportNumber}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
 
             <FormField label={m.employees_gender()}>
               {#snippet children()}
-              <Select type="single" value={gender} onValueChange={(v) => { if (v) gender = v; }} disabled={isSaving}>
+              <Select type="single" value={gender} onValueChange={(v) => { if (v) gender = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {gender === "male" ? (m.employees_gender_male()) : (m.employees_gender_female())}
                 </SelectTrigger>
@@ -516,7 +517,7 @@ function handleCancelClick() {
 
             <FormField label={m.employees_marital_status()}>
               {#snippet children()}
-              <Select type="single" value={maritalStatus} onValueChange={(v) => { if (v) maritalStatus = v; }} disabled={isSaving}>
+              <Select type="single" value={maritalStatus} onValueChange={(v) => { if (v) maritalStatus = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {maritalStatus === "single" ? m.employees_marital_status_single() :
                    maritalStatus === "married" ? m.employees_marital_status_married() :
@@ -541,7 +542,7 @@ function handleCancelClick() {
                 type="date"
                 class="text-xs font-mono h-9"
                 bind:value={birthDate}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -556,7 +557,7 @@ function handleCancelClick() {
                 placeholder="+966 5X XXX XXXX"
                 class="text-xs font-mono h-9"
                 bind:value={phone}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -568,20 +569,20 @@ function handleCancelClick() {
                 placeholder="employee@school.edu.sa"
                 class="text-xs font-mono h-9"
                 bind:value={email}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
 
             <FormField label={m.employees_nationality()}>
               {#snippet children()}
-              <NationalitySelect bind:value={nationality} disabled={isSaving} />
+              <NationalitySelect bind:value={nationality} disabled={isSaving || mode === "preview"} />
               {/snippet}
             </FormField>
 
             <FormField label={m.employees_blood_type()}>
               {#snippet children()}
-              <Select type="single" value={bloodType} onValueChange={(v) => { if (v) bloodType = v; }} disabled={isSaving}>
+              <Select type="single" value={bloodType} onValueChange={(v) => { if (v) bloodType = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {bloodType || "—"}
                 </SelectTrigger>
@@ -608,7 +609,7 @@ function handleCancelClick() {
               placeholder={m.operations_ui_employee_address_example()}
               class="text-xs h-9"
               bind:value={address}
-              disabled={isSaving}
+              disabled={isSaving || mode === "preview"}
             />
             {/snippet}
           </FormField>
@@ -648,7 +649,7 @@ function handleCancelClick() {
                 placeholder="EMP-00123"
                 class="text-xs font-mono h-9"
                 bind:value={employeeNumber}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -660,7 +661,7 @@ function handleCancelClick() {
                 placeholder={m.operations_ui_employee_job_title_example()}
                 class="text-xs h-9"
                 bind:value={jobTitle}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -674,14 +675,14 @@ function handleCancelClick() {
                 placeholder={m.operations_ui_employee_department_example()}
                 class="text-xs h-9"
                 bind:value={department}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
 
             <FormField label={m.employees_type()}>
               {#snippet children()}
-              <Select type="single" value={employeeType} onValueChange={(v) => { if (isEmployeeType(v)) employeeType = v; }} disabled={isSaving}>
+              <Select type="single" value={employeeType} onValueChange={(v) => { if (isEmployeeType(v)) employeeType = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {employeeType === "teacher" ? (m.employees_type_teacher()) :
                    employeeType === "admin" ? (m.employees_type_admin()) :
@@ -701,7 +702,7 @@ function handleCancelClick() {
           <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_employment_type()}>
               {#snippet children()}
-              <Select type="single" value={employmentType} onValueChange={(v) => { if (isEmploymentType(v)) employmentType = v; }} disabled={isSaving}>
+              <Select type="single" value={employmentType} onValueChange={(v) => { if (isEmploymentType(v)) employmentType = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {employmentType === "full_time" ? (m.employees_contract_fulltime()) :
                    employmentType === "part_time" ? (m.employees_contract_parttime()) :
@@ -721,7 +722,7 @@ function handleCancelClick() {
 
             <FormField label={m.employees_work_shift()}>
               {#snippet children()}
-              <Select type="single" value={workShift} onValueChange={(v) => { if (isWorkShift(v)) workShift = v; }} disabled={isSaving}>
+              <Select type="single" value={workShift} onValueChange={(v) => { if (isWorkShift(v)) workShift = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {workShift === "morning" ? (m.employees_shift_morning()) :
                    workShift === "evening" ? (m.employees_shift_evening()) : (m.employees_shift_flexible())}
@@ -741,14 +742,14 @@ function handleCancelClick() {
                 type="date"
                 class="text-xs font-mono h-9"
                 bind:value={hireDate}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
 
             <FormField label={m.common_word_status()}>
               {#snippet children()}
-              <Select type="single" value={status} onValueChange={(v) => { if (v) status = v; }} disabled={isSaving}>
+              <Select type="single" value={status} onValueChange={(v) => { if (v) status = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {status === "active" ? (m.employees_status_active()) :
                    status === "suspended" ? (m.employees_status_suspended()) : (m.employees_status_terminated())}
@@ -787,7 +788,7 @@ function handleCancelClick() {
                 placeholder="0.00"
                 class="text-xs font-mono h-9"
                 bind:value={basicSalary}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -801,7 +802,7 @@ function handleCancelClick() {
                 placeholder="0.00"
                 class="text-xs font-mono h-9"
                 bind:value={housingAllowance}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -815,7 +816,7 @@ function handleCancelClick() {
                 placeholder="0.00"
                 class="text-xs font-mono h-9"
                 bind:value={transportAllowance}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -829,7 +830,7 @@ function handleCancelClick() {
                 placeholder="0.00"
                 class="text-xs font-mono h-9"
                 bind:value={otherAllowances}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -846,7 +847,7 @@ function handleCancelClick() {
                 placeholder="0.00"
                 class="text-xs font-mono h-9 text-rose-500"
                 bind:value={gosiDeduction}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -860,7 +861,7 @@ function handleCancelClick() {
                 placeholder="0.00"
                 class="text-xs font-mono h-9 text-rose-500"
                 bind:value={otherDeductions}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -886,7 +887,7 @@ function handleCancelClick() {
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <FormField label={m.ui_copy_payment_method_f140647a()}>
               {#snippet children()}
-              <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) paymentMethod = v; }} disabled={isSaving}>
+              <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) paymentMethod = v; }} disabled={isSaving || mode === "preview"}>
                 <SelectTrigger class="text-xs h-9">
                   {paymentMethod === "bank_transfer" ? m.finance_pos_bank_transfer() :
                    paymentMethod === "cheque" ? m.ui_copy_cheque_4f37d4c3() : m.ui_copy_cash_ec480ad1()}
@@ -907,7 +908,7 @@ function handleCancelClick() {
                 placeholder={m.ui_copy_e_g_al_rajhi_bank_5c1a77cc()}
                 class="text-xs h-9"
                 bind:value={bankName}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -919,7 +920,7 @@ function handleCancelClick() {
                 placeholder="SA0000000000000000000000"
                 class="text-xs font-mono h-9 uppercase"
                 bind:value={bankIban}
-                disabled={isSaving}
+                disabled={isSaving || mode === "preview"}
               />
               {/snippet}
             </FormField>
@@ -933,7 +934,7 @@ function handleCancelClick() {
               placeholder={m.employees_notes_placeholder()}
               class="text-xs resize-none"
               bind:value={textNotes}
-              disabled={isSaving}
+              disabled={isSaving || mode === "preview"}
             />
             {/snippet}
           </FormField>
@@ -955,6 +956,7 @@ function handleCancelClick() {
     >
       {m.common_action_cancel()}
     </Button>
+    {#if mode !== "preview"}
     <Button
       type="submit"
       disabled={isSaving}
@@ -966,5 +968,6 @@ function handleCancelClick() {
         {m.common_action_save()}
       {/if}
     </Button>
+    {/if}
   </div>
 </form>

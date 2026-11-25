@@ -244,7 +244,7 @@ async function executeChatStream(
             academicContext.selectedPeriodId ||
             undefined,
           class_id:
-            aiContext.context.class_id ||
+            aiContext.context.section_id ||
             academicContext.selectedClassId ||
             undefined,
           subject_id:
@@ -612,7 +612,7 @@ async function downloadActionReport(action: ActionWithStatus) {
       html: "text/html;charset=utf-8",
     };
     const url = URL.createObjectURL(
-      new Blob([bytes], {
+      new Blob([new Uint8Array(bytes)], {
         type: mimeTypes[format] || "application/octet-stream",
       }),
     );

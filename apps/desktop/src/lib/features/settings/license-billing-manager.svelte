@@ -323,7 +323,7 @@ const statusBadge = $derived.by(() => {
           <LicensePlanCard
             planCode={licenseStore.isTrial ? "trial" : licenseStore.plan ?? licenseStore.planName ?? licenseStore.edition ?? ""}
             planLabel={planDisplay}
-            statusLabel={statusBadge.label}
+
             validUntil={licenseStore.validUntil}
           />
           <dl class="flex min-w-0 flex-col">

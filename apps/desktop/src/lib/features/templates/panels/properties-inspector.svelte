@@ -774,7 +774,7 @@ function applyYemeniCertificateColumnsPreset() {
               oninput={(e) => updateProp("content", (e.target as HTMLTextAreaElement).value)}
               rows={4}
               class="text-xs font-mono"
-              placeholder={m.template_inspector_text_expression_placeholder()}
+              placeholder={m.template_inspector_text_expression_placeholder({ "{student_name": "{{student_name" })}
             />
 
             <div class="grid grid-cols-2 gap-2 text-xs">

@@ -27,7 +27,6 @@ import RelatedActions, {
 import type { Snippet } from "svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import { createUserQuery } from "$lib/features/settings/queries";
 
@@ -82,34 +81,6 @@ async function handleGenerateTempPassword() {
   }
 }
 
-// Reset password modal (manual input)
-let showResetModal = $state(false);
-let newPassword = $state("");
-let confirmPassword = $state("");
-let isResettingPassword = $state(false);
-
-async function handleResetPassword(e: Event) {
-  e.preventDefault();
-  if (newPassword !== confirmPassword) {
-    toast.error(m.settings_user_detail_reset_mismatch());
-    return;
-  }
-  if (!userId) return;
-  isResettingPassword = true;
-  try {
-    await api.updateUser(userId as string, {
-      new_password: newPassword,
-    });
-    toast.success(m.settings_user_detail_reset_success());
-    showResetModal = false;
-    newPassword = "";
-    confirmPassword = "";
-  } catch (e: unknown) {
-    toast.error((e as any)?.message || m.shared_ui_action_failed());
-  } finally {
-    isResettingPassword = false;
-  }
-}
 
 async function handleDeleteUser() {
   if (!userId) return;
@@ -167,7 +138,7 @@ const relatedActionGroups = $derived<ActionGroup[]>(
             {
               id: "reset_password",
               label: m.settings_user_detail_btn_reset_pass(),
-              onclick: () => (showResetModal = true),
+              onclick: handleGenerateTempPassword,
             },
             {
               id: "active_sessions",
@@ -254,7 +225,7 @@ const relatedFooterActions = $derived<FooterAction[]>(
       <Button
         variant="outline"
         size="sm"
-        onclick={() => (showResetModal = true)}
+        onclick={handleGenerateTempPassword}
       >
         {m.settings_user_detail_btn_reset_pass()}
       </Button>
@@ -284,7 +255,7 @@ const relatedFooterActions = $derived<FooterAction[]>(
           <div class="w-full flex justify-start">
             <AvatarUpload
               {avatarUrl}
-              bind:file={userAvatarDrafts[userId]}
+              bind:file={userAvatarDrafts[userId ?? ""]}
               deferred
               entityType="user"
               entityId={String(userId)}
@@ -338,7 +309,6 @@ const relatedFooterActions = $derived<FooterAction[]>(
   </div>
 </div>
 
-<UserResetPasswordDialog bind:open={showResetModal} fullName={fullName} bind:newPassword bind:confirmPassword isResettingPassword={isResettingPassword} onsubmit={handleResetPassword} oncancel={() => { showResetModal = false; newPassword = ""; confirmPassword = ""; }} />
 
 <CredentialDeliveryModal
   bind:open={credentialModalOpen}

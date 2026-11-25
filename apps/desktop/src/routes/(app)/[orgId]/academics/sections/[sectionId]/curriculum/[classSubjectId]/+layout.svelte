@@ -67,7 +67,7 @@ const users = $derived(usersQuery.data ?? []);
 const teacherDisplayName = $derived.by(() => {
   if (!subjectInfo) return "";
   if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
-  const tid = subjectInfo.primary_teacher_id;
+  const tid = subjectInfo.instructor_id;
   if (!tid) return m.common_unassigned();
   const foundUser = users.find((u: UserDto) => String(u.id) === String(tid));
   if (foundUser) {

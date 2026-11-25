@@ -597,9 +597,11 @@ mod tests {
             .collect();
         records.push(records[0].clone());
 
-        assert!(SeatingNumberRepository::insert_bulk(&repo, &records)
-            .await
-            .is_err());
+        assert!(
+            SeatingNumberRepository::insert_bulk(&repo, &records)
+                .await
+                .is_err()
+        );
         assert_eq!(
             SeatingNumberEntity::find().count(&repo.db).await.unwrap(),
             0

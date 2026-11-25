@@ -364,7 +364,7 @@ async function handleRoleSaved() {
           source={gridSource}
           onaction={handleGridAction}
           loading={isLoading}
-          class="h-full border-0"
+
         />
       </div>
     {/if}

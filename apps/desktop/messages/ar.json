@@ -3390,6 +3390,7 @@
   "settings_entitlement_features_title": "الميزات المفعلة",
   "settings_entitlement_max_allowed": "الحد الأقصى المسموح به",
   "settings_entitlement_plan": "خطة الترخيص",
+  "settings_desktop_policy_read_only": "لا يتيح الخادم تعديل هذه السياسة من التطبيق.",
   "settings_entitlement_plan_unavailable": "لم تُحدّد خطة",
   "settings_entitlement_students": "الطلاب",
   "settings_entitlement_title": "حدود الترخيص والاستحقاق",

@@ -55,8 +55,8 @@ const defaultTimeRange = uiStore.getTimeSlotRangePreference(preferenceScope());
 
 const form = new FormController({
   initialValues: {
-    period_id: periodId || "",
-    slot_number: nextSlotNumber || 1,
+    period_id: untrack(() => periodId || ""),
+    slot_number: untrack(() => nextSlotNumber || 1),
     name: "",
     name_ar: untrack(() =>
       m.academics_schedule_placeholder_period({ number: nextSlotNumber || 1 }),

@@ -435,7 +435,7 @@ async function handleSaveAll() {
         const score = row[`exam_${key}`];
         if (score !== null && score !== undefined && score !== "") {
           const meta = row[`__meta_exam_${key}`] as
-            | { max_score: number; component_id?: string | null }
+            | { max_score: number; component_code?: string | null; component_id?: string | null }
             | undefined;
           // Read max_score from the scheme component, fall back to meta or legacy defaults
           const compConfig = schemeComponents.find((c) => c.code === key);

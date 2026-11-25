@@ -242,7 +242,6 @@ async function handleCreateDiscount() {
       name_ar: discountNameAr.trim() || undefined,
       discount_type: discountType,
       value: String(discountValue),
-      is_active: true,
     });
 
     discountTemplates = [...discountTemplates, created];

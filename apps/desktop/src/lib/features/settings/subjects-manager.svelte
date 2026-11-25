@@ -56,7 +56,7 @@ const gridSource = $derived(
     name: l(s.name_ar, s.name) || s.name || s.name_ar || "—",
     name_en: s.name || "—",
     code: s.code || "—",
-    credit_hours: s.credit_hours ?? s.periods_per_week ?? 3,
+    credit_hours: s.credit_hours ?? 3,
     sort_order: s.sort_order ?? i + 1,
     status: s.is_active !== false ? "active" : "inactive",
     created_at_display: s.created_at

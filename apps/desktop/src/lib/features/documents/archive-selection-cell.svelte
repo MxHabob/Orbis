@@ -1,13 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Checkbox } from "@orbis/ui/checkbox";
-import type { GridRow, OrbisColumnDef } from "@orbis/svelte-grid";
 
-let { row }: { row: GridRow; column: OrbisColumnDef } = $props();
+let { row }: Record<string, unknown> = $props();
+const record = $derived(row && typeof row === "object" ? row as Record<string, unknown> : {});
 
-const id = $derived(String(row.id ?? ""));
-const name = $derived(String(row.name ?? ""));
-const selected = $derived(row.selected === true);
+const id = $derived(String(record.id ?? ""));
+const name = $derived(String(record.name ?? ""));
+const selected = $derived(record.selected === true);
 
 function isToggleHandler(
   value: unknown,
@@ -19,8 +19,8 @@ function isToggleHandler(
 <Checkbox
   checked={selected}
   onCheckedChange={(value) => {
-    if (isToggleHandler(row.toggleSelection)) {
-      row.toggleSelection(id, value === true);
+    if (isToggleHandler(record.toggleSelection)) {
+      record.toggleSelection(id, value === true);
     }
   }}
   aria-label={m.operations_ui_document_select({ name })} />

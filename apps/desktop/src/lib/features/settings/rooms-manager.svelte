@@ -88,7 +88,7 @@ const gridSource = $derived(
       exam_committee: r.is_exam_hall
         ? m.common_rooms_exam_committee()
         : m.common_rooms_general_room(),
-      status: r.is_active !== false ? "active" : "inactive",
+      status: "active",
       created_at_display: r.created_at
         ? formatDate(r.created_at, "datetime")
         : "—",
@@ -222,24 +222,23 @@ function openCreateSheet() {
   isSheetOpen = true;
 }
 
-function promptDelete(room: RoomDto) {
-  confirmStore.open({
+async function promptDelete(room: RoomDto) {
+  const confirmed = await confirmStore.prompt({
     title: m.ui_copy_delete_room_b9cc731b(),
-    message: m.ui_room_delete_confirmation({
+    description: m.ui_room_delete_confirmation({
       roomName: room.name_ar || room.name,
     }),
-    confirmLabel: m.common_action_delete(),
+    confirmText: m.common_action_delete(),
     variant: "destructive",
-    onConfirm: async () => {
-      try {
-        await api.deleteRoom(room.id);
-        toast.success(m.ui_copy_room_deleted_successfully_6298d43a());
-        loadRooms();
-      } catch (err) {
-        toast.error(extractErrorMessage(err));
-      }
-    },
   });
+  if (!confirmed) return;
+  try {
+    await api.deleteRoom(room.id);
+    toast.success(m.ui_copy_room_deleted_successfully_6298d43a());
+    await loadRooms();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
 }
 
 function handleGridAction(event: GridActionEvent) {

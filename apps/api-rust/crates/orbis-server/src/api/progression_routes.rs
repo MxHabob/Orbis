@@ -1,9 +1,9 @@
 //! Progression routes — Student Cohort Progression & Promotion.
 
 use axum::{
+    Json, Router,
     extract::{Path, State},
     routing::{get, post},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

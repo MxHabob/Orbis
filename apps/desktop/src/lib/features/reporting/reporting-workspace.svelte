@@ -52,7 +52,7 @@ import {
   createClassesQuery,
 } from "$lib/features/academics/queries";
 
-let { orgId }: { orgId: string } = $props();
+let { orgId, reportId }: { orgId: string; reportId?: string } = $props();
 
 let activeMainTab = $state<"reports" | "analytics">("reports");
 let selectedCategory = $state<string>("all");
@@ -65,7 +65,7 @@ const periodsQuery = createPeriodsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 const generateMutation = createGenerateReportMutation();
 
-const reportDefinitions = $derived(defsQuery.data ?? []);
+const reportDefinitions = $derived((defsQuery.data ?? []).filter((report) => !reportId || report.id === reportId || report.code === reportId));
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const isLoading = $derived(
@@ -323,7 +323,7 @@ async function handlePreviewReport(jobId: string) {
       : selectedFormat === "PDF" || selectedFormat === "HTML"
         ? "text/html;charset=utf-8"
         : "application/octet-stream";
-    const blob = new Blob([bytes], { type: mime });
+    const blob = new Blob([new Uint8Array(bytes)], { type: mime });
     if (previewBlobUrl) {
       URL.revokeObjectURL(previewBlobUrl);
     }

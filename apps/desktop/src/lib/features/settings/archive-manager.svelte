@@ -95,7 +95,7 @@ const curriculumFoldersQuery = useCurriculumFolders();
 
 // 4. Documents query (if root or general)
 const rootDocumentsQuery = useDocuments(() =>
-  isRoot ? undefined : { entityId: folderId || undefined },
+  isRoot ? {} : { entityId: folderId || undefined },
 );
 
 // Active Data Derivatives
@@ -234,7 +234,7 @@ const documentColumns = $derived<OrbisColumnDef[]>([
           id: "archive",
           icon: "ArchiveBox",
           label: m.operations_ui_archive(),
-          visible: (row) => row.is_archived !== true,
+          visible: (row: Record<string, unknown>) => row.is_archived !== true,
         },
         {
           id: "delete",
@@ -357,7 +357,7 @@ const archiveMenuActions = $derived([
     id: "new-folder",
     label: m.settings_ui_archive_new_folder(),
     icon: NewFolderAlt,
-    onSelect: () => (isCreateFolderModalOpen = true),
+    onSelect: () => { isCreateFolderModalOpen = true; },
   },
   {
     id: "trash",

@@ -5,6 +5,7 @@
   Performance-optimized with static module-level Intl instance caching and O(1) preset lookups.
 -->
 <script lang="ts">
+import { untrack } from "svelte";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
@@ -126,14 +127,15 @@ function getPresetItemsData() {
 const { items: presetItems, map: presetMap } = getPresetItemsData();
 
 // Form State
-let code = $state(currency?.code ?? "");
-let name = $state(currency?.name ?? "");
-let nameAr = $state(currency?.name_ar ?? "");
-let symbol = $state(currency?.symbol ?? "");
-let symbolPosition = $state(currency?.symbol_position ?? "after");
-let decimalPlaces = $state(currency?.decimal_places ?? 2);
-let exchangeRate = $state(Number(currency?.exchange_rate ?? 1));
-let isBase = $state(currency?.is_base === true || currency?.is_base === 1);
+const initialCurrency = untrack(() => currency);
+let code = $state(initialCurrency?.code ?? "");
+let name = $state(initialCurrency?.name ?? "");
+let nameAr = $state(initialCurrency?.name_ar ?? "");
+let symbol = $state(initialCurrency?.symbol ?? "");
+let symbolPosition = $state(initialCurrency?.symbol_position ?? "after");
+let decimalPlaces = $state(initialCurrency?.decimal_places ?? 2);
+let exchangeRate = $state(Number(initialCurrency?.exchange_rate ?? 1));
+let isBase = $state(initialCurrency?.is_base === true || initialCurrency?.is_base === 1);
 const form = new FormController({
   initialValues: {
     code: "",

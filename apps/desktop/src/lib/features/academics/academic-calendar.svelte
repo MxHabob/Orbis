@@ -451,14 +451,14 @@ const relatedActionGroups = $derived<ActionGroup[]>([
                       <div class="relative w-full h-4 rounded bg-muted/20 overflow-hidden">
                         {#each children as child (child.id)}
                           {@const childPos = calculateTimelinePosition(child.start_date, child.end_date)}
-                          <div
+                          <button type="button"
                             class="absolute top-0 bottom-0 rounded transition-all flex items-center px-1 text-[8px] font-medium truncate bg-secondary/80 text-secondary-foreground border border-border/50 hover:z-10 cursor-pointer"
                             style="left: {childPos.left}%; width: {childPos.width}%;"
                             title="{child.name_ar || child.name} ({formatDate(child.start_date)} - {formatDate(child.end_date)})"
                             onclick={() => openEditPeriod(child)}
                           >
                             <span class="truncate">{child.name_ar || child.name}</span>
-                          </div>
+                          </button>
                         {/each}
                       </div>
                     </div>

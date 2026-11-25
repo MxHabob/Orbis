@@ -327,7 +327,7 @@ const leafAccounts = $derived(
 const treasurySource = $derived(
   leafAccounts.map((account, i) => {
     const bal = Number(
-      account.balances?.[account.currency || baseCurrency] || 0,
+      (account.balances as Record<string, number | string> | null)?.[account.currency || baseCurrency] || 0,
     );
     return {
       ...account,
@@ -768,7 +768,7 @@ function exportAccountsCsv() {
 
                 <!-- Current Balance Display (if existing account) -->
                 {#if selectedAccount && !isAddingNew}
-                  {@const curBal = Number(selectedAccount.balances?.[formCurrency] || 0)}
+                  {@const curBal = Number((selectedAccount.balances as Record<string, number | string> | null)?.[formCurrency] || 0)}
                   <div class="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center justify-between">
                     <span class="text-xs font-bold text-foreground">{m.finance_ui_current_account_balance()}</span>
                     <span class="text-sm font-mono font-extrabold text-primary">

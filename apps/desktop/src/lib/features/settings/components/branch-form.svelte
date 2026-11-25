@@ -32,7 +32,7 @@ let {
 }: {
   orgId: string;
   branch?: OrgUnitDto | null;
-  onSuccess: () => void;
+  onSuccess: (unit: OrgUnitDto) => void;
   onCancel: () => void;
 } = $props();
 
@@ -71,13 +71,14 @@ async function handleSubmit(e: SubmitEvent) {
     const finalNameAr = nameAr.trim() || nameEn.trim();
     const finalNameEn = nameEn.trim() || nameAr.trim();
 
+    let saved: OrgUnitDto;
     if (isEdit && branch) {
-      await api.updateOrgUnit(branch.id, {
+      saved = await api.updateOrgUnit(branch.id, {
         name: finalNameEn,
         name_ar: finalNameAr,
         code: code.trim() || undefined,
         unit_type: "branch",
-        head_id: headId.trim() || undefined,
+        head_id: headId?.trim() || undefined,
         capacity: capacity ?? undefined,
         building: building.trim() || undefined,
         floor: floor ?? undefined,
@@ -87,12 +88,12 @@ async function handleSubmit(e: SubmitEvent) {
       });
       toast.success(m.ui_copy_branch_updated_successfully_b1250bdb());
     } else {
-      await api.createOrgUnit({
+      saved = await api.createOrgUnit({
         name: finalNameEn,
         name_ar: finalNameAr,
         code: code.trim() || undefined,
         unit_type: "branch",
-        head_id: headId.trim() || undefined,
+        head_id: headId?.trim() || undefined,
         capacity: capacity ?? undefined,
         building: building.trim() || undefined,
         floor: floor ?? undefined,
@@ -102,7 +103,7 @@ async function handleSubmit(e: SubmitEvent) {
       });
       toast.success(m.ui_copy_branch_created_successfully_7eab8b34());
     }
-    onSuccess();
+    onSuccess(saved);
   } catch (err) {
     toast.error(extractErrorMessage(err));
   } finally {

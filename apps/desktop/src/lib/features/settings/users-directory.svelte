@@ -119,7 +119,7 @@ const effectiveFilter = $derived.by<UniversalFilter>(() => {
   const conds = [...(activeFilter?.conditions || [])];
   if (selectedRole && selectedRole !== "all") {
     conds.push({
-      id: "role-filter",
+
       field: "role",
       operator: "eq",
       value: selectedRole,
@@ -266,9 +266,9 @@ async function handleAction(event: GridActionEvent) {
       title: m.settings_user_detail_btn_reset_pass(),
       description: l(
         m.settings_ui_user_reset_password_confirm({
-          user: user.full_name || user.email,
+          user: user.full_name || user.email || user.id,
         }),
-        `Are you sure you want to generate a new temporary password for ${user.full_name || user.email}?`,
+        `Are you sure you want to generate a new temporary password for ${user.full_name || user.email || user.id}?`,
       ),
       confirmText: m.settings_user_detail_btn_reset_pass(),
     });
@@ -276,7 +276,7 @@ async function handleAction(event: GridActionEvent) {
       try {
         const result = await api.resetUserPassword(user.id);
         activeProvisioningResult = result;
-        activeUserName = user.full_name || user.email;
+        activeUserName = user.full_name || user.email || user.id;
         credentialModalOpen = true;
         toast.success(m.employees_password_reset_success());
       } catch (e) {

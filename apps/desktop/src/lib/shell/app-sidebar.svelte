@@ -119,7 +119,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 		<div class="flex min-h-0 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden scrollbar-hide pb-1">
 			<OrgSidebarSwitcher
         {orgId}
-        orgName={orgNameDisplay}
+        orgName={orgNameDisplay ?? undefined}
         orgNameAr={orgNameArabic}
         primaryColor={orgPrimaryColor}
       />
@@ -159,7 +159,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<GitIntegrationPopover {orgId} />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />
-        <MoreActionsDropdown orgName={orgNameDisplay} />
+        <MoreActionsDropdown orgName={orgNameDisplay ?? undefined} />
 			</div>
 			<UserSidebarMenu {orgId} />
 		</div>

@@ -46,10 +46,8 @@ let unitCapacity = $state<number>(0);
 // Room Creation State
 let roomName = $state("");
 let roomNameAr = $state("");
-let roomNumber = $state("");
 let roomType = $state("classroom");
 let roomCapacity = $state<number>(0);
-let roomBuilding = $state("");
 let isExamHall = $state(false);
 
 const ROOM_TYPES = [
@@ -75,7 +73,7 @@ function applyBranchPreset() {
 }
 
 function applyRoomPreset() {
-  roomNumber = `R-${String(rooms.length + 101).padStart(3, "0")}`;
+  roomName = `R-${String(rooms.length + 101).padStart(3, "0")}`;
   roomType = "classroom";
   roomCapacity = 30;
 }
@@ -136,7 +134,7 @@ async function handleCreateUnit() {
 }
 
 async function handleCreateRoom() {
-  if (!roomNumber.trim()) {
+  if (!roomName.trim() && !roomNameAr.trim()) {
     toast.error(m.onboarding_step2_room_err_name());
     return;
   }
@@ -146,20 +144,16 @@ async function handleCreateRoom() {
 
   try {
     const newRoom = await api.createRoom({
-      name: roomName.trim() || roomNameAr.trim() || roomNumber.trim(),
+      name: roomName.trim() || roomNameAr.trim(),
       name_ar: roomNameAr.trim() || undefined,
-      room_number: roomNumber.trim(),
       room_type: roomType,
       is_exam_hall: isExamHall,
-      capacity: roomCapacity > 0 ? roomCapacity : undefined,
-      building: roomBuilding.trim() || undefined,
-      is_active: true,
+      capacity: Math.max(0, roomCapacity)
     });
 
     rooms = [...rooms, newRoom];
     roomName = "";
     roomNameAr = "";
-    roomNumber = "";
     roomCapacity = 0;
     isExamHall = false;
     await refreshOnboardingState(orgId, m.common_action_failed());
@@ -379,16 +373,6 @@ async function deleteRoom(room: RoomDto) {
           <div class="grid gap-3 sm:grid-cols-3">
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
-                {m.onboarding_step2_room_number()}
-              </Label>
-              <Input
-                bind:value={roomNumber}
-                placeholder="R-101"
-                class="font-mono text-xs"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
                 {m.onboarding_step2_room_type()}
               </Label>
               <Select type="single" bind:value={roomType}>
@@ -412,22 +396,13 @@ async function deleteRoom(room: RoomDto) {
                 placeholder="30"
               />
             </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_room_building()}
-              </Label>
-              <Input
-                bind:value={roomBuilding}
-                placeholder={m.onboarding_step2_room_building_placeholder()}
-              />
-            </div>
           </div>
 
           <div class="flex justify-end">
             <Button
               variant="default"
               size="sm"
-              disabled={isSubmittingRoom || !roomNumber.trim()}
+              disabled={isSubmittingRoom || (!roomName.trim() && !roomNameAr.trim())}
               onclick={handleCreateRoom}
               class="text-xs font-semibold"
             >
@@ -450,9 +425,9 @@ async function deleteRoom(room: RoomDto) {
                       🚪
                     </span>
                     <div>
-                      <div class="font-medium text-foreground">{room.name_ar || room.name || room.room_number}</div>
+                      <div class="font-medium text-foreground">{room.name_ar || room.name}</div>
                       <div class="text-[10px] text-muted-foreground capitalize">
-                        {room.room_type || "classroom"} {room.building ? `(${room.building})` : ""}
+                        {room.room_type || "classroom"}
                       </div>
                       {#if room.is_exam_hall}
                         <Badge variant="outline" class="mt-1 text-[9px]">
@@ -465,7 +440,7 @@ async function deleteRoom(room: RoomDto) {
                     <Badge variant="secondary" class="text-[10px]">
                       {room.capacity || 30} {m.onboarding_step2_seats_suffix()}
                     </Badge>
-                    <DeleteRecordButton label={room.name_ar || room.name || room.room_number} onDelete={() => deleteRoom(room)} />
+                    <DeleteRecordButton label={room.name_ar || room.name} onDelete={() => deleteRoom(room)} />
                   </div>
                 </div>
               {/each}

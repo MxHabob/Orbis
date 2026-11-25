@@ -3390,6 +3390,7 @@
   "settings_entitlement_features_title": "Enabled Features",
   "settings_entitlement_max_allowed": "Maximum allowed limit",
   "settings_entitlement_plan": "License Plan",
+  "settings_desktop_policy_read_only": "The server does not expose controls for editing this policy.",
   "settings_entitlement_plan_unavailable": "No plan assigned",
   "settings_entitlement_students": "Students",
   "settings_entitlement_title": "Licensing & Capacity Limits",

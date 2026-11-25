@@ -335,7 +335,7 @@ function conditionLabel(condition: string): string {
           </div>
           <div class="space-y-1.5">
             <Label class="text-xs font-medium">
-              {m.onboarding_step7_pattern_hint()}
+              {m.onboarding_step7_pattern_hint({ YEAR: "{YEAR}", "SEQ:5": "{SEQ:5}", STAGE: "{STAGE}", "SEQ:4": "{SEQ:4}" })}
             </Label>
             <Select
               type="single"

@@ -18,7 +18,7 @@ let { orgId }: { orgId: string } = $props();
 
 // Phase-aware actions — show different actions based on the current academic phase
 const ACTIONS = $derived.by(() => {
-  const phase = academicContext.periodPhase;
+  const period = academicContext.activePeriod;
   const ro = academicContext.isReadOnly;
   const canManageApprovals =
     effectiveContext.hasPermission("workflow:manage") ||
@@ -37,7 +37,7 @@ const ACTIONS = $derived.by(() => {
       label: m.common_action_enroll_student(),
       icon: UserPlus,
       href: `/${orgId}/students/new`,
-      show: !ro && (phase === "active" || phase === "pre_start"),
+      show: !ro && (!period || period.is_enrollment_open),
     },
     {
       label: m.common_action_record_payment(),
@@ -56,7 +56,7 @@ const ACTIONS = $derived.by(() => {
       label: m.common_control_label(),
       icon: UserBadgeCheck,
       href: `/${orgId}/academics/exams/control`,
-      show: phase === "grade_entry" || phase === "exams",
+      show: !!period && (period.is_grade_entry_open || period.period_kind === "examination"),
     },
     {
       label: m.common_action_view_reports(),

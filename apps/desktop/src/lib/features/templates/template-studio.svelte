@@ -703,7 +703,7 @@ onMount(() => {
           {store}
           isPropertiesVisible={isPropertiesOpen}
           ontoggleproperties={toggleProperties}
-          templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
+          templateName={templateRecord ? (l(templateRecord.name_ar, templateRecord.name) ?? undefined) : "..."}
           onback={goBack}
           onsave={saveTemplate}
           onpreview={generatePreview}

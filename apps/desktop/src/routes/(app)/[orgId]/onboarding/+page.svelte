@@ -178,7 +178,7 @@ async function handleNavigate(task: SetupTaskDto) {
   const step = findStepForTask(steps, task.id);
   if (!isTaskAccessible(steps, task.id)) return;
   await goto(
-    resolve(localizeHref(`/${orgId}/onboarding/${step.route}`) as Pathname),
+    resolve(localizeHref(`/${orgId}/onboarding/${step?.route ?? ""}`) as Pathname),
   );
 }
 

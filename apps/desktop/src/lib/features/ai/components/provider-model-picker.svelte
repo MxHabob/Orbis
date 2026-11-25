@@ -101,13 +101,14 @@ function getModelsForApp(app: OrbisApp): { label: string; value: string }[] {
 const connectedAiApps = $derived.by(() => {
   return connectedIntegrations.map((integration) => {
     const app = findAppForProvider(integration.provider_name);
-    const resolvedApp = app || {
+    const resolvedApp: OrbisApp = app || {
       id: integration.provider_name,
       name: integration.provider_name,
       name_ar: integration.provider_name,
       category: "ai-provider" as const,
       active: true,
       icon: "Sparkles",
+      description: "",
       short_description: "",
       settings: [],
       features: [],
@@ -277,7 +278,7 @@ async function handleSelectProviderAndModel(
         isEnabled: true,
       });
       toast.success(
-        m.ai_ui_provider_activated({ name: l(app.name_ar, app.name) }),
+        m.ai_ui_provider_activated({ name: (l(app.name_ar, app.name) ?? app.name) }),
       );
     } catch (e) {
       toast.error(extractErrorMessage(e));

@@ -75,19 +75,19 @@ function hydrate(value: OrganizationSettingsDto) {
     minimumAttendance: String(academic.min_attendance_rate ?? 75),
     rankingEnabled: academic.ranking_enabled ?? true,
     rankingScope: enumValue(
-      academic.ranking_scope,
+      typeof academic.ranking_scope === "string" ? academic.ranking_scope : undefined,
       ["class", "grade_level", "org_unit", "cohort"],
       "ranking scope",
       "class",
     ),
     tiePolicy: enumValue(
-      academic.tie_policy,
+      typeof academic.tie_policy === "string" ? academic.tie_policy : undefined,
       ["standard_competition", "dense", "fractional"],
       "tie policy",
       "standard_competition",
     ),
     roundingMode: enumValue(
-      academic.rounding_mode,
+      typeof academic.rounding_mode === "string" ? academic.rounding_mode : undefined,
       ["round_half_up", "round_up", "round_down", "truncate"],
       "rounding mode",
       "round_half_up",

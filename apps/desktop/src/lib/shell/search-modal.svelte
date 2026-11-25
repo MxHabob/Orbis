@@ -1158,7 +1158,7 @@ function askOrbisAboutSearch() {
     <SearchModalResults
       groups={groupedItems}
       selectedItemId={selectedItem?.id ?? null}
-      {isSearching}
+      isLoading={isSearching}
       error={searchError}
       showAskOrbis={showAskOrbisInEmptyState}
       onAskOrbis={askOrbisAboutSearch}

@@ -350,6 +350,6 @@ async function saveProfile() {
     {userId}
     userName={user?.full_name || fullName}
     assignedGroupIds={userAssignedGroupIds}
-    onsaved={() => groupsQuery.refetch()}
+    onsaved={async () => { await groupsQuery.refetch(); }}
   />
 {/if}

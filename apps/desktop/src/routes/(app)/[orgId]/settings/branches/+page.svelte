@@ -13,7 +13,7 @@ import * as m from "$lib/paraglide/messages";
 import {
   api,
   type OrgUnitDto,
-  type EmployeeDto,
+  type EmployeeDetailDto,
   extractErrorMessage,
 } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -61,7 +61,7 @@ let orgId = $derived((page.params.orgId as string) || "");
 
 // Data State
 let allUnits = $state<OrgUnitDto[]>([]);
-let employeesList = $state<EmployeeDto[]>([]);
+let employeesList = $state<EmployeeDetailDto[]>([]);
 let currentOrg = $state<any>(null);
 let isLoading = $state(true);
 let isRefreshing = $state(false);
@@ -77,13 +77,13 @@ let isolationFilter = $state<"all" | "shared" | "isolated" | "read_only">(
 let isBranchSheetOpen = $state(false);
 let editingBranch = $state<OrgUnitDto | null>(null);
 
-function formatEmployeeName(e?: EmployeeDto | null): string {
+function formatEmployeeName(e?: EmployeeDetailDto | null): string {
   if (!e) return m.common_unassigned();
   const ar = [e.first_name_ar, e.last_name_ar].filter(Boolean).join(" ");
   const en = [e.first_name, e.last_name].filter(Boolean).join(" ");
   const localized = l(ar, en);
   if (localized) return localized;
-  return e.full_name || e.name || e.employee_number || "—";
+  return e.full_name || e.display_name || e.employee_number || "—";
 }
 
 async function loadData() {
@@ -127,7 +127,7 @@ const branches = $derived(allUnits.filter((u) => u.unit_type === "branch"));
 
 // Read default branch ID from settings
 const defaultBranchId = $derived(() => {
-  const s = currentOrg?.settings;
+  const s = currentOrg?.metadata ?? currentOrg?.settings;
   const parsed =
     typeof s === "string"
       ? (() => {
@@ -150,7 +150,7 @@ const totalCapacity = $derived(
   branches.reduce((sum, b) => sum + (b.capacity || 0), 0),
 );
 const branchPolicyIsolation = $derived(() => {
-  const s = currentOrg?.settings;
+  const s = currentOrg?.metadata ?? currentOrg?.settings;
   const parsed =
     typeof s === "string"
       ? (() => {
@@ -399,7 +399,7 @@ async function promptDeleteBranch(branch: OrgUnitDto) {
 
 async function setDefaultBranch(branch: OrgUnitDto) {
   try {
-    const s = currentOrg?.settings;
+    const s = currentOrg?.metadata ?? currentOrg?.settings;
     const currentSettings =
       typeof s === "string"
         ? (() => {
@@ -414,7 +414,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       ...(currentSettings?.branch_policy || {}),
       default_branch_id: branch.id,
     };
-    await api.updateSettings({ branch_policy: updatedPolicy });
+    await api.updateCurrentOrg({ metadata: { ...(currentOrg?.metadata as Record<string, unknown> | null), branch_policy: updatedPolicy } });
     toast.success(
       m.ui_branch_set_default_success({
         branchName: branch.name_ar || branch.name,
@@ -576,7 +576,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       <OrbisGrid
         source={gridSource}
         {columns}
-        enableExport={true}
+
         onaction={handleGridAction}
       />
     </div>

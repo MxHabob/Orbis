@@ -4,6 +4,7 @@ Standard form for creating or editing an Academic Year.
 Uses FormController, BilingualNameFields, and shared UI components.
 -->
 <script lang="ts">
+import { z } from "zod";
 import { untrack } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
@@ -43,6 +44,7 @@ const defaultEndDate = `${currentYearNum + 1}-06-30`;
 const form = untrack(
   () =>
     new FormController({
+      schema: z.object({ name: z.string(), name_ar: z.string(), start_date: z.string(), end_date: z.string(), notes: z.string() }),
       initialValues: {
         name:
           year?.name ||

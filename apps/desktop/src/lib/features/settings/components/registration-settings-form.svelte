@@ -471,7 +471,6 @@ onMount(async () => {
       }
       if (currentSettings.admission) {
         const a = currentSettings.admission;
-        if (a.institution_type) institutionType = a.institution_type;
         if (a.numbering?.prefix) studentNumberPrefix = a.numbering.prefix;
         if (a.numbering?.sequence_digits)
           studentNumberDigits = Number(a.numbering.sequence_digits);

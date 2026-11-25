@@ -77,7 +77,7 @@ onMount(async () => {
   try {
     isLoading = true;
     const org =
-      (await api.getCurrentOrg()) || systemStore.onboardingState?.organization;
+      await api.getCurrentOrg();
     if (org) {
       name = org.name || name;
       nameAr = org.name_ar || nameAr;

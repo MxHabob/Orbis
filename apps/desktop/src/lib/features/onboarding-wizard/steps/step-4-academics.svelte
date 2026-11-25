@@ -129,7 +129,7 @@ const remainingStandardClasses = $derived(
           (classItem.name.trim().toLowerCase() === preset.name.toLowerCase() ||
             classItem.name_ar?.trim().toLowerCase() ===
               preset.nameAr.toLowerCase()) &&
-          classItem.level.trim().toLowerCase() === preset.grade.toLowerCase(),
+          classItem.level?.trim().toLowerCase() === preset.grade.toLowerCase(),
       ),
   ),
 );
@@ -266,7 +266,7 @@ async function handleCreateClass() {
           (!!classNameAr.trim() &&
             classItem.name_ar?.trim().toLowerCase() ===
               classNameAr.trim().toLowerCase())) &&
-        classItem.level.trim().toLowerCase() === resolvedLevel.toLowerCase(),
+        classItem.level?.trim().toLowerCase() === resolvedLevel.toLowerCase(),
     )
   ) {
     toast.error(m.onboarding_step4_class_duplicate());
@@ -616,9 +616,7 @@ async function handleBatchImportClasses() {
                         · {orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))?.name_ar ||
                           orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))?.name}
                       {/if}
-                      {#if periods.find((period) => String(period.id) === String(cls.period_id))}
-                        · {periods.find((period) => String(period.id) === String(cls.period_id))?.name}
-                      {/if}
+
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">

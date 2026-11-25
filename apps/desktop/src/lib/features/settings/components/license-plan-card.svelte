@@ -131,8 +131,7 @@ const planTheme = $derived.by(() => {
   }
 
   /* Hover the main curved part: glow only that part */
-  .plan-emblem__logo:has(svg > path:first-child:hover)
-    :global(svg > path:first-child) {
+  .plan-emblem__logo :global(svg > path:first-child:hover) {
     filter:
       drop-shadow(0 0 3px var(--plan-color))
       drop-shadow(0 0 7px var(--plan-glow))
@@ -140,8 +139,7 @@ const planTheme = $derived.by(() => {
   }
 
   /* Hover the purple dot: glow only the dot */
-  .plan-emblem__logo:has(svg > path:last-child:hover)
-    :global(svg > path:last-child) {
+  .plan-emblem__logo :global(svg > path:last-child:hover) {
     filter:
       drop-shadow(0 0 3px #A821D9)
       drop-shadow(0 0 8px #A821D9)

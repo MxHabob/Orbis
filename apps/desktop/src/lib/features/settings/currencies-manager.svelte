@@ -12,7 +12,6 @@ import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
-import { confirmStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, Search, Refresh } from "@orbis/icons";
@@ -42,12 +41,6 @@ let activeFilter = $state<UniversalFilter>({
 
 const currencyActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
-  {
-    id: "delete",
-    label: m.common_action_delete(),
-    icon: "Trash2",
-    variant: "destructive",
-  },
 ];
 const currencyDialogKey = $derived(
   `${showAddDialog}:${editingCurrency?.code ?? "new"}`,
@@ -203,32 +196,13 @@ function openAdd() {
 }
 
 async function handleGridAction(event: GridActionEvent) {
-  const c = event.row;
+  const c = currencies.find((currency) => currency.code === event.row.code);
+  if (!c) return;
   if (event.actionId === "dblclick" || event.actionId === "edit") {
     editingCurrency =
       currencies.find((currency) => currency.code === c.code) ?? c;
     showAddDialog = true;
-  } else if (event.actionId === "delete") {
-    if (c.is_base === true || c.is_base === 1) {
-      toast.error(m.settings_currencies_delete_base_error());
-      return;
-    }
-    const confirmed = await confirmStore.prompt({
-      title: m.settings_currencies_delete_dialog_title(),
-      description: m.settings_currencies_delete_dialog_confirm({
-        code: c.code,
-        name: l(c.name_ar, c.name) || c.code,
-      }),
-      confirmText: m.settings_currencies_btn_delete_confirm(),
-      variant: "destructive",
-    });
-    if (!confirmed) return;
-    try {
-      toast.info(m.settings_currencies_deleted_success({ code: c.code }));
-      await loadCurrencies();
-    } catch (e: any) {
-      toast.error(e?.message || m.settings_ui_currency_delete_error());
-    }
+
   }
 }
 </script>

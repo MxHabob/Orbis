@@ -71,7 +71,7 @@ let {
         <div class="space-y-5">
           <div class="space-y-1.5">
             <Label class="text-xs font-semibold">{m.operations_ui_academic_term()}</Label>
-            <Select value={selectedPeriodId} onValueChange={(v) => (selectedPeriodId = v)}>
+            <Select type="single" value={selectedPeriodId} onValueChange={(v) => (selectedPeriodId = v)}>
               <SelectTrigger class="h-9 text-xs">
                 <span>
                   {periods.find((p) => p.id === selectedPeriodId)
@@ -91,7 +91,7 @@ let {
 
           <div class="space-y-1.5">
             <Label class="text-xs font-semibold">{m.operations_ui_filter_by_class_optional()}</Label>
-            <Select value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
+            <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
               <SelectTrigger class="h-9 text-xs">
                 <span>
                   {classes.find((c) => String(c.id) === selectedClassId)

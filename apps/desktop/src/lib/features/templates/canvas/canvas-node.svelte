@@ -97,7 +97,7 @@ function handleDoubleClick(e: MouseEvent) {
   store.editingNodeId = node.id;
 }
 
-function handleEditInput(e: InputEvent) {
+function handleEditInput(e: Event) {
   editedContent = (e.currentTarget as HTMLDivElement).textContent || "";
 }
 
