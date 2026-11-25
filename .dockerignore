@@ -13,8 +13,7 @@ dist/
 
 # Rust/Tauri (desktop app — not needed for server images)
 apps/desktop/
-apps/desktop/src-tauri/target/
-apps/desktop/src-tauri/gen/
+apps/web/
 apps/mobile/
 apps/cli/
 apps/solver-service/

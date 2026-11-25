@@ -53,6 +53,7 @@ function main() {
     "apps/api-rust/crates/orbis-app/Cargo.toml",
     "apps/api-rust/crates/orbis-server/Cargo.toml",
     "apps/desktop/package.json",
+    "apps/web/package.json",
     "apps/mobile/package.json",
     "apps/mobile/app.json",
     "apps/desktop/src-tauri/Cargo.toml",

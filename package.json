@@ -6,6 +6,7 @@
     "packages/*",
     "apps/api-rust",
     "apps/desktop",
+    "apps/web",
     "apps/mobile"
   ],
   "catalog": {
@@ -29,6 +30,8 @@
     "test": "turbo run test",
     "dev:api": "bun --env-file=.env run cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin orbis-server",
     "dev:mobile": "turbo run dev --filter=@orbis/mobile",
+    "dev:web": "turbo run dev --filter=@orbis/web",
+    "build:web": "turbo run build --filter=@orbis/web",
     "dev:mobile:tunnel": "turbo run start:tunnel --filter=@orbis/mobile",
     "mobile:android": "turbo run android:device --filter=@orbis/mobile",
     "build:mobile:android": "bun run --cwd apps/mobile build:android:release",

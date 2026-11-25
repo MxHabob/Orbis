@@ -6,7 +6,7 @@ import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST || "127.0.0.1";
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   return {
     plugins: [
       tailwindcss(),
@@ -84,9 +84,6 @@ export default defineConfig(({ mode }) => {
             port: 4174,
           }
         : undefined,
-      watch: {
-        ignored: ["**/src-tauri/**"],
-      },
     },
   };
 });

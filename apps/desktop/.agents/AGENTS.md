@@ -10,7 +10,7 @@
 ### 1.1 Project Structure
 
 ```
-apps/desktop/
+apps/web/
 ├── src/
 │   ├── app.html                    # HTML template
 │   ├── app.d.ts                    # Global type augmentations
@@ -61,17 +61,19 @@ apps/desktop/
 │       │       ├── billing/        # Billing page
 │       │       └── account/        # User account pages
 │       └── agent/                  # AI Agent standalone page
-├── src-tauri/                      # Rust backend (Tauri v2)
-│   ├── src/
-│   │   ├── lib.rs                  # Tauri app builder + all command registrations
-│   │   ├── state.rs                # AppState (database connections, services)
-│   │   ├── commands/               # Tauri IPC command handlers (by domain)
-│   │   └── features/               # Desktop-specific features (deep-link)
-│   ├── Cargo.toml                  # Rust dependencies (shared crates from api-rust)
-│   └── tauri.conf.json             # Tauri configuration
 ├── messages/                       # i18n translation files
 ├── static/                         # Static files
 └── package.json                    # Node dependencies
+
+apps/desktop/
+└── src-tauri/                      # Rust backend (Tauri v2)
+    ├── src/
+    │   ├── lib.rs                  # Tauri app builder + all command registrations
+    │   ├── state.rs                # AppState (database connections, services)
+    │   ├── commands/               # Tauri IPC command handlers (by domain)
+    │   └── features/               # Desktop-specific features (deep-link)
+    ├── Cargo.toml                  # Rust dependencies (shared crates from api-rust)
+    └── tauri.conf.json             # Tauri configuration
 ```
 
 ### 1.2 Folder Conventions

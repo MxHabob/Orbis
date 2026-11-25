@@ -1,12 +1,4 @@
-node_modules
-
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
-/build
+/node_modules
 
 # OS
 .DS_Store
@@ -17,12 +9,3 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
-
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-# Paraglide
-src/lib/paraglide
-project.inlang/cache/
-
-svelte_check_output.*

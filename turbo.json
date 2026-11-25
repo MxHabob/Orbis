@@ -16,7 +16,7 @@
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build"],
-      "env": ["EXPO_PUBLIC_MULVERSE_API_URL"],
+      "env": ["EXPO_PUBLIC_MULVERSE_API_URL", "VITE_*"],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
@@ -89,29 +89,36 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    "@orbis/web#typecheck": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "tauri:build": {
-      "dependsOn": ["^build"],
-      "outputs": ["src-tauri/target/release/bundle/**"]
+      "cache": false
     },
     "tauri:dev": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "env": ["TAURI_DEV_HOST", "VITE_*"]
     },
     "tauri:staging": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "env": ["TAURI_DEV_HOST", "VITE_*"]
     },
     "tauri:prod": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "env": ["TAURI_DEV_HOST", "VITE_*"]
     },
     "tauri:build:staging": {
-      "dependsOn": ["^build"],
-      "outputs": ["src-tauri/target/release/bundle/**"]
+      "cache": false,
+      "env": ["VITE_*"]
     },
     "tauri:build:prod": {
-      "dependsOn": ["^build"],
-      "outputs": ["src-tauri/target/release/bundle/**"]
+      "cache": false,
+      "env": ["VITE_*"],
+      "passThroughEnv": ["TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"]
     }
   }
 }
