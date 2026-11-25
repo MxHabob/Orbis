@@ -47,6 +47,7 @@ import {
 } from "@orbis/ui/select";
 import { fade } from "svelte/transition";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import { formatDateKey } from "$lib/core/i18n/format";
 
 let { orgId }: { orgId: string } = $props();
 let dateRange = $state<DateRangeFilterValue>(
@@ -227,8 +228,7 @@ const overdueDebtors = $derived.by(() => {
       dueDate: string;
     }
   >();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = Date.parse(`${formatDateKey(new Date())}T00:00:00Z`);
 
   for (const fee of fees) {
     if (fee.status === "paid") continue;
@@ -238,12 +238,12 @@ const overdueDebtors = $derived.by(() => {
     ) {
       continue;
     }
-    const dueDate = new Date(`${fee.due_date.slice(0, 10)}T00:00:00`);
+    const dueDate = Date.parse(`${fee.due_date.slice(0, 10)}T00:00:00Z`);
     const remaining = toAmount(fee.balance_due);
-    if (Number.isNaN(dueDate.getTime()) || remaining <= 0) continue;
+    if (Number.isNaN(dueDate) || remaining <= 0) continue;
 
     const daysLate = Math.floor(
-      (today.getTime() - dueDate.getTime()) / 86_400_000,
+      (today - dueDate) / 86_400_000,
     );
     if (daysLate <= 0) continue;
 
@@ -497,7 +497,7 @@ const visibleTreasuries = $derived(
         <Card class="shadow-sm">
           <CardContent class="p-4">
             <p class="text-xs font-medium text-muted-foreground">
-              {m.finance_ui_current_balance()}
+              {m.finance_overview_outstanding_student_fees()}
             </p>
             <p class="mt-2 truncate font-mono text-lg font-bold text-foreground">
               {formatSelectedAmount(totalBalance)}

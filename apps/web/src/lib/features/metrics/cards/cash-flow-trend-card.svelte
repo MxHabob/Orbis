@@ -104,7 +104,7 @@ const data = $derived.by(() => {
           bucketUnit === "month"
             ? formatDate(current, "date", {
                 month: "short",
-                year: monthCount > 18 ? "2-digit" : undefined,
+                year: monthCount > 12 ? "2-digit" : undefined,
                 timeZone: "UTC",
               })
             : String(current.getUTCFullYear()),
@@ -133,11 +133,7 @@ const data = $derived.by(() => {
       if (bucket) bucket.collected += toAmount(payment.amount);
     }
 
-    return chartBuckets.map(({ label, invoiced, collected }) => ({
-      label,
-      invoiced,
-      collected,
-    }));
+    return chartBuckets;
 });
 
 const displayData = $derived(data);
@@ -176,6 +172,8 @@ const collectedLine = $derived(
 
 let hoveredIdx = $state<number | null>(null);
 let tooltipPos = $state<{ x: number; y: number } | null>(null);
+const hoveredPoint = $derived(hoveredIdx === null ? undefined : chartPoints[hoveredIdx]);
+const highlightedPoint = $derived(hoveredPoint ?? (chartPoints.length === 1 ? chartPoints[0] : undefined));
 
 function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   if (!hasRecords || chartPoints.length === 0) return;
@@ -308,10 +306,10 @@ function getNiceMaximum(value: number): number {
             />
           {/each}
           {#if chartPoints.length > 1}
-            {#if hoveredIdx !== null}
+            {#if hoveredPoint}
               <line
-                x1={chartPoints[hoveredIdx].x}
-                x2={chartPoints[hoveredIdx].x}
+                x1={hoveredPoint.x}
+                x2={hoveredPoint.x}
                 y1="22"
                 y2="196"
                 stroke="var(--border)"
@@ -341,8 +339,8 @@ function getNiceMaximum(value: number): number {
               stroke-linejoin="round"
             />
           {/if}
-          {#if hoveredIdx !== null}
-            {@const point = chartPoints[hoveredIdx]}
+          {#if highlightedPoint && hasRecords}
+            {@const point = highlightedPoint}
             <circle
               cx={point.x}
               cy={point.invoicedY}
@@ -361,18 +359,19 @@ function getNiceMaximum(value: number): number {
             />
           {/if}
         </svg>
-        <div
-          class="grid text-center text-[9px] font-mono font-bold text-muted-foreground"
-          style={`grid-template-columns: repeat(${chartPoints.length}, minmax(0, 1fr))`}
-        >
-          {#each chartPoints as point (point.label)}
-            <span class="truncate px-0.5">{point.label}</span>
+        <div class="relative h-5 text-[9px] font-medium text-muted-foreground">
+          {#each chartPoints as point (point.key)}
+            <span
+              dir="auto"
+              class="absolute -translate-x-1/2 whitespace-nowrap"
+              style:left={`clamp(1.5rem, ${point.x / 10}%, calc(100% - 1.5rem))`}
+            >{point.label}</span>
           {/each}
         </div>
 
         <!-- Floating Tooltip Box -->
-        {#if hoveredIdx !== null && tooltipPos && hasRecords}
-          {@const activeBar = chartPoints[hoveredIdx]}
+        {#if hoveredPoint && tooltipPos && hasRecords}
+          {@const activeBar = hoveredPoint}
           <div 
             class="absolute z-30 w-[220px] max-w-[calc(100%-16px)] rounded-lg border border-border bg-popover p-3 text-start text-xs text-popover-foreground shadow-lg pointer-events-none flex flex-col gap-2"
             style="left: {tooltipPos.x}px; top: {tooltipPos.y}px;"

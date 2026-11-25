@@ -2036,6 +2036,7 @@
   "finance_overview_reset_filters": "Reset filters",
   "finance_overview_trend_collected": "Student fee collections",
   "finance_overview_total_receipts": "Total receipts",
+  "finance_overview_outstanding_student_fees": "Outstanding student fees",
   "finance_metrics_cumulative_profit": "Net income from posted entries",
   "finance_overview_trend_invoiced": "Invoiced Fees",
   "finance_payment_method_transfer": "Transfer",

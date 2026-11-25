@@ -782,27 +782,12 @@ fn build_student_fee_list_query(
     if let Some(status) = filter.status.as_deref() {
         query = query.filter(student_fee::Column::Status.eq(status));
     }
-    if filter.only_unpaid == Some(true) {
+    if filter.only_unpaid == Some(true) || filter.is_overdue == Some(true) {
         query = query
-            .filter(Expr::cust_with_values(
-                format!(
-                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > {}",
-                    placeholder(1)
-                ),
-                [Decimal::ZERO],
+            .filter(Expr::cust(
+                "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > 0",
             ))
             .filter(student_fee::Column::Status.is_in(["pending", "partially_paid", "overdue"]));
-    }
-    if filter.is_overdue == Some(true) {
-        query = query
-            .filter(student_fee::Column::DueDate.lt(chrono::Utc::now().date_naive()))
-            .filter(Expr::cust_with_values(
-                format!(
-                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > {}",
-                    placeholder(1)
-                ),
-                [Decimal::ZERO],
-            ));
     }
     if let Some(search) = filter
         .search

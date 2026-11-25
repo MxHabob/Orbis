@@ -1976,8 +1976,16 @@ impl FinanceService {
     pub async fn list_student_fees(
         &self,
         org_id: Uuid,
-        filter: StudentFeeFilter,
+        mut filter: StudentFeeFilter,
     ) -> Result<PaginatedList<StudentFee>, DomainError> {
+        if filter.is_overdue == Some(true) {
+            let yesterday = self
+                .current_financial_date(org_id)
+                .await?
+                .pred_opt()
+                .ok_or_else(|| DomainError::Validation("Invalid overdue date".into()))?;
+            filter.to_date = Some(filter.to_date.map_or(yesterday, |date| date.min(yesterday)));
+        }
         self.student_fee_repo.list(org_id, filter).await
     }
 
