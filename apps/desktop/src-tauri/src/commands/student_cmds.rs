@@ -1079,7 +1079,11 @@ pub async fn student_start_bulk_register_job(
     let domain_items = to_domain_bulk_items(items);
 
     tauri::async_runtime::spawn(async move {
-        let chunk_size = if atomic.unwrap_or(true) { total.max(1) } else { 100 };
+        let chunk_size = if atomic.unwrap_or(true) {
+            total.max(1)
+        } else {
+            100
+        };
         let mut processed = 0usize;
         let mut succeeded = 0usize;
         let mut failed = 0usize;

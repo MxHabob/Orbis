@@ -15,7 +15,6 @@ let { orgId }: { orgId: string } = $props();
 const request = $derived(periodOverrides.request?.orgId === orgId ? periodOverrides.request : null);
 const target = $derived(request?.targets[0]);
 const period = $derived(academicContext.allPeriods.find((item) => item.id === target?.period_id));
-let reason = $state("");
 let submitting = $state(false);
 
 const targetLabel = createQuery(() => {
@@ -44,25 +43,23 @@ const targetLabel = createQuery(() => {
 
 function dismiss() {
   if (submitting) return;
-  reason = "";
   periodOverrides.dismiss();
 }
 
 async function submit(event: SubmitEvent) {
   event.preventDefault();
-  if (!request || !target || submitting || !reason.trim()) return;
+  if (!request || !target || submitting || !request.reason.trim()) return;
   const current = request;
   submitting = true;
   try {
-    await api.submitOverride({ ...target, reason: reason.trim() });
+    await api.submitOverride({ ...target, reason: current.reason.trim() });
     void queryClient.invalidateQueries({ queryKey: queryKeys.workflow.all });
     toast.success(m.common_override_submitted());
     if (periodOverrides.request === current) {
       const remaining = current.targets.slice(1);
       if (remaining.length) {
-        periodOverrides.open(orgId, remaining);
+        current.targets = remaining;
       } else {
-        reason = "";
         periodOverrides.dismiss();
       }
     }
@@ -76,7 +73,7 @@ async function submit(event: SubmitEvent) {
 
 <Dialog open={Boolean(target)} onOpenChange={(open) => { if (!open) dismiss(); }}>
   <DialogContent class="sm:max-w-md">
-    {#if target}
+    {#if target && request}
       <DialogHeader>
         <DialogTitle>
           {target.override_type === "grade_change" ? m.common_override_type_grade() : m.common_override_type_enrollment()}
@@ -93,19 +90,19 @@ async function submit(event: SubmitEvent) {
             {#if period}<p class="text-muted-foreground">{l(period.name_ar, period.name)}</p>{/if}
           </div>
         {/if}
-        {#if request && request.targets.length > 1}
+        {#if request.targets.length > 1}
           <p class="text-sm text-muted-foreground">{m.common_override_targets_remaining({ count: request.targets.length })}</p>
         {/if}
         <div class="flex flex-col gap-2">
           <Label for="override-reason">{m.common_promo_reason()}</Label>
-          <Textarea id="override-reason" bind:value={reason} rows={3} required
+          <Textarea id="override-reason" bind:value={request.reason} rows={3} required
             placeholder={m.common_override_reason_placeholder()} disabled={submitting} />
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onclick={dismiss} disabled={submitting}>
             {m.common_action_cancel()}
           </Button>
-          <Button type="submit" disabled={submitting || !reason.trim()}>
+          <Button type="submit" disabled={submitting || !request.reason.trim()}>
             {#if submitting}<LoadingIndicator class="me-2 size-4" size={16} />{/if}
             {m.common_override_submit()}
           </Button>

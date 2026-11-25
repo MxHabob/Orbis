@@ -2896,18 +2896,21 @@ mod assessment_service_tests {
         let expected = [PeriodOverrideTarget::grade(period.id, offering.id)];
         period.grade_entry_ends_at = Some(Utc::now() - chrono::Duration::seconds(1));
         let mut periods = HashMap::from([(period.id, period.clone())]);
-        let error = validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
+        let error =
+            validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
         assert_eq!(error.period_override_targets(), Some(expected.as_slice()));
 
         period.grade_entry_ends_at = None;
         period.is_grade_entry_open = false;
         periods.insert(period.id, period.clone());
-        let error = validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
+        let error =
+            validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
         assert_eq!(error.period_override_targets(), Some(expected.as_slice()));
 
         period.state = AcademicPeriodState::Archived;
         periods.insert(period.id, period.clone());
-        let error = validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
+        let error =
+            validate_grade_period(&periods, offering.org_id, period.id, &offering).unwrap_err();
         assert!(error.period_override_targets().is_none());
     }
 
