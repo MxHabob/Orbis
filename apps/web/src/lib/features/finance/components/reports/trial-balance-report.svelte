@@ -6,12 +6,11 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import {
-  createAccountsQuery,
-  createCurrenciesQuery,
-} from "$lib/features/finance/queries";
+import { createLedgerReport } from "./report-data.svelte";
 import { extractErrorMessage } from "$lib/api";
-import { formatCurrency } from "$lib/core/i18n";
+import { l } from "$lib/core/i18n";
+import { accountBalance, balancesMatch, debitCredit } from "./ledger-report";
+import { exportReport, searchReportRows } from "./report-view";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -31,83 +30,17 @@ let { orgId }: { orgId: string } = $props();
 let searchQuery = $state("");
 let selectedTypeFilter = $state<string>("all");
 
-const accountsQuery = createAccountsQuery(() => orgId);
-const currenciesQuery = createCurrenciesQuery(() => orgId);
-
-const accounts = $derived(accountsQuery.data ?? []);
-const currencies = $derived(currenciesQuery.data ?? []);
-const isLoading = $derived(
-  accountsQuery.isLoading || currenciesQuery.isLoading,
-);
-const queryError = $derived(accountsQuery.error || currenciesQuery.error);
-
-function refetchAll() {
-  accountsQuery.refetch();
-  currenciesQuery.refetch();
-}
-
-const activeCurrencies = $derived(
-  currencies.length > 0
-    ? currencies.filter((c) => c.is_active !== false)
-    : [
-        {
-          code: "YER",
-          name: m.finance_ui_currency_yer(),
-          is_base: true,
-          is_active: true,
-        },
-      ],
-);
-
-const leafAccounts = $derived(
-  accounts.filter(
-    (account) =>
-      !accounts.some((candidate) => candidate.parent_id === account.id),
-  ),
-);
-
-function getAccountBalance(account: any, currencyCode: string) {
-  return Number(
-    account.balances?.[currencyCode] ||
-      account.balances?.[currencyCode.toUpperCase()] ||
-      account.balances?.[currencyCode.toLowerCase()] ||
-      0,
-  );
-}
+const report = createLedgerReport(() => orgId);
+const { accounts, activeCurrencies, summaries, isLoading, queryError } = $derived(report);
+const { refetchAll } = report;
 
 const filteredAccounts = $derived(
-  leafAccounts.filter((acc) => {
-    if (selectedTypeFilter === "all") return true;
-    const type = String(acc.account_type || acc.sub_type || "").toLowerCase();
-    return type === selectedTypeFilter;
-  }),
+  accounts.filter((account) => selectedTypeFilter === "all" || account.account_type === selectedTypeFilter),
 );
-
-// Totals for Trial Balance
-const currencyBalances = $derived.by(() => {
-  const map: Record<string, { debit: number; credit: number }> = {};
-  for (const curr of activeCurrencies) {
-    let debit = 0;
-    let credit = 0;
-    for (const acc of leafAccounts) {
-      const amt = getAccountBalance(acc, curr.code);
-      if (amt > 0) debit += amt;
-      else if (amt < 0) credit += Math.abs(amt);
-    }
-    map[curr.code] = { debit, credit };
-  }
-  return map;
-});
-
-const isBalanced = $derived.by(() => {
-  for (const curr of activeCurrencies) {
-    const b = currencyBalances[curr.code];
-    if (b && Math.abs(b.debit - b.credit) > 0.01) {
-      return false;
-    }
-  }
-  return true;
-});
+const isBalanced = $derived(activeCurrencies.every(({ code }) => {
+  const summary = summaries.get(code)!;
+  return balancesMatch(summary.debit, summary.credit, code);
+}));
 
 const trialColumns = $derived.by((): OrbisColumnDef[] => [
   {
@@ -155,6 +88,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_debit`,
       prop: `${curr.code}_debit`,
+    type: "currency" as const,
+    currency: curr.code,
       header: m.finance_ui_trial_debit_column({
         currency: curr.name || curr.code,
         code: curr.code,
@@ -173,6 +108,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_credit`,
       prop: `${curr.code}_credit`,
+    type: "currency" as const,
+    currency: curr.code,
       header: m.finance_ui_trial_credit_column({
         currency: curr.name || curr.code,
         code: curr.code,
@@ -200,49 +137,37 @@ const accountTypeLabels: Record<string, string> = {
 
 const trialSource = $derived(
   filteredAccounts.map((account, idx) => {
-    const rawType = String(
-      account.account_type || account.sub_type || "asset",
-    ).toLowerCase();
+    const rawType = account.account_type;
     const typeLabel = accountTypeLabels[rawType] || rawType;
     const row: Record<string, unknown> = {
       __idx: idx + 1,
       account_code: account.code || "—",
-      account_name: account.name_ar || account.name || "—",
+      account_name: l(account.name_ar, account.name) || "—",
       account_type: typeLabel,
     };
     for (const curr of activeCurrencies) {
-      const amt = getAccountBalance(account, curr.code);
-      row[`${curr.code}_debit`] =
-        amt > 0 ? formatCurrency(amt, curr.code) : "—";
-      row[`${curr.code}_credit`] =
-        amt < 0 ? formatCurrency(Math.abs(amt), curr.code) : "—";
+      const { debit, credit } = debitCredit(accountBalance(account, curr.code), account.account_type);
+      row[`${curr.code}_debit`] = debit || null;
+      row[`${curr.code}_credit`] = credit || null;
     }
     return row;
   }),
 );
 
-function exportCurrentReport() {
-  if (trialSource.length === 0) return;
-  const filename = `trial_balance_${new Date().toISOString().slice(0, 10)}.csv`;
-  const keys = Object.keys(trialSource[0]);
-  const csvContent = [
-    keys.join(","),
-    ...trialSource.map((r) =>
-      keys
-        .map((k) => `"${String(r[k] ?? "").replaceAll('"', '""')}"`)
-        .join(","),
-    ),
-  ].join("\n");
+const visibleRows = $derived.by(() => {
+  const rows = searchReportRows(trialSource, searchQuery);
+  if (!rows.length || searchQuery.trim() || selectedTypeFilter !== "all") return rows;
+  const total: Record<string, unknown> = { account_name: m.finance_report_balance_total() };
+  for (const { code } of activeCurrencies) {
+    const { debit, credit } = summaries.get(code)!;
+    total[`${code}_debit`] = debit;
+    total[`${code}_credit`] = credit;
+  }
+  return [...rows, total];
+});
 
-  const blob = new Blob(["\ufeff" + csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+function exportCurrentReport() {
+  exportReport("trial_balance", visibleRows, trialColumns);
 }
 
 const rtl = $derived(getLocale() === "ar");
@@ -275,6 +200,7 @@ const filterOptions = [
         </button>
       {/each}
 
+      {#if !isLoading && !queryError && accounts.length}
       <div class="ms-2 hidden sm:flex items-center">
         {#if isBalanced}
           <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
@@ -288,6 +214,7 @@ const filterOptions = [
           </span>
         {/if}
       </div>
+      {/if}
     </div>
 
     <!-- Actions & Search -->
@@ -302,7 +229,7 @@ const filterOptions = [
         />
       </div>
 
-      <Button variant="outline" size="sm" onclick={exportCurrentReport} class="h-8 text-xs font-bold gap-1.5">
+      <Button variant="outline" size="sm" onclick={exportCurrentReport} disabled={Boolean(queryError) || isLoading || !visibleRows.length} class="h-8 text-xs font-bold gap-1.5">
         <Download size={14} />
         <span>{m.finance_ui_export_csv()}</span>
       </Button>
@@ -327,9 +254,8 @@ const filterOptions = [
       <div class="h-full min-h-0 overflow-hidden">
         <OrbisGrid
           columns={trialColumns}
-          source={trialSource}
+          source={visibleRows}
           showSearch={false}
-          search={searchQuery}
           clientQuery
           {rtl}
           readonly

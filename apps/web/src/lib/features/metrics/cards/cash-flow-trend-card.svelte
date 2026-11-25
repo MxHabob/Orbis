@@ -9,7 +9,9 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import { api, type FeeTemplateDto } from "$lib/api";
+import type { PaymentDto } from "$lib/api";
+import { createStudentFeesQuery } from "$lib/features/finance/queries";
+import { formatDateKey } from "$lib/core/i18n/format";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { resolve } from "$app/paths";
@@ -23,61 +25,32 @@ let {
   dateRange,
   branchId,
   selectedCurrency,
-  feeTemplates,
+  payments,
   isEditing = false,
 }: {
   orgId: string;
   dateRange: { fromDate: string; toDate: string };
   branchId?: string;
   selectedCurrency: string;
-  feeTemplates: FeeTemplateDto[];
+  payments: PaymentDto[];
   isEditing?: boolean;
 } = $props();
 
-let data = $state<{ label: string; invoiced: number; collected: number }[]>([]);
-let isLoading = $state(true);
-let loadError = $state(false);
-let loadSequence = 0;
+const feesQuery = createStudentFeesQuery(
+  () => orgId,
+  () => ({
+    from_date: dateRange.fromDate,
+    to_date: dateRange.toDate,
+    currency_code: selectedCurrency,
+    org_unit_id: branchId,
+  }),
+  () => Boolean(selectedCurrency),
+);
+const isLoading = $derived(feesQuery.isLoading);
+const loadError = $derived(Boolean(feesQuery.error));
 
-async function loadData() {
-  const sequence = ++loadSequence;
-  isLoading = true;
-  loadError = false;
-
-  if (!selectedCurrency) {
-    data = [];
-    isLoading = false;
-    return;
-  }
-
-  try {
-    const filter = {
-      from_date: dateRange.fromDate,
-      to_date: dateRange.toDate,
-      currency_code: selectedCurrency || undefined,
-      ...(branchId ? { org_unit_id: branchId } : {}),
-    };
-    const [paymentsList, feesList] = await Promise.all([
-      api.listPayments(filter),
-      api.listStudentFees(filter),
-    ]);
-
-    if (sequence !== loadSequence) return;
-
-    const templatesById = new Map(
-      feeTemplates.map((template) => [template.id, template]),
-    );
-    const filteredFees = feesList.filter((fee) => {
-      return (
-        !selectedCurrency ||
-        templatesById.get(fee.fee_template_id)?.currency === selectedCurrency
-      );
-    });
-    const filteredPayments = paymentsList.filter(
-      (payment) =>
-        !selectedCurrency || payment.currency_code === selectedCurrency,
-    );
-
+const data = $derived.by(() => {
+    if (!selectedCurrency) return [];
     const startDate = new Date(`${dateRange.fromDate}T00:00:00Z`);
     const endDate = new Date(`${dateRange.toDate}T00:00:00Z`);
     if (
@@ -85,7 +58,7 @@ async function loadData() {
       Number.isNaN(endDate.getTime()) ||
       startDate > endDate
     ) {
-      throw new Error("Invalid finance overview date range");
+      return [];
     }
 
     const monthCount =
@@ -143,45 +116,28 @@ async function loadData() {
       chartBuckets.map((month) => [month.key, month]),
     );
 
-    for (const fee of filteredFees) {
+    for (const fee of feesQuery.data ?? []) {
       const bucketKey = getBucketKey(fee.due_date, bucketUnit);
       if (!bucketKey) continue;
       const bucket = monthsByKey.get(bucketKey);
       if (bucket) bucket.invoiced += toAmount(fee.net_amount);
     }
 
-    for (const payment of filteredPayments) {
-      const bucketKey = getBucketKey(payment.paid_at, bucketUnit);
+    for (const payment of payments) {
+      const paidAt = new Date(payment.paid_at || payment.created_at);
+      const bucketKey = Number.isNaN(paidAt.getTime())
+        ? undefined
+        : formatDateKey(paidAt).slice(0, bucketUnit === "year" ? 4 : 7);
       if (!bucketKey) continue;
       const bucket = monthsByKey.get(bucketKey);
       if (bucket) bucket.collected += toAmount(payment.amount);
     }
 
-    data = chartBuckets.map(({ label, invoiced, collected }) => ({
+    return chartBuckets.map(({ label, invoiced, collected }) => ({
       label,
       invoiced,
       collected,
     }));
-  } catch (e) {
-    console.error("Error loading cash flow trends:", e);
-    if (sequence === loadSequence) {
-      loadError = true;
-    }
-  } finally {
-    if (sequence === loadSequence) {
-      isLoading = false;
-    }
-  }
-}
-
-$effect(() => {
-  void orgId;
-  void dateRange.fromDate;
-  void dateRange.toDate;
-  void branchId;
-  void selectedCurrency;
-  void feeTemplates;
-  void loadData();
 });
 
 const displayData = $derived(data);
@@ -304,7 +260,7 @@ function getNiceMaximum(value: number): number {
           </div>
           <div class="flex items-center gap-1.5">
             <span class="h-0.5 w-4 rounded-full bg-primary"></span>
-            <span>{m.finance_overview_trend_collected()}</span>
+            <span>{m.finance_overview_total_receipts()}</span>
           </div>
         </div>
       </CardAction>
@@ -428,7 +384,7 @@ function getNiceMaximum(value: number): number {
                 <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.invoiced, selectedCurrency)}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-muted-foreground">{m.finance_overview_trend_collected()}:</span>
+                <span class="text-muted-foreground">{m.finance_overview_total_receipts()}:</span>
                 <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.collected, selectedCurrency)}</span>
               </div>
             </div>
@@ -439,7 +395,7 @@ function getNiceMaximum(value: number): number {
         {#if loadError}
           <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 gap-2 bg-background/90 z-20 rounded-xl" role="alert">
             <span class="font-bold text-xs text-foreground/90">{m.finance_overview_error()}</span>
-            <button type="button" class="text-[10px] font-semibold text-primary hover:underline" onclick={loadData}>
+            <button type="button" class="text-[10px] font-semibold text-primary hover:underline" onclick={() => feesQuery.refetch()}>
               {m.common_retry()}
             </button>
           </div>

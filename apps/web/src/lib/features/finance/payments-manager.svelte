@@ -956,7 +956,7 @@ async function exportCsv() {
         onquerychange={handlePaymentGridQuery}
         onselection={handlePaymentSelection}
         readonly
-        emptyTitle={m.finance_ui_no_receipts()}
+        emptyTitle={paymentsQuery.isError ? m.finance_ui_payments_load_failed() : m.finance_ui_no_receipts()}
         hasMore={paymentsQuery.hasNextPage ?? false}
         onloadmore={loadMorePayments}
       />

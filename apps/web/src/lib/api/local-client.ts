@@ -256,6 +256,17 @@ import type {
   StudentCertificateReportCard,
 } from "./types";
 
+type DesktopPayment = Omit<PaymentDto, "currency_code" | "updated_at"> &
+  Partial<Pick<PaymentDto, "currency_code" | "updated_at">> & { currency?: string };
+
+function normalizeDesktopPayment(payment: DesktopPayment): PaymentDto {
+  return {
+    ...payment,
+    currency_code: payment.currency_code ?? payment.currency ?? "",
+    updated_at: payment.updated_at ?? payment.created_at,
+  };
+}
+
 function unwrap<T>(response: { data: T } | T): T {
   if (response && typeof response === "object" && "data" in response) {
     return (response as { data: T }).data;
@@ -1289,7 +1300,8 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("finance_delete_student_fee", { id }));
   }
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
-    return unwrap(await invoke("finance_process_payment", { request: req }));
+    const payment = unwrap<DesktopPayment>(await invoke("finance_process_payment", { request: req }));
+    return normalizeDesktopPayment(payment);
   }
   async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
     const firstPage = await this.listPaymentsPaginated({
@@ -1312,7 +1324,7 @@ export class LocalClient implements OrbisApiClient {
   async listPaymentsPaginated(
     filter?: PaymentFilterParams,
   ): Promise<PaginatedList<PaymentDto>> {
-    return unwrap(
+    const page = unwrap<PaginatedList<DesktopPayment>>(
       await invoke("finance_list_payments_paginated", {
         filter: {
           ...filter,
@@ -1320,6 +1332,7 @@ export class LocalClient implements OrbisApiClient {
         },
       }),
     );
+    return { ...page, items: page.items.map(normalizeDesktopPayment) };
   }
   async deletePayment(id: string): Promise<boolean> {
     return unwrap(await invoke("finance_delete_payment", { id }));

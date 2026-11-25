@@ -1081,12 +1081,6 @@ pub async fn list_payments(
         org_unit_id: q.org_unit_id,
         currency_code: q.currency_code,
         method,
-        from_date: q
-            .from_date
-            .map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-        to_date: q
-            .to_date
-            .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc()),
         search: q.search,
         pagination: Some(orbis_domain::queries::filters::PaginationParams {
             page: Some(page),
@@ -1094,8 +1088,12 @@ pub async fn list_payments(
             sort_by: q.sort_by,
             sort_dir: q.sort_dir,
         }),
+        ..Default::default()
     };
-    let payments = state.payment_repo.list(ctx.tenant_id, filter).await?;
+    let payments = state
+        .finance_service
+        .list_payments(ctx.tenant_id, filter, q.from_date, q.to_date)
+        .await?;
     let result = PaginatedList::new(
         payments
             .items

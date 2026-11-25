@@ -23,6 +23,23 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Arc};
 use uuid::Uuid;
 
+fn payment_day_start(
+    date: NaiveDate,
+    timezone: chrono_tz::Tz,
+) -> Result<chrono::DateTime<Utc>, DomainError> {
+    let midnight = date.and_hms_opt(0, 0, 0).expect("midnight is a valid time");
+    if let Some(start) = timezone.from_local_datetime(&midnight).earliest() {
+        return Ok(start.with_timezone(&Utc));
+    }
+    // Some timezones advance the clock at midnight, skipping the start of the day.
+    chrono_tz::GapInfo::new(&midnight, &timezone)
+        .and_then(|gap| gap.end)
+        .map(|start| start.with_timezone(&Utc))
+        .ok_or_else(|| {
+            DomainError::Validation("Invalid payment date in organization timezone".into())
+        })
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum TreasuryKind {
     Cash,
@@ -701,18 +718,7 @@ impl FinanceService {
             .resolve_and_validate_transaction_date(ctx, org_id, payment_date, now)
             .await?;
         let paid_at = if payment_date.is_some() {
-            let local_midnight = accounting_date
-                .and_hms_opt(0, 0, 0)
-                .ok_or_else(|| DomainError::Validation("Invalid payment accounting date".into()))?;
-            timezone
-                .from_local_datetime(&local_midnight)
-                .single()
-                .ok_or_else(|| {
-                    DomainError::Validation(
-                        "Payment date cannot be represented in the organization timezone".into(),
-                    )
-                })?
-                .with_timezone(&Utc)
+            payment_day_start(accounting_date, timezone)?
         } else {
             now
         };
@@ -2000,8 +2006,27 @@ impl FinanceService {
     pub async fn list_payments(
         &self,
         org_id: Uuid,
-        filter: PaymentFilter,
+        mut filter: PaymentFilter,
+        from_date: Option<NaiveDate>,
+        to_date: Option<NaiveDate>,
     ) -> Result<PaginatedList<Payment>, DomainError> {
+        if from_date.is_some_and(|from| to_date.is_some_and(|to| from > to)) {
+            return Err(DomainError::Validation("Invalid payment date range".into()));
+        }
+        if from_date.is_some() || to_date.is_some() {
+            let timezone = self.organization_timezone(org_id).await?;
+            filter.from_date = from_date
+                .map(|date| payment_day_start(date, timezone))
+                .transpose()?;
+            filter.to_date_exclusive = to_date
+                .map(|date| {
+                    let next_day = date.succ_opt().ok_or_else(|| {
+                        DomainError::Validation("Invalid payment end date".into())
+                    })?;
+                    payment_day_start(next_day, timezone)
+                })
+                .transpose()?;
+        }
         self.payment_repo.list(org_id, filter).await
     }
 
@@ -3730,6 +3755,24 @@ impl FinanceService {
 #[cfg(test)]
 mod treasury_account_tests {
     use super::*;
+
+    #[test]
+    fn payment_days_follow_the_organization_timezone() {
+        let day = NaiveDate::from_ymd_opt(2026, 11, 25).unwrap();
+        let start = payment_day_start(day, chrono_tz::Asia::Riyadh).unwrap();
+        let end = payment_day_start(day.succ_opt().unwrap(), chrono_tz::Asia::Riyadh).unwrap();
+        assert_eq!(start, Utc.with_ymd_and_hms(2026, 11, 24, 21, 0, 0).unwrap());
+        assert_eq!(end, Utc.with_ymd_and_hms(2026, 11, 25, 21, 0, 0).unwrap());
+
+        let daylight_saving_day = NaiveDate::from_ymd_opt(2026, 3, 8).unwrap();
+        let start = payment_day_start(daylight_saving_day, chrono_tz::America::New_York).unwrap();
+        let end = payment_day_start(
+            daylight_saving_day.succ_opt().unwrap(),
+            chrono_tz::America::New_York,
+        )
+        .unwrap();
+        assert_eq!((end - start).num_hours(), 23);
+    }
 
     fn account(org_id: Uuid) -> Account {
         let now = Utc::now();

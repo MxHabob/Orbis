@@ -102,13 +102,7 @@ function handleResizeChart(id: ChartId, newColSpan: ColSpan) {
 						{selectedTerm}
 					/>
 				{:else if chartId === "profit"}
-					<ProfitCard
-						{orgId}
-						{isEditing}
-						{period}
-						{selectedClass}
-						{selectedTerm}
-					/>
+					<ProfitCard {orgId} {isEditing} />
 				{:else if chartId === "grade-distribution"}
 					<GradeDistributionCard
 						{orgId}

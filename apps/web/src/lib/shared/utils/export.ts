@@ -21,6 +21,7 @@ export function exportToCsv<T>(
   filename: string,
   data: T[],
   columns: ExportColumn<T>[],
+  dateStamp = new Date().toISOString().slice(0, 10),
 ): RevealDownloadedLocation | null {
   if (!data || data.length === 0) return null;
 
@@ -40,7 +41,7 @@ export function exportToCsv<T>(
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   return downloadBlob(
     blob,
-    `${filename}_${new Date().toISOString().slice(0, 10)}.csv`,
+    `${filename}_${dateStamp}.csv`,
   );
 }
 

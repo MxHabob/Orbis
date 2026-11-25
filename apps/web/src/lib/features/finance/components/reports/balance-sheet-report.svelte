@@ -6,12 +6,10 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import {
-  createAccountsQuery,
-  createCurrenciesQuery,
-} from "$lib/features/finance/queries";
+import { createLedgerReport } from "./report-data.svelte";
 import { extractErrorMessage } from "$lib/api";
-import { formatCurrency } from "$lib/core/i18n";
+import { balancesMatch } from "./ledger-report";
+import { exportReport, formatReportAmount, searchReportRows, statementRows, statementTotal } from "./report-view";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -30,96 +28,23 @@ let { orgId }: { orgId: string } = $props();
 
 let searchQuery = $state("");
 
-const accountsQuery = createAccountsQuery(() => orgId);
-const currenciesQuery = createCurrenciesQuery(() => orgId);
-
-const accounts = $derived(accountsQuery.data ?? []);
-const currencies = $derived(currenciesQuery.data ?? []);
-const isLoading = $derived(
-  accountsQuery.isLoading || currenciesQuery.isLoading,
-);
-const queryError = $derived(accountsQuery.error || currenciesQuery.error);
-
-function refetchAll() {
-  accountsQuery.refetch();
-  currenciesQuery.refetch();
-}
-
-const activeCurrencies = $derived(
-  currencies.length > 0
-    ? currencies.filter((c) => c.is_active !== false)
-    : [
-        {
-          code: "YER",
-          name: m.finance_ui_currency_yer(),
-          is_base: true,
-          is_active: true,
-        },
-      ],
-);
-
-const baseCurrency = $derived(
-  currencies.find((c) => c.is_base) ||
-    activeCurrencies[0] || { code: "YER", name: m.finance_ui_currency_yer() },
-);
-
-const leafAccounts = $derived(
-  accounts.filter(
-    (account) =>
-      !accounts.some((candidate) => candidate.parent_id === account.id),
-  ),
-);
-
-function getAccountBalance(account: any, currencyCode: string) {
-  return Number(
-    account.balances?.[currencyCode] ||
-      account.balances?.[currencyCode.toUpperCase()] ||
-      account.balances?.[currencyCode.toLowerCase()] ||
-      0,
-  );
-}
-
-function accountsByType(type: string) {
-  return leafAccounts.filter(
-    (account) =>
-      String(
-        account.account_type || account.sub_type || "asset",
-      ).toLowerCase() === type,
-  );
-}
-
-const totals = $derived.by(() => {
-  const result: Record<string, Record<string, number>> = {
-    asset: {},
-    liability: {},
-    equity: {},
-  };
-  for (const type of ["asset", "liability", "equity"]) {
-    for (const currency of activeCurrencies) {
-      result[type][currency.code] = accountsByType(type).reduce(
-        (sum, account) => sum + getAccountBalance(account, currency.code),
-        0,
-      );
-    }
-  }
-  return result;
-});
+const report = createLedgerReport(() => orgId);
+const { accounts, activeCurrencies, baseCurrency, summaries, isLoading, queryError } = $derived(report);
+const { refetchAll } = report;
 
 const summaryKpis = $derived.by(() => {
-  const code = baseCurrency?.code || "YER";
-  const assets = Math.abs(totals.asset[code] || 0);
-  const liabilities = Math.abs(totals.liability[code] || 0);
-  const equity = Math.abs(totals.equity[code] || 0);
-  const liabilitiesAndEquity = liabilities + equity;
-  const isBalanced = Math.abs(assets - liabilitiesAndEquity) < 0.01;
-
+  const code = baseCurrency;
+  const summary = summaries.get(code)!;
   return {
     code,
-    assets,
-    liabilities,
-    equity,
-    liabilitiesAndEquity,
-    isBalanced,
+    assets: summary.asset,
+    liabilities: summary.liability,
+    equity: summary.equity + summary.netIncome,
+    liabilitiesAndEquity: summary.liabilitiesAndEquity,
+    isBalanced: activeCurrencies.every(({ code }) => {
+      const ledger = summaries.get(code)!;
+      return balancesMatch(ledger.asset, ledger.liabilitiesAndEquity, code);
+    }),
   };
 });
 
@@ -168,6 +93,8 @@ const statementColumns = $derived.by((): OrbisColumnDef[] => [
   ...activeCurrencies.map((curr) => ({
     id: curr.code,
     prop: curr.code,
+    type: "currency" as const,
+    currency: curr.code,
     header: `${curr.name || curr.code} (${curr.code})`,
     name: curr.code,
     width: 150,
@@ -178,85 +105,26 @@ const statementColumns = $derived.by((): OrbisColumnDef[] => [
   })),
 ]);
 
-const balanceSheetGroups: [string, string][] = [
+const balanceSheetGroups = [
   [m.finance_ui_assets(), "asset"],
   [m.finance_ui_liabilities(), "liability"],
   [m.finance_ui_equity_capital(), "equity"],
-];
+] as const;
 
 const balanceSheetSource = $derived.by(() => {
-  const rows: Record<string, unknown>[] = [];
-  let index = 1;
-
-  for (const [sectionTitle, type] of balanceSheetGroups) {
-    const list = accountsByType(type);
-    for (const account of list) {
-      const row: Record<string, unknown> = {
-        __idx: index++,
-        section: sectionTitle,
-        account_code: account.code || "—",
-        account_name: account.name_ar || account.name || "—",
-      };
-      for (const curr of activeCurrencies) {
-        const amt = getAccountBalance(account, curr.code);
-        row[curr.code] = formatCurrency(Math.abs(amt), curr.code);
-      }
-      rows.push(row);
-    }
-
-    // Subtotal Row
-    const subtotalRow: Record<string, unknown> = {
-      __idx: "∑",
-      section: m.finance_ui_section_total({ section: sectionTitle }),
-      account_code: "—",
-      account_name: m.finance_ui_section_sum({ section: sectionTitle }),
-    };
-    for (const curr of activeCurrencies) {
-      const totalAmt = totals[type]?.[curr.code] || 0;
-      subtotalRow[curr.code] = formatCurrency(Math.abs(totalAmt), curr.code);
-    }
-    rows.push(subtotalRow);
-  }
-
-  // Combined Liabilities + Equity Row
-  const leRow: Record<string, unknown> = {
-    __idx: "★",
-    section: m.finance_ui_liabilities_and_equity_total(),
-    account_code: "—",
-    account_name: m.finance_ui_liabilities_equity_sum(),
-  };
-  for (const curr of activeCurrencies) {
-    const l = Math.abs(totals.liability[curr.code] || 0);
-    const e = Math.abs(totals.equity[curr.code] || 0);
-    leRow[curr.code] = formatCurrency(l + e, curr.code);
-  }
-  rows.push(leRow);
-
+  const rows = statementRows(accounts, balanceSheetGroups, summaries);
+  if (!rows.length) return rows;
+  rows.push(
+    statementTotal(m.finance_report_unclosed_result(), summaries, (summary) => summary.netIncome, m.finance_ui_equity_capital()),
+    statementTotal(m.finance_ui_liabilities_and_equity_total(), summaries, (summary) => summary.liabilitiesAndEquity),
+  );
   return rows;
 });
 
-function exportCurrentReport() {
-  if (balanceSheetSource.length === 0) return;
-  const filename = `balance_sheet_${new Date().toISOString().slice(0, 10)}.csv`;
-  const keys = Object.keys(balanceSheetSource[0]);
-  const csvContent = [
-    keys.join(","),
-    ...balanceSheetSource.map((r) =>
-      keys
-        .map((k) => `"${String(r[k] ?? "").replaceAll('"', '""')}"`)
-        .join(","),
-    ),
-  ].join("\n");
+const visibleRows = $derived(searchReportRows(balanceSheetSource, searchQuery));
 
-  const blob = new Blob(["\ufeff" + csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+function exportCurrentReport() {
+  exportReport("balance_sheet", visibleRows, statementColumns);
 }
 
 const rtl = $derived(getLocale() === "ar");
@@ -269,12 +137,12 @@ const rtl = $derived(getLocale() === "ar");
     <div class="flex items-center gap-2 flex-wrap text-xs">
       <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary font-medium">
         <span class="text-muted-foreground text-[11px]">{m.finance_ui_assets_label()}</span>
-        <strong class="font-mono">{formatCurrency(summaryKpis.assets, summaryKpis.code)}</strong>
+        <strong class="font-mono">{formatReportAmount(summaryKpis.assets, summaryKpis.code)}</strong>
       </div>
 
       <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted border border-border/60 text-foreground font-medium">
         <span class="text-muted-foreground text-[11px]">{m.finance_ui_liabilities_equity_label()}</span>
-        <strong class="font-mono">{formatCurrency(summaryKpis.liabilitiesAndEquity, summaryKpis.code)}</strong>
+        <strong class="font-mono">{formatReportAmount(summaryKpis.liabilitiesAndEquity, summaryKpis.code)}</strong>
       </div>
 
       {#if summaryKpis.isBalanced}
@@ -302,7 +170,7 @@ const rtl = $derived(getLocale() === "ar");
         />
       </div>
 
-      <Button variant="outline" size="sm" onclick={exportCurrentReport} class="h-8 text-xs font-bold gap-1.5">
+      <Button variant="outline" size="sm" onclick={exportCurrentReport} disabled={Boolean(queryError) || isLoading || !visibleRows.length} class="h-8 text-xs font-bold gap-1.5">
         <Download size={14} />
         <span>{m.finance_ui_export_csv()}</span>
       </Button>
@@ -327,9 +195,8 @@ const rtl = $derived(getLocale() === "ar");
       <div class="h-full min-h-0 overflow-hidden">
         <OrbisGrid
           columns={statementColumns}
-          source={balanceSheetSource}
+          source={visibleRows}
           showSearch={false}
-          search={searchQuery}
           clientQuery
           {rtl}
           readonly

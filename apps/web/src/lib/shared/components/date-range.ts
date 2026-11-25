@@ -1,3 +1,5 @@
+import { formatDateKey } from "$lib/core/i18n/format";
+
 export type DateRangePreset =
   | "today"
   | "this_month"
@@ -12,36 +14,27 @@ export interface DateRangeFilterValue {
 
 export type ResolvedDateRangePreset = Exclude<DateRangePreset, "custom">;
 
-function toLocalDateInputValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 export function getDateRangeForPreset(
   preset: ResolvedDateRangePreset,
   now = new Date(),
 ): DateRangeFilterValue {
-  const today = toLocalDateInputValue(now);
+  const today = formatDateKey(now);
 
   if (preset === "today") {
     return { preset, fromDate: today, toDate: today };
   }
 
   if (preset === "this_month") {
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     return {
       preset,
-      fromDate: toLocalDateInputValue(firstOfMonth),
+      fromDate: `${today.slice(0, 7)}-01`,
       toDate: today,
     };
   }
 
-  const firstOfYear = new Date(now.getFullYear(), 0, 1);
   return {
     preset,
-    fromDate: toLocalDateInputValue(firstOfYear),
+    fromDate: `${today.slice(0, 4)}-01-01`,
     toDate: today,
   };
 }
@@ -59,17 +52,13 @@ export function getDateRangeForMonth(
     return getDateRangeForPreset("this_month", now);
   }
 
-  const firstDay = new Date(year, monthIndex, 1);
-  const lastDay = new Date(year, monthIndex + 1, 0);
-  const isCurrentMonth =
-    year === now.getFullYear() && monthIndex === now.getMonth();
+  const today = formatDateKey(now);
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 
   return {
     preset: "this_month",
-    fromDate: toLocalDateInputValue(firstDay),
-    toDate: isCurrentMonth
-      ? toLocalDateInputValue(now)
-      : toLocalDateInputValue(lastDay),
+    fromDate: `${month}-01`,
+    toDate: today.startsWith(`${month}-`) ? today : `${month}-${lastDay}`,
   };
 }
 

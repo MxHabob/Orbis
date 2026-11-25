@@ -1,10 +1,14 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { api } from "$lib/api";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import { createPaymentsQuery, createStudentFeesQuery } from "$lib/features/finance/queries";
+import { createEnrollmentsQuery } from "$lib/features/students";
+import { orgContext } from "$lib/stores/org-context.svelte";
+import { formatDateKey } from "$lib/core/i18n/format";
 import DragIndicator from "../components/drag-indicator.svelte";
 
-import { formatDate, formatNumber } from "$lib/core/i18n";
+import { formatCurrency, formatDate, formatNumber } from "$lib/core/i18n";
 
 let {
   orgId,
@@ -20,34 +24,40 @@ let {
   isEditing?: boolean;
 } = $props();
 
-let data = $state<{ month: string; amount: number; lastYearAmount: number }[]>(
-  [],
+const today = $derived(formatDateKey(new Date()));
+const currentMonth = $derived(new Date(today.slice(0, 7) + "-01T00:00:00Z"));
+const firstMonth = $derived.by(() => {
+  const month = new Date(currentMonth);
+  if (period === "3-months") month.setUTCMonth(month.getUTCMonth() - 2);
+  else if (period === "6-months") month.setUTCMonth(month.getUTCMonth() - 5);
+  else month.setUTCMonth(0);
+  return month;
+});
+const needsEnrollmentFilter = $derived(selectedClass !== "all" || selectedTerm !== "all");
+const paymentsQuery = createPaymentsQuery(
+  () => orgId,
+  () => ({
+    from_date: period === "all"
+      ? undefined
+      : `${firstMonth.getUTCFullYear() - 1}-${String(firstMonth.getUTCMonth() + 1).padStart(2, "0")}-01`,
+    to_date: today,
+  }),
 );
-let isLoading = $state(true);
-let loadSequence = 0;
-
-async function loadData() {
-  const sequence = ++loadSequence;
-  isLoading = true;
-  try {
-    const needsEnrollmentFilter =
-      selectedClass !== "all" || selectedTerm !== "all";
-    const enrollmentFilter: { class_id?: string; period_id?: string } = {};
-    if (selectedClass !== "all") enrollmentFilter.class_id = selectedClass;
-    if (selectedTerm !== "all") enrollmentFilter.period_id = selectedTerm;
-
-    const [payments, fees, enrollments] = await Promise.all([
-      api.listPayments(),
-      needsEnrollmentFilter
-        ? api.listStudentFees(
-            selectedTerm === "all" ? undefined : { period_id: selectedTerm },
-          )
-        : [],
-      needsEnrollmentFilter ? api.listEnrollments(enrollmentFilter) : [],
-    ]);
-
-    if (sequence !== loadSequence) return;
-
+const feesQuery = createStudentFeesQuery(
+  () => orgId,
+  () => selectedTerm === "all" ? undefined : { period_id: selectedTerm },
+  () => needsEnrollmentFilter,
+);
+const enrollmentsQuery = createEnrollmentsQuery(() => orgId, () => ({
+  class_id: selectedClass === "all" ? undefined : selectedClass,
+  period_id: selectedTerm === "all" ? undefined : selectedTerm,
+}));
+const isLoading = $derived(paymentsQuery.isLoading ||
+  (needsEnrollmentFilter && (feesQuery.isLoading || enrollmentsQuery.isLoading)));
+const filteredPayments = $derived.by(() => {
+    const payments = paymentsQuery.data ?? [];
+    const fees = feesQuery.data ?? [];
+    const enrollments = enrollmentsQuery.data ?? [];
     const enrollmentIds = new Set(
       enrollments.map((enrollment) => enrollment.id),
     );
@@ -60,62 +70,55 @@ async function loadData() {
         )
         .map((fee) => fee.id),
     );
-    const filteredPayments = needsEnrollmentFilter
+    return needsEnrollmentFilter
       ? payments.filter((payment) =>
-          payment.fee_id
-            ? feeIds.has(payment.fee_id)
-            : payment.enrollment_id != null &&
-              enrollmentIds.has(payment.enrollment_id),
+          (payment.fee_id != null && feeIds.has(payment.fee_id)) ||
+          (payment.enrollment_id != null && enrollmentIds.has(payment.enrollment_id)),
         )
       : payments;
-
-    // Setup localized short names for 12 months (Jan to Dec)
-    const months: { label: string; index: number }[] = [];
-    for (let i = 0; i < 12; i++) {
-      const dateObj = new Date(new Date().getFullYear(), i, 1);
-      const label = formatDate(dateObj, "date", {
-        month: "short",
-        timeZone: "UTC",
-      });
-      months.push({ label, index: i });
-    }
-
-    const currentYear = new Date().getFullYear();
-    const thisYearMap = Array(12).fill(0) as number[];
-    const lastYearMap = Array(12).fill(0) as number[];
-
+});
+const currencies = $derived([...new Set(
+  filteredPayments.map((payment) => payment.currency_code).filter(Boolean),
+)].sort());
+let selectedCurrency = $state("");
+const currency = $derived(
+  currencies.includes(selectedCurrency) ? selectedCurrency :
+    currencies.includes(orgContext.baseCurrency) ? orgContext.baseCurrency :
+      (currencies[0] ?? orgContext.baseCurrency),
+);
+const loadError = $derived(paymentsQuery.isError ||
+  (needsEnrollmentFilter && (feesQuery.isError || enrollmentsQuery.isError)));
+const data = $derived.by(() => {
+    const buckets = new Map<string, number>();
     for (const payment of filteredPayments) {
-      const dateString = payment.paid_at ?? payment.created_at ?? "";
-      const date = new Date(dateString);
-      if (!dateString || Number.isNaN(date.getTime())) continue;
-
+      if (payment.currency_code !== currency) continue;
+      const paidAt = new Date(payment.paid_at || payment.created_at);
       const amount = Number(payment.amount ?? 0);
-      if (!Number.isFinite(amount)) continue;
-
-      if (date.getFullYear() === currentYear) {
-        thisYearMap[date.getMonth()] += amount;
-      } else if (date.getFullYear() === currentYear - 1) {
-        lastYearMap[date.getMonth()] += amount;
-      }
+      if (Number.isNaN(paidAt.getTime()) || !Number.isFinite(amount)) continue;
+      const dateKey = formatDateKey(paidAt);
+      const key = dateKey.slice(0, period === "all" ? 4 : 7);
+      buckets.set(key, (buckets.get(key) ?? 0) + amount);
     }
 
-    data = months.map(({ label, index }) => ({
-      month: label,
-      amount: thisYearMap[index] ?? 0,
-      lastYearAmount: lastYearMap[index] ?? 0,
-    }));
-  } catch (e) {
-    console.error("Error loading finance revenue trends:", e);
-    if (sequence === loadSequence) data = [];
-  } finally {
-    if (sequence === loadSequence) isLoading = false;
-  }
-}
+    if (period === "all") {
+      return [...buckets.keys()].sort().map((year) => ({
+        month: year,
+        amount: buckets.get(year) ?? 0,
+        lastYearAmount: buckets.get(String(Number(year) - 1)) ?? 0,
+      }));
+    }
 
-$effect(() => {
-  if (orgId || selectedClass || selectedTerm || period) {
-    loadData();
-  }
+    const months = [];
+    for (const date = new Date(firstMonth); date <= currentMonth; date.setUTCMonth(date.getUTCMonth() + 1)) {
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const year = date.getUTCFullYear();
+      months.push({
+        month: formatDate(date, "date", { month: "short", timeZone: "UTC" }),
+        amount: buckets.get(`${year}-${month}`) ?? 0,
+        lastYearAmount: buckets.get(`${year - 1}-${month}`) ?? 0,
+      });
+    }
+    return months;
 });
 
 // Define Y ticks based on max value (e.g. max is around 65k, tick upper bound 80k)
@@ -160,15 +163,12 @@ function handleMouseLeave() {
   tooltipPos = null;
 }
 
-// Compact currency formatter
 function formatVal(val: number) {
-  if (val === 0) return "0";
-  if (val >= 1000) return `€${Math.round(val / 1000)}k`;
-  return `€${val}`;
+  return formatNumber(val, { notation: "compact" });
 }
 
 function formatTooltipVal(val: number) {
-  return `€${formatNumber(val)}`;
+  return formatCurrency(val, currency);
 }
 </script>
 
@@ -177,11 +177,25 @@ function formatTooltipVal(val: number) {
     <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
+  {:else if loadError}
+    <p role="alert" class="text-sm text-destructive">{m.finance_ui_payments_load_failed()}</p>
   {:else}
     <!-- Top Row Header + Legend -->
     <div class="flex items-start justify-between w-full select-none mb-3">
       <div class="flex flex-col text-start">
-        <span class="text-sm font-semibold text-foreground/90">{m.reports_revenue_trend_title()}</span>
+        <span class="text-sm font-semibold text-foreground/90">{m.finance_overview_total_receipts()}</span>
+        {#if currencies.length > 1}
+          <Select type="single" value={currency} onValueChange={(value) => selectedCurrency = value ?? ""}>
+            <SelectTrigger class="mt-2 h-7 w-24 text-xs" aria-label={m.finance_ui_currency()}>{currency}</SelectTrigger>
+            <SelectContent>
+              {#each currencies as code (code)}
+                <SelectItem value={code}>{code}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
+        {:else if currency}
+          <span class="text-xs text-muted-foreground">{currency}</span>
+        {/if}
       </div>
       <div class="flex items-center gap-2">
         {#if isEditing}

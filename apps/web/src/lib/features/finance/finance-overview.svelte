@@ -17,6 +17,7 @@ import { formatCurrency } from "$lib/core/i18n";
 
 import {
   createStudentFeesQuery,
+  createPaymentsQuery,
   createCashAccountsQuery,
   createFeeTemplatesQuery,
 } from "$lib/features/finance";
@@ -45,6 +46,7 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import { fade } from "svelte/transition";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 let { orgId }: { orgId: string } = $props();
 let dateRange = $state<DateRangeFilterValue>(
@@ -63,6 +65,11 @@ const dateFilter = $derived({
   to_date: dateRange.toDate,
   org_unit_id: orgUnitFilter,
 });
+const paymentsQuery = createPaymentsQuery(() => orgId, () => ({
+  ...dateFilter,
+  sort_by: "paid_at",
+  sort_dir: "desc",
+}));
 const templatesQuery = createFeeTemplatesQuery(() => orgId);
 const feeSummaryQuery = createQuery(() => ({
   queryKey: [...queryKeys.finance.studentFeeSummary(orgId), dateFilter],
@@ -72,22 +79,34 @@ const feeSummaryQuery = createQuery(() => ({
 }));
 const feeSummary = $derived(feeSummaryQuery.data ?? []);
 const feeTemplates = $derived(templatesQuery.data ?? []);
+const payments = $derived(paymentsQuery.data ?? []);
 const availableCurrencies = $derived(
   [
     ...new Set(
-      feeTemplates.map((template) => template.currency).filter(Boolean),
+      [
+        orgContext.baseCurrency,
+        ...feeTemplates.map((template) => template.currency),
+        ...feeSummary.map((summary) => summary.currency),
+        ...payments.map((payment) => payment.currency_code),
+      ].filter(Boolean),
     ),
   ].sort(),
+);
+const defaultCurrency = $derived(
+  payments.some((payment) => payment.currency_code === orgContext.baseCurrency)
+    ? orgContext.baseCurrency
+    : (payments.find((payment) => payment.currency_code)?.currency_code ||
+      orgContext.baseCurrency || availableCurrencies[0] || ""),
 );
 const activeCurrency = $derived(
   availableCurrencies.includes(selectedCurrency)
     ? selectedCurrency
-    : (availableCurrencies[0] ?? ""),
+    : defaultCurrency,
 );
 const hasActiveFilters = $derived(
   dateRange.preset !== "year_to_date" ||
     selectedBranchId !== "all" ||
-    (selectedCurrency !== "" && selectedCurrency !== availableCurrencies[0]),
+    (selectedCurrency !== "" && selectedCurrency !== defaultCurrency),
 );
 const selectedSummary = $derived(
   feeSummary.find((item) => item.currency === activeCurrency),
@@ -98,32 +117,18 @@ const feesQuery = createStudentFeesQuery(
     from_date: dateRange.fromDate,
     to_date: dateRange.toDate,
     currency_code: activeCurrency || undefined,
+    org_unit_id: orgUnitFilter,
     is_overdue: true,
     sort_by: "balance_due",
     sort_dir: "desc",
   }),
   () => !!activeCurrency,
 );
-const paymentsFilter = $derived({
-  ...dateFilter,
-  currency_code: activeCurrency || undefined,
-  page: 1,
-  page_size: 20,
-  sort_by: "paid_at",
-  sort_dir: "desc",
-});
-const paymentsQuery = createQuery(() => ({
-  queryKey: queryKeys.finance.payments(orgId, paymentsFilter),
-  queryFn: async () => (await api.listPaymentsPaginated(paymentsFilter)).items,
-  enabled: !!orgId && !!activeCurrency,
-  staleTime: 2 * 60 * 1000,
-}));
 const treasuriesQuery = createCashAccountsQuery(() => orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 
 const fees = $derived(feesQuery.data ?? []);
-const payments = $derived(paymentsQuery.data ?? []);
 const treasuries = $derived(treasuriesQuery.data ?? []);
 const enrollments = $derived(enrollmentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
@@ -197,6 +202,12 @@ function formatSelectedAmount(value: number): string {
 const totalFees = $derived(toAmount(selectedSummary?.due));
 
 const totalPaid = $derived(toAmount(selectedSummary?.paid));
+const currencyPayments = $derived(
+  payments.filter((payment) => payment.currency_code === activeCurrency),
+);
+const totalReceipts = $derived(
+  currencyPayments.reduce((sum, payment) => sum + toAmount(payment.amount), 0),
+);
 
 const totalBalance = $derived(toAmount(selectedSummary?.balance));
 
@@ -368,10 +379,7 @@ const lateStudents = $derived(
   })),
 );
 const recentPayments = $derived(
-  payments
-    .filter(
-      (payment) => !activeCurrency || payment.currency_code === activeCurrency,
-    )
+  currencyPayments
     .slice(0, 5)
     .map((payment) => {
       const enrollment = payment.enrollment_id
@@ -465,7 +473,7 @@ const visibleTreasuries = $derived(
         {/if}
       </div>
 
-      <div class="grid grid-cols-1 gap-3 @min-[38rem]/finance:grid-cols-3">
+      <div class="grid grid-cols-1 gap-3 @min-[38rem]/finance:grid-cols-2 @min-[58rem]/finance:grid-cols-4">
         <Card class="shadow-sm">
           <CardContent class="p-4">
             <p class="text-xs font-medium text-muted-foreground">
@@ -496,6 +504,14 @@ const visibleTreasuries = $derived(
             </p>
           </CardContent>
         </Card>
+        <Card class="shadow-sm">
+          <CardContent class="p-4">
+            <p class="text-xs font-medium text-muted-foreground">{m.finance_overview_total_receipts()}</p>
+            <p class="mt-2 truncate font-mono text-lg font-bold text-primary">
+              {formatSelectedAmount(totalReceipts)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <CashFlowTrendCard
@@ -503,7 +519,7 @@ const visibleTreasuries = $derived(
         {dateRange}
         branchId={orgUnitFilter}
         selectedCurrency={activeCurrency}
-        {feeTemplates}
+        payments={currencyPayments}
       />
 
       <div class="grid grid-cols-1 gap-6 {activeCurrency ? '@min-[64rem]/finance:grid-cols-4' : '@min-[64rem]/finance:grid-cols-3'}">

@@ -11,7 +11,7 @@ import {
 } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { CreditCard } from "@orbis/icons";
-import { formatCurrency } from "$lib/core/i18n";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import type { PaymentDto } from "$lib/api";
 
@@ -94,7 +94,7 @@ function getPaymentMethodLabel(method: string): string {
             <div class="flex flex-col items-end shrink-0 text-end">
               <span class="font-bold font-mono text-emerald-500 text-[10px]">+{formatCurrency(Number(p.amount), p.currency_code || "YER")}</span>
               <span class="text-[7px] text-muted-foreground select-none font-mono mt-0.5">
-                {p.paid_at ? p.paid_at.split("T")[0] : p.created_at ? p.created_at.split("T")[0] : ""}
+                {formatDate(p.paid_at || p.created_at)}
               </span>
             </div>
           </div>

@@ -152,7 +152,7 @@ export function createStudentFeesQuery(
 /** Currencies query. */
 export function createCurrenciesQuery(orgId: () => string) {
   return createQuery<CurrencyDto[]>(() => ({
-    queryKey: queryKeys.finance.currencies(),
+    queryKey: [...queryKeys.finance.currencies(), orgId()],
     queryFn: () => api.listCurrencies(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,

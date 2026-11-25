@@ -868,7 +868,13 @@ fn build_payment_list_query(
         query = query.filter(payment::Column::StudentId.eq(student_id));
     }
     if let Some(org_unit_id) = filter.org_unit_id {
-        query = query.filter(payment::Column::OrgUnitId.eq(Some(org_unit_id)));
+        query = query.filter(Expr::cust_with_values(
+            format!(
+                "COALESCE(payments.org_unit_id, (SELECT s.org_unit_id FROM students s +                 WHERE s.id = payments.student_id AND s.org_id = payments.org_id)) = {}",
+                placeholder(1),
+            ),
+            [org_unit_id],
+        ));
     }
     if let Some(currency_code) = filter
         .currency_code
@@ -877,6 +883,9 @@ fn build_payment_list_query(
         .filter(|currency| !currency.is_empty())
     {
         query = query.filter(payment::Column::CurrencyCode.eq(currency_code));
+    }
+    if let Some(enrollment_id) = filter.enrollment_id {
+        query = query.filter(payment::Column::EnrollmentId.eq(enrollment_id));
     }
     if let Some(fee_id) = filter.fee_id {
         query = query.filter(payment::Column::FeeId.eq(fee_id));
@@ -887,8 +896,8 @@ fn build_payment_list_query(
     if let Some(from_date) = filter.from_date {
         query = query.filter(payment::Column::PaidAt.gte(from_date));
     }
-    if let Some(to_date) = filter.to_date {
-        query = query.filter(payment::Column::PaidAt.lte(to_date));
+    if let Some(to_date) = filter.to_date_exclusive {
+        query = query.filter(payment::Column::PaidAt.lt(to_date));
     }
     if let Some(search) = filter
         .search
@@ -1520,8 +1529,10 @@ impl PaymentRepository for FinanceRepoImpl {
             Some("receipt_number") => query.order_by(payment::Column::ReceiptNumber, order),
             Some("currency_code") => query.order_by(payment::Column::CurrencyCode, order),
             Some("created_at") => query.order_by(payment::Column::CreatedAt, order),
-            _ => query,
-        };
+            _ => query.order_by_desc(payment::Column::PaidAt),
+        }
+        .order_by_desc(payment::Column::CreatedAt)
+        .order_by_asc(payment::Column::Id);
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
@@ -2173,6 +2184,54 @@ mod tests {
             assert!(values.contains("SAR"));
             assert!(values.contains(&org_id.to_string()));
         }
+    }
+
+    #[tokio::test]
+    async fn payment_day_filter_includes_local_midnight_and_fractional_last_second() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        create_payment_tables(&db).await;
+        let repo = FinanceRepoImpl { db };
+        let org_id = Uuid::new_v4();
+        let start = "2026-11-24T21:00:00Z"
+            .parse::<chrono::DateTime<Utc>>()
+            .unwrap();
+        let end = start + chrono::Duration::days(1);
+        let entries = [
+            (start - chrono::Duration::seconds(1), false),
+            (start, true),
+            (end - chrono::Duration::milliseconds(100), true),
+            (end, false),
+        ];
+        let mut expected = Vec::new();
+        for (paid_at, included) in entries {
+            let id = Uuid::new_v4();
+            let mut payment = test_payment(org_id, Uuid::new_v4(), id, Uuid::new_v4(), paid_at);
+            payment.fee_id = None;
+            payment.journal_entry_id = None;
+            PaymentRepository::save(&repo, &payment).await.unwrap();
+            if included {
+                expected.push(id);
+            }
+        }
+        expected.reverse();
+        let page = PaymentRepository::list(
+            &repo,
+            org_id,
+            orbis_domain::queries::filters::PaymentFilter {
+                from_date: Some(start),
+                to_date_exclusive: Some(end),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            page.items
+                .into_iter()
+                .map(|payment| payment.id)
+                .collect::<Vec<_>>(),
+            expected
+        );
     }
 
     #[tokio::test]

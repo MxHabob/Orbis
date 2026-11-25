@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
+import { formatDateKey } from "$lib/core/i18n/format";
 import type { EnrollmentDto, FeeTemplateDto } from "@orbis/sdk";
 import * as m from "$lib/paraglide/messages";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
@@ -35,13 +36,8 @@ const form = new FormController({
 });
 
 const selectedTemplate = $derived(templates.find((item) => item.id === form.values.fee_template_id));
-let dueDate = $state(getLocalDateInputValue());
+let dueDate = $state(formatDateKey(new Date()));
 
-function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-}
 
 onMount(async () => {
   if (!orgId) return;
@@ -89,7 +85,7 @@ async function handleSubmit(e: SubmitEvent) {
     });
     toast.success(m.common_fee_toast_success());
     form.reset();
-    dueDate = getLocalDateInputValue();
+    dueDate = formatDateKey(new Date());
   });
   if (submitted) {
     onSuccess();

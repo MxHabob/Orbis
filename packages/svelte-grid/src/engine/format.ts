@@ -19,7 +19,6 @@ export function formatCell(
       return new Intl.NumberFormat(locale, {
         style: "currency",
         currency: col.currency || "USD",
-        maximumFractionDigits: 2,
       }).format(value);
     } catch {
       return value.toFixed(2);
