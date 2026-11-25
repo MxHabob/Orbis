@@ -12,6 +12,8 @@ mod m20261105_000001_unique_student_root;
 mod m20261124_000001_grade_unique_and_bulk_rollback;
 mod m20261124_000002_grade_component_code;
 
+mod m20261125_000001_exam_proctor_uniqueness;
+
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -29,6 +31,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261105_000001_unique_student_root::Migration),
             Box::new(m20261124_000001_grade_unique_and_bulk_rollback::Migration),
             Box::new(m20261124_000002_grade_component_code::Migration),
+            Box::new(m20261125_000001_exam_proctor_uniqueness::Migration),
         ]
     }
 }

@@ -331,7 +331,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
     const flags = resolveStateFlags(row);
     if (flags.invalid.length > 0) {
       for (const colId of flags.invalid) {
-        issues.push({ severity: "BLOCKING_ERROR", columnId, message: m.bulk_entry_grade_validation_boolean() });
+        issues.push({ severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_boolean() });
       }
     }
     const activeCount = [flags.isAbsent, flags.isExcused, flags.isExempt].filter(Boolean).length;

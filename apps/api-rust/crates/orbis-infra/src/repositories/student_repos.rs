@@ -841,7 +841,7 @@ impl EnrollmentRepository for StudentRepoImpl {
     }
 }
 
-fn enrollment_to_active_model(e: &DomainEnrollment) -> enrollment::ActiveModel {
+pub(super) fn enrollment_to_active_model(e: &DomainEnrollment) -> enrollment::ActiveModel {
     enrollment::ActiveModel {
         id: Set(e.id),
         org_id: Set(e.org_id),

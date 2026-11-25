@@ -4,9 +4,7 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_app::services::progression_service::StudentProgressionItem;
-use orbis_domain::entities::progression::{
-    ProgressionJob, ProgressionJobStatus, PromotionDecision,
-};
+use orbis_domain::entities::progression::{ProgressionJob, ProgressionJobStatus};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -81,15 +79,6 @@ fn job_to_dto(job: ProgressionJob) -> ProgressionJobDto {
     }
 }
 
-fn parse_decision(s: &str) -> PromotionDecision {
-    match s.to_lowercase().as_str() {
-        "retain" | "retained" => PromotionDecision::Retain,
-        "graduate" | "graduated" => PromotionDecision::Graduate,
-        "exclude" | "excluded" => PromotionDecision::Exclude,
-        _ => PromotionDecision::Promote,
-    }
-}
-
 #[tauri::command]
 pub async fn progression_promote_cohort(
     request: PromoteCohortInput,
@@ -108,10 +97,14 @@ pub async fn progression_promote_cohort(
             Uuid::parse_str(&item.enrollment_id).map_err(|_| "Invalid enrollmentId")?;
         let source_section_id = item
             .source_section_id
-            .and_then(|section_id| Uuid::parse_str(&section_id).ok());
+            .map(|section_id| Uuid::parse_str(&section_id))
+            .transpose()
+            .map_err(|_| "Invalid section ID")?;
         let target_section_id = item
             .target_section_id
-            .and_then(|section_id| Uuid::parse_str(&section_id).ok());
+            .map(|section_id| Uuid::parse_str(&section_id))
+            .transpose()
+            .map_err(|_| "Invalid section ID")?;
 
         items.push(StudentProgressionItem {
             student_id,
@@ -119,7 +112,10 @@ pub async fn progression_promote_cohort(
             enrollment_id,
             source_section_id,
             target_section_id,
-            decision: parse_decision(&item.decision),
+            decision: item
+                .decision
+                .parse()
+                .map_err(|error: orbis_domain::errors::DomainError| error.to_string())?,
             reason: item.reason,
         });
     }
@@ -174,8 +170,7 @@ pub async fn progression_list_jobs(
     let ctx = make_ctx(&state);
     let jobs = state
         .progression_service
-        .progression_repo
-        .find_jobs_by_org(ctx.tenant_id)
+        .list_jobs(&ctx)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(jobs.into_iter().map(job_to_dto).collect()))
@@ -189,11 +184,9 @@ pub async fn progression_get_job(
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let item = state
         .progression_service
-        .progression_repo
-        .find_job_by_id(uid)
+        .get_job(&make_ctx(&state), uid)
         .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Promotion job not found".to_string())?;
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(job_to_dto(item)))
 }

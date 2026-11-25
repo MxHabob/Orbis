@@ -8365,14 +8365,34 @@
           "sibling_priority_enabled"
         ],
         "properties": {
-          "allow_duplicate_national_id": { "type": "boolean" },
-          "allow_late_enrollment": { "type": "boolean" },
-          "allow_no_guardian": { "type": "boolean" },
-          "allow_waitlist": { "type": "boolean" },
-          "auto_assign_fees": { "type": "boolean" },
-          "max_class_capacity": { "type": "integer", "format": "int32" },
-          "requires_approval": { "type": "boolean" },
-          "sibling_priority_enabled": { "type": "boolean" }
+          "allow_duplicate_national_id": {
+            "type": "boolean"
+          },
+          "allow_late_enrollment": {
+            "type": "boolean"
+          },
+          "allow_no_guardian": {
+            "type": "boolean"
+          },
+          "allow_waitlist": {
+            "type": "boolean"
+          },
+          "auto_assign_fees": {
+            "type": "boolean"
+          },
+          "max_class_capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "prevent_duplicate_full_name": {
+            "type": "boolean"
+          },
+          "requires_approval": {
+            "type": "boolean"
+          },
+          "sibling_priority_enabled": {
+            "type": "boolean"
+          }
         }
       },
       "AiChatRequest": {
@@ -10533,14 +10553,56 @@
       "DuplicateCheckRequest": {
         "type": "object",
         "properties": {
-          "email": { "type": "string", "nullable": true },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
           "exclude_student_id": {
             "type": "string",
             "format": "uuid",
             "nullable": true
           },
-          "national_id": { "type": "string", "nullable": true },
-          "phone": { "type": "string", "nullable": true }
+          "first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "first_name_ar": {
+            "type": "string",
+            "nullable": true
+          },
+          "full_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name_ar": {
+            "type": "string",
+            "nullable": true
+          },
+          "middle_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "middle_name_ar": {
+            "type": "string",
+            "nullable": true
+          },
+          "national_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "DuplicateCheckResponse": {
@@ -10563,16 +10625,36 @@
           "matched_person_name"
         ],
         "properties": {
-          "field": { "type": "string" },
-          "matched_person_id": { "type": "string", "format": "uuid" },
-          "matched_person_name": { "type": "string" },
+          "confidence": {
+            "type": "string",
+            "nullable": true
+          },
+          "field": {
+            "type": "string"
+          },
+          "matched_person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matched_person_name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
           "student_id": {
             "type": "string",
             "format": "uuid",
             "nullable": true
           },
-          "student_number": { "type": "string", "nullable": true },
-          "value": { "type": "string" }
+          "student_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "type": "string"
+          }
         }
       },
       "EffectiveContextDto": {

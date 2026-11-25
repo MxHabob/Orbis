@@ -85,7 +85,7 @@ function formatActionLabel(action: string): string {
 }
 </script>
 
-<Accordion type="single" bind:value={accordionValue} collapsible class="w-full">
+<Accordion type="single" bind:value={accordionValue} class="w-full">
   <AccordionItem value="activity" class="border-0">
     <AccordionTrigger class="py-2 text-sm font-semibold text-foreground hover:no-underline">
       {m.shared_ui_audit_trail_title()}

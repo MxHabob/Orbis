@@ -101,7 +101,7 @@ let { state }: { state: StudentFormState } = $props();
                       class="w-full text-start p-2 hover:bg-accent/40 rounded text-xs flex justify-between items-center text-foreground font-medium cursor-pointer"
                       onclick={() => state.guardian.selectExistingParent(parent, index)}
                     >
-                      <span>{parent.full_name || parent.name} ({parent.phone || m.common_form_guardian_no_phone()})</span>
+                      <span>{parent.full_name || parent.email} ({parent.phone || m.common_form_guardian_no_phone()})</span>
                       <Badge variant="secondary" class="text-[9px]">{m.common_form_guardian_registered()}</Badge>
                     </button>
                   {/each}

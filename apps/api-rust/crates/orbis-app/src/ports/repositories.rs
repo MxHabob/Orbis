@@ -185,7 +185,7 @@ pub trait MfaFactorRepository: Send + Sync {
 #[async_trait]
 pub trait MfaRecoveryCodeRepository: Send + Sync {
     async fn find_active_by_user(&self, user_id: Uuid)
-    -> Result<Vec<MfaRecoveryCode>, DomainError>;
+        -> Result<Vec<MfaRecoveryCode>, DomainError>;
     async fn save_all(&self, codes: &[MfaRecoveryCode]) -> Result<(), DomainError>;
     async fn mark_used(&self, id: Uuid) -> Result<bool, DomainError>;
 }
@@ -657,7 +657,11 @@ pub trait ScheduledLessonRepository: Send + Sync {
 #[async_trait]
 pub trait ExamSessionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSession>, DomainError>;
-    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ExamSession>, DomainError>;
+    async fn find_by_period(
+        &self,
+        org_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<ExamSession>, DomainError>;
     async fn save(&self, session: &ExamSession) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -680,7 +684,7 @@ pub trait SeatingNumberRepository: Send + Sync {
         student_id: Uuid,
     ) -> Result<Option<SeatingNumber>, DomainError>;
     async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
-    async fn save_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
+    async fn insert_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_session(&self, session_id: Uuid) -> Result<(), DomainError>;
 }
@@ -695,7 +699,7 @@ pub trait SecretNumberRepository: Send + Sync {
         student_id: Uuid,
     ) -> Result<Option<SecretNumber>, DomainError>;
     async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
-    async fn save_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
+    async fn insert_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_schedule(&self, schedule_id: Uuid) -> Result<(), DomainError>;
 }
@@ -788,7 +792,7 @@ pub trait PaymentRepository: Send + Sync {
 #[async_trait]
 pub trait CurrencyRepository: Send + Sync {
     async fn find_by_code(&self, org_id: Uuid, code: &str)
-    -> Result<Option<Currency>, DomainError>;
+        -> Result<Option<Currency>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Currency>, DomainError>;
     async fn save(&self, currency: &Currency) -> Result<(), DomainError>;
     async fn get_rate(
@@ -817,6 +821,12 @@ pub trait PromotionRepository: Send + Sync {
         &self,
         job_id: Uuid,
     ) -> Result<Vec<ProgressionDetail>, DomainError>;
+    async fn commit_promotion(
+        &self,
+        job: &ProgressionJob,
+        details: &[ProgressionDetail],
+        new_enrollments: &[Enrollment],
+    ) -> Result<(), DomainError>;
     async fn save_job(&self, job: &ProgressionJob) -> Result<(), DomainError>;
     async fn save_detail(&self, detail: &ProgressionDetail) -> Result<(), DomainError>;
     async fn save_details(&self, details: &[ProgressionDetail]) -> Result<(), DomainError>;
@@ -857,7 +867,7 @@ pub trait WorkflowRepository: Send + Sync {
         trigger_event: &str,
     ) -> Result<Vec<WorkflowRule>, DomainError>;
     async fn find_actions_by_rule(&self, rule_id: Uuid)
-    -> Result<Vec<WorkflowAction>, DomainError>;
+        -> Result<Vec<WorkflowAction>, DomainError>;
     async fn save_execution(&self, execution: &WorkflowExecution) -> Result<(), DomainError>;
 }
 
@@ -889,7 +899,7 @@ pub trait DocumentRepository: Send + Sync {
     async fn purge(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_entity(&self, entity_type: &str, entity_id: Uuid)
-    -> Result<(), DomainError>;
+        -> Result<(), DomainError>;
 }
 
 #[async_trait]

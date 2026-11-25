@@ -31,7 +31,7 @@ import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { state }: { state: StudentFormState } = $props();
 
-const studyModes = [
+const studyModes: { value: StudentFormState["studyMode"]; label: string }[] = [
   { value: "regular", label: m.operations_ui_study_mode_regular() },
   { value: "part_time", label: m.operations_ui_study_mode_part_time() },
   { value: "distance_learning", label: m.operations_ui_study_mode_distance() },
@@ -82,7 +82,10 @@ const studyModes = [
           <Select
             type="single"
             value={state.studyMode}
-            onValueChange={(v) => { if (v) state.studyMode = v; }}
+            onValueChange={(value) => {
+              const selected = studyModes.find((mode) => mode.value === value);
+              if (selected) state.studyMode = selected.value;
+            }}
           >
             <SelectTrigger class="h-9 text-xs bg-background">
               {studyModes.find(m => m.value === state.studyMode) 

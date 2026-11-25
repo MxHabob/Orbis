@@ -2,8 +2,8 @@
 import { toast } from "@orbis/ui";
 import { api, extractErrorMessage, type TimeSlotDto } from "$lib/api";
 import { getWeekdayOptions } from "$lib/core/i18n";
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import {
@@ -19,19 +19,20 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
-import {
-  ClockRotateRight,
-  FloppyDisk,
-  Heart,
-  Pencil,
-  Plus,
-  Trash,
-  XMark,
-} from "@orbis/icons";
+import { ClockRotateRight, FloppyDisk, Plus, XMark } from "@orbis/icons";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import { authStore, uiStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
+import TimeSlotGenerator from "./time-slot-generator.svelte";
+import TimeSlotList from "./time-slot-list.svelte";
+import {
+  formatMinutesToTime,
+  getBreakLabel,
+  getDefaultStudyDays,
+  getPeriodNames,
+  parseTimeToMinutes,
+} from "./time-slot-helpers";
 
 interface Props {
   open: boolean;
@@ -48,11 +49,9 @@ let {
 }: Props = $props();
 
 const weekdays = getWeekdayOptions();
-const weekdayOrder = new Map(
-  weekdays.map((weekday, index) => [weekday.value, index]),
-);
+const weekdayOrder = new Map(weekdays.map((day, idx) => [day.value, idx]));
 
-let isEditing = $state(false);
+let mode = $state<"idle" | "single" | "generate">("idle");
 let editingSlot = $state<TimeSlotDto | null>(null);
 let nameAr = $state("");
 let name = $state("");
@@ -63,57 +62,69 @@ let selectedDays = $state<number[]>([]);
 let isBreak = $state(false);
 let breakType = $state("recess");
 let isSubmitting = $state(false);
+
 const preferenceScope = () => ({
   userId: authStore.userId,
   organizationId: authStore.orgId,
 });
 
-const sortedTimeSlots = $derived(
-  [...timeSlots].sort((left, right) => {
-    return (
-      (weekdayOrder.get(left.day_of_week) ?? Number.MAX_SAFE_INTEGER) -
-        (weekdayOrder.get(right.day_of_week) ?? Number.MAX_SAFE_INTEGER) ||
-      left.slot_index - right.slot_index
-    );
-  }),
+const duration = $derived(
+  parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime),
 );
-const duration = $derived.by(() => {
-  const [startHour, startMinute] = startTime.split(":").map(Number);
-  const [endHour, endMinute] = endTime.split(":").map(Number);
-  return endHour * 60 + endMinute - (startHour * 60 + startMinute);
-});
 
 function resetForm() {
-  isEditing = false;
+  mode = "idle";
   editingSlot = null;
   nameAr = "";
   name = "";
-  startTime = "08:00";
-  endTime = "08:45";
-  slotIndex = String(
-    Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1,
-  );
-  selectedDays = [];
   isBreak = false;
   breakType = "recess";
 }
 
 function startAdd() {
-  resetForm();
-  isEditing = true;
+  editingSlot = null;
+  mode = "single";
   const nextIndex =
     Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1;
   slotIndex = String(nextIndex);
-  nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
-  name = "";
-  ({ startTime, endTime } = uiStore.getTimeSlotRangePreference(
-    preferenceScope(),
-  ));
+
+  const teachingCount =
+    Math.max(
+      0,
+      ...timeSlots
+        .filter((slot) => !slot.is_break)
+        .map((slot) => Number(slot.slot_index) || 0),
+    ) + 1;
+  const autoNames = getPeriodNames(teachingCount);
+  nameAr = autoNames.ar;
+  name = autoNames.en;
+
+  const pref = uiStore.getTimeSlotRangePreference(preferenceScope());
+  const prefDur = Math.max(
+    15,
+    parseTimeToMinutes(pref.endTime) - parseTimeToMinutes(pref.startTime) || 45,
+  );
+  const latest = [...timeSlots].sort((a, b) =>
+    b.end_time.localeCompare(a.end_time),
+  )[0];
+  if (latest) {
+    startTime = latest.end_time.slice(0, 5);
+    endTime = formatMinutesToTime(parseTimeToMinutes(startTime) + prefDur);
+  } else {
+    startTime = pref.startTime;
+    endTime = pref.endTime;
+  }
+
+  if (selectedDays.length === 0) {
+    selectedDays = getDefaultStudyDays(timeSlots, weekdayOrder);
+  }
+  isBreak = false;
+  breakType = "recess";
 }
 
 function startEdit(slot: TimeSlotDto) {
   editingSlot = slot;
-  isEditing = true;
+  mode = "single";
   nameAr = slot.name_ar ?? "";
   name = slot.name ?? "";
   startTime = slot.start_time.slice(0, 5);
@@ -130,7 +141,7 @@ function toggleDay(day: number) {
     return;
   }
   selectedDays = selectedDays.includes(day)
-    ? selectedDays.filter((selected) => selected !== day)
+    ? selectedDays.filter((item) => item !== day)
     : [...selectedDays, day];
 }
 
@@ -169,17 +180,19 @@ async function handleSave(event: SubmitEvent) {
       });
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
-      const slots = selectedDays.map((day) => ({
-        day_of_week: day,
-        slot_index: index,
-        name: label,
-        name_ar: nameAr.trim(),
-        start_time: startTime,
-        end_time: endTime,
-        is_break: isBreak,
-        break_type: isBreak ? breakType : null,
-      }));
-      await api.batchCreateTimeSlots({ period_id: periodId, slots });
+      await api.batchCreateTimeSlots({
+        period_id: periodId,
+        slots: selectedDays.map((day) => ({
+          day_of_week: day,
+          slot_index: index,
+          name: label,
+          name_ar: nameAr.trim(),
+          start_time: startTime,
+          end_time: endTime,
+          is_break: isBreak,
+          break_type: isBreak ? breakType : null,
+        })),
+      });
       toast.success(m.academics_schedule_time_slot_added());
     }
     uiStore.setTimeSlotRangePreference(preferenceScope(), {
@@ -206,14 +219,21 @@ async function handleDelete(slotId: string) {
   }
 }
 
-function getWeekdayLabel(day: number): string {
-  return weekdays.find((item) => item.value === day)?.label ?? String(day);
-}
-
-function getDuration(slot: TimeSlotDto): number {
-  const [startHour, startMinute] = slot.start_time.split(":").map(Number);
-  const [endHour, endMinute] = slot.end_time.split(":").map(Number);
-  return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+async function handleDeleteGroup(slots: TimeSlotDto[]) {
+  if (slots.length === 0) return;
+  isSubmitting = true;
+  try {
+    await Promise.all(slots.map((slot) => api.deleteTimeSlot(slot.id)));
+    toast.success(m.academics_schedule_time_slot_deleted());
+    if (editingSlot && slots.some((slot) => slot.id === editingSlot?.id)) {
+      resetForm();
+    }
+    onSuccess?.();
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isSubmitting = false;
+  }
 }
 </script>
 
@@ -224,21 +244,61 @@ function getDuration(slot: TimeSlotDto): number {
   >
     <SheetHeader class="border-b border-border/50 px-5 py-4">
       <SheetTitle>{m.academics_schedule_time_slots_heading()}</SheetTitle>
-      <p class="text-xs text-muted-foreground">{m.academics_studio_manage_slots()}</p>
     </SheetHeader>
 
     <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-      {#if isEditing}
-        <form class="space-y-4 rounded-xl border border-primary/20 bg-card p-4 shadow-xs" onsubmit={handleSave}>
-          <div class="flex items-center justify-between gap-3">
+      {#if mode === "idle"}
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            class="gap-2 text-xs font-semibold"
+            disabled={!periodId}
+            onclick={() => {
+              editingSlot = null;
+              mode = "generate";
+            }}
+          >
+            <ClockRotateRight size={14} />
+            {m.academics_schedule_quick_generate()}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            class="gap-2 border-dashed text-xs"
+            disabled={!periodId}
+            onclick={startAdd}
+          >
+            <Plus size={14} />
+            {m.academics_schedule_add_slot()}
+          </Button>
+        </div>
+      {:else if mode === "generate"}
+        <TimeSlotGenerator
+          {periodId}
+          {timeSlots}
+          bind:isSubmitting
+          onCancel={resetForm}
+          onSuccess={() => {
+            resetForm();
+            onSuccess?.();
+          }}
+        />
+      {:else}
+        <form
+          class="space-y-3 rounded-xl border border-primary/20 bg-card p-3.5 shadow-xs"
+          onsubmit={handleSave}
+        >
+          <div class="flex items-center justify-between">
             <h3 class="text-sm font-semibold text-foreground">
-              {editingSlot ? m.academics_schedule_time_slot_edit() : m.academics_schedule_time_slot_new()}
+              {editingSlot
+                ? m.academics_schedule_time_slot_edit()
+                : m.academics_schedule_time_slot_new()}
             </h3>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              class="h-7 w-7"
+              class="size-7"
               onclick={resetForm}
               aria-label={m.common_action_cancel()}
             >
@@ -264,8 +324,10 @@ function getDuration(slot: TimeSlotDto): number {
           />
 
           <div class="grid gap-3 sm:grid-cols-3">
-            <div class="space-y-1.5">
-              <Label for="studio-slot-index" class="text-xs">{m.academics_studio_slot_index()}</Label>
+            <div class="space-y-1">
+              <Label for="studio-slot-index" class="text-xs">
+                {m.academics_studio_slot_index()}
+              </Label>
               <Input
                 id="studio-slot-index"
                 type="number"
@@ -276,8 +338,10 @@ function getDuration(slot: TimeSlotDto): number {
                 required
               />
             </div>
-            <div class="space-y-1.5">
-              <Label for="studio-slot-start" class="text-xs">{m.academics_schedule_start_time()}</Label>
+            <div class="space-y-1">
+              <Label for="studio-slot-start" class="text-xs">
+                {m.academics_schedule_start_time()}
+              </Label>
               <Input
                 id="studio-slot-start"
                 type="time"
@@ -286,8 +350,10 @@ function getDuration(slot: TimeSlotDto): number {
                 required
               />
             </div>
-            <div class="space-y-1.5">
-              <Label for="studio-slot-end" class="text-xs">{m.academics_schedule_end_time()}</Label>
+            <div class="space-y-1">
+              <Label for="studio-slot-end" class="text-xs">
+                {m.academics_schedule_end_time()}
+              </Label>
               <Input
                 id="studio-slot-end"
                 type="time"
@@ -298,57 +364,65 @@ function getDuration(slot: TimeSlotDto): number {
             </div>
           </div>
 
-          <fieldset class="space-y-2">
-            <legend class="text-xs font-medium text-foreground">{m.academics_studio_teaching_days()}</legend>
-            <div class="flex flex-wrap gap-1.5">
-              {#each weekdays as day (day.value)}
-                <button
-                  type="button"
-                  aria-pressed={selectedDays.includes(day.value)}
-                  disabled={isSubmitting}
-                  class="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors {selectedDays.includes(day.value)
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border/60 bg-background text-muted-foreground hover:bg-muted'}"
-                  onclick={() => toggleDay(day.value)}
-                >
-                  {day.label}
-                </button>
-              {/each}
-            </div>
-          </fieldset>
-
-          <div class="flex flex-wrap items-center gap-4">
-            <label class="flex items-center gap-2 text-xs font-medium text-foreground">
-              <input
-                type="checkbox"
-                bind:checked={isBreak}
+          <div class="flex flex-wrap gap-1.5">
+            {#each weekdays as day (day.value)}
+              <button
+                type="button"
+                aria-pressed={selectedDays.includes(day.value)}
                 disabled={isSubmitting}
-                class="size-4 accent-primary"
+                class="rounded-md border px-2.5 py-1 text-xs font-medium transition-colors {selectedDays.includes(day.value)
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border/60 bg-background text-muted-foreground hover:bg-muted'}"
+                onclick={() => toggleDay(day.value)}
+              >
+                {day.label}
+              </button>
+            {/each}
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id="single-slot-break"
+                checked={isBreak}
+                onCheckedChange={(value: boolean | "indeterminate") =>
+                  (isBreak = Boolean(value))}
+                disabled={isSubmitting}
               />
-              {m.academics_schedule_break_slot()}
-            </label>
+              <Label for="single-slot-break" class="cursor-pointer text-xs">
+                {m.academics_schedule_break_slot()}
+              </Label>
+            </div>
             {#if isBreak}
-              <div class="min-w-48 flex-1">
+              <div class="min-w-44 flex-1">
                 <Select
                   type="single"
                   value={breakType}
                   onValueChange={(value) => (breakType = value ?? "recess")}
                 >
-                  <SelectTrigger class="h-9 text-xs">
-                    <span>{m.academics_schedule_break_type()}</span>
+                  <SelectTrigger class="h-8 text-xs">
+                    <span>{getBreakLabel(breakType)}</span>
                   </SelectTrigger>
                   <SelectContent class="text-start">
-                    <SelectItem value="recess" class="text-xs">{m.common_onboarding_break_recess()}</SelectItem>
-                    <SelectItem value="lunch" class="text-xs">{m.common_onboarding_break_lunch()}</SelectItem>
-                    <SelectItem value="prayer" class="text-xs">{m.common_onboarding_break_prayer()}</SelectItem>
-                    <SelectItem value="morning" class="text-xs">{m.academics_schedule_morning_assembly()}</SelectItem>
+                    <SelectItem value="recess" class="text-xs">
+                      {m.common_onboarding_break_recess()}
+                    </SelectItem>
+                    <SelectItem value="lunch" class="text-xs">
+                      {m.common_onboarding_break_lunch()}
+                    </SelectItem>
+                    <SelectItem value="prayer" class="text-xs">
+                      {m.common_onboarding_break_prayer()}
+                    </SelectItem>
+                    <SelectItem value="morning" class="text-xs">
+                      {m.academics_schedule_morning_assembly()}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             {/if}
           </div>
 
-          <div class="flex items-center justify-between border-t border-border/50 pt-3">
+          <div class="flex items-center justify-between border-t border-border/50 pt-2.5">
             <span class="text-xs text-muted-foreground">
               {m.academics_schedule_minutes()}: {duration > 0 ? duration : "—"}
             </span>
@@ -368,78 +442,15 @@ function getDuration(slot: TimeSlotDto): number {
             </div>
           </div>
         </form>
-      {:else}
-        <Button
-          type="button"
-          variant="outline"
-          class="w-full gap-2 border-dashed text-xs"
-          disabled={!periodId}
-          onclick={startAdd}
-        >
-          <Plus size={14} />
-          {m.academics_schedule_add_slot()}
-        </Button>
       {/if}
 
-      <section class="space-y-2">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-semibold text-foreground">{m.academics_schedule_current_slots()}</h3>
-          <Badge variant="secondary">{timeSlots.length}</Badge>
-        </div>
-        {#if sortedTimeSlots.length === 0}
-          <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border/60 p-8 text-center">
-            <ClockRotateRight size={22} class="text-muted-foreground/70" />
-            <p class="text-xs text-muted-foreground">{m.academics_schedule_no_slots()}</p>
-          </div>
-        {:else}
-          <div class="space-y-2">
-            {#each sortedTimeSlots as slot (slot.id)}
-              <article class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card p-3 {slot.is_break ? 'border-amber-500/30 bg-amber-500/[0.03]' : ''}">
-                <div class="flex min-w-0 items-center gap-3">
-                  <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-xs font-bold text-foreground">
-                    {#if slot.is_break}
-                      <Heart size={14} class="text-amber-600" />
-                    {:else}
-                      {slot.slot_index}
-                    {/if}
-                  </span>
-                  <div class="min-w-0">
-                    <p class="truncate text-xs font-semibold text-foreground">
-                      {getWeekdayLabel(slot.day_of_week)} · {slot.name_ar || slot.name || m.academics_schedule_placeholder_period({ number: slot.slot_index })}
-                    </p>
-                    <p class="mt-1 font-mono text-[10px] text-muted-foreground">
-                      {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
-                      · {m.academics_schedule_minutes()}: {getDuration(slot)}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex shrink-0 items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8"
-                    onclick={() => startEdit(slot)}
-                    aria-label={m.academics_schedule_edit()}
-                  >
-                    <Pencil size={13} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8 text-destructive hover:bg-destructive/10"
-                    onclick={() => handleDelete(slot.id)}
-                    aria-label={m.common_action_delete()}
-                  >
-                    <Trash size={13} />
-                  </Button>
-                </div>
-              </article>
-            {/each}
-          </div>
-        {/if}
-      </section>
+      <TimeSlotList
+        {timeSlots}
+        {isSubmitting}
+        onEdit={startEdit}
+        onDelete={handleDelete}
+        onDeleteGroup={handleDeleteGroup}
+      />
     </div>
 
     <SheetFooter class="border-t border-border/50 p-4">

@@ -54,7 +54,7 @@ let selectedTermPeriodId = $state(
   academicContext.effectivePeriodId || academicContext.allPeriods[0]?.id || "",
 );
 let selectedCalendarId = $state(
-  academicContext.effectiveYearId || academicContext.allYears[0]?.id || "",
+  academicContext.currentYear?.id || academicContext.allYears[0]?.id || "",
 );
 let selectedCertType = $state<"secondary_thanawiya" | "basic_grade9">(
   "secondary_thanawiya",

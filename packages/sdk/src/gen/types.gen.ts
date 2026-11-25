@@ -194,6 +194,7 @@ export type AdmissionPolicyDto = {
   allow_waitlist: boolean;
   auto_assign_fees: boolean;
   max_class_capacity: number;
+  prevent_duplicate_full_name?: boolean;
   requires_approval: boolean;
   sibling_priority_enabled: boolean;
 };
@@ -1329,8 +1330,16 @@ export type DocumentRequirementDto = {
 };
 
 export type DuplicateCheckRequest = {
+  birth_date?: string | null;
   email?: string | null;
   exclude_student_id?: string | null;
+  first_name?: string | null;
+  first_name_ar?: string | null;
+  full_name?: string | null;
+  last_name?: string | null;
+  last_name_ar?: string | null;
+  middle_name?: string | null;
+  middle_name_ar?: string | null;
   national_id?: string | null;
   phone?: string | null;
 };
@@ -1341,9 +1350,11 @@ export type DuplicateCheckResponse = {
 };
 
 export type DuplicateMatchDto = {
+  confidence?: string | null;
   field: string;
   matched_person_id: string;
   matched_person_name: string;
+  reason?: string | null;
   student_id?: string | null;
   student_number?: string | null;
   value: string;

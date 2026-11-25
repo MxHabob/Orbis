@@ -20,7 +20,7 @@ import { Check, UserBadgeCheck } from "@orbis/icons";
 interface Props {
   open: boolean;
   mfaToken: string;
-  onSuccess: (res: LoginResponse) => void;
+  onSuccess: (res: LoginResponse & { token: string }) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -45,12 +45,16 @@ async function handleSubmitChallenge() {
         "desktop-client-" +
         navigator.userAgent.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16),
     });
+    if (!res.token) {
+      throw new Error(m.common_mfa_challenge_invalid_code());
+    }
+    await onSuccess({ ...res, token: res.token });
     toast.success(m.common_mfa_challenge_success());
     open = false;
-    onSuccess(res);
-  } catch (err: any) {
-    errorMessage = err.message || m.common_mfa_challenge_invalid_code();
-    toast.error(errorMessage);
+  } catch (err: unknown) {
+    const message = err instanceof Error && err.message ? err.message : m.common_mfa_challenge_invalid_code();
+    errorMessage = message;
+    toast.error(message);
   } finally {
     isSubmitting = false;
   }

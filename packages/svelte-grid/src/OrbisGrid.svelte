@@ -154,6 +154,7 @@ let {
 }: Props = $props();
 
 const HEADER_H = 40;
+const visibleCols = $derived(columns.filter((c) => !c.hidden));
 const hasGroupHeaders = $derived(visibleCols.some((c) => Boolean(c.group)));
 const hasSubHeaders = $derived(visibleCols.some((c) => c.subHeader !== undefined && c.subHeader !== null));
 const headerRowCount = $derived(1 + (hasGroupHeaders ? 1 : 0) + (hasSubHeaders ? 1 : 0));
@@ -212,7 +213,6 @@ const shouldRunClientQuery = $derived(
 
 const safeSource = $derived(Array.isArray(source) ? source : []);
 
-const visibleCols = $derived(columns.filter((c) => !c.hidden));
 const filterableCols = $derived(
   visibleCols.filter(
     (col) =>

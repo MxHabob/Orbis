@@ -41,15 +41,14 @@ import {
   InfoCircle,
   UserBadgeCheck,
 } from "@orbis/icons";
-import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {
   open: boolean;
   orgId: string;
-  overrideType: OverrideType;
+  overrideType: string;
   entityType: string;
   entityId: string;
-  riskLevel?: RiskLevel;
+  riskLevel?: "low" | "medium" | "high" | "critical";
   fieldName?: string;
   oldValue?: string;
   newValue?: string;
@@ -147,15 +146,14 @@ async function submit() {
   isSubmitting = true;
   try {
     await api.submitOverride({
-      overrideType: overrideType as any,
-      targetEntityId: entityId,
-      reason,
-      payload: {
-        fieldName,
-        oldValue,
-        newValue,
-        entityType,
-      },
+      override_type: overrideType,
+      risk_level: riskLevel,
+      entity_type: entityType,
+      entity_id: entityId,
+      field_name: fieldName,
+      old_value: oldValue,
+      new_value: newValue,
+      reason: reason.trim(),
     });
     toast.success(m.common_override_submitted());
     reason = "";

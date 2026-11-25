@@ -157,7 +157,7 @@ let { state }: { state: StudentFormState } = $props();
                   <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                     {#each state.financial.discountTemplates as tpl}
                       <SelectItem value={tpl.id} class="text-xs text-start cursor-pointer justify-start">
-                        {tpl.name_ar || tpl.name} ({tpl.calculation_method === 'percentage' ? `${tpl.value}%` : formatCurrency(Number(tpl.value), state.currency)})
+                        {tpl.name_ar || tpl.name} ({tpl.discount_type === 'percentage' ? `${tpl.value}%` : formatCurrency(Number(tpl.value), state.currency)})
                       </SelectItem>
                     {/each}
                   </SelectContent>

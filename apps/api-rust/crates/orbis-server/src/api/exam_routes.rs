@@ -1,9 +1,9 @@
 //! Exam routes — Sessions, Schedules, Seating, Secrets, Proctors.
 
 use axum::{
-    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, post},
+    Json, Router,
 };
 use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
@@ -213,12 +213,17 @@ async fn create_session(
 #[utoipa::path(get, path = "/api/v1/exam-sessions",
     responses((status = 200, body = Vec<ExamSessionDto>)), security(("bearer" = [])), tag = "Exam")]
 async fn list_sessions(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<SessionQuery>,
 ) -> Result<Json<ApiResponse<Vec<ExamSessionDto>>>, ApiError> {
     let sessions = match q.period_id {
-        Some(pid) => state.scheduling_service.list_exam_sessions(pid).await?,
+        Some(pid) => {
+            state
+                .scheduling_service
+                .list_exam_sessions(&ctx, pid)
+                .await?
+        }
         None => vec![],
     };
     let dtos = sessions
@@ -243,15 +248,11 @@ async fn list_sessions(
 #[utoipa::path(get, path = "/api/v1/exam-sessions/{id}", params(("id" = Uuid, Path, description = "Exam Session ID")),
     responses((status = 200, body = ExamSessionDto)), security(("bearer" = [])), tag = "Exam")]
 async fn get_session(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
-    let s = state
-        .scheduling_service
-        .get_exam_session(id)
-        .await?
-        .ok_or_else(|| ApiError::not_found("Exam session not found"))?;
+    let s = state.scheduling_service.get_exam_session(&ctx, id).await?;
     Ok(ApiResponse::ok(ExamSessionDto {
         id: s.id,
         org_id: s.org_id,
@@ -352,13 +353,13 @@ async fn schedule_exam(
     params(("session_id" = Uuid, Query, description = "Exam Session ID")),
     responses((status = 200, body = Vec<ExamScheduleDto>)), security(("bearer" = [])), tag = "Exam")]
 async fn list_schedules(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<ScheduleQuery>,
 ) -> Result<Json<ApiResponse<Vec<ExamScheduleDto>>>, ApiError> {
     let schedules = state
         .scheduling_service
-        .list_exam_schedules(q.session_id)
+        .list_exam_schedules(&ctx, q.session_id)
         .await?;
     let dtos = schedules
         .into_iter()
@@ -422,13 +423,13 @@ async fn assign_seating(
     params(("session_id" = Uuid, Query, description = "Exam Session ID")),
     responses((status = 200, body = Vec<SeatingDto>)), security(("bearer" = [])), tag = "Exam")]
 async fn list_seating(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<SeatingQuery>,
 ) -> Result<Json<ApiResponse<Vec<SeatingDto>>>, ApiError> {
     let list = state
         .scheduling_service
-        .list_seating_numbers(q.session_id)
+        .list_seating_numbers(&ctx, q.session_id)
         .await?;
     let dtos = list
         .into_iter()
@@ -610,13 +611,13 @@ async fn assign_proctor(
     params(("schedule_id" = Uuid, Query, description = "Exam Schedule ID")),
     responses((status = 200, body = Vec<ProctorDto>)), security(("bearer" = [])), tag = "Exam")]
 async fn list_proctors(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<ProctorQuery>,
 ) -> Result<Json<ApiResponse<Vec<ProctorDto>>>, ApiError> {
     let list = state
         .scheduling_service
-        .list_proctors(q.schedule_id)
+        .list_proctors(&ctx, q.schedule_id)
         .await?;
     let dtos = list
         .into_iter()

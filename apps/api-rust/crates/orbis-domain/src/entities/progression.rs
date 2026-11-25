@@ -11,6 +11,22 @@ pub enum PromotionDecision {
     Exclude,
 }
 
+impl std::str::FromStr for PromotionDecision {
+    type Err = crate::errors::DomainError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "promote" | "promoted" => Ok(Self::Promote),
+            "retain" | "retained" => Ok(Self::Retain),
+            "graduate" | "graduated" => Ok(Self::Graduate),
+            "exclude" | "excluded" => Ok(Self::Exclude),
+            _ => Err(crate::errors::DomainError::Validation(
+                "Invalid progression decision".into(),
+            )),
+        }
+    }
+}
+
 impl std::fmt::Display for PromotionDecision {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -368,7 +368,7 @@ function openEditBranch(branch: OrgUnitDto) {
   isBranchSheetOpen = true;
 }
 
-function promptDeleteBranch(branch: OrgUnitDto) {
+async function promptDeleteBranch(branch: OrgUnitDto) {
   const children = allUnits.filter((u) => u.parent_id === branch.id);
   if (children.length > 0) {
     toast.error(
@@ -377,7 +377,7 @@ function promptDeleteBranch(branch: OrgUnitDto) {
     return;
   }
 
-  confirmStore.prompt({
+  const confirmed = await confirmStore.prompt({
     title: m.ui_copy_delete_branch_f22fe5e8(),
     description: l(
       `هل أنت متأكد من رغبتك في حذف فرع "${branch.name_ar || branch.name}" بشكل نهائي؟`,
@@ -385,16 +385,16 @@ function promptDeleteBranch(branch: OrgUnitDto) {
     ),
     confirmText: m.settings_currencies_btn_delete_confirm(),
     variant: "destructive",
-    onConfirm: async () => {
-      try {
-        await api.deleteOrgUnit(branch.id);
-        toast.success(m.ui_copy_branch_deleted_successfully_09d39e40());
-        loadData();
-      } catch (err) {
-        toast.error(extractErrorMessage(err));
-      }
-    },
   });
+  if (!confirmed) return;
+
+  try {
+    await api.deleteOrgUnit(branch.id);
+    toast.success(m.ui_copy_branch_deleted_successfully_09d39e40());
+    await loadData();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
 }
 
 async function setDefaultBranch(branch: OrgUnitDto) {

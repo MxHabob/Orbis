@@ -15,6 +15,7 @@ import { toast } from "@orbis/ui";
 import { formatDate, formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
+import type { DuplicateCheckRequest } from "@orbis/sdk";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import {
   createShowInFolderToastAction,
@@ -369,9 +370,7 @@ export class StudentFormState {
     const trimmed = (value || "").trim();
     const hasName =
       !!this.personal.nameEn?.trim() ||
-      !!this.personal.nameAr?.trim() ||
-      !!this.personal.firstName?.trim() ||
-      !!this.personal.lastName?.trim();
+      !!this.personal.nameAr?.trim();
 
     if (!trimmed && !(field === "full_name" && hasName)) {
       this.duplicateWarnings = {
@@ -383,15 +382,9 @@ export class StudentFormState {
 
     this.duplicateCheckTimers[field] = setTimeout(async () => {
       try {
-        const payload: any = {
+        const payload: DuplicateCheckRequest = {
           exclude_student_id: this.studentId,
           full_name: this.personal.nameEn?.trim() || this.personal.nameAr?.trim() || undefined,
-          first_name: this.personal.firstName?.trim() || undefined,
-          middle_name: this.personal.middleName?.trim() || undefined,
-          last_name: this.personal.lastName?.trim() || undefined,
-          first_name_ar: this.personal.firstNameAr?.trim() || undefined,
-          middle_name_ar: this.personal.middleNameAr?.trim() || undefined,
-          last_name_ar: this.personal.lastNameAr?.trim() || undefined,
           birth_date: this.personal.birthDate || undefined,
         };
         if (field !== "full_name") {
@@ -627,9 +620,14 @@ export class StudentFormState {
     const blockingRequirements = this.document.requirements.filter(
       (requirement) => requirement.blocks_enrollment,
     );
+    const fulfilledCodes = new Set(
+      this.document.fulfillments
+        .filter((item) => item.is_fulfilled)
+        .map((item) => item.requirement.code),
+    );
     const missingBlockingRequirements = blockingRequirements.filter(
       (requirement) =>
-        !requirement.is_fulfilled &&
+        !fulfilledCodes.has(requirement.code) &&
         !this.document.submittedDocs.includes(requirement.code) &&
         !this.document.attachments[requirement.code],
     );

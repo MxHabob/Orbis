@@ -39,17 +39,33 @@ let {
   onsubmit: (payload: AssessmentSchemeInput) => void;
 } = $props();
 
+function defaultValues(
+  value?: AssessmentSchemeDto | null,
+): AssessmentSchemeInput {
+  return {
+    name: value?.name ?? "",
+    name_ar: value?.name_ar ?? "",
+    description: value?.description ?? "",
+    max_score: Number(value?.max_score ?? 100),
+    level: (value?.level as AssessmentSchemeInput["level"]) ?? "term",
+    institution_scope:
+      (value?.institution_scope as AssessmentSchemeInput["institution_scope"]) ??
+      "all",
+    is_default: value?.is_default ?? false,
+  };
+}
+
 const form = new FormController<AssessmentSchemeInput, AssessmentSchemeInput>({
-  initialValues: untrack(() => ({
-    name: scheme?.name ?? "",
-    name_ar: scheme?.name_ar ?? "",
-    description: scheme?.description ?? "",
-    max_score: Number(scheme?.max_score ?? 100),
-    level: scheme?.level ?? "term",
-    institution_scope: scheme?.institution_scope ?? "all",
-    is_default: scheme?.is_default ?? false,
-  })),
+  initialValues: untrack(() => defaultValues(scheme)),
   schema: assessmentSchemeInputSchema,
+});
+
+$effect(() => {
+  if (open) {
+    (form.reset as (values: AssessmentSchemeInput) => void)(
+      defaultValues(scheme),
+    );
+  }
 });
 
 function submit() {

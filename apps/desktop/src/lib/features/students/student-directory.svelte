@@ -158,15 +158,20 @@ async function deleteSelectedStudents() {
             ]
           }
         ]}
-        actions={[
-          {
-            label: m.common_filter_clear(),
-            icon: XMark,
-            onclick: directory.clearFilters,
-            disabled: !directory.hasActiveFilters
-          }
-        ]}
-      />
+      >
+        {#snippet headerAction()}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={m.common_filter_clear()}
+            title={m.common_filter_clear()}
+            onclick={() => directory.clearFilters()}
+            disabled={!directory.hasActiveFilters}
+          >
+            <XMark size={14} />
+          </Button>
+        {/snippet}
+      </SidebarNav>
     {/snippet}
 
     <!-- Middle Panel: Directory datagrid -->

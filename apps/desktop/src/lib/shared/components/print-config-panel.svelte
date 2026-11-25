@@ -150,7 +150,7 @@ function onFillOrderChange(val: string) {
   </div>
 
   <!-- Advanced Settings (Accordion) -->
-  <Accordion type="single" collapsible>
+  <Accordion type="single">
     <AccordionItem value="advanced">
       <AccordionTrigger class="text-xs font-medium text-muted-foreground py-2" {disabled}>
         {m.common_print_multi_up_advanced()}

@@ -19,9 +19,9 @@ let {
 }: Props = $props();
 
 const currentYear = new Date().getFullYear();
-let dayInput = $state<HTMLInputElement>();
-let monthInput = $state<HTMLInputElement>();
-let yearInput = $state<HTMLInputElement>();
+let dayInput = $state<HTMLInputElement | null>(null);
+let monthInput = $state<HTMLInputElement | null>(null);
+let yearInput = $state<HTMLInputElement | null>(null);
 
 function focusNext(input: HTMLInputElement, maxLength: number) {
   if (input.value.length >= maxLength) {
@@ -31,7 +31,7 @@ function focusNext(input: HTMLInputElement, maxLength: number) {
 }
 
 function clampValue(value: string, min: number, max: number): string {
-  if (!value) return "";
+  if (!/^[0-9]+$/.test(value)) return "";
   return String(Math.min(max, Math.max(min, Number(value))));
 }
 
@@ -50,11 +50,10 @@ function normalizeYear() {
 
 <div class="grid w-full grid-cols-[1fr_1.35fr_1.6fr] gap-2">
   <Input
-    bind:this={dayInput}
+    bind:ref={dayInput}
     id={`${idPrefix}-day`}
-    type="number"
-    min="1"
-    max="31"
+    type="text"
+    maxlength={2}
     inputmode="numeric"
     placeholder={m.common_form_day()}
     bind:value={day}
@@ -65,11 +64,10 @@ function normalizeYear() {
     class="h-9 w-full bg-background text-center text-xs"
   />
   <Input
-    bind:this={monthInput}
+    bind:ref={monthInput}
     id={`${idPrefix}-month`}
-    type="number"
-    min="1"
-    max="12"
+    type="text"
+    maxlength={2}
     inputmode="numeric"
     placeholder={m.common_form_month()}
     bind:value={month}
@@ -80,11 +78,10 @@ function normalizeYear() {
     class="h-9 w-full bg-background text-center text-xs"
   />
   <Input
-    bind:this={yearInput}
+    bind:ref={yearInput}
     id={`${idPrefix}-year`}
-    type="number"
-    min={currentYear - 100}
-    max={currentYear}
+    type="text"
+    maxlength={4}
     inputmode="numeric"
     placeholder={m.common_form_year()}
     bind:value={year}

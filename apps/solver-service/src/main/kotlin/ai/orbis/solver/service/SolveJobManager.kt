@@ -37,7 +37,6 @@ class SolveJobManager {
         val state = JobState(
             jobId = jobId,
             status = JobStatus.running,
-            problem = problem,
             bestSolution = ProblemMapper.toSolution(problem, timetable),
         )
         if (jobs.putIfAbsent(jobId, state) != null) return false
@@ -47,11 +46,16 @@ class SolveJobManager {
                 .withProblemId(jobId)
                 .withProblemFinder { timetable }
                 .withBestSolutionConsumer { best -> onBestSolution(jobId, problem, best) }
-                .withFinalBestSolutionConsumer { _ -> onSolveComplete(jobId) }
+                .withFinalBestSolutionConsumer { best ->
+                    onBestSolution(jobId, problem, best)
+                    onSolveComplete(jobId)
+                }
                 .withExceptionHandler { _, throwable ->
-                    jobs[jobId]?.let { state ->
-                        state.status = JobStatus.failed
-                        state.error = throwable.message ?: "Solver failed"
+                    synchronized(state) {
+                        if (state.status == JobStatus.running) {
+                            state.error = throwable.message ?: "Solver failed"
+                            state.status = JobStatus.failed
+                        }
                     }
                     log.error("Solving failed for job $jobId", throwable)
                 }
@@ -61,6 +65,7 @@ class SolveJobManager {
             log.error("Failed to start solve job $jobId", error)
             throw IllegalStateException("Failed to start solve job $jobId", error)
         }
+        if (state.status == JobStatus.cancelled) solverManager.terminateEarly(jobId)
 
         log.infof("Started solve job %s with %d assignments", jobId, problem.assignments.size)
         return true
@@ -79,11 +84,11 @@ class SolveJobManager {
 
     fun cancel(jobId: String): Boolean {
         val state = jobs[jobId] ?: return false
-        if (state.status == JobStatus.completed || state.status == JobStatus.failed) {
-            return true
+        synchronized(state) {
+            if (state.status != JobStatus.running) return true
+            state.status = JobStatus.cancelled
         }
         solverManager.terminateEarly(jobId)
-        state.status = JobStatus.cancelled
         return true
     }
 
@@ -96,13 +101,14 @@ class SolveJobManager {
 
     private fun onSolveComplete(jobId: String) {
         jobs[jobId]?.let { state ->
-            state.status = when {
-                state.status == JobStatus.cancelled -> JobStatus.cancelled
-                state.status == JobStatus.failed -> JobStatus.failed
-                state.bestSolution?.score?.let(::hasZeroHardScore) == true -> JobStatus.completed
-                else -> {
-                    state.error = "The solver could not find a conflict-free timetable"
-                    JobStatus.failed
+            synchronized(state) {
+                if (state.status == JobStatus.running) {
+                    if (state.bestSolution?.score?.let(::hasZeroHardScore) == true) {
+                        state.status = JobStatus.completed
+                    } else {
+                        state.error = "The solver could not find a conflict-free timetable"
+                        state.status = JobStatus.failed
+                    }
                 }
             }
             log.infof("Solve job %s finished with status %s score %s",
@@ -117,31 +123,39 @@ class SolveJobManager {
 
     fun submitExam(problem: ExamProblemDto): Boolean {
         val jobId = problem.jobId
-        if (examJobs.containsKey(jobId)) {
-            return false
-        }
-
         val schedule = ExamProblemMapper.toSchedule(problem)
-        examJobs[jobId] = ExamJobState(
+        val state = ExamJobState(
             jobId = jobId,
             status = JobStatus.running,
-            problem = problem,
             bestSolution = ExamProblemMapper.toSolution(problem, schedule),
         )
+        if (examJobs.putIfAbsent(jobId, state) != null) return false
 
-        examSolverManager.solveBuilder()
-            .withProblemId(jobId)
-            .withProblemFinder { schedule }
-            .withBestSolutionConsumer { best -> onBestExamSolution(jobId, problem, best) }
-            .withFinalBestSolutionConsumer { _ -> onExamSolveComplete(jobId) }
-            .withExceptionHandler { _, throwable ->
-                examJobs[jobId]?.let { state ->
-                    state.status = JobStatus.failed
-                    state.error = throwable.message ?: "Exam solver failed"
+        try {
+            examSolverManager.solveBuilder()
+                .withProblemId(jobId)
+                .withProblemFinder { schedule }
+                .withBestSolutionConsumer { best -> onBestExamSolution(jobId, problem, best) }
+                .withFinalBestSolutionConsumer { best ->
+                    onBestExamSolution(jobId, problem, best)
+                    onExamSolveComplete(jobId)
                 }
-                log.error("Exam solving failed for job $jobId", throwable)
-            }
-            .run()
+                .withExceptionHandler { _, throwable ->
+                    synchronized(state) {
+                        if (state.status == JobStatus.running) {
+                            state.error = throwable.message ?: "Exam solver failed"
+                            state.status = JobStatus.failed
+                        }
+                    }
+                    log.error("Exam solving failed for job $jobId", throwable)
+                }
+                .run()
+        } catch (error: RuntimeException) {
+            examJobs.remove(jobId, state)
+            log.error("Failed to start exam solve job $jobId", error)
+            throw IllegalStateException("Failed to start exam solve job $jobId", error)
+        }
+        if (state.status == JobStatus.cancelled) examSolverManager.terminateEarly(jobId)
 
         log.infof("Started exam solve job %s with %d assignments", jobId, problem.assignments.size)
         return true
@@ -160,11 +174,11 @@ class SolveJobManager {
 
     fun cancelExam(jobId: String): Boolean {
         val state = examJobs[jobId] ?: return false
-        if (state.status == JobStatus.completed || state.status == JobStatus.failed) {
-            return true
+        synchronized(state) {
+            if (state.status != JobStatus.running) return true
+            state.status = JobStatus.cancelled
         }
         examSolverManager.terminateEarly(jobId)
-        state.status = JobStatus.cancelled
         return true
     }
 
@@ -177,12 +191,15 @@ class SolveJobManager {
 
     private fun onExamSolveComplete(jobId: String) {
         examJobs[jobId]?.let { state ->
-            state.status = when {
-                state.status == JobStatus.cancelled -> JobStatus.cancelled
-                state.bestSolution?.score?.let { score ->
-                    score.startsWith("0hard")
-                } == true -> JobStatus.completed
-                else -> JobStatus.completed
+            synchronized(state) {
+                if (state.status == JobStatus.running) {
+                    if (state.bestSolution?.score?.let(::hasZeroHardScore) == true) {
+                        state.status = JobStatus.completed
+                    } else {
+                        state.error = "The solver could not find a conflict-free exam schedule"
+                        state.status = JobStatus.failed
+                    }
+                }
             }
             log.infof("Exam solve job %s finished with status %s score %s",
                 jobId, state.status, state.score)
@@ -192,7 +209,6 @@ class SolveJobManager {
     private class JobState(
         val jobId: String,
         @Volatile var status: JobStatus,
-        val problem: TimetableProblemDto,
         @Volatile var bestSolution: ai.orbis.solver.dto.TimetableSolutionDto? = null,
         @Volatile var score: String? = null,
         @Volatile var error: String? = null,
@@ -200,10 +216,9 @@ class SolveJobManager {
 
     private class ExamJobState(
         val jobId: String,
-        var status: JobStatus,
-        val problem: ExamProblemDto,
-        var bestSolution: ai.orbis.solver.dto.ExamSolutionDto? = null,
-        var score: String? = null,
-        var error: String? = null,
+        @Volatile var status: JobStatus,
+        @Volatile var bestSolution: ai.orbis.solver.dto.ExamSolutionDto? = null,
+        @Volatile var score: String? = null,
+        @Volatile var error: String? = null,
     )
 }

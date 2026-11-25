@@ -1,23 +1,21 @@
 use crate::ui::output;
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use chrono::Local;
+use sea_orm::{ConnectionTrait, Database, DbBackend, Statement};
 use std::fs;
 use std::path::Path;
+use uuid::Uuid;
 
 pub async fn execute() -> Result<()> {
     output::print_step("Initiating Secure Database Backup Process...");
+    let db_url = crate::core::config::CliConfig::sqlite_url()?;
 
     let backup_dir = Path::new("backups");
-    if !backup_dir.exists() {
-        fs::create_dir(backup_dir)?;
-        output::print_progress_ok("Provisioned local backups archive directory");
-    }
+    fs::create_dir_all(backup_dir)?;
 
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 
-    let config = crate::core::config::CliConfig::default();
-    let db_path_str = config
-        .db_url
+    let db_path_str = db_url
         .replace("sqlite://", "")
         .replace("?mode=rwc", "")
         .replace("?mode=ro", "");
@@ -30,12 +28,21 @@ pub async fn execute() -> Result<()> {
         ));
     }
 
-    let backup_filename = format!("orbis_backup_{}.db.bak", timestamp);
+    let backup_filename = format!("orbis_backup_{}_{}.db.bak", timestamp, Uuid::new_v4());
     let backup_path = backup_dir.join(&backup_filename);
-
-    let bytes = output::with_spinner("Creating database snapshot...", || {
-        fs::copy(db_path, &backup_path)
-    })?;
+    let backup_str = backup_path.to_string_lossy().into_owned();
+    output::print_progress_pending("Creating a consistent SQLite snapshot...");
+    let db = Database::connect(db_url.replace("mode=rwc", "mode=ro"))
+        .await
+        .context("Could not open the SQLite database for backup")?;
+    db.execute(Statement::from_sql_and_values(
+        DbBackend::Sqlite,
+        "VACUUM INTO ?",
+        [backup_str.clone().into()],
+    ))
+    .await
+    .context("Could not create the SQLite snapshot")?;
+    let bytes = fs::metadata(&backup_path)?.len();
 
     let size_kb = bytes as f64 / 1024.0;
     let size_fmt = if size_kb > 1024.0 {
@@ -44,13 +51,12 @@ pub async fn execute() -> Result<()> {
         format!("{:.2} KB", size_kb)
     };
 
-    let backup_str = backup_path.to_string_lossy().to_string();
     output::print_summary_box("BACKUP SNAPSHOT COMPLETED", &[
         ("Source Database", &db_path_str),
         ("Backup Archive", &backup_str),
         ("Snapshot Size", &size_fmt),
         ("Timestamp", &timestamp),
-        ("Integrity", "Verified (Atomic Snapshot)"),
+        ("Method", "SQLite online snapshot"),
     ]);
 
     output::print_success("Database snapshot completed successfully.");

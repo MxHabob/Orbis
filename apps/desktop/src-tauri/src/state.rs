@@ -472,6 +472,8 @@ impl AppState {
             org_unit_repo.clone(),
             scheduling_repo.clone(),
             scheduling_repo.clone(),
+            calendar_repo.clone(),
+            academic_repo.clone(),
             exam_repo.clone(),
             exam_repo.clone(),
             exam_repo.clone(),

@@ -3,7 +3,7 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{EnrollmentRepository, PromotionRepository, StudentRepository};
 use chrono::Utc;
-use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus};
+use orbis_domain::entities::enrollment::Enrollment;
 use orbis_domain::entities::progression::{
     ProgressionDetail, ProgressionJob, ProgressionJobStatus, PromotionDecision,
 };
@@ -64,6 +64,12 @@ impl ProgressionService {
             .check(ctx, Permission::StudentUpdate)
             .await?;
 
+        if org_id != ctx.tenant_id || source_period_id == target_period_id {
+            return Err(DomainError::Validation(
+                "Invalid promotion scope or target period".into(),
+            ));
+        }
+
         let now = Utc::now();
         let job_id = Uuid::new_v4();
 
@@ -73,59 +79,40 @@ impl ProgressionService {
         let mut excluded_count = 0;
 
         let mut new_enrollments = Vec::new();
-        let mut old_enrollment_ids_to_complete = Vec::new();
         let mut details = Vec::new();
 
         for item in items {
+            let enrollment = self
+                .enrollment_repo
+                .find_by_id(item.enrollment_id)
+                .await?
+                .filter(|enrollment| {
+                    enrollment.org_id == org_id
+                        && enrollment.period_id == source_period_id
+                        && enrollment.student_id == item.student_id
+                        && enrollment.section_id == item.source_section_id
+                })
+                .ok_or_else(|| DomainError::NotFound("Source enrollment not found".into()))?;
             match item.decision {
-                PromotionDecision::Promote => {
-                    promoted_count += 1;
-                    if let Some(old_enrollment) =
-                        self.enrollment_repo.find_by_id(item.enrollment_id).await?
-                    {
-                        let new_enrollment = Enrollment::new(
-                            org_id,
-                            target_period_id,
-                            item.student_id,
-                            item.target_section_id,
-                            old_enrollment.student_number.clone(),
-                            old_enrollment.study_mode,
-                        );
-                        new_enrollments.push(new_enrollment);
-                        old_enrollment_ids_to_complete.push(item.enrollment_id);
-                    }
+                PromotionDecision::Promote | PromotionDecision::Retain => {
+                    let target_section = if item.decision == PromotionDecision::Promote {
+                        promoted_count += 1;
+                        item.target_section_id
+                    } else {
+                        retained_count += 1;
+                        enrollment.section_id
+                    };
+                    new_enrollments.push(Enrollment::new(
+                        org_id,
+                        target_period_id,
+                        enrollment.student_id,
+                        target_section,
+                        enrollment.student_number,
+                        enrollment.study_mode,
+                    ));
                 }
-                PromotionDecision::Retain => {
-                    retained_count += 1;
-                    if let Some(old_enrollment) =
-                        self.enrollment_repo.find_by_id(item.enrollment_id).await?
-                    {
-                        let new_enrollment = Enrollment::new(
-                            org_id,
-                            target_period_id,
-                            item.student_id,
-                            item.source_section_id,
-                            old_enrollment.student_number.clone(),
-                            old_enrollment.study_mode,
-                        );
-                        new_enrollments.push(new_enrollment);
-                        old_enrollment_ids_to_complete.push(item.enrollment_id);
-                    }
-                }
-                PromotionDecision::Graduate => {
-                    graduated_count += 1;
-                    if let Some(mut student) = self.student_repo.find_by_id(item.student_id).await?
-                    {
-                        student.status = StudentStatus::Graduated;
-                        student.graduated_at = Some(now);
-                        student.updated_at = now;
-                        self.student_repo.save(&student).await?;
-                    }
-                    old_enrollment_ids_to_complete.push(item.enrollment_id);
-                }
-                PromotionDecision::Exclude => {
-                    excluded_count += 1;
-                }
+                PromotionDecision::Graduate => graduated_count += 1,
+                PromotionDecision::Exclude => excluded_count += 1,
             }
 
             let detail = ProgressionDetail {
@@ -147,19 +134,6 @@ impl ProgressionService {
             details.push(detail);
         }
 
-        // 1. Bulk insert new enrollments
-        if !new_enrollments.is_empty() {
-            self.enrollment_repo.save_batch(&new_enrollments).await?;
-        }
-
-        // 2. Bulk update old enrollments
-        if !old_enrollment_ids_to_complete.is_empty() {
-            self.enrollment_repo
-                .update_status_batch(&old_enrollment_ids_to_complete, EnrollmentStatus::Graduated)
-                .await?;
-        }
-
-        // 3. Save promotion job and audit details
         let total_students = details.len() as u32;
         let job = ProgressionJob {
             id: job_id,
@@ -179,8 +153,9 @@ impl ProgressionService {
             updated_at: now,
         };
 
-        self.progression_repo.save_job(&job).await?;
-        self.progression_repo.save_details(&details).await?;
+        self.progression_repo
+            .commit_promotion(&job, &details, &new_enrollments)
+            .await?;
 
         // 4. Publish Event
         let _ = self
@@ -197,6 +172,31 @@ impl ProgressionService {
             .await;
 
         Ok(job)
+    }
+
+    pub async fn list_jobs(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<Vec<ProgressionJob>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
+        self.progression_repo.find_jobs_by_org(ctx.tenant_id).await
+    }
+
+    pub async fn get_job(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ProgressionJob, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::StudentRead)
+            .await?;
+        self.progression_repo
+            .find_job_by_id(id)
+            .await?
+            .filter(|job| job.org_id == ctx.tenant_id)
+            .ok_or_else(|| DomainError::NotFound("Promotion job not found".into()))
     }
 
     /// Evaluate cohort progression eligibility (Dry-run preview)
@@ -216,8 +216,15 @@ impl ProgressionService {
             .await?;
         let mut items = Vec::new();
 
-        for enr in enrollments {
-            let student_opt = self.student_repo.find_by_id(enr.student_id).await?;
+        for enr in enrollments
+            .into_iter()
+            .filter(|enrollment| enrollment.org_id == ctx.tenant_id)
+        {
+            let student_opt = self
+                .student_repo
+                .find_by_id(enr.student_id)
+                .await?
+                .filter(|student| student.org_id == ctx.tenant_id);
             let student_number = student_opt
                 .as_ref()
                 .map(|student| student.student_number.clone());

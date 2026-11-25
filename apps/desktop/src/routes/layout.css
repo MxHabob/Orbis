@@ -38,10 +38,6 @@ body,
     width: 2.75rem;
     max-width: 2.75rem;
   }
-
-  [role="dialog"] {
-    max-width: calc(100dvw - 1rem);
-  }
 }
 
 @media (max-height: 520px) {
