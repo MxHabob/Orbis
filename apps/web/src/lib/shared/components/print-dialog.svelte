@@ -39,7 +39,7 @@ import { Progress } from "@orbis/ui/progress";
 import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
-import { getLocale } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import {
   CheckCircle,
   DocumentPage,
@@ -133,6 +133,7 @@ const templatesQuery = createQuery(() => ({
       documentType,
       status: "published",
     });
+    if (entityType.startsWith("finance") && documentType) return Array.isArray(list) ? list : [];
     if ((!list || list.length === 0) && documentType) {
       list = await api.listTemplates({ documentType, status: "published" });
     }
@@ -664,11 +665,19 @@ function applySuggestion(suggestion: MultiUpLayout) {
             </Label>
             {#if loadingTemplates}
               <div class="h-8 bg-muted rounded animate-pulse"></div>
+            {:else if templatesQuery.isError && templates.length === 0}
+              <div class="space-y-2">
+                <p class="text-xs text-destructive" role="alert">{m.common_loading_error()}</p>
+                <Button type="button" size="sm" variant="outline" onclick={() => templatesQuery.refetch()}>{m.common_retry()}</Button>
+              </div>
             {:else if templates.length === 0}
-              <div class="text-[10px] text-destructive flex items-center gap-1">
+              <div class="text-xs text-destructive flex items-center gap-1">
                 <InfoCircle size={12} />
                 <span>{m.common_print_multi_up_no_templates()}</span>
               </div>
+              {#if orgId && entityType.startsWith("finance")}
+                <a href={localizeHref("/" + orgId + "/templates")} class="text-xs text-primary underline underline-offset-2">{m.finance_ui_manage_print_templates()}</a>
+              {/if}
             {:else}
               <Select type="single" value={selectedTemplateKey} onValueChange={handleTemplateChange}>
                 <SelectTrigger class="h-8 text-xs" disabled={generatingPdf || loadingTemplates}>

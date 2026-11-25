@@ -11,7 +11,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { useQueryClient } from "@tanstack/svelte-query";
-import { api, queryKeys, type AccountDto } from "$lib/api";
+import { api, extractErrorMessage, queryKeys, type AccountDto } from "$lib/api";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Button } from "@orbis/ui/button";
@@ -38,7 +38,8 @@ import {
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, isAr, l } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { OrbisGrid, type GridActionEvent, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { financeRecordColumn } from "./record-presentation";
 import AccountTree, {
   type AccountNode,
 } from "$lib/features/finance/components/account-tree.svelte";
@@ -72,6 +73,7 @@ const isRefreshing = $derived(
   accountsQuery.isFetching || currenciesQuery.isFetching,
 );
 let isSubmitting = $state(false);
+let formError = $state("");
 let viewMode = $state<"tree" | "grid">("tree");
 let searchQuery = $state("");
 
@@ -140,18 +142,25 @@ $effect(() => {
 });
 
 // Build authentic hierarchical tree directly from backend accounts (Root accounts -> Child accounts)
+const accountsByParent = $derived.by(() => {
+  const index = new Map<string | null, AccountDto[]>();
+  for (const account of allAccounts) {
+    const parent = account.parent_id || null;
+    const siblings = index.get(parent);
+    if (siblings) siblings.push(account);
+    else index.set(parent, [account]);
+  }
+  return index;
+});
+
 const accountTree = $derived.by(() => {
-  function buildSubTree(parentId: string | null = null): AccountNode[] {
-    return allAccounts
-      .filter((a) => (parentId ? a.parent_id === parentId : !a.parent_id))
-      .sort((a, b) =>
-        (a.code || "").localeCompare(b.code || "", undefined, {
-          numeric: true,
-        }),
-      )
+  const codeOrder = new Intl.Collator(undefined, { numeric: true });
+  function buildSubTree(parentId: string | null): AccountNode[] {
+    return [...(accountsByParent.get(parentId) ?? [])]
+      .sort((a, b) => codeOrder.compare(a.code, b.code))
       .map((node) => ({
         ...node,
-        name: l(node.name_ar, node.name) || "—",
+        name: l(node.name_ar, node.name) || "?",
         children: buildSubTree(node.id),
       }));
   }
@@ -184,6 +193,7 @@ function suggestNextChildCode(parent: AccountNode | null): string {
 
 // ── Selection & Form Preparation ───────────────────────────────────────
 function handleSelectAccount(account: AccountNode) {
+  formError = "";
   selectedAccountId = account.id;
   isAddingNew = false;
 
@@ -202,6 +212,8 @@ function handleSelectAccount(account: AccountNode) {
 function startAddSubAccount(
   parentAccount: AccountNode | null = selectedAccount,
 ) {
+  if (isSubmitting) return;
+  formError = "";
   isAddingNew = true;
   formParentId = parentAccount ? parentAccount.id : null;
   formCode = suggestNextChildCode(parentAccount);
@@ -248,12 +260,14 @@ async function invalidateAccounts() {
 }
 
 async function handleSaveAccount() {
+  if (isSubmitting) return;
+  formError = "";
   if (!formNameAr.trim() && !formNameEn.trim()) {
-    toast.error(m.finance_ui_account_name_required());
+    formError = m.finance_ui_account_name_required();
     return;
   }
   if (!formCode.trim()) {
-    toast.error(m.finance_ui_account_code_required());
+    formError = m.finance_ui_account_code_required();
     return;
   }
 
@@ -282,16 +296,16 @@ async function handleSaveAccount() {
     if (result && result.id) {
       handleSelectAccount(result);
     }
-  } catch (err: any) {
-    console.error("Failed to save account:", err);
-    toast.error(err?.message || m.finance_ui_account_save_failed());
+  } catch (err) {
+    formError = extractErrorMessage(err) || m.finance_ui_account_save_failed();
   } finally {
     isSubmitting = false;
   }
 }
 
 async function handleDeleteAccount() {
-  if (!selectedAccount?.id) return;
+  const account = selectedAccount;
+  if (!account?.id || isSubmitting) return;
 
   const confirmed = await confirmStore.prompt({
     title: m.finance_ui_delete_account(),
@@ -307,7 +321,7 @@ async function handleDeleteAccount() {
 
   isSubmitting = true;
   try {
-    await api.deleteAccount(selectedAccount.id);
+    await api.deleteAccount(account.id);
     toast.success(m.finance_ui_account_delete_success());
     await invalidateAccounts();
     selectedAccountId = null;
@@ -342,6 +356,16 @@ const treasurySource = $derived(
     };
   }),
 );
+
+const detailsColumn = $derived(financeRecordColumn());
+
+function handleAccountRow(event: GridActionEvent) {
+  if (isSubmitting || (event.actionId !== "dblclick" && event.actionId !== "view")) return;
+  const account = allAccounts.find((item) => item.id === event.row.id);
+  if (!account) return;
+  handleSelectAccount(account);
+  viewMode = "tree";
+}
 
 const treasuryCols: OrbisColumnDef[] = [
   {
@@ -567,12 +591,12 @@ function exportAccountsCsv() {
             <AccountTree
               accounts={accountTree}
               {orgId}
-              onSelectAccount={(node) => handleSelectAccount(node)}
+              onSelectAccount={(node) => { if (!isSubmitting) handleSelectAccount(node); }}
             />
           </div>
 
           <!-- Account Details & Editing / Creation Form (7 cols) -->
-          <div class="lg:col-span-7 flex flex-col h-full min-h-0 overflow-y-auto">
+          <form class="lg:col-span-7 flex min-h-0 min-w-0 flex-col" aria-busy={isSubmitting} onsubmit={(event) => { event.preventDefault(); void handleSaveAccount(); }}>
             <Card class="border border-border/50 bg-card shadow-sm h-full flex flex-col justify-between">
               <CardHeader class="py-3 px-4 border-b border-border/40 shrink-0">
                 <div class="flex items-center justify-between">
@@ -591,7 +615,8 @@ function exportAccountsCsv() {
                 </div>
               </CardHeader>
 
-              <CardContent class="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
+              <CardContent class="min-h-0 flex-1 overflow-y-auto p-4">
+              <fieldset class="flex min-w-0 flex-col gap-4" disabled={isSubmitting}>
                 {#if isFinancePurposeAccount}
                   <div class="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
                     {m.finance_ui_fixed_finance_account_notice()}
@@ -777,8 +802,10 @@ function exportAccountsCsv() {
                     </span>
                   </div>
                 {/if}
+              </fieldset>
               </CardContent>
 
+              {#if formError}<p class="px-4 py-2 text-sm text-destructive" role="alert">{formError}</p>{/if}
               <!-- Bottom Action Toolbar -->
               <div class="py-3 px-4 border-t border-border/40 bg-muted/20 flex items-center justify-between gap-2 shrink-0">
                 <div class="flex items-center gap-2">
@@ -800,6 +827,7 @@ function exportAccountsCsv() {
                       size="sm"
                       class="h-8 text-xs font-semibold gap-1.5"
                       disabled={isSubmitting || isFinancePurposeAccount || selectedAccountHasChildren}
+                      type="button"
                       onclick={handleDeleteAccount}
                     >
                       <Trash size={13} />
@@ -811,6 +839,8 @@ function exportAccountsCsv() {
                     variant="ghost"
                     size="sm"
                     class="h-8 text-xs"
+                    type="button"
+                    disabled={isSubmitting}
                     onclick={() => {
                       if (selectedAccount) handleSelectAccount(selectedAccount);
                       else isAddingNew = false;
@@ -824,14 +854,14 @@ function exportAccountsCsv() {
                     size="sm"
                     class="h-8 text-xs font-bold px-4"
                     disabled={isSubmitting}
-                    onclick={handleSaveAccount}
+                    type="submit"
                   >
                     {isSubmitting ? m.finance_ui_saving() : (isAddingNew ? m.finance_ui_add_account() : m.finance_ui_save_changes())}
                   </Button>
                 </div>
               </div>
             </Card>
-          </div>
+          </form>
         </div>
 
       {:else}
@@ -865,7 +895,8 @@ function exportAccountsCsv() {
 
           <div class="flex-1 min-h-0">
             <OrbisGrid
-              columns={treasuryCols}
+              columns={[...treasuryCols, detailsColumn]}
+              onaction={handleAccountRow}
               source={treasurySource}
               loading={isLoading}
               clientQuery

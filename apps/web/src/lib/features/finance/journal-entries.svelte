@@ -11,7 +11,8 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
+import { formatDateKey } from "$lib/core/i18n/format";
 import { formatCurrency, formatDate, l, isAr } from "$lib/core/i18n";
 import type {
   JournalEntryDto,
@@ -26,11 +27,15 @@ import { toast } from "@orbis/ui";
 import { Plus, Refresh, Search, Download, XMark, Printer } from "@orbis/icons";
 import {
   OrbisGrid,
+  type GridActionEvent,
   type OrbisColumnDef,
   type SelectionSnapshot,
   selectionColumn,
 } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
+import { tick } from "svelte";
+import { financeRecordColumn } from "./record-presentation";
+import FinanceRecordDialog from "./components/finance-record-dialog.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
 import { createDefaultDateRange } from "$lib/shared/components/date-range";
@@ -39,6 +44,7 @@ import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { confirmStore } from "$lib/stores";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { fade, slide } from "svelte/transition";
+import { accountQueryOptions } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -48,11 +54,12 @@ let accounts = $state<AccountDto[]>([]);
 let currencies = $state<CurrencyDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
+let formError = $state("");
 let showAddForm = $state(false);
 
 // Form Fields
 let referenceNumber = $state("");
-let accountingDate = $state(getLocalDateInputValue());
+let accountingDate = $state(formatDateKey(new Date()));
 let amount = $state<number | null>(null);
 let selectedCurrency = $state(orgContext.baseCurrency || "");
 let debitAccountId = $state("");
@@ -63,11 +70,6 @@ let notes = $state("");
 let searchQuery = $state("");
 let dateRange = $state(createDefaultDateRange());
 
-function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-}
 
 const journalAccounts = $derived(
   accounts.filter(
@@ -90,18 +92,24 @@ onMount(async () => {
   await loadData();
 });
 
-async function loadData() {
-  isLoading = true;
+async function loadData(reloadCatalogs = true) {
+  if (reloadCatalogs) isLoading = true;
   try {
     const [entriesList, accountsList, currenciesList] = await Promise.all([
       api.listJournalEntries(),
-      api.listAccounts(),
-      api.listCurrencies(),
+      reloadCatalogs ? queryClient.fetchQuery(accountQueryOptions(orgId)) : Promise.resolve(accounts),
+      reloadCatalogs
+        ? queryClient.fetchQuery({
+            queryKey: queryKeys.finance.currencies(),
+            queryFn: () => api.listCurrencies(),
+            staleTime: 10 * 60 * 1000,
+          })
+        : Promise.resolve(currencies),
     ]);
 
     journalEntries = entriesList;
-    accounts = accountsList;
-    currencies = currenciesList;
+    if (reloadCatalogs) accounts = accountsList;
+    if (reloadCatalogs) currencies = currenciesList;
 
     if (!currencies.some((currency) => currency.code === selectedCurrency)) {
       selectedCurrency = orgContext.baseCurrency || currencies[0]?.code || "";
@@ -110,17 +118,18 @@ async function loadData() {
     console.error("Failed to load journal entries master data:", e);
     toast.error(m.finance_ui_journal_entries_load_failed());
   } finally {
-    isLoading = false;
+    if (reloadCatalogs) isLoading = false;
   }
 }
 
 function clearForm() {
   referenceNumber = "";
-  accountingDate = getLocalDateInputValue();
+  accountingDate = formatDateKey(new Date());
   amount = null;
   debitAccountId = "";
   creditAccountId = "";
   notes = "";
+  formError = "";
 }
 
 function handleCurrencyChange(currency: string | undefined) {
@@ -132,39 +141,43 @@ function handleCurrencyChange(currency: string | undefined) {
     creditAccountId = "";
 }
 
+const accountsById = $derived(new Map(accounts.map((account) => [account.id, account])));
+
 function getAccountName(id?: string | null): string {
   if (!id) return "—";
-  const acc = accounts.find((a) => a.id === id);
+  const acc = accountsById.get(id);
   if (!acc) return id.slice(0, 8);
   return acc.name_ar || acc.name || acc.code || "—";
 }
 
 async function handleSaveNew() {
-  if (!amount || amount <= 0) {
-    toast.error(m.finance_ui_journal_amount_invalid());
+  if (isSubmitting) return;
+  formError = "";
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) {
+    formError = m.finance_ui_journal_amount_invalid();
     return;
   }
   if (!debitAccountId) {
-    toast.error(m.finance_ui_debit_account_required());
+    formError = m.finance_ui_debit_account_required();
     return;
   }
   if (!creditAccountId) {
-    toast.error(m.finance_ui_credit_account_required());
+    formError = m.finance_ui_credit_account_required();
     return;
   }
   if (debitAccountId === creditAccountId) {
-    toast.error(m.finance_ui_journal_accounts_must_differ());
+    formError = m.finance_ui_journal_accounts_must_differ();
     return;
   }
   if (!selectedCurrency) {
-    toast.error(m.finance_ui_currency_select_placeholder());
+    formError = m.finance_ui_currency_select_placeholder();
     return;
   }
   if (
     !journalAccounts.some((account) => account.id === debitAccountId) ||
     !journalAccounts.some((account) => account.id === creditAccountId)
   ) {
-    toast.error(m.finance_ui_journal_accounts_must_differ());
+    formError = m.finance_ui_journal_accounts_must_differ();
     return;
   }
 
@@ -209,10 +222,10 @@ async function handleSaveNew() {
     toast.success(m.finance_ui_journal_entry_posted_success());
     clearForm();
     showAddForm = false;
-    await loadData();
-  } catch (err: any) {
+    await loadData(false);
+  } catch (err) {
     console.error("Failed to post journal entry:", err);
-    toast.error(err?.message || m.finance_ui_journal_entry_post_failed());
+    formError = extractErrorMessage(err) || m.finance_ui_journal_entry_post_failed();
   } finally {
     isSubmitting = false;
   }
@@ -293,8 +306,24 @@ const selectedJournalEntries = $derived(
       : journalSelection.ids.has(entry.id),
   ),
 );
+let printRows = $state.raw<(typeof gridSource)[number][]>([]);
+
+function openPrint(rows: (typeof gridSource)[number][]) {
+  if (!rows.length) return;
+  printRows = rows;
+  printReportOpen = true;
+}
+
+async function printDetail() {
+  if (!detailRow) return;
+  const row = detailRow;
+  detailsOpen = false;
+  await tick();
+  openPrint([row]);
+}
+
 const journalPrintContexts = $derived(
-  selectedJournalEntries.map((entry) => ({
+  printRows.map((entry) => ({
     voucher: {
       number: entry.ref_display,
       date: entry.accounting_date,
@@ -317,6 +346,19 @@ const journalPrintContexts = $derived(
 
 function handleJournalSelection(selection: SelectionSnapshot) {
   journalSelection = selection;
+}
+
+
+const detailsColumn = $derived(financeRecordColumn());
+let detailsOpen = $state(false);
+let detailRow = $state<(typeof gridSource)[number] | undefined>();
+
+function handleRecordAction(event: GridActionEvent) {
+  if (event.actionId !== "dblclick" && event.actionId !== "view") return;
+  const row = gridSource.find((item) => item.id === event.row.id);
+  if (!row) return;
+  detailRow = row;
+  detailsOpen = true;
 }
 
 const columns: OrbisColumnDef[] = [
@@ -479,7 +521,7 @@ function exportCsv() {
           size="sm"
           class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
           disabled={selectedJournalEntries.length === 0}
-          onclick={() => (printReportOpen = true)}
+          onclick={() => openPrint(selectedJournalEntries)}
         >
           <Printer size={14} />
           <span>{m.finance_ui_print_journal_entry()}{selectedJournalEntries.length ? ` (${selectedJournalEntries.length})` : ""}</span>
@@ -499,7 +541,7 @@ function exportCsv() {
 
         <DateRangeFilter bind:value={dateRange} />
 
-        <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
+        <Button variant="ghost" size="icon-sm" onclick={() => loadData()} disabled={isLoading || isSubmitting} aria-label={m.common_control_refresh()} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
         </Button>
 
@@ -514,38 +556,21 @@ function exportCsv() {
       <div transition:slide={{ duration: 200 }}>
         <FinanceInlineFormCard
           title={m.finance_ui_journal_entry_create_heading()}
-          onclose={() => (showAddForm = false)}
+          busy={isSubmitting}
+          errorMessage={formError}
+          onsave={handleSaveNew}
+          onclose={() => { formError = ""; showAddForm = false; }}
         >
+            <h3 class="text-sm font-semibold">{m.finance_ui_payment_details()}</h3>
             <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-4">
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
-                <Input
-                  type="text"
-                  bind:value={referenceNumber}
-                  placeholder={m.finance_ui_automatic()}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
-                <Input
+                <Label for="journal-date" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
+                <Input id="journal-date"
                   type="date"
                   bind:value={accountingDate}
                   class="h-8 text-xs font-mono bg-background border-border/60"
                 />
               </div>
-
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_amount()}</Label>
-                <Input
-                  type="number"
-                  bind:value={amount}
-                  placeholder="0.00"
-                  class="h-8 text-xs font-mono font-bold text-primary bg-background border-border/60"
-                />
-              </div>
-
               <div class="min-w-0">
                 <CurrencySelector
                   compact
@@ -557,12 +582,33 @@ function exportCsv() {
                   disabled={isLoading || isSubmitting}
                 />
               </div>
+              <div class="min-w-0">
+                <Label for="journal-amount" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_amount()}</Label>
+                <Input id="journal-amount"
+                  type="number"
+                  step="any"
+                  min="0.01"
+                  required
+                  bind:value={amount}
+                  placeholder="0.00"
+                  class="h-8 text-xs font-mono font-bold text-primary bg-background border-border/60"
+                />
+              </div>
+              <div class="min-w-0">
+                <Label for="journal-voucher-number-optional" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
+                <Input id="journal-voucher-number-optional"
+                  type="text"
+                  bind:value={referenceNumber}
+                  placeholder={m.finance_ui_automatic()}
+                  class="h-8 text-xs font-mono bg-background border-border/60"
+                />
+              </div>
             </div>
 
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_debit_account()}</Label>
-                <AccountSearchInput
+                <Label for="journal-debit-account" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_debit_account()}</Label>
+                <AccountSearchInput inlineResults id="journal-debit-account"
                   bind:value={debitAccountId}
                   accounts={journalAccounts}
                   placeholder={m.finance_ui_debit_account_select_placeholder()}
@@ -570,8 +616,8 @@ function exportCsv() {
               </div>
 
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_credit_account()}</Label>
-                <AccountSearchInput
+                <Label for="journal-credit-account" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_credit_account()}</Label>
+                <AccountSearchInput inlineResults id="journal-credit-account"
                   bind:value={creditAccountId}
                   accounts={journalAccounts}
                   placeholder={m.finance_ui_credit_account_select_placeholder()}
@@ -580,8 +626,8 @@ function exportCsv() {
             </div>
 
             <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_description_notes()}</Label>
-              <Input
+              <Label for="journal-description-notes" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_description_notes()}</Label>
+              <Input id="journal-description-notes"
                 type="text"
                 bind:value={notes}
                 placeholder={m.finance_ui_journal_notes_placeholder()}
@@ -589,20 +635,21 @@ function exportCsv() {
               />
             </div>
 
+          {#snippet actions()}
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-              <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm}>
+              <Button type="button" variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm} disabled={isSubmitting}>
                 {m.finance_ui_clear_fields()}
               </Button>
-              <Button
+              <Button type="submit"
                 variant="default"
                 size="sm"
                 class="h-8 text-xs font-bold px-4"
                 disabled={isSubmitting}
-                onclick={handleSaveNew}
               >
                 {isSubmitting ? m.finance_ui_saving() : m.finance_ui_journal_entry_save()}
               </Button>
             </div>
+          {/snippet}
         </FinanceInlineFormCard>
       </div>
     {/if}
@@ -610,7 +657,8 @@ function exportCsv() {
     <!-- Grid Container -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <OrbisGrid
-        columns={[selectionColumn(), ...columns]}
+        columns={[selectionColumn(), ...columns, detailsColumn]}
+        onaction={handleRecordAction}
         source={filteredSource}
         loading={isLoading}
         clientQuery
@@ -625,11 +673,40 @@ function exportCsv() {
   </div>
 </div>
 
+
+<FinanceRecordDialog
+  bind:open={detailsOpen}
+  title={m.finance_ui_record_details()}
+  fields={detailRow ? [
+    { label: m.finance_ui_voucher_number(), value: detailRow.ref_display },
+    { label: m.finance_ui_date(), value: detailRow.date_display },
+    { label: m.finance_ui_debit_account(), value: detailRow.debit_account_display },
+    { label: m.finance_ui_credit_account(), value: detailRow.credit_account_display },
+    { label: m.finance_ui_amount(), value: detailRow.amount_formatted },
+    { label: m.finance_ui_currency(), value: detailRow.currency_display },
+    { label: m.finance_ui_receipt_status(), value: detailRow.status_display },
+    { label: m.finance_ui_description_notes(), value: detailRow.notes_display },
+  ] : []}
+  onprint={printDetail}
+>
+  {#if detailRow?.lines?.length}
+    <dl class="divide-y divide-border border-y border-border">
+      {#each detailRow.lines as line (line.id)}
+        <div class="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+          <dt class="text-sm font-medium">{getAccountName(line.account_id)}</dt>
+          <dd class="text-xs text-muted-foreground">{m.finance_ui_debit_account()}: {formatCurrency(Number(line.debit_amount), detailRow?.currency_code)}</dd>
+          <dd class="text-xs text-muted-foreground">{m.finance_ui_credit_account()}: {formatCurrency(Number(line.credit_amount), detailRow?.currency_code)}</dd>
+        </div>
+      {/each}
+    </dl>
+  {/if}
+</FinanceRecordDialog>
+
 <PrintDialog
   bind:open={printReportOpen}
   entityType="finance_journal"
   documentType="VOUCHER"
-  entityIds={selectedJournalEntries.map((entry) => entry.id)}
-  entityLabels={selectedJournalEntries.map((entry) => entry.ref_display)}
+  entityIds={printRows.map((entry) => entry.id)}
+  entityLabels={printRows.map((entry) => entry.ref_display)}
   contexts={journalPrintContexts}
 />

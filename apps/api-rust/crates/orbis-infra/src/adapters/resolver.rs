@@ -471,48 +471,29 @@ impl PaymentGatewayPort for IntegrationResolver {
             .integration_repo
             .find_configs_by_org(ctx.tenant_id)
             .await?;
-        let active_payment = configs
+        let config = configs
             .into_iter()
-            .find(|c| c.category == "payment-gateway" && c.is_enabled);
+            .find(|config| {
+                config.category == "payment-gateway"
+                    && config.is_enabled
+                    && config.provider_name == "moyasar"
+            })
+            .ok_or_else(|| {
+                DomainError::Validation("No active Moyasar payment gateway found".into())
+            })?;
+        let secret_key = self
+            .integration_repo
+            .get_secrets_by_config(config.id)
+            .await?
+            .into_iter()
+            .find(|secret| secret.key_name == "secret_key")
+            .map(|secret| secret.secret_key)
+            .filter(|key| !key.trim().is_empty())
+            .ok_or_else(|| DomainError::Validation("Moyasar secret key is not configured".into()))?;
 
-        match active_payment {
-            Some(config) => {
-                let secrets = self
-                    .integration_repo
-                    .get_secrets_by_config(config.id)
-                    .await?;
-                let secret_key = secrets
-                    .into_iter()
-                    .find(|s| s.key_name == "secret_key")
-                    .map(|s| s.secret_key)
-                    .unwrap_or_default();
-
-                if config.provider_name == "moyasar" {
-                    if secret_key.trim().is_empty() {
-                        return Err(DomainError::Validation(
-                            "Moyasar secret key is not configured".into(),
-                        ));
-                    }
-                    let adapter = MoyasarAdapter::new(secret_key);
-                    adapter
-                        .process_payment(ctx, amount, currency, source, idempotency_key)
-                        .await
-                } else if config.provider_name == "mada" {
-                    Err(DomainError::Validation(
-                        "Direct Mada processing is unsupported. Configure a verified payment gateway such as Moyasar."
-                            .into(),
-                    ))
-                } else {
-                    Err(DomainError::Validation(format!(
-                        "Unsupported Payment Provider: {}",
-                        config.provider_name
-                    )))
-                }
-            }
-            None => Err(DomainError::Validation(
-                "No active Payment Gateway integration found".into(),
-            )),
-        }
+        MoyasarAdapter::new(secret_key)
+            .process_payment(ctx, amount, currency, source, idempotency_key)
+            .await
     }
 }
 

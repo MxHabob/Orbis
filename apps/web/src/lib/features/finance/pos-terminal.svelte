@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
-import { onMount } from "svelte";
+import { onDestroy, onMount, tick } from "svelte";
 import { slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -18,6 +18,7 @@ import {
   createFeeTemplatesQuery,
   createProcessPaymentMutation,
   createAvailablePaymentMethodsQuery,
+  manualPaymentMethods,
 } from "$lib/features/finance";
 import {
   api,
@@ -26,6 +27,9 @@ import {
   type StudentFeeDto,
   type PaymentDto,
 } from "$lib/api";
+import { paymentMethodLabel, receiptPrintContext } from "./record-presentation";
+import { paymentRequestFingerprint } from "./payment-attempt-key";
+import PaymentMethodField from "./components/payment-method-field.svelte";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
@@ -39,7 +43,6 @@ import {
   BuildingLibrary,
   CheckCircle,
   CreditCard,
-  Document,
   DocumentPage,
   Keyboard,
   Printer,
@@ -70,6 +73,7 @@ let sourceToken = $state("");
 let notes = $state("");
 let shouldPrintReceipt = $state(true);
 let lastReceiptPayment = $state<PaymentDto | null>(null);
+let lastReceiptNotes = $state("");
 let printReceiptOpen = $state(false);
 let printReceiptPayment = $state<PaymentDto | null>(null);
 let printReceiptContext = $state<Record<string, unknown>[]>([]);
@@ -81,12 +85,11 @@ const cashAccounts = $derived(cashAccountsQuery.data ?? []);
 const activeAccountId = $derived(formAccountId || cashAccounts[0]?.id || "");
 
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
-const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
+const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? manualPaymentMethods());
 const feeTemplatesQuery = createFeeTemplatesQuery(() => orgId);
 const feeTemplates = $derived(feeTemplatesQuery.data ?? []);
 const selectedPaymentMethodObj = $derived(
-  availablePaymentMethods.find((m) => m.id === formMethod) ||
-    availablePaymentMethods[0],
+  availablePaymentMethods.find((method) => method.id === formMethod),
 );
 
 const studentFeesQuery = createStudentFeesQuery(
@@ -103,15 +106,20 @@ const activeStudentFees = $derived(
 const recentPaymentsQuery = createPaymentsQuery(
   () => orgId,
   () => (selectedStudent ? { student_id: selectedStudent.id } : undefined),
+  () => Boolean(selectedStudent?.id),
+  5,
 );
-const activeStudentPayments = $derived(
-  (recentPaymentsQuery.data ?? []).slice(0, 5),
-);
+const activeStudentPayments = $derived(recentPaymentsQuery.data ?? []);
 
-const processPaymentMutation = createProcessPaymentMutation();
+const processPaymentMutation = createProcessPaymentMutation(() => orgId);
+let isPreparingPayment = $state(false);
+let paymentError = $state("");
+const isSubmittingPayment = $derived(isPreparingPayment || processPaymentMutation.isPending);
+
+const feeTemplatesById = $derived(new Map(feeTemplates.map((template) => [template.id, template])));
 
 function getFeeTemplateName(feeTemplateId: string): string {
-  const template = feeTemplates.find((item) => item.id === feeTemplateId);
+  const template = feeTemplatesById.get(feeTemplateId);
   return template
     ? l(template.name_ar, template.name) || template.name
     : m.finance_ui_tuition_fees();
@@ -119,46 +127,57 @@ function getFeeTemplateName(feeTemplateId: string): string {
 
 // ── Student Search Logic ──────────────────────────────────────────────
 
-let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+let searchRevision = 0;
+
+function cancelStudentSearch() {
+  searchRevision += 1;
+  clearTimeout(searchDebounceTimer);
+}
+
+onDestroy(cancelStudentSearch);
 
 function handleSearchInput(query: string) {
+  cancelStudentSearch();
+  const revision = searchRevision;
   searchQuery = query;
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  searchedStudents = [];
+  highlightedIndex = -1;
 
   if (!query.trim()) {
-    searchedStudents = [];
-    highlightedIndex = -1;
+    isSearchingStudents = false;
     return;
   }
 
+  isSearchingStudents = true;
   searchDebounceTimer = setTimeout(async () => {
-    isSearchingStudents = true;
     try {
       const results = await api.listStudents({
         search: query.trim(),
         page_size: 8,
       });
+      if (revision !== searchRevision) return;
       searchedStudents = results.items.map((detail) => detail.student);
       highlightedIndex = searchedStudents.length > 0 ? 0 : -1;
     } catch {
-      searchedStudents = [];
+      if (revision === searchRevision) searchedStudents = [];
     } finally {
-      isSearchingStudents = false;
+      if (revision === searchRevision) isSearchingStudents = false;
     }
   }, 150);
 }
 
 function selectStudent(student: StudentDto) {
+  if (isSubmittingPayment) return;
   selectedStudent = student;
-  searchQuery = "";
-  searchedStudents = [];
-  highlightedIndex = -1;
+  handleSearchInput("");
   formFeeId = "";
   formAmount = null;
   lastReceiptPayment = null;
 }
 
 function deselectStudent() {
+  if (isSubmittingPayment) return;
   selectedStudent = null;
   formFeeId = "";
   formAmount = null;
@@ -176,45 +195,67 @@ function getFeeBalance(fee: StudentFeeDto): number | null {
 }
 
 function selectFeeItem(fee: StudentFeeDto) {
+  if (isSubmittingPayment) return;
   formFeeId = fee.id;
   formAmount = getFeeBalance(fee);
+  void tick().then(() => document.getElementById("pos_amount")?.focus());
 }
 
 // ── Payment Processing ────────────────────────────────────────────────
 
+const paymentAttempts = new Map<string, string>();
+
 async function handlePaymentSubmit(e: SubmitEvent) {
   e.preventDefault();
+  if (isSubmittingPayment) return;
+  paymentError = "";
 
   if (!selectedStudent) {
-    toast.error(m.common_fee_toast_error_student());
+    paymentError = m.common_fee_toast_error_student();
     return;
   }
   if (!activeAccountId) {
-    toast.error(m.common_payment_toast_error_cash_account());
+    paymentError = m.common_payment_toast_error_cash_account();
     return;
   }
-  if (!formAmount || formAmount <= 0) {
-    toast.error(m.common_fee_toast_error_amount());
+  if (formAmount == null || !Number.isFinite(formAmount) || formAmount <= 0) {
+    paymentError = m.common_fee_toast_error_amount();
     return;
   }
 
+  if (!selectedPaymentMethodObj || (paymentMethodsQuery.isError && selectedPaymentMethodObj.is_digital_gateway)) {
+    paymentError = m.finance_ui_payment_method_unavailable();
+    return;
+  }
+  if (selectedPaymentMethodObj.requires_source_token && !sourceToken.trim()) {
+    paymentError = m.finance_ui_payment_gateway_token_required();
+    return;
+  }
+
+  isPreparingPayment = true;
   try {
-    const payment = await processPaymentMutation.mutateAsync({
+    const request = {
       fee_id: formFeeId || undefined,
       student_id: selectedStudent.id,
       account_id: activeAccountId,
       amount: String(formAmount),
       method: formMethod,
       reference: referenceNumber.trim() || undefined,
-      source: sourceToken.trim() || undefined,
+      source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
       payer_name:
         `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() ||
         undefined,
-    });
+      notes: notes.trim() || undefined,
+    };
+    const fingerprint = await paymentRequestFingerprint(request);
+    const idempotencyKey = paymentAttempts.get(fingerprint) ?? crypto.randomUUID();
+    paymentAttempts.set(fingerprint, idempotencyKey);
+    const payment = await processPaymentMutation.mutateAsync({ ...request, idempotency_key: idempotencyKey });
+    paymentAttempts.delete(fingerprint);
 
     toast.success(m.common_payment_toast_success());
     lastReceiptPayment = payment;
-    const paymentNotes = notes;
+    lastReceiptNotes = notes.trim();
 
     // Reset payment fields
     formAmount = null;
@@ -223,60 +264,33 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     sourceToken = "";
     notes = "";
 
-    // Refresh student fee list
-    studentFeesQuery.refetch();
-    recentPaymentsQuery.refetch();
-
     if (shouldPrintReceipt) {
-      handlePrintReceipt(payment, paymentNotes);
+      handlePrintReceipt(payment, lastReceiptNotes || payment.reference || "");
     }
   } catch (err) {
-    toast.error(extractErrorMessage(err));
+    paymentError = extractErrorMessage(err);
+  } finally {
+    isPreparingPayment = false;
   }
 }
 
-function handlePrintReceipt(payment: PaymentDto, description = notes) {
+function handlePrintReceipt(payment: PaymentDto, description = payment.reference || "") {
   printReceiptPayment = payment;
-  printReceiptContext = [
-    {
-      receipt: {
-        number: payment.receipt_number || payment.id.slice(0, 8),
-        date: payment.paid_at || payment.created_at,
-        payerName:
-          payment.payer_name ||
-          (selectedStudent
-            ? `${selectedStudent.first_name} ${selectedStudent.last_name}`
-            : ""),
-        studentName: selectedStudent
-          ? `${selectedStudent.first_name} ${selectedStudent.last_name}`
-          : "",
-        amount: Number(payment.amount),
-        amountWords: "",
-        description,
-        paymentMethod: payment.method,
-        referenceNumber: payment.reference || "",
-        cashierName: "",
-      },
-      $org: {
-        name: orgContext.name,
-        name_ar: orgContext.nameAr,
-        currency: payment.currency_code || orgContext.baseCurrency,
-        logo_url: orgContext.logo,
-        primary_color: orgContext.primaryColor,
-      },
-    },
-  ];
+  const payer = payment.payer_name ||
+    (selectedStudent?.id === payment.student_id
+      ? [selectedStudent?.first_name, selectedStudent?.last_name].filter(Boolean).join(" ")
+      : "");
+  printReceiptContext = [receiptPrintContext(payment, payer, description)];
   printReceiptOpen = true;
 }
 
 // ── Keyboard Shortcuts ────────────────────────────────────────────────
 
 function handleGlobalKeyDown(e: KeyboardEvent) {
-  if (e.key === "Escape") {
+  if (e.defaultPrevented || printReceiptOpen || isSubmittingPayment) return;
+  if (e.key === "Escape" && isSearchFocused) {
     if (searchQuery) {
-      searchQuery = "";
-      searchedStudents = [];
-      highlightedIndex = -1;
+      handleSearchInput("");
     } else if (selectedStudent) {
       deselectStudent();
     }
@@ -312,7 +326,7 @@ const rtl = $derived(getLocale() === "ar");
 
 <svelte:window onkeydown={handleGlobalKeyDown} />
 
-<div class="h-full w-full flex flex-col bg-background overflow-hidden select-none text-xs" dir={rtl ? "rtl" : "ltr"}>
+<div class="h-full w-full flex flex-col bg-background overflow-hidden text-xs" dir={rtl ? "rtl" : "ltr"}>
   <!-- Top Bar: Header & Cashier Status -->
   <header class="h-12 border-b border-border/60 bg-muted/20 px-4 flex items-center justify-between shrink-0">
     <div class="flex items-center gap-2.5">
@@ -546,7 +560,7 @@ const rtl = $derived(getLocale() === "ar");
                         <td class="py-1.5 px-3 font-mono font-medium text-foreground">
                           #{payment.receipt_number || payment.id.slice(0, 8)}
                         </td>
-                        <td class="py-1.5 px-3 text-muted-foreground">{payment.method}</td>
+                        <td class="py-1.5 px-3 text-muted-foreground">{paymentMethodLabel(payment.method)}</td>
                         <td class="py-1.5 px-3 font-mono text-muted-foreground">{formatDate(payment.paid_at)}</td>
                         <td class="py-1.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-end">
                           {formatCurrency(Number(payment.amount), payment.currency_code ?? undefined)}
@@ -586,7 +600,8 @@ const rtl = $derived(getLocale() === "ar");
 
     <!-- Right 5 Cols: Payment Collection Keypad & Execution -->
     <div class="col-span-full flex min-h-[60vh] flex-col overflow-hidden bg-muted/5 lg:col-span-5 lg:h-full lg:min-h-0">
-      <form onsubmit={handlePaymentSubmit} class="flex flex-col h-full overflow-y-auto p-4 gap-4">
+      <form onsubmit={handlePaymentSubmit} aria-busy={isSubmittingPayment} class="flex min-h-0 flex-1 flex-col">
+      <fieldset disabled={isSubmittingPayment} class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         
         <div class="border-b border-border/60 pb-2">
           <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
@@ -596,50 +611,6 @@ const rtl = $derived(getLocale() === "ar");
           <p class="text-[10px] text-muted-foreground mt-0.5">
             {m.finance_ui_pos_payment_accounting_note()}
           </p>
-        </div>
-
-        <!-- Payment Method Tabs (Dynamically Resolved via Integration Layer) -->
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <p class="text-[11px] font-semibold text-foreground">{m.finance_pos_payment_method_integrations()}</p>
-            {#if selectedPaymentMethodObj?.is_digital_gateway}
-              <span class="text-[9px] bg-primary/10 text-primary border border-primary/20 rounded px-1.5 py-0.5 font-medium">
-                {m.finance_ui_gateway_provider({ provider: selectedPaymentMethodObj.provider_name ?? "" })}
-              </span>
-            {/if}
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            {#each availablePaymentMethods as methodItem (methodItem.id)}
-              <button
-                type="button"
-                onclick={() => (formMethod = methodItem.id)}
-                class="flex items-center justify-center gap-1.5 py-2 px-2 rounded-md border text-[11px] font-medium transition-all {formMethod === methodItem.id ? 'bg-primary text-primary-foreground border-primary shadow-xs' : 'bg-background border-border/80 text-muted-foreground hover:bg-muted/60'}"
-              >
-                {#if methodItem.category === "manual"}
-                  <Banknotes size={13} />
-                {:else if methodItem.category === "bank"}
-                  {#if methodItem.id === "check"}
-                    <Document size={13} />
-                  {:else}
-                    <BuildingLibrary size={13} />
-                  {/if}
-                {:else}
-                  <CreditCard size={13} />
-                {/if}
-                <span class="truncate">{methodItem.name}</span>
-              </button>
-            {/each}
-          </div>
-
-          {#if availablePaymentMethods.filter((m) => m.is_digital_gateway).length === 0}
-            <div class="text-[10px] text-muted-foreground bg-muted/20 border border-border/40 rounded p-1.5 mt-1 flex items-center justify-between">
-              <span>{m.finance_ui_payment_gateway_activation_required()}</span>
-              <a href="/{orgId}/settings/integrations" class="text-primary hover:underline font-medium">
-                {m.finance_ui_integrations_store()}
-              </a>
-            </div>
-          {/if}
         </div>
 
         <!-- Amount Entry Field -->
@@ -674,6 +645,17 @@ const rtl = $derived(getLocale() === "ar");
           </div>
         </div>
 
+        <PaymentMethodField
+          {orgId}
+          methods={availablePaymentMethods}
+          value={formMethod}
+          disabled={isSubmittingPayment}
+          loading={paymentMethodsQuery.isFetching}
+          loadFailed={paymentMethodsQuery.isError}
+          onretry={() => { void paymentMethodsQuery.refetch(); }}
+          onchange={(value) => { formMethod = value; sourceToken = ""; referenceNumber = ""; }}
+        />
+
         <!-- Electronic Source Token (if Gateway method requires token) -->
         {#if selectedPaymentMethodObj?.requires_source_token}
           <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
@@ -685,6 +667,8 @@ const rtl = $derived(getLocale() === "ar");
               id="pos_token"
               type="text"
               dir="auto"
+              autocomplete="off"
+              required
               bind:value={sourceToken}
               placeholder={m.finance_ui_pos_payment_token_placeholder()}
               class="h-9 w-full px-3 text-xs font-mono"
@@ -693,7 +677,7 @@ const rtl = $derived(getLocale() === "ar");
         {/if}
 
         <!-- Reference / Check Number -->
-        {#if formMethod !== "cash"}
+        {#if formMethod === "check" || formMethod === "bank_transfer"}
           <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
             <label for="pos_ref" class="text-[11px] font-semibold text-foreground">
               {formMethod === "check" ? m.finance_ui_check_reference_label() : m.finance_ui_transfer_reference_label()}
@@ -734,14 +718,15 @@ const rtl = $derived(getLocale() === "ar");
           </label>
         </div>
 
-        <!-- Submission Action Buttons -->
-        <div class="mt-auto pt-4 flex flex-col gap-2">
+      </fieldset>
+        <div class="flex shrink-0 flex-col gap-2 border-t border-border bg-background p-4">
+          {#if paymentError}<p class="text-sm text-destructive" role="alert">{paymentError}</p>{/if}
           <Button
             type="submit"
-            disabled={!selectedStudent || !formAmount || formAmount <= 0 || processPaymentMutation.isPending}
-            class="w-full h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-sm"
+            disabled={!selectedStudent || !selectedPaymentMethodObj || !formAmount || formAmount <= 0 || isSubmittingPayment}
+            class="h-10 w-full gap-2"
           >
-            {#if processPaymentMutation.isPending}
+            {#if isSubmittingPayment}
               <LoadingIndicator   size={14} />
               <span>{m.finance_ui_posting_entry_and_issuing_receipt()}</span>
             {:else}
@@ -755,7 +740,7 @@ const rtl = $derived(getLocale() === "ar");
               type="button"
               variant="outline"
               size="sm"
-              onclick={() => handlePrintReceipt(lastReceiptPayment!)}
+              onclick={() => { if (lastReceiptPayment) handlePrintReceipt(lastReceiptPayment, lastReceiptNotes || lastReceiptPayment.reference || ""); }}
               class="w-full h-8 text-xs text-foreground"
             >
               <Printer size={13} class="me-1.5 text-primary" />

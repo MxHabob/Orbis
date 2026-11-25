@@ -1,11 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
-import { api, type AccountDto } from "$lib/api";
+import type { AccountDto } from "$lib/api";
+import { authStore } from "$lib/stores";
+import { createAccountsQuery } from "../queries";
 import { LoadingIndicator } from "@orbis/ui";
 import { Input } from "@orbis/ui/input";
 import { Check, Search, XMark } from "@orbis/icons";
-import { onDestroy, onMount } from "svelte";
+import { onDestroy } from "svelte";
 import { slide } from "svelte/transition";
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
   disabled?: boolean;
   size?: "sm" | "default";
   class?: string;
+  inlineResults?: boolean;
   id?: string;
   onselect?: (account: AccountDto) => void;
   onchange?: (accountId: string | null) => void;
@@ -36,6 +39,7 @@ let {
   disabled = false,
   size = "default",
   class: className = "",
+  inlineResults = false,
   id = undefined,
   onselect = undefined,
   onchange = undefined,
@@ -45,35 +49,27 @@ let {
 const generatedId = $props.id();
 const inputId = $derived(id ?? generatedId);
 const listboxId = $derived(`${inputId}-account-options`);
-let fetchedAccounts = $state<AccountDto[]>([]);
-let isLoading = $state(false);
 let isOpen = $state(false);
 let searchText = $state("");
 let debouncedQuery = $state("");
-let highlightedIndex = $state(0);
+let highlightedIndex = $state(-1);
 let inputElement = $state<HTMLInputElement | null>(null);
 let containerElement = $state<HTMLDivElement | null>(null);
 let optionElements = $state<HTMLButtonElement[]>([]);
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-onMount(async () => {
-  if (accounts !== undefined) return;
-
-  isLoading = true;
-  try {
-    fetchedAccounts = await api.listAccounts();
-  } catch (error) {
-    console.error("Failed to fetch accounts in AccountSearchInput:", error);
-  } finally {
-    isLoading = false;
-  }
-});
+const accountsQuery = createAccountsQuery(
+  () => authStore.orgId || "",
+  () => accounts === undefined && (isOpen || Boolean(value)),
+);
+const isLoading = $derived(accounts === undefined && accountsQuery.isFetching);
+const loadFailed = $derived(accounts === undefined && accountsQuery.isError);
 
 onDestroy(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
 });
 
-const allAccounts = $derived(accounts ?? fetchedAccounts);
+const allAccounts = $derived(accounts ?? accountsQuery.data ?? []);
 const parentAccountIds = $derived(
   new Set(
     allAccounts.flatMap((account) =>
@@ -131,10 +127,12 @@ const searchableAccounts = $derived(
 const filteredResults = $derived.by(() => {
   const query = debouncedQuery.trim().toLowerCase();
   if (!query) return [];
-  return searchableAccounts
-    .filter((item) => item.searchText.includes(query))
-    .slice(0, 40)
-    .map((item) => item.account);
+  const matches: AccountDto[] = [];
+  for (const item of searchableAccounts) {
+    if (item.searchText.includes(query)) matches.push(item.account);
+    if (matches.length === 40) break;
+  }
+  return matches;
 });
 const isSearching = $derived(searchText.trim() !== debouncedQuery);
 
@@ -156,13 +154,9 @@ function clearPendingSearch() {
 
 function handleInput(event: Event) {
   const target = event.currentTarget as HTMLInputElement;
-  if (value) {
-    value = null;
-    onchange?.(null);
-  }
   searchText = target.value;
   isOpen = Boolean(searchText.trim());
-  highlightedIndex = 0;
+  highlightedIndex = -1;
 
   clearPendingSearch();
   const query = searchText.trim();
@@ -183,9 +177,7 @@ function handleFocus() {
 
 function handleSelectAccount(account: AccountDto) {
   value = String(account.id);
-  searchText = "";
-  debouncedQuery = "";
-  isOpen = false;
+  closeSearch();
   onselect?.(account);
   onchange?.(String(account.id));
 }
@@ -209,50 +201,47 @@ function scrollHighlightedOptionIntoView() {
 
 function handleKeyDown(event: KeyboardEvent) {
   if (!(event.key === "Enter" && event.shiftKey)) {
-    if (isOpen && filteredResults.length > 0 && event.key === "ArrowDown") {
+    if (isOpen && !isSearching && filteredResults.length > 0 && event.key === "ArrowDown") {
       event.preventDefault();
       highlightedIndex = (highlightedIndex + 1) % filteredResults.length;
       scrollHighlightedOptionIntoView();
     } else if (
-      isOpen &&
+      isOpen && !isSearching &&
       filteredResults.length > 0 &&
       event.key === "ArrowUp"
     ) {
       event.preventDefault();
       highlightedIndex =
-        (highlightedIndex - 1 + filteredResults.length) %
+        (Math.max(highlightedIndex, 0) - 1 + filteredResults.length) %
         filteredResults.length;
       scrollHighlightedOptionIntoView();
     } else if (isOpen && event.key === "Enter") {
       event.preventDefault();
-      const account = filteredResults[highlightedIndex];
+      const account = !isSearching ? filteredResults[Math.max(0, highlightedIndex)] : undefined;
       if (account) handleSelectAccount(account);
     } else if (isOpen && event.key === "Escape") {
       event.preventDefault();
-      isOpen = false;
-      searchText = "";
-      debouncedQuery = "";
-      clearPendingSearch();
+      closeSearch();
     }
   }
 
   onkeydown?.(event);
 }
 
-function handleClickOutside(event: MouseEvent) {
-  const target = event.target;
-  if (target instanceof Node && !containerElement?.contains(target)) {
-    isOpen = false;
-    searchText = "";
-    debouncedQuery = "";
-    clearPendingSearch();
-  }
+function closeSearch() {
+  isOpen = false;
+  searchText = "";
+  debouncedQuery = "";
+  clearPendingSearch();
+}
+
+function handleFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget;
+  if (!(next instanceof Node) || !containerElement?.contains(next)) closeSearch();
 }
 </script>
 
-<svelte:window onclick={handleClickOutside} />
-
-<div bind:this={containerElement} class="relative w-full min-w-0 text-start">
+<div bind:this={containerElement} onfocusout={handleFocusOut} class="relative w-full min-w-0 text-start">
   <div class="relative flex w-full min-w-0 items-center">
     <Search
       size={14}
@@ -267,10 +256,11 @@ function handleClickOutside(event: MouseEvent) {
       placeholder={searchPlaceholder || placeholder}
       {disabled}
       role="combobox"
+      aria-label={placeholder}
       aria-expanded={isOpen}
       aria-autocomplete="list"
-      aria-controls={listboxId}
-      aria-activedescendant={isOpen && filteredResults[highlightedIndex]
+      aria-controls={isOpen ? listboxId : undefined}
+      aria-activedescendant={isOpen && !isSearching && filteredResults[highlightedIndex]
         ? `${inputId}-option-${filteredResults[highlightedIndex].id}`
         : undefined}
       value={isOpen ? searchText : selectedAccountLabel}
@@ -279,12 +269,11 @@ function handleClickOutside(event: MouseEvent) {
       onkeydown={handleKeyDown}
       class="{size === 'sm' ? 'h-8 ps-8 pe-8 text-xs' : 'h-9 ps-9 pe-9 text-sm'} w-full bg-background font-normal focus-visible:border-ring focus-visible:ring-ring/50 {className}"
     />
-    {#if (isOpen && searchText) || value}
+    {#if !disabled && ((isOpen && searchText) || value)}
       <button
         type="button"
         class="absolute inset-e-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         onclick={handleClear}
-        tabindex="-1"
         aria-label={m.finance_ui_account_clear()}
         title={m.finance_ui_account_clear()}
       >
@@ -298,12 +287,14 @@ function handleClickOutside(event: MouseEvent) {
       transition:slide={{ duration: 100 }}
       id={listboxId}
       role="listbox"
-      class="absolute inset-x-0 top-full z-50 mt-1 max-h-[min(18rem,40vh)] w-full min-w-0 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+      class="{inlineResults ? 'relative' : 'absolute inset-x-0 top-full z-50'} mt-1 max-h-[min(18rem,40vh)] w-full min-w-0 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
     >
       {#if isSearching || isLoading}
         <div class="flex justify-center px-3 py-3 text-muted-foreground">
           <LoadingIndicator size={14} />
         </div>
+      {:else if loadFailed}
+        <div role="status" class="px-3 py-3 text-sm text-destructive">{m.common_loading_error()}</div>
       {:else if filteredResults.length === 0}
         <div class="px-3 py-4 text-center text-sm text-muted-foreground">{emptyText}</div>
       {:else}
@@ -315,6 +306,8 @@ function handleClickOutside(event: MouseEvent) {
             bind:this={optionElements[index]}
             type="button"
             role="option"
+            tabindex="-1"
+            onmousedown={(event) => event.preventDefault()}
             aria-selected={selected}
             class="flex w-full min-w-0 items-center justify-between gap-3 rounded px-2.5 py-2 text-start text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {highlighted ? 'bg-accent text-accent-foreground' : ''}"
             onclick={() => handleSelectAccount(account)}

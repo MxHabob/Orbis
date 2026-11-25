@@ -14,11 +14,11 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { createInfiniteQuery, createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
+import { formatDateKey } from "$lib/core/i18n/format";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import type {
   StudentFeeDto,
   FeeTemplateDto,
-  DiscountTemplateDto,
   AcademicPeriodDto,
   EnrollmentDto,
   StudentDetailDto,
@@ -44,11 +44,15 @@ import {
 } from "@orbis/icons";
 import {
   OrbisGrid,
+  type GridActionEvent,
   type DataQuery,
   type OrbisColumnDef,
   type SortSpec,
 } from "@orbis/svelte-grid";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { buildInstallmentDates, hasOrderedInstallmentDates } from "./installment-schedule";
+import { financeRecordColumn } from "./record-presentation";
+import FinanceRecordDialog from "./components/finance-record-dialog.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
 import { createDefaultDateRange } from "$lib/shared/components/date-range";
@@ -61,11 +65,11 @@ const asArray = <T>(value: T[] | null | undefined): T[] =>
 
 // ── State ──────────────────────────────────────────────────────────────
 let feeTemplates = $state<FeeTemplateDto[]>([]);
-let discountTemplates = $state<DiscountTemplateDto[]>([]);
 let enrollments = $state<EnrollmentDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
+let formError = $state("");
 
 // Active Action Form
 let activeForm = $state<"none" | "create" | "split" | "refund">("none");
@@ -82,10 +86,12 @@ let formDueDate = $state(
 // Split Installments Form
 let selectedFeeForSplit = $state<StudentFeeDto | null>(null);
 let splitCount = $state(2);
-let splitDueDates = $state<string[]>([
-  new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-  new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
-]);
+let splitDueDates = $state<string[]>([]);
+
+function setInstallmentCount(count: number) {
+  splitDueDates = buildInstallmentDates(formatDateKey(new Date()), count, splitDueDates);
+  splitCount = count;
+}
 
 // Refund Form
 let selectedFeeForRefund = $state<StudentFeeDto | null>(null);
@@ -182,7 +188,6 @@ const fees = $derived(
 const feeTotals = $derived(feeSummaryQuery.data ?? []);
 const gridLoading = $derived(
   isLoading ||
-    studentDirectoryQuery.isLoading ||
     (feesQuery.isLoading && !feesQuery.data),
 );
 const studentsById = $derived(
@@ -194,8 +199,10 @@ async function loadMoreFees() {
   if (result.isError) throw result.error;
 }
 
+const feeTemplatesById = $derived(new Map(feeTemplates.map((template) => [template.id, template])));
+
 function getFeeCurrency(fee: StudentFeeDto) {
-  const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
+  const template = feeTemplatesById.get(fee.fee_template_id);
   return (
     template?.currency ||
     (fee as StudentFeeDto & { currency?: string }).currency ||
@@ -209,7 +216,7 @@ function formatFeeAmount(amount: number, currency: string) {
 }
 
 function getFeeTemplateName(fee: StudentFeeDto) {
-  const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
+  const template = feeTemplatesById.get(fee.fee_template_id);
   if (!template) return m.finance_ui_tuition_fees();
   return isAr() ? template.name_ar || template.name : template.name;
 }
@@ -219,12 +226,16 @@ async function loadAllStudentDetails(): Promise<StudentDetailDto[]> {
   const firstPage = await api.listStudents({ page: 1, page_size: pageSize });
   if (firstPage.total_pages <= 1) return firstPage.items;
 
-  const remainingPages = await Promise.all(
-    Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
-      api.listStudents({ page: index + 2, page_size: pageSize }),
-    ),
-  );
-  return [firstPage, ...remainingPages].flatMap((page) => page.items);
+  const items = [...firstPage.items];
+  for (let page = 2; page <= firstPage.total_pages; page += 5) {
+    const pages = await Promise.all(
+      Array.from({ length: Math.min(5, firstPage.total_pages - page + 1) }, (_, index) =>
+        api.listStudents({ page: page + index, page_size: pageSize }),
+      ),
+    );
+    items.push(...pages.flatMap((result) => result.items));
+  }
+  return items;
 }
 
 onMount(async () => {
@@ -233,13 +244,19 @@ onMount(async () => {
   }
 });
 
+function refreshFeeData() {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.finance.studentFeesForOrg(orgId) }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.finance.studentFeeSummary(orgId) }),
+  ]);
+}
+
 async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [templatesList, discountsList, enrollmentsList, periodsList] =
+    const [templatesList, enrollmentsList, periodsList] =
       await Promise.all([
         api.listFeeTemplates(),
-        api.listDiscountTemplates(),
         api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
         api.listAcademicPeriods
           ? api.listAcademicPeriods()
@@ -247,7 +264,6 @@ async function loadData(refreshFees = true) {
       ]);
 
     feeTemplates = asArray(templatesList);
-    discountTemplates = asArray(discountsList);
     enrollments = asArray(enrollmentsList);
     periods = asArray(periodsList);
 
@@ -255,14 +271,7 @@ async function loadData(refreshFees = true) {
       formPeriodId = periods[0].id;
     }
     if (refreshFees) {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.finance.studentFees(orgId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.finance.studentFeeSummary(orgId),
-        }),
-      ]);
+      await refreshFeeData();
     }
   } catch (e) {
     console.error("Failed to load fees master data:", e);
@@ -283,33 +292,35 @@ const feeTotalsWithRate = $derived(
 
 // ── Form Actions ───────────────────────────────────────────────────────
 async function handleCreateFee() {
+  if (isSubmitting) return;
+  formError = "";
   if (!formStudentId) {
-    toast.error(m.finance_ui_student_required());
+    formError = m.finance_ui_student_required();
     return;
   }
   if (!formTemplateId) {
-    toast.error(m.finance_ui_fee_template_required());
+    formError = m.finance_ui_fee_template_required();
     return;
   }
   if (!formPeriodId) {
-    toast.error(m.finance_ui_period_placeholder());
+    formError = m.finance_ui_period_placeholder();
     return;
   }
 
   const template = feeTemplates.find((item) => item.id === formTemplateId);
   const enrollment = students.find((student) => student.id === formStudentId);
   if (!template) {
-    toast.error(m.finance_ui_fee_template_required());
+    formError = m.finance_ui_fee_template_required();
     return;
   }
   if (!enrollment) {
-    toast.error(m.finance_ui_student_required());
+    formError = m.finance_ui_student_required();
     return;
   }
   const origAmt = Number(template.default_amount);
   const discAmt = Number(formDiscountAmount || 0);
-  if (discAmt < 0 || discAmt > origAmt) {
-    toast.error(m.finance_ui_discount_amount_invalid());
+  if (!Number.isFinite(discAmt) || discAmt < 0 || discAmt > origAmt) {
+    formError = m.finance_ui_discount_amount_invalid();
     return;
   }
 
@@ -328,18 +339,24 @@ async function handleCreateFee() {
     formStudentId = "";
     formTemplateId = "";
     formDiscountAmount = null;
-    await loadData();
-  } catch (err: any) {
+    void refreshFeeData();
+  } catch (err) {
     console.error("Failed to assign fee:", err);
-    toast.error(err?.message || m.finance_ui_fee_assignment_failed());
+    formError = extractErrorMessage(err) || m.finance_ui_fee_assignment_failed();
   } finally {
     isSubmitting = false;
   }
 }
 
 async function handleSplitInstallments() {
+  if (isSubmitting) return;
+  formError = "";
+  if (!hasOrderedInstallmentDates(splitDueDates, splitCount)) {
+    formError = m.finance_ui_installment_dates_invalid();
+    return;
+  }
   if (!selectedFeeForSplit) {
-    toast.error(m.finance_ui_fee_installment_required());
+    formError = m.finance_ui_fee_installment_required();
     return;
   }
 
@@ -347,27 +364,30 @@ async function handleSplitInstallments() {
   try {
     await api.splitStudentFee(selectedFeeForSplit.id, {
       num_installments: splitCount,
-      due_dates: splitDueDates.slice(0, splitCount),
+      due_dates: [...splitDueDates],
     });
     toast.success(m.finance_ui_fee_installment_success());
     activeForm = "none";
     selectedFeeForSplit = null;
-    await loadData();
-  } catch (err: any) {
+    splitDueDates = [];
+    void refreshFeeData();
+  } catch (err) {
     console.error("Failed to split fee:", err);
-    toast.error(err?.message || m.finance_ui_fee_installment_failed());
+    formError = extractErrorMessage(err) || m.finance_ui_fee_installment_failed();
   } finally {
     isSubmitting = false;
   }
 }
 
 async function handleRefundFee() {
+  if (isSubmitting) return;
+  formError = "";
   if (!selectedFeeForRefund) {
-    toast.error(m.finance_ui_fee_refund_record_required());
+    formError = m.finance_ui_fee_refund_record_required();
     return;
   }
-  if (!refundAmount || refundAmount <= 0) {
-    toast.error(m.finance_ui_refund_amount_invalid());
+  if (refundAmount == null || !Number.isFinite(refundAmount) || refundAmount <= 0 || refundAmount > Number(selectedFeeForRefund.paid_amount)) {
+    formError = m.finance_ui_refund_amount_invalid();
     return;
   }
 
@@ -382,17 +402,17 @@ async function handleRefundFee() {
     selectedFeeForRefund = null;
     refundAmount = null;
     refundNotes = "";
-    await loadData();
-  } catch (err: any) {
+    void refreshFeeData();
+  } catch (err) {
     console.error("Failed to refund fee:", err);
-    toast.error(err?.message || m.finance_ui_fee_refund_failed());
+    formError = extractErrorMessage(err) || m.finance_ui_fee_refund_failed();
   } finally {
     isSubmitting = false;
   }
 }
 
 // ── Grid Data ─────────────────────────────────────────────────────────
-function toFeeGridRow(f: StudentFeeDto, idx: number) {
+function toFeeGridRow(f: StudentFeeDto, idx: number, today: string) {
   const net = Number(f.net_amount ?? f.original_amount ?? 0);
   const paid = Number(f.paid_amount ?? 0);
   const balance = Number(f.balance_due ?? Math.max(0, net - paid));
@@ -403,7 +423,7 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
     statusLabel = m.finance_ui_fee_status_paid();
   } else if (paid > 0) {
     statusLabel = m.finance_ui_fee_status_partially_paid();
-  } else if (f.due_date && new Date(f.due_date) < new Date()) {
+  } else if (f.due_date && f.due_date.slice(0, 10) < today) {
     statusLabel = m.finance_ui_fee_status_overdue();
   }
 
@@ -416,7 +436,7 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
         ? "paid"
         : paid > 0
           ? "partially_paid"
-          : f.due_date && new Date(f.due_date) < new Date()
+          : f.due_date && f.due_date.slice(0, 10) < today
             ? "overdue"
             : "pending",
     template_display: getFeeTemplateName(f),
@@ -429,7 +449,23 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
   };
 }
 
-const gridSource = $derived(fees.map(toFeeGridRow));
+const gridSource = $derived.by(() => {
+  const today = formatDateKey(new Date());
+  return fees.map((fee, index) => toFeeGridRow(fee, index, today));
+});
+
+
+const detailsColumn = $derived(financeRecordColumn());
+let detailsOpen = $state(false);
+let detailRow = $state<(typeof gridSource)[number] | undefined>();
+
+function handleRecordAction(event: GridActionEvent) {
+  if (event.actionId !== "dblclick" && event.actionId !== "view") return;
+  const row = gridSource.find((item) => item.id === event.row.id);
+  if (!row) return;
+  detailRow = row;
+  detailsOpen = true;
+}
 
 const columns: OrbisColumnDef[] = [
   {
@@ -539,8 +575,9 @@ async function exportCsv() {
       ...feePageFilter,
       search: searchQuery.trim() || undefined,
     });
+    const today = formatDateKey(new Date());
     const rows = allFees
-      .map(toFeeGridRow)
+      .map((fee, index) => toFeeGridRow(fee, index, today))
       .map((fee) => [
         fee.student_display,
         fee.template_display,
@@ -674,7 +711,8 @@ async function exportCsv() {
           variant={activeForm === "split" ? "secondary" : "outline"}
           size="sm"
           class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
-          onclick={() => { activeForm = activeForm === "split" ? "none" : "split"; }}
+          disabled={isSubmitting}
+          onclick={() => { formError = ""; if (activeForm !== "split") setInstallmentCount(splitCount); activeForm = activeForm === "split" ? "none" : "split"; }}
         >
           <Calendar size={14} />
           <span>{m.finance_ui_installment_plan()}</span>
@@ -740,12 +778,15 @@ async function exportCsv() {
       <div transition:slide={{ duration: 200 }}>
         <FinanceInlineFormCard
           title={m.finance_ui_assign_fee_heading()}
-          onclose={() => (activeForm = "none")}
+          busy={isSubmitting}
+          errorMessage={formError}
+          onsave={handleCreateFee}
+          onclose={() => { formError = ""; activeForm = "none"; }}
         >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
-                <SearchableSelect
+                <Label for="fee-student" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
+                <SearchableSelect id="fee-student"
                   value={formStudentId}
                   placeholder={m.finance_ui_student_select_placeholder()}
                   items={students}
@@ -759,8 +800,8 @@ async function exportCsv() {
               </div>
 
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_fee_template()}</Label>
-                <SearchableSelect
+                <Label for="fee-fee-template" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_fee_template()}</Label>
+                <SearchableSelect id="fee-fee-template"
                   value={formTemplateId}
                   placeholder={m.finance_ui_fee_item_select_placeholder()}
                   items={feeTemplates}
@@ -772,8 +813,8 @@ async function exportCsv() {
               </div>
 
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_academic_period()}</Label>
-                <SearchableSelect
+                <Label for="fee-academic-period" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_academic_period()}</Label>
+                <SearchableSelect id="fee-academic-period"
                   value={formPeriodId}
                   placeholder={m.finance_ui_period_placeholder()}
                   items={periods}
@@ -787,8 +828,8 @@ async function exportCsv() {
 
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_discount_amount_optional()}</Label>
-                <Input
+                <Label for="fee-discount-amount-optional" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_discount_amount_optional()}</Label>
+                <Input id="fee-discount-amount-optional"
                   type="number"
                   bind:value={formDiscountAmount}
                   placeholder="0.00"
@@ -797,8 +838,8 @@ async function exportCsv() {
               </div>
 
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_due_date()}</Label>
-                <Input
+                <Label for="fee-due-date" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_due_date()}</Label>
+                <Input id="fee-due-date"
                   type="date"
                   bind:value={formDueDate}
                   class="h-8 text-xs font-mono bg-background border-border/60"
@@ -806,20 +847,21 @@ async function exportCsv() {
               </div>
             </div>
 
+          {#snippet actions()}
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-              <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"}>
+              <Button type="button" variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"} disabled={isSubmitting}>
                 {m.finance_ui_cancel()}
               </Button>
-              <Button
+              <Button type="submit"
                 variant="default"
                 size="sm"
                 class="h-8 text-xs font-bold px-4"
                 disabled={isSubmitting}
-                onclick={handleCreateFee}
               >
                 {isSubmitting ? m.finance_ui_saving() : m.finance_ui_assign_fee_save()}
               </Button>
             </div>
+          {/snippet}
         </FinanceInlineFormCard>
       </div>
     {/if}
@@ -830,12 +872,15 @@ async function exportCsv() {
         <FinanceInlineFormCard
           title={m.finance_ui_installment_heading()}
           accent="indigo"
-          onclose={() => (activeForm = "none")}
+          busy={isSubmitting}
+          errorMessage={formError}
+          onsave={handleSplitInstallments}
+          onclose={() => { formError = ""; activeForm = "none"; }}
         >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_unpaid_fee()}</Label>
-                <SearchableSelect
+                <Label for="fee-select-unpaid-fee" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_unpaid_fee()}</Label>
+                <SearchableSelect id="fee-select-unpaid-fee"
                   value={selectedFeeForSplit?.id || ""}
                   placeholder={m.finance_ui_installment_fee_placeholder()}
                   items={fees.filter((f) =>
@@ -866,7 +911,7 @@ async function exportCsv() {
                   value={String(splitCount)}
                   onValueChange={(value) => {
                     const count = Number(value);
-                    if (Number.isInteger(count) && count >= 2 && count <= 6) splitCount = count;
+                    if (Number.isInteger(count) && count >= 2 && count <= 6) setInstallmentCount(count);
                   }}
                 >
                   <SelectTrigger class="h-8 w-full bg-background text-xs">
@@ -883,20 +928,34 @@ async function exportCsv() {
               </div>
             </div>
 
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {#each Array(splitCount) as _, index (index)}
+              <div class="space-y-1">
+                <Label for={"installment-date-" + index}>{m.finance_ui_installment_due_date({ number: index + 1 })}</Label>
+                <Input id={"installment-date-" + index} type="date" required value={splitDueDates[index] ?? ""}
+                  onchange={(event) => {
+                    if (!splitDueDates.length) setInstallmentCount(splitCount);
+                    splitDueDates[index] = event.currentTarget.value;
+                  }}
+                />
+              </div>
+            {/each}
+          </div>
+          {#snippet actions()}
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-              <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"}>
+              <Button type="button" variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"} disabled={isSubmitting}>
                 {m.finance_ui_cancel()}
               </Button>
-              <Button
+              <Button type="submit"
                 variant="default"
                 size="sm"
                 class="h-8 text-xs font-bold px-4"
                 disabled={isSubmitting || !selectedFeeForSplit}
-                onclick={handleSplitInstallments}
               >
                 {isSubmitting ? m.finance_ui_processing() : m.finance_ui_apply_installment_plan()}
               </Button>
             </div>
+          {/snippet}
         </FinanceInlineFormCard>
       </div>
     {/if}
@@ -907,12 +966,15 @@ async function exportCsv() {
         <FinanceInlineFormCard
           title={m.finance_ui_refund_heading()}
           accent="rose"
-          onclose={() => (activeForm = "none")}
+          busy={isSubmitting}
+          errorMessage={formError}
+          onsave={handleRefundFee}
+          onclose={() => { formError = ""; activeForm = "none"; }}
         >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_paid_fee()}</Label>
-                <SearchableSelect
+                <Label for="fee-select-paid-fee" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_paid_fee()}</Label>
+                <SearchableSelect id="fee-select-paid-fee"
                   value={selectedFeeForRefund?.id || ""}
                   placeholder={m.finance_ui_refund_fee_placeholder()}
                   items={fees.filter((f) => Number(f.paid_amount || 0) > 0)}
@@ -936,8 +998,8 @@ async function exportCsv() {
               </div>
 
               <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_amount()}</Label>
-                <Input
+                <Label for="fee-refund-amount" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_amount()}</Label>
+                <Input id="fee-refund-amount"
                   type="number"
                   bind:value={refundAmount}
                   placeholder="0.00"
@@ -947,8 +1009,8 @@ async function exportCsv() {
             </div>
 
             <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_reason_notes()}</Label>
-              <Input
+              <Label for="fee-refund-reason-notes" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_reason_notes()}</Label>
+              <Input id="fee-refund-reason-notes"
                 type="text"
                 bind:value={refundNotes}
                 placeholder={m.finance_ui_refund_reason_placeholder()}
@@ -956,20 +1018,21 @@ async function exportCsv() {
               />
             </div>
 
+          {#snippet actions()}
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-              <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"}>
+              <Button type="button" variant="ghost" size="sm" class="h-8 text-xs" onclick={() => activeForm = "none"} disabled={isSubmitting}>
                 {m.finance_ui_cancel()}
               </Button>
-              <Button
+              <Button type="submit"
                 variant="default"
                 size="sm"
                 class="h-8 text-xs font-bold px-4"
                 disabled={isSubmitting || !selectedFeeForRefund}
-                onclick={handleRefundFee}
               >
                 {isSubmitting ? m.finance_ui_processing() : m.finance_ui_confirm_refund()}
               </Button>
             </div>
+          {/snippet}
         </FinanceInlineFormCard>
       </div>
     {/if}
@@ -996,7 +1059,8 @@ async function exportCsv() {
       <!-- Grid Container -->
       <div class="flex-1 min-h-0 overflow-hidden">
         <OrbisGrid
-          columns={columns}
+          columns={[...columns, detailsColumn]}
+          onaction={handleRecordAction}
           source={gridSource}
           loading={gridLoading}
           serverQuery
@@ -1013,3 +1077,18 @@ async function exportCsv() {
     {/if}
   </div>
 </div>
+
+<FinanceRecordDialog
+  bind:open={detailsOpen}
+  title={m.finance_ui_record_details()}
+  fields={detailRow ? [
+    { label: m.finance_ui_student(), value: detailRow.student_display },
+    { label: m.finance_ui_fee_template(), value: detailRow.template_display },
+    { label: m.finance_ui_due_date(), value: detailRow.due_date_display },
+    { label: m.finance_ui_net_amount(), value: detailRow.net_formatted },
+    { label: m.finance_ui_paid_amount_label(), value: detailRow.paid_formatted },
+    { label: m.finance_ui_full_balance(), value: detailRow.balance_formatted },
+    { label: m.finance_ui_currency(), value: detailRow.currency_display },
+    { label: m.finance_ui_receipt_status(), value: detailRow.status_display },
+  ] : []}
+/>

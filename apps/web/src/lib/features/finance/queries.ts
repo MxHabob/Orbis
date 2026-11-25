@@ -53,14 +53,10 @@ export function createCashAccountsQuery(
   orgId: () => string,
   enabled: () => boolean = () => true,
 ) {
-  return createQuery<AccountDto[]>(() => ({
-    queryKey: [...queryKeys.finance.accounts(orgId()), "cash"],
-    queryFn: async () => {
-      const accounts = await api.listAccounts();
-      return accounts.filter(isCashOrBankAccount);
-    },
-    enabled: !!orgId() && enabled(),
-    staleTime: 5 * 60 * 1000,
+  return createQuery(() => ({
+    ...accountQueryOptions(orgId()),
+    enabled: Boolean(orgId()) && enabled(),
+    select: (accounts) => accounts.filter(isCashOrBankAccount),
   }));
 }
 
@@ -68,22 +64,39 @@ export function createCashAccountsQuery(
 export function createPaymentsQuery(
   orgId: () => string,
   filter?: () => PaymentFilterParams | undefined,
+  enabled: () => boolean = () => true,
+  limit?: number,
 ) {
-  return createQuery<PaymentDto[]>(() => ({
-    queryKey: queryKeys.finance.payments(orgId(), filter?.()),
-    queryFn: () => api.listPayments(filter?.()),
-    enabled: !!orgId(),
-    staleTime: 2 * 60 * 1000,
-  }));
+  return createQuery<PaymentDto[]>(() => {
+    const params = filter?.();
+    const key = queryKeys.finance.payments(orgId(), params);
+    return {
+      queryKey: limit === undefined ? key : [...key, "recent", limit],
+      queryFn: async () => limit === undefined
+        ? api.listPayments(params)
+        : (await api.listPaymentsPaginated({ ...params, page: 1, page_size: limit })).items,
+      enabled: Boolean(orgId()) && enabled(),
+      staleTime: 2 * 60 * 1000,
+    };
+  });
 }
 
 /** Ledger accounts query. */
-export function createAccountsQuery(orgId: () => string) {
-  return createQuery<AccountDto[]>(() => ({
-    queryKey: queryKeys.finance.accounts(orgId()),
+export function accountQueryOptions(orgId: string) {
+  return {
+    queryKey: queryKeys.finance.accounts(orgId),
     queryFn: () => api.listAccounts(),
-    enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
+  };
+}
+
+export function createAccountsQuery(
+  orgId: () => string,
+  enabled: () => boolean = () => true,
+) {
+  return createQuery(() => ({
+    ...accountQueryOptions(orgId()),
+    enabled: Boolean(orgId()) && enabled(),
   }));
 }
 
@@ -212,18 +225,20 @@ export function createGenerateFeeMutation() {
 }
 
 /** Process payment mutation */
-export function createProcessPaymentMutation() {
+export async function refreshPaymentData(client: ReturnType<typeof useQueryClient>, orgId: string) {
+  await Promise.all([
+    client.invalidateQueries({ queryKey: queryKeys.finance.paymentsForOrg(orgId) }),
+    client.invalidateQueries({ queryKey: queryKeys.finance.studentFeesForOrg(orgId) }),
+    client.invalidateQueries({ queryKey: queryKeys.finance.studentFeeSummary(orgId) }),
+    client.invalidateQueries({ queryKey: queryKeys.finance.journalEntries(orgId) }),
+  ]);
+}
+
+export function createProcessPaymentMutation(orgId: () => string) {
   const queryClient = useQueryClient();
   return createMutation(() => ({
     mutationFn: (req: ProcessPaymentRequest) => api.processPayment(req),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.payments(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.studentFees(),
-      });
-    },
+    onSuccess: () => { void refreshPaymentData(queryClient, orgId()); },
   }));
 }
 
@@ -241,163 +256,49 @@ export function createAccountMutation() {
 }
 
 export interface AvailablePaymentMethod {
-  id: string; // e.g. "cash", "bank_transfer", "check", "mada", "credit_card", "apple_pay"
+  id: string;
   name: string;
-  name_en: string;
-  category: "manual" | "bank" | "electronic";
-  provider_name?: string;
   is_digital_gateway: boolean;
   requires_source_token: boolean;
 }
 
-/**
- * Dynamically resolves active payment methods for the organization based on:
- * 1. Base institutional manual methods (Cash, Bank Transfer, Check).
- * 2. Active external payment integrations enabled in the Orbis Integration Layer.
- */
+export function manualPaymentMethods(): AvailablePaymentMethod[] {
+  return [
+    { id: "cash", name: m.finance_ui_payment_method_cash(), is_digital_gateway: false, requires_source_token: false },
+    { id: "bank_transfer", name: m.finance_ui_payment_method_bank_transfer(), is_digital_gateway: false, requires_source_token: false },
+    { id: "check", name: m.finance_ui_payment_method_bank_check(), is_digital_gateway: false, requires_source_token: false },
+  ];
+}
+
 export function createAvailablePaymentMethodsQuery(orgId: () => string) {
-  return createQuery<AvailablePaymentMethod[]>(() => ({
-    queryKey: [...queryKeys.integration.list(orgId()), "payment-methods"],
-    queryFn: async () => {
-      const integrations = await api.listIntegrations().catch(() => []);
-      const activePaymentIntegrations = integrations.filter(
-        (i) =>
-          (i.category === "payment" || i.category === "payment-gateway") &&
-          i.is_enabled,
-      );
-
-      // Base standard institutional methods
-      const methods: AvailablePaymentMethod[] = [
-        {
-          id: "cash",
-          name: m.finance_ui_payment_method_cash(),
-          name_en: "Cash",
-          category: "manual",
-          is_digital_gateway: false,
-          requires_source_token: false,
-        },
-        {
-          id: "bank_transfer",
-          name: m.finance_ui_payment_method_bank_transfer(),
-          name_en: "Bank Transfer",
-          category: "bank",
-          is_digital_gateway: false,
-          requires_source_token: false,
-        },
-        {
-          id: "check",
-          name: m.finance_ui_payment_method_bank_check(),
-          name_en: "Bank Check",
-          category: "bank",
-          is_digital_gateway: false,
-          requires_source_token: false,
-        },
-      ];
-
-      // Dynamically resolve methods from active integrations
-      for (const config of activePaymentIntegrations) {
-        const provider = (config.provider_name || "").toLowerCase().trim();
-        const settings = config.settings as Record<string, any> | undefined;
-
-        if (provider === "mada") {
-          methods.push({
-            id: "mada",
-            name: m.finance_ui_payment_method_mada(),
-            name_en: "Mada Debit Card",
-            category: "electronic",
-            provider_name: "mada",
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-        } else if (provider === "moyasar") {
-          methods.push({
-            id: "mada",
-            name: m.finance_ui_payment_method_mada_moyasar(),
-            name_en: "Mada (Moyasar)",
-            category: "electronic",
-            provider_name: "moyasar",
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-          methods.push({
-            id: "credit_card",
-            name: m.finance_ui_payment_method_credit_card_moyasar(),
-            name_en: "Credit Card (Moyasar)",
-            category: "electronic",
-            provider_name: "moyasar",
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-          methods.push({
-            id: "apple_pay",
-            name: "Apple Pay",
-            name_en: "Apple Pay (Moyasar)",
-            category: "electronic",
-            provider_name: "moyasar",
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-        } else if (provider === "stripe") {
-          methods.push({
-            id: "credit_card",
-            name: m.finance_ui_payment_method_credit_card_stripe(),
-            name_en: "Credit Card (Stripe)",
-            category: "electronic",
-            provider_name: "stripe",
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-          methods.push({
-            id: "apple_pay",
-            name: "Apple Pay (Stripe)",
-            name_en: "Apple Pay",
-            category: "electronic",
-            provider_name: "stripe",
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-        } else if (Array.isArray(settings?.methods)) {
-          for (const m of settings.methods) {
-            methods.push({
-              id: String(m).toLowerCase(),
-              name: `${m} (${config.provider_name})`,
-              name_en: `${m} (${config.provider_name})`,
-              category: "electronic",
-              provider_name: config.provider_name,
-              is_digital_gateway: true,
-              requires_source_token: true,
-            });
-          }
-        } else {
-          // Generic gateway adapter
-          methods.push({
-            id: "credit_card",
-            name: m.finance_ui_payment_method_gateway({
-              provider: config.provider_name ?? "",
-            }),
-            name_en: `Payment Gateway (${config.provider_name})`,
-            category: "electronic",
-            provider_name: config.provider_name,
-            is_digital_gateway: true,
-            requires_source_token: true,
-          });
-        }
-      }
-
-      // Deduplicate by method id
-      const uniqueMethods: AvailablePaymentMethod[] = [];
-      const seenIds = new Set<string>();
-      for (const m of methods) {
-        if (!seenIds.has(m.id)) {
-          seenIds.add(m.id);
-          uniqueMethods.push(m);
-        }
-      }
-
-      return uniqueMethods;
-    },
-    enabled: !!orgId(),
+  return createQuery(() => ({
+    queryKey: queryKeys.integration.list(orgId()),
+    queryFn: () => api.listIntegrations(),
+    enabled: Boolean(orgId()),
     staleTime: 5 * 60 * 1000,
+    select: (integrations): AvailablePaymentMethod[] => {
+      const manual = manualPaymentMethods();
+      const gateway = integrations.find((item) =>
+        item.category === "payment-gateway" && item.is_enabled && item.provider_name === "moyasar",
+      );
+      if (!gateway) return manual;
+
+      const settings = gateway.settings as { supported_methods?: unknown } | null;
+      const allowed = settings?.supported_methods ?? "all";
+      const methods: AvailablePaymentMethod[] = [...manual, {
+        id: "mada", name: m.finance_ui_payment_method_mada_moyasar(),
+        is_digital_gateway: true, requires_source_token: true,
+      }];
+      if (allowed === "all") methods.push({
+        id: "credit_card", name: m.finance_ui_payment_method_credit_card_moyasar(),
+        is_digital_gateway: true, requires_source_token: true,
+      });
+      if (allowed === "all" || allowed === "mada_apple_pay") methods.push({
+        id: "apple_pay", name: m.finance_ui_payment_moyasar_apple_pay(),
+        is_digital_gateway: true, requires_source_token: true,
+      });
+      return methods;
+    },
   }));
 }
 
