@@ -16,6 +16,7 @@
 
 import { getLocale } from "$lib/paraglide/runtime";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import { formatDateKey as createDateKey } from "./date-key";
 
 // ── Internal helpers ─────────────────────────────────────────────
 
@@ -49,16 +50,7 @@ function getFormattingTimezone(): string {
 
 
 export function formatDateKey(date: Date, timeZone = getFormattingTimezone()): string {
-  const parts = getDateFormatter("en", {
-    calendar: "gregory",
-    numberingSystem: "latn",
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const part = (type: "year" | "month" | "day") => parts.find((entry) => entry.type === type)?.value;
-  return `${part("year")}-${part("month")}-${part("day")}`;
+  return createDateKey(date, timeZone);
 }
 
 const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();

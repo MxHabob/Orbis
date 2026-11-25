@@ -1,4 +1,4 @@
-import { formatDateKey } from "$lib/core/i18n/format";
+import { formatDateKey } from "$lib/core/i18n/date-key";
 
 export type DateRangePreset =
   | "today"
