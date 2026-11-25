@@ -10,6 +10,7 @@ import type { StudentDetailDto, EnrollmentDto, ClassDto } from "$lib/api";
 import { formatDate, l } from "$lib/core/i18n";
 import {
   OrbisGrid,
+  selectionColumn,
   type OrbisColumnDef,
   type GridActionEvent,
 } from "@orbis/svelte-grid";
@@ -183,17 +184,7 @@ const baseColumns: OrbisColumnDef[] = [
 const columns = $derived.by<OrbisColumnDef[]>(() => {
   const cols = [...baseColumns];
   if (enableSelection) {
-    cols.unshift({
-      id: "__selected",
-      prop: "__selected",
-      header: "",
-      name: "",
-      width: 48,
-      size: 48,
-      type: "boolean",
-      align: "center",
-      sort: false,
-    });
+    cols.unshift(selectionColumn());
   }
   return cols;
 });
@@ -356,7 +347,6 @@ let gridSource = $derived(
     const p = detail.person;
     const studentName =
       l(p.full_name_ar, p.full_name) || p.first_name || m.common_word_student();
-    const isSelected = selectedIds.has(String(s.id));
     const className = studentClassMap[s.id] || m.common_status_not_enrolled();
 
     const rawGender = String(p.gender || "").toLowerCase();
@@ -370,7 +360,6 @@ let gridSource = $derived(
     return {
       id: s.id,
       __idx: i + 1,
-      __selected: isSelected,
       full_name: studentName,
       student_number: s.student_number || "—",
       national_id: p.national_id || p.passport_number || "—",
@@ -430,6 +419,7 @@ function handleGridAction(event: GridActionEvent) {
     <OrbisGrid
       {columns}
       source={gridSource}
+      selectedRowIds={enableSelection ? selectedIds : undefined}
       height="100%"
       rtl={getLocale() === "ar"}
       clientQuery

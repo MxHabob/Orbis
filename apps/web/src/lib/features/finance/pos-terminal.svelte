@@ -168,9 +168,16 @@ function deselectStudent() {
   setTimeout(() => searchInputEl?.focus(), 50);
 }
 
+function getFeeBalance(fee: StudentFeeDto): number | null {
+  const raw = fee.balance_due;
+  if (raw == null || String(raw).trim() === "") return null;
+  const balance = Number(raw);
+  return Number.isFinite(balance) ? balance : null;
+}
+
 function selectFeeItem(fee: StudentFeeDto) {
   formFeeId = fee.id;
-  formAmount = Number(fee.balance_due || fee.net_amount || 0);
+  formAmount = getFeeBalance(fee);
 }
 
 // ── Payment Processing ────────────────────────────────────────────────
@@ -455,22 +462,30 @@ const rtl = $derived(getLocale() === "ar");
               <span class="text-[11px] text-muted-foreground">{m.finance_ui_select_fee_to_collect()}</span>
             </div>
 
+            {#if studentFeesQuery.isError}
+              <div role="alert" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
+                <p class="text-sm text-destructive">{m.finance_overview_error()}</p>
+                <Button size="sm" variant="outline" disabled={studentFeesQuery.isFetching} onclick={() => studentFeesQuery.refetch()}>{m.common_retry()}</Button>
+              </div>
+            {/if}
             {#if studentFeesQuery.isLoading}
               <div class="space-y-2">
                 <Skeleton class="h-12 w-full rounded-md" />
                 <Skeleton class="h-12 w-full rounded-md" />
               </div>
-            {:else if activeStudentFees.length === 0}
+            {:else if studentFeesQuery.isSuccess && activeStudentFees.length === 0}
               <div class="bg-muted/20 border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground">
                 <CheckCircle size={24} class="mx-auto mb-1.5 text-emerald-500 opacity-80" />
                 <p class="font-medium text-foreground">{m.finance_ui_no_fees_due_for_student()}</p>
                 <p class="text-[10px] mt-0.5">{m.finance_ui_all_student_fees_paid()}</p>
               </div>
-            {:else}
+            {:else if activeStudentFees.length > 0}
               <div class="space-y-1.5">
                 {#each activeStudentFees as fee (fee.id)}
+                  {@const balance = getFeeBalance(fee)}
                   <button
                     type="button"
+                    disabled={balance === null}
                     onclick={() => selectFeeItem(fee)}
                     class="w-full text-start p-2.5 rounded-lg border transition-all flex items-center justify-between {formFeeId === fee.id ? 'bg-primary/10 border-primary text-foreground shadow-sm' : 'bg-background border-border/70 hover:border-primary/50 text-muted-foreground'}"
                   >
@@ -490,7 +505,7 @@ const rtl = $derived(getLocale() === "ar");
 
                     <div class="text-end">
                       <div class="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
-                        {formatCurrency(Number(fee.balance_due || fee.net_amount || 0))}
+                        {balance === null ? "—" : formatCurrency(balance)}
                       </div>
                       <div class="text-[10px] text-muted-foreground font-mono">
                         {m.finance_ui_paid_amount_label()} {formatCurrency(Number(fee.paid_amount || 0))}
@@ -503,6 +518,12 @@ const rtl = $derived(getLocale() === "ar");
           </div>
 
           <!-- Recent Student Receipts Table -->
+          {#if recentPaymentsQuery.isError}
+            <div role="alert" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <p class="text-sm text-destructive">{m.finance_overview_error()}</p>
+              <Button size="sm" variant="outline" disabled={recentPaymentsQuery.isFetching} onclick={() => recentPaymentsQuery.refetch()}>{m.common_retry()}</Button>
+            </div>
+          {/if}
           {#if activeStudentPayments.length > 0}
             <div class="mt-2 border-t border-border/50 pt-3 flex flex-col gap-2">
               <h2 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -528,7 +549,7 @@ const rtl = $derived(getLocale() === "ar");
                         <td class="py-1.5 px-3 text-muted-foreground">{payment.method}</td>
                         <td class="py-1.5 px-3 font-mono text-muted-foreground">{formatDate(payment.paid_at)}</td>
                         <td class="py-1.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-end">
-                          {formatCurrency(Number(payment.amount))}
+                          {formatCurrency(Number(payment.amount), payment.currency_code ?? undefined)}
                         </td>
                         <td class="py-1.5 px-2 text-center">
                           <button
@@ -627,13 +648,14 @@ const rtl = $derived(getLocale() === "ar");
             <label for="pos_amount" class="text-[11px] font-semibold text-foreground">{m.finance_ui_amount_received_to_collect()}</label>
             {#if formFeeId}
               {@const selectedFee = activeStudentFees.find(f => f.id === formFeeId)}
-              {#if selectedFee}
+              {@const balance = selectedFee ? getFeeBalance(selectedFee) : null}
+              {#if balance !== null}
                 <button
                   type="button"
-                  onclick={() => (formAmount = Number(selectedFee.balance_due || 0))}
+                  onclick={() => (formAmount = balance)}
                   class="text-[10px] text-primary hover:underline font-mono"
                 >
-                  {m.finance_ui_full_balance()} ({formatCurrency(Number(selectedFee.balance_due || 0))})
+                  {m.finance_ui_full_balance()} ({formatCurrency(balance)})
                 </button>
               {/if}
             {/if}

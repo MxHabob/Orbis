@@ -57,6 +57,14 @@ let {
 
 const standaloneWindow = $derived(isStandaloneWindow(page.url));
 const COLLAPSED_WIDTH = 3;
+const panelId = $props.id();
+let viewportWidth = $state(0);
+const compact = $derived(viewportWidth > 0 && viewportWidth < 760);
+let visiblePanel = $state<"left" | "right" | null>(null);
+
+function togglePanel(panel: "left" | "right") {
+  visiblePanel = visiblePanel === panel ? null : panel;
+}
 
 // Convert px to rem using the current root font-size.
 function pxToRem(px: number): number {
@@ -124,16 +132,35 @@ function getFallbackLabel(
 </script>
 
 <SashLayer>
-	<div class="relative flex h-full w-full min-w-0 flex-1 items-stretch">
+	<div bind:clientWidth={viewportWidth}
+    class="relative flex h-full w-full min-w-0 flex-1 items-stretch"
+    class:flex-col={compact}>
+    {#if compact && !standaloneWindow && (left || right)}
+      <div class="flex shrink-0 flex-wrap gap-2 border-b border-border px-3 py-2">
+        {#if left}
+          <Button size="sm" variant="outline" aria-controls={panelId + "-left"} aria-expanded={visiblePanel === "left"} onclick={() => togglePanel("left")}>
+            {leftLabel || getFallbackLabel(name, "left")}
+          </Button>
+        {/if}
+        {#if right}
+          <Button size="sm" variant="outline" aria-controls={panelId + "-right"} aria-expanded={visiblePanel === "right"} onclick={() => togglePanel("right")}>
+            {rightLabel || getFallbackLabel(name, "right")}
+          </Button>
+        {/if}
+      </div>
+    {/if}
 		{#if left && !standaloneWindow}
 			<div
-				class="relative flex h-full min-w-0 shrink-0 flex-col {right && !standaloneWindow ? 'max-w-[30%]' : 'max-w-[35%]'}"
-				class:me-2={finalLeftWidth > COLLAPSED_WIDTH}
-				class:overflow-hidden={finalLeftWidth === COLLAPSED_WIDTH}
+				class="relative min-w-0 shrink-0 flex-col {compact ? 'w-full max-h-[40%] overflow-y-auto' : right ? 'h-full max-w-[30%]' : 'h-full max-w-[35%]'}"
+				class:flex={!compact || visiblePanel === "left"}
+				class:hidden={compact && visiblePanel !== "left"}
+				class:me-2={!compact && finalLeftWidth > COLLAPSED_WIDTH}
+				class:overflow-hidden={!compact && finalLeftWidth === COLLAPSED_WIDTH}
+				id={panelId + "-left"}
 				bind:this={leftDiv}
-				style:width="{finalLeftWidth}rem"
+				style:width={compact ? undefined : `${finalLeftWidth}rem`}
 			>
-				{#if finalLeftWidth === COLLAPSED_WIDTH}
+				{#if !compact && finalLeftWidth === COLLAPSED_WIDTH}
 					<!-- Collapsed vertical strip -->
 					<div class="h-full w-full flex flex-col items-center py-4 select-none">
 						<Button
@@ -175,21 +202,24 @@ function getFallbackLabel(
 						{@render left()}
 					</div>
 				{/if}
-				<Resizer
-					viewport={leftDiv}
-					edge="end"
-					minWidth={leftMinWidth}
-					maxWidth={leftMaxWidth}
-					defaultValue={pxToRem(leftWidth.default)}
-					collapsedWidth={COLLAPSED_WIDTH}
-					persistId="viewport-{name}-left"
-					onWidth={(w) => (leftPreferredWidth = w)}
-				/>
+				{#if !compact}
+					<Resizer
+						viewport={leftDiv}
+						label={leftLabel || getFallbackLabel(name, "left")}
+						edge="end"
+						minWidth={leftMinWidth}
+						maxWidth={leftMaxWidth}
+						defaultValue={pxToRem(leftWidth.default)}
+						collapsedWidth={COLLAPSED_WIDTH}
+						persistId="viewport-{name}-left"
+						onWidth={(w) => (leftPreferredWidth = w)}
+					/>
+				{/if}
 			</div>
 		{/if}
 
 		<div
-			class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden @container/workspace"
+			class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden @container/workspace"
 			class:no-left={!left || standaloneWindow}
 		>
 			{@render middle()}
@@ -197,23 +227,29 @@ function getFallbackLabel(
 
 		{#if right && !standaloneWindow}
 			<div
-				class="relative flex h-full min-w-0 shrink-0 flex-col {left ? 'max-w-[30%]' : 'max-w-[35%]'}"
-				class:ms-2={finalRightWidth > COLLAPSED_WIDTH}
-				class:overflow-hidden={finalRightWidth === COLLAPSED_WIDTH}
+				class="relative min-w-0 shrink-0 flex-col {compact ? 'w-full max-h-[40%] overflow-y-auto' : left ? 'h-full max-w-[30%]' : 'h-full max-w-[35%]'}"
+				class:flex={!compact || visiblePanel === "right"}
+				class:hidden={compact && visiblePanel !== "right"}
+				class:ms-2={!compact && finalRightWidth > COLLAPSED_WIDTH}
+				class:overflow-hidden={!compact && finalRightWidth === COLLAPSED_WIDTH}
+				id={panelId + "-right"}
 				bind:this={rightDiv}
-				style:width="{finalRightWidth}rem"
+				style:width={compact ? undefined : `${finalRightWidth}rem`}
 			>
-				<Resizer
-					viewport={rightDiv}
-					edge="start"
-					minWidth={rightMinWidth}
-					maxWidth={rightMaxWidth}
-					defaultValue={pxToRem(rightWidth.default)}
-					collapsedWidth={COLLAPSED_WIDTH}
-					persistId="viewport-{name}-right"
-					onWidth={(w) => (rightPreferredWidth = w)}
-				/>
-				{#if finalRightWidth === COLLAPSED_WIDTH}
+				{#if !compact}
+					<Resizer
+						viewport={rightDiv}
+						label={rightLabel || getFallbackLabel(name, "right")}
+						edge="start"
+						minWidth={rightMinWidth}
+						maxWidth={rightMaxWidth}
+						defaultValue={pxToRem(rightWidth.default)}
+						collapsedWidth={COLLAPSED_WIDTH}
+						persistId="viewport-{name}-right"
+						onWidth={(w) => (rightPreferredWidth = w)}
+					/>
+				{/if}
+				{#if !compact && finalRightWidth === COLLAPSED_WIDTH}
 					<!-- Collapsed vertical strip -->
 					<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-s border-border/80 select-none">
 						<button

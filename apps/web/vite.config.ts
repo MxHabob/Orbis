@@ -4,7 +4,11 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
-const host = process.env.TAURI_DEV_HOST || "127.0.0.1";
+const tauriDevHost = process.env.TAURI_DEV_HOST;
+const remoteDevHost =
+  tauriDevHost && tauriDevHost !== "127.0.0.1" && tauriDevHost !== "localhost"
+    ? tauriDevHost
+    : undefined;
 
 export default defineConfig(() => {
   return {
@@ -76,11 +80,12 @@ export default defineConfig(() => {
       port: 4173,
       strictPort: true,
       shortcuts: false,
-      host: host || undefined,
-      hmr: host
+      host: tauriDevHost || "127.0.0.1",
+      // Local HMR shares the Vite server port.
+      hmr: remoteDevHost
         ? {
             protocol: "ws",
-            host,
+            host: remoteDevHost,
             port: 4174,
           }
         : undefined,

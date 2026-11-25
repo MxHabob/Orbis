@@ -13,6 +13,8 @@ import {
   type TimeSlotDto,
 } from "$lib/api";
 import { academicContext } from "$lib/stores";
+import { orgContext } from "$lib/stores/org-context.svelte";
+import { formatDateKey } from "$lib/core/i18n/format";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Button } from "@orbis/ui/button";
@@ -57,13 +59,6 @@ interface AttendanceLessonOption {
   label: string;
 }
 
-function getLocalDateValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function isValidDateValue(value: string | null) {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
@@ -75,11 +70,12 @@ function isValidDateValue(value: string | null) {
 
 let classes = $state<any[]>([]);
 let selectedClassId = $state("");
-let selectedDate = $state(
-  isValidDateValue(page.url.searchParams.get("date"))
-    ? page.url.searchParams.get("date")!
-    : getLocalDateValue(new Date()),
-);
+let dateOverride = $state<string>();
+let defaultDate = $state("");
+const selectedDate = $derived.by(() => {
+  const requested = page.url.searchParams.get("date");
+  return dateOverride ?? (requested && isValidDateValue(requested) ? requested : defaultDate);
+});
 let selectedLessonId = $state("");
 let lessonOptions = $state<AttendanceLessonOption[]>([]);
 let rosterStudents = $state<StudentDetailDto[]>([]);
@@ -146,6 +142,10 @@ async function loadClasses() {
   isLoadingClasses = true;
   classLoadError = false;
   try {
+    const timezone = orgContext.orgId === page.params.orgId && orgContext.isInitialized
+      ? orgContext.timezone
+      : (await api.getCurrentOrg()).timezone;
+    defaultDate = formatDateKey(new Date(), timezone);
     classes = await api.listSections();
     if (classes.length > 0) {
       const requestedClassId = page.url.searchParams.get("classId");
@@ -168,8 +168,13 @@ onMount(() => {
   void loadClasses();
 });
 
+let rosterRequest = 0;
+
 async function loadRosterAndAttendance() {
-  if (!selectedClassId) return;
+  const sectionId = selectedClassId;
+  const date = selectedDate;
+  if (!sectionId || !date) return;
+  const request = ++rosterRequest;
 
   isLoadingRoster = true;
   rosterLoadError = false;
@@ -187,14 +192,14 @@ async function loadRosterAndAttendance() {
       lessons,
     ] = await Promise.all([
       api.listStudents({
-        class_id: selectedClassId,
+        class_id: sectionId,
         period_id: periodId || undefined,
         page: 1,
         page_size: 100,
       }),
-      api.listAttendance(selectedClassId, selectedDate),
+      api.listAttendance(sectionId, date),
       periodId
-        ? api.listSectionSubjects(selectedClassId, periodId)
+        ? api.listSectionSubjects(sectionId, periodId)
         : Promise.resolve([] as SectionSubjectDto[]),
       periodId
         ? api.listTimeSlots(periodId)
@@ -214,7 +219,7 @@ async function loadRosterAndAttendance() {
       const pages = await Promise.all(
         pageNumbers.map((pageNumber) =>
           api.listStudents({
-            class_id: selectedClassId,
+            class_id: sectionId,
             period_id: periodId || undefined,
             page: pageNumber,
             page_size: 100,
@@ -223,6 +228,8 @@ async function loadRosterAndAttendance() {
       );
       students.push(...pages.flatMap((result) => result.items));
     }
+
+    if (request !== rosterRequest) return;
 
     const sectionSubjectById = new Map(
       sectionSubjects.map((sectionSubject) => [
@@ -236,7 +243,7 @@ async function loadRosterAndAttendance() {
     const timeSlotById = new Map(
       timeSlots.map((timeSlot) => [timeSlot.id, timeSlot]),
     );
-    const weekday = new Date(`${selectedDate}T00:00:00`).getDay() + 1;
+    const weekday = new Date(`${date}T00:00:00Z`).getUTCDay() + 1;
     const classSectionSubjectIds = new Set(
       sectionSubjects.map((item) => item.id),
     );
@@ -289,11 +296,12 @@ async function loadRosterAndAttendance() {
       (lessonOptions.length === 1 ? lessonOptions[0].id : "");
     buildAttendanceRows(selectedLessonId);
   } catch (error) {
+    if (request !== rosterRequest) return;
     rosterLoadError = true;
     console.error("Failed to load attendance roster:", error);
     toast.error(m.operations_ui_attendance_roster_load_error());
   } finally {
-    isLoadingRoster = false;
+    if (request === rosterRequest) isLoadingRoster = false;
   }
 }
 
@@ -534,7 +542,7 @@ const absentCount = $derived(
       />
       <Input
         type="date"
-        bind:value={selectedDate}
+        bind:value={() => selectedDate, (value) => { dateOverride = typeof value === "string" && isValidDateValue(value) ? value : undefined; }}
         onchange={() => void loadRosterAndAttendance()}
         aria-label={m.operations_ui_attendance_date()}
         class="h-9 ps-8 text-xs"

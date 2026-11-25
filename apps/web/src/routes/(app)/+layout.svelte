@@ -3,7 +3,6 @@ import TitleBar from "$lib/shell/title-bar.svelte";
 import { isDesktopApp } from "$lib/api";
 import { uiStore } from "$lib/stores";
 import { printState } from "$lib/stores/print.svelte";
-import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { localeState } from "$lib/core/i18n";
 
 let { children } = $props();
@@ -27,11 +26,15 @@ let { children } = $props();
 	{/await}
 {/if}
 
-<PrintDialog
-	bind:open={printState.isOpen}
-	entityType={printState.entityType}
-	documentType={printState.documentType}
-	entityIds={printState.entityIds}
-	entityLabels={printState.entityLabels}
-	contexts={printState.contexts}
-/>
+{#if printState.isOpen}
+	{#await import("$lib/shared/components/print-dialog.svelte") then { default: PrintDialog }}
+		<PrintDialog
+			bind:open={printState.isOpen}
+			entityType={printState.entityType}
+			documentType={printState.documentType}
+			entityIds={printState.entityIds}
+			entityLabels={printState.entityLabels}
+			contexts={printState.contexts}
+		/>
+	{/await}
+{/if}

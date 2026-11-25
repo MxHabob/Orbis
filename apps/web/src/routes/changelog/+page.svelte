@@ -2,6 +2,8 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api/client";
+import { isDesktopApp } from "$lib/api/runtime";
+import { extractErrorMessage } from "$lib/api";
 import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
 import { formatDate as formatOrgDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
@@ -92,8 +94,18 @@ async function handleInstallUpdate() {
   }
 }
 
-function closeWindow() {
-  window.close();
+async function closeWindow() {
+  if (!isDesktopApp) {
+    window.close();
+    return;
+  }
+
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    await getCurrentWindow().close();
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
 }
 
 onMount(() => {

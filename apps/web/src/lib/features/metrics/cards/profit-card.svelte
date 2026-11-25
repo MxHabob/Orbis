@@ -123,7 +123,7 @@ $effect(() => {
     <!-- Footer Link matching exactly Image 3 -->
     <div class="pt-3 flex items-center justify-start w-full select-none text-[10px] font-semibold border-t border-border/40">
       <a
-        href={localizeHref(`/${orgId}/finance/ledger`)}
+        href={localizeHref(`/${orgId}/finance/reports/income-statement`)}
         class="text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1 group/link"
       >
         <span>{m.reports_profit_detailed_graph()}</span>

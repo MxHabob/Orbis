@@ -19,10 +19,12 @@ Inspired by GitButler's Resizer component.
 ```
 -->
 <script lang="ts">
-import { onMount } from "svelte";
+import { onDestroy, onMount } from "svelte";
+import * as m from "$lib/paraglide/messages";
 
 let {
   viewport,
+  label,
   edge,
   minWidth,
   maxWidth,
@@ -35,6 +37,7 @@ let {
   collapsedWidth = 3,
 }: {
   viewport: HTMLElement | undefined;
+  label?: string;
   edge: "start" | "end";
   minWidth: number;
   maxWidth: number;
@@ -48,10 +51,14 @@ let {
 } = $props();
 
 let isDragging = $state(false);
+let width = $state<number>();
 let startX = 0;
 let startWidth = 0;
 let requestedWidth: number | undefined;
-let dragTarget: HTMLElement | null = null;
+let pointerId: number | undefined;
+let draggedViewport: HTMLElement | undefined;
+let growsTowardRight = false;
+let rootFontSize = 16;
 
 function restorePersistedWidth() {
   if (!persistId) return;
@@ -78,28 +85,69 @@ function restorePersistedWidth() {
       ((collapsible && valRem === collapsedWidth) ||
         (valRem >= minWidth && valRem <= maxWidth))
     ) {
-      onWidth?.(valRem);
+      reportWidth(valRem);
     }
   }
 }
 
 onMount(restorePersistedWidth);
+onDestroy(finishDrag);
 
-function pxToRem(px: number): number {
-  const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  return px / base;
+function reportWidth(value: number) {
+  width = value;
+  onWidth?.(value);
+}
+
+function persistWidth(value: number) {
+  if (persistId) {
+    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    localStorage.setItem(`resizer:${persistId}:px`, String(value * base));
+  }
+}
+
+function growsTowardRightForViewport() {
+  const isRtl = viewport && getComputedStyle(viewport).direction === "rtl";
+  return edge === "end" ? !isRtl : Boolean(isRtl);
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  if (!viewport || isDragging || event.altKey || event.ctrlKey || event.metaKey) return;
+  const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const current = viewport.getBoundingClientRect().width / base;
+  const collapsed = collapsible && current <= collapsedWidth;
+  let next: number;
+  switch (event.key) {
+    case "ArrowLeft":
+    case "ArrowRight": {
+      const grows = (event.key === "ArrowRight") === growsTowardRightForViewport();
+      next = !grows && collapsed
+        ? collapsedWidth
+        : Math.max(minWidth, Math.min(maxWidth, current + (grows ? 1 : -1)));
+      break;
+    }
+    case "Home": next = collapsible ? collapsedWidth : minWidth; break;
+    case "End": next = maxWidth; break;
+    case "Enter": next = collapsible && !collapsed ? collapsedWidth : defaultValue; break;
+    default: return;
+  }
+  event.preventDefault();
+  reportWidth(next);
+  persistWidth(next);
 }
 
 function onPointerDown(e: PointerEvent) {
-  if (!viewport) return;
+  if (!viewport || pointerId !== undefined || !e.isPrimary || e.button !== 0) return;
   e.preventDefault();
+  const target = e.currentTarget as HTMLElement;
+  target.setPointerCapture(e.pointerId);
+  pointerId = e.pointerId;
+  draggedViewport = viewport;
   isDragging = true;
   startX = e.clientX;
   startWidth = viewport.getBoundingClientRect().width;
+  growsTowardRight = growsTowardRightForViewport();
+  rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   requestedWidth = undefined;
-
-  dragTarget = e.currentTarget as HTMLElement;
-  dragTarget.setPointerCapture(e.pointerId);
 
   document.body.style.cursor = "ew-resize";
   document.body.style.userSelect = "none";
@@ -107,13 +155,10 @@ function onPointerDown(e: PointerEvent) {
 }
 
 function onPointerMove(e: PointerEvent) {
-  if (!isDragging || !viewport) return;
-
-  const isRtl = getComputedStyle(viewport).direction === "rtl";
-  const growsTowardRight = edge === "end" ? !isRtl : isRtl;
+  if (e.pointerId !== pointerId) return;
   const delta = growsTowardRight ? e.clientX - startX : startX - e.clientX;
   const newWidthPx = startWidth + delta;
-  const newWidthRem = pxToRem(newWidthPx);
+  const newWidthRem = newWidthPx / rootFontSize;
 
   let targetWidth = newWidthRem;
   if (collapsible && targetWidth < collapseThreshold) {
@@ -123,50 +168,44 @@ function onPointerMove(e: PointerEvent) {
   }
 
   requestedWidth = targetWidth;
-  onWidth?.(targetWidth);
+  reportWidth(targetWidth);
 }
 
-function onPointerUp(e: PointerEvent) {
-  if (!isDragging) return;
+function finishDrag() {
+  if (pointerId === undefined) return;
+  pointerId = undefined;
   isDragging = false;
 
   document.body.style.cursor = "";
   document.body.style.userSelect = "";
 
-  if (dragTarget && dragTarget.hasPointerCapture(e.pointerId)) {
-    dragTarget.releasePointerCapture(e.pointerId);
-  }
-  dragTarget = null;
+  draggedViewport?.classList.remove("resizer-dragging");
+  draggedViewport = undefined;
 
-  if (viewport) {
-    viewport.classList.remove("resizer-dragging");
-  }
+  if (requestedWidth !== undefined) persistWidth(requestedWidth);
+}
 
-  // Persist final width
-  if (persistId && requestedWidth !== undefined) {
-    const base =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    localStorage.setItem(`resizer:${persistId}:px`, String(requestedWidth * base));
-  }
+function onPointerEnd(event: PointerEvent) {
+  if (event.pointerId === pointerId) finishDrag();
 }
 
 function onDoubleClick() {
-  onWidth?.(defaultValue);
-  if (persistId) {
-    const base =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    localStorage.setItem(
-      `resizer:${persistId}:px`,
-      String(defaultValue * base),
-    );
-  }
+  reportWidth(defaultValue);
+  persistWidth(defaultValue);
 }
 </script>
 
-<svelte:window on:pointermove={onPointerMove} on:pointerup={onPointerUp} on:pointercancel={onPointerUp} />
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- A movable ARIA separator is a keyboard-focusable widget. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
+  role="separator"
+  tabindex="0"
+  aria-orientation="vertical"
+  aria-label={label ?? m.shared_ui_resize_panel()}
+  aria-valuemin={collapsible ? collapsedWidth : minWidth}
+  aria-valuemax={maxWidth}
+  aria-valuenow={Math.min(maxWidth, Math.max(collapsible ? collapsedWidth : minWidth, width ?? defaultValue))}
+  onkeydown={onKeyDown}
 	class="resizer"
   class:start={edge === 'start'}
   class:end={edge === 'end'}
@@ -174,6 +213,10 @@ function onDoubleClick() {
 	class:dragging={isDragging}
 	class:cursor-col-resize={isDragging}
 	onpointerdown={onPointerDown}
+	onpointermove={onPointerMove}
+	onpointerup={onPointerEnd}
+	onpointercancel={onPointerEnd}
+	onlostpointercapture={onPointerEnd}
 	ondblclick={onDoubleClick}
 >
 	<div class="resizer-line"></div>
@@ -222,6 +265,7 @@ function onDoubleClick() {
 		transition: background-color 0.15s ease;
 	}
 
+	.resizer:focus-visible .resizer-line,
 	.resizer:hover .resizer-line {
 		background-color: hsl(260 70% 50% / 0.3);
 	}

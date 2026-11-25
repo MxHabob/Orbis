@@ -47,6 +47,20 @@ function getFormattingTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+
+export function formatDateKey(date: Date, timeZone = getFormattingTimezone()): string {
+  const parts = getDateFormatter("en", {
+    calendar: "gregory",
+    numberingSystem: "latn",
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const part = (type: "year" | "month" | "day") => parts.find((entry) => entry.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
 
 function getDateFormatter(

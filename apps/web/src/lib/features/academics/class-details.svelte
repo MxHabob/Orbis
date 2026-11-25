@@ -23,6 +23,8 @@ import {
   InfoCircle,
   Users,
 } from "@orbis/icons";
+import { createOrganizationQuery } from "$lib/features/settings/queries";
+import { formatDateKey } from "$lib/core/i18n/format";
 import { academicContext } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
@@ -45,7 +47,9 @@ import QuickActionButton from "$lib/shared/components/quick-action-button.svelte
 let { orgId, classId }: { orgId: string; classId: string } = $props();
 
 const periodId = $derived(academicContext.effectivePeriodId);
-const today = $derived(new Date().toISOString().slice(0, 10));
+const organizationQuery = createOrganizationQuery(() => orgId);
+const timezone = $derived(organizationQuery.data?.timezone);
+const today = $derived(timezone ? formatDateKey(new Date(), timezone) : undefined);
 
 // ── Feature Queries ──────────────────────────────────────────────────────────
 const classQuery = createClassQuery(() => classId);
@@ -66,7 +70,7 @@ const classDisplayName = $derived.by(() => {
 
 const isLoading = $derived(classQuery.isLoading);
 const error = $derived(
-  classQuery.error || studentsQuery.error || attendanceQuery.error,
+  classQuery.error || studentsQuery.error || organizationQuery.error || attendanceQuery.error,
 );
 
 // Attendance Calculations based on real attendance records
@@ -104,7 +108,8 @@ const excusedPct = $derived(
 function refetchAll() {
   classQuery.refetch();
   studentsQuery.refetch();
-  attendanceQuery.refetch();
+  if (today) attendanceQuery.refetch();
+  if (organizationQuery.isError) organizationQuery.refetch();
 }
 
 function handleNotifications() {

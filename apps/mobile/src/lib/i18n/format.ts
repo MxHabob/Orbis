@@ -41,13 +41,25 @@ export function formatCurrency(
 /**
  * Formats a date string or object to the current locale's format.
  */
+
+export function formatDateKey(date: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    calendar: "gregory", numberingSystem: "latn", timeZone,
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const part = (type: "year" | "month" | "day") => parts.find((entry) => entry.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "";
+  const dateOnly = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date);
   const lang = getLocale();
   return new Intl.DateTimeFormat(lang === "ar" ? "ar-YE" : "en-US", {
     dateStyle: "medium",
+    timeZone: dateOnly ? "UTC" : undefined,
   }).format(d);
 }
 

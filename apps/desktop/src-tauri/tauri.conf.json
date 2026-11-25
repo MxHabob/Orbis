@@ -26,7 +26,8 @@
       },
       "capabilities": [
         "default",
-        "desktop-capability"
+        "desktop-capability",
+        "changelog-window"
       ]
     }
   },

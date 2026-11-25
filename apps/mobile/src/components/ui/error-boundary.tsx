@@ -10,6 +10,7 @@ import { View } from "react-native";
 import { InfoCircle } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "./button";
+import { useI18n } from "@/lib/i18n";
 import { Text } from "@/components/ui/text";
 
 // ─── Error Fallback UI ─────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ export function ErrorFallback({
   resetErrorBoundary,
 }: ErrorFallbackProps) {
   const theme = useTheme();
+  const { t } = useI18n();
 
   return (
     <View className="flex-1 items-center justify-center bg-background p-six">
@@ -33,18 +35,18 @@ export function ErrorFallback({
         </View>
 
         <Text className="text-center text-lg leading-6 font-bold text-foreground">
-          Something went wrong
+          {t("common_error")}
         </Text>
 
         <Text className="text-center text-sm leading-5 text-muted-foreground">
           {__DEV__
             ? error.message
-            : "An unexpected error occurred. Please try again."}
+            : t("common_unexpected_error_hint")}
         </Text>
 
         <View className="mt-two">
           <Button
-            title="Try Again"
+            title={t("common_retry")}
             onPress={resetErrorBoundary}
             variant="default"
             size="default"

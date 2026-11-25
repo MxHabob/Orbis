@@ -243,7 +243,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
               </CardTitle>
             </div>
             <CardAction>
-              <a href={localizeHref(`/${orgId}/ai-center/logs`)} class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
+              <a href={localizeHref(`/${orgId}/ai-center/ai-logs`)} class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
                 <span>{m.ai_ui_view_all()}</span>
                 <ArrowRight size={10} class="rtl:rotate-180" />
               </a>

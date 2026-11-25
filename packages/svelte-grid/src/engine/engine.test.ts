@@ -18,7 +18,7 @@ import {
   duplicateRows,
 } from "./clipboard";
 import { interpretKey, clampIndex } from "./keyboard";
-import { scrollForColumn, visibleVariableWindow, visibleWindow } from "./virtual";
+import { countFrozenColumns, scrollForColumn, visibleVariableWindow, visibleWindow } from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
 import { queryClient } from "./query";
 import { autoscrollDelta, colFromOffset, rowFromOffset } from "./pointer";
@@ -201,6 +201,21 @@ describe("keyboard + rtl", () => {
 });
 
 describe("virtualization", () => {
+  test("keeps a valid row window when the source shrinks at a deep scroll offset", () => {
+    const window = visibleWindow(10000, 160, 40, 5, 0);
+    expect([window.start, window.end, window.offset]).toEqual([1, 5, 40]);
+    expect(visibleWindow(-80, 160, 40, 5, 0).start).toBe(0);
+  });
+
+  test("keeps the checkbox pinned when the viewport cannot fit every pinned column", () => {
+    const widths = [40, 200, 120];
+    expect(countFrozenColumns(widths, 260)).toBe(1);
+    expect(countFrozenColumns(widths, 350)).toBe(2);
+    const cells = headerLayout(widths.map((width, index) => ({
+      id: String(index), width, group: "Students", pin: "colPinStart",
+    })), 1).cells.filter((cell) => cell.kind === "group");
+    expect(cells.map(({ colStart, colSpan }) => [colStart, colSpan])).toEqual([[0, 1], [1, 2]]);
+  });
   test("reveals focused columns outside the pinned area in both directions", () => {
     const viewport = { viewportWidth: 400, frozenWidth: 150 };
     expect(scrollForColumn({ ...viewport, columnStart: 300, columnWidth: 90, scrollLeft: -250, rtl: true })).toBe(-150);

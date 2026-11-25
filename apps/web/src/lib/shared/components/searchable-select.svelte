@@ -88,6 +88,12 @@ let {
 }: Props = $props();
 
 let searchQuery = $state("");
+let searchInput = $state<HTMLInputElement | null>(null);
+
+function clearSearch() {
+  searchQuery = "";
+  searchInput?.focus();
+}
 const safeItems = $derived(Array.isArray(items) ? items : []);
 
 const filteredItems = $derived.by(() => {
@@ -179,6 +185,8 @@ function handleCreateClick(e: MouseEvent) {
         <Input
           type="text"
           placeholder={searchPlaceholder}
+          aria-label={searchPlaceholder}
+          bind:ref={searchInput}
           class="h-7 ps-7 pe-6 text-[11px] bg-muted/40 border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40 w-full"
           bind:value={searchQuery}
         />
@@ -186,7 +194,8 @@ function handleCreateClick(e: MouseEvent) {
           <button
             type="button"
             class="absolute inset-e-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5"
-            onclick={() => (searchQuery = "")}
+            aria-label={m.shared_ui_clear_search()}
+            onclick={clearSearch}
           >
             <XMark size={11} />
           </button>

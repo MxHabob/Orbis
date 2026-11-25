@@ -576,6 +576,8 @@ export const en: Record<TranslationKey, string> = {
   // Common UI
   common_loading: "Loading...",
   common_error: "An error occurred while loading data",
+  common_startup_error: "Orbis could not start",
+  common_unexpected_error_hint: "An unexpected error occurred. Please try again.",
   common_retry: "Retry",
   common_save: "Save Changes",
 

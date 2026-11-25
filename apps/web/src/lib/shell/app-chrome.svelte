@@ -24,7 +24,6 @@ import { licenseStore, uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
 import { page } from "$app/state";
-import AskOrbisSidebar from "$lib/features/ai/views/sidebar.svelte";
 import { useQueryClient } from "@tanstack/svelte-query";
 import LicenseFeatureGate from "./license-feature-gate.svelte";
 import type { EntitlementKey } from "$lib/api/types";
@@ -48,8 +47,8 @@ const queryClient = useQueryClient();
 let askOrbisWidth = $state(25);
 
 const requiredFeature = $derived.by((): EntitlementKey | null => {
-  const path = page.url.pathname;
-  if (/(^|\/)students(\/|$)/.test(path)) return "students";
+  const path = page.route.id ?? "";
+  if (/\/students(?:\/|$)/.test(path)) return "students";
   if (path.includes("/ai-center")) return "ai_grading";
   if (path.includes("/academics/exams")) return "exam_tools";
   if (path.includes("/settings/branches") || path.includes("/settings/units")) {
@@ -151,7 +150,9 @@ function handleKeyDown(e: KeyboardEvent) {
 						{orgId}
 						className="h-full w-full"
 					>
-						<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />
+						{#await import("$lib/features/ai/views/sidebar.svelte") then { default: AskOrbisSidebar }}
+							<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />
+						{/await}
 					</LicenseFeatureGate>
 				</div>
 			{/key}

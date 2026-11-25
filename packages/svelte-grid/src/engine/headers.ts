@@ -15,7 +15,10 @@ function groupsOf(col: OrbisColumnDef): readonly string[] {
   return col.groupPath ?? (col.group ? [col.group] : []);
 }
 
-export function headerLayout(columns: OrbisColumnDef[]) {
+export function headerLayout(columns: OrbisColumnDef[], frozenCount?: number) {
+  const pinned = (index: number) => frozenCount === undefined
+    ? isColumnPinnedLeft(columns[index]!)
+    : index < frozenCount;
   const paths = columns.map(groupsOf);
   const depth = paths.reduce((max, path) => Math.max(max, path.length), 0);
   const hasLimits = columns.some((col) => col.subHeader != null);
@@ -31,7 +34,7 @@ export function headerLayout(columns: OrbisColumnDef[]) {
       const sharesGroup = (other: number) => {
         const next = columns[other];
         return next && (next.headerRowSpan ?? 1) <= 1 &&
-          isColumnPinnedLeft(next) === isColumnPinnedLeft(col) &&
+          pinned(other) === pinned(index) &&
           path.slice(0, level + 1).every((label, i) => paths[other]?.[i] === label);
       };
       if (sharesGroup(index - 1)) continue;

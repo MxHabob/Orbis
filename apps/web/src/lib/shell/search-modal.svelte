@@ -608,7 +608,7 @@ const knownSystemPages = $derived<PageEntry[]>([
   },
   {
     title: m.common_nav_security(),
-    path: `/${currentOrgId}/settings/security`,
+    path: `/${currentOrgId}/account/security`,
     icon: ShieldCheck,
   },
   {

@@ -1,7 +1,6 @@
-﻿<script lang="ts">
+<script lang="ts">
 import { setContext, type Snippet } from "svelte";
 import { Badge } from "@orbis/ui/badge";
-import { Checkbox } from "@orbis/ui/checkbox";
 import {
   FilterBuilder,
   FilterDialogFrame,
@@ -55,12 +54,12 @@ import {
   parseClipboard,
   queryClient,
   rangeContains,
-  selectScope,
   selectedCount,
   toggleId,
   toggleSort,
   toTsv,
   visibleVariableWindow,
+  countFrozenColumns,
   scrollForColumn,
   visibleWindow,
   autoscrollDelta,
@@ -82,6 +81,7 @@ interface Props {
   rtl?: boolean;
   readonly?: boolean;
   rowIdKey?: string;
+  selectedRowIds?: ReadonlySet<string>;
   rowSize?: number;
   headerRowSize?: number;
   fixedRows?: boolean;
@@ -127,6 +127,7 @@ let {
   rtl = false,
   readonly = false,
   rowIdKey = "id",
+  selectedRowIds,
   rowSize = 40,
   headerRowSize = 40,
   fixedRows = false,
@@ -167,15 +168,15 @@ const visibleCols = $derived.by(() => {
   const scrolling: OrbisColumnDef[] = [];
   for (const column of columns) {
     if (column.hidden) continue;
-    const override = pinOverrides[columnId(column)];
-    const pin = override ?? isColumnPinnedLeft(column);
-    (pin ? pinned : scrolling).push(override === undefined ? column : { ...column, pin: pin ? "colPinStart" : undefined });
+    const id = columnId(column);
+    const requested = pinOverrides[id] ?? (isColumnPinnedLeft(column) || (id === "__selected" && !column.pin));
+    const effective = requested === isColumnPinnedLeft(column)
+      ? column
+      : { ...column, pin: requested ? "colPinStart" as const : undefined };
+    (requested ? pinned : scrolling).push(effective);
   }
   return [...pinned, ...scrolling];
 });
-const header = $derived(headerLayout(visibleCols));
-const headerRowCount = $derived(header.rowCount);
-const totalHeaderHeight = $derived(headerRowSize * headerRowCount);
 let root: HTMLDivElement | null = $state(null);
 let bodyEl: HTMLDivElement | null = $state(null);
 let scrollTop = $state(0);
@@ -363,16 +364,6 @@ function isUtilityColumn(col: OrbisColumnDef): boolean {
   );
 }
 
-const rowWindow = $derived(
-  visibleWindow(
-    scrollTop,
-    viewportH - totalHeaderHeight,
-    rowSize,
-    displayRows.length,
-    10,
-  ),
-);
-
 const computedWidthMap = $derived.by<Record<string, number>>(() => {
   const map: Record<string, number> = {};
   if (!visibleCols.length) return map;
@@ -493,18 +484,30 @@ const totalWidth = $derived(columnSizes.reduce((sum, width) => sum + width, 0));
 
 const configuredPinCount = $derived(visibleCols.findIndex((col) => !isColumnPinnedLeft(col)));
 const pinCount = $derived(configuredPinCount < 0 ? visibleCols.length : configuredPinCount);
-const pinWidth = $derived(columnSizes.slice(0, pinCount).reduce((sum, width) => sum + width, 0));
-const frozenCount = $derived(pinWidth <= viewportW - 96 ? pinCount : 0);
-const frozenWidth = $derived(frozenCount ? pinWidth : 0);
-const pinnedOffsets = $derived.by(() => {
+const frozenCount = $derived(countFrozenColumns(columnSizes.slice(0, pinCount), viewportW));
+const columnOffsets = $derived.by(() => {
   let offset = 0;
-  return columnSizes.slice(0, frozenCount).map((width) => {
+  return columnSizes.map((width) => {
     const start = offset;
     offset += width;
-    return start + "px";
+    return start;
   });
 });
+const frozenWidth = $derived(columnOffsets[frozenCount] ?? totalWidth);
+const header = $derived(headerLayout(visibleCols, frozenCount));
+const headerRowCount = $derived(header.rowCount);
+const totalHeaderHeight = $derived(headerRowSize * headerRowCount);
 const totalHeight = $derived(displayRows.length * rowSize);
+const rowWindow = $derived(
+  visibleWindow(
+    scrollTop,
+    Math.max(0, viewportH - totalHeaderHeight),
+    rowSize,
+    displayRows.length,
+    10,
+  ),
+);
+
 
 const scrollingSizes = $derived(columnSizes.slice(frozenCount));
 const colWindow = $derived(visibleCols.length < 24
@@ -706,15 +709,46 @@ function moveActiveAfterEdit(
   setActive(nextRow, nextCol);
 }
 
-function isGridRowSelected(row: GridRow, index: number): boolean {
-  if (Object.hasOwn(row, "__selected")) return row.__selected === true;
-  return isRowSelected(selection, rowKey(row, index), displayRows.length);
+function isGridRowSelected(row: GridRow, index: number) {
+  const id = rowKey(row, index);
+  return selectedRowIds?.has(id) ??
+    (Object.hasOwn(row, "__selected") ? row.__selected === true : isRowSelected(selection, id, displayRows.length));
 }
 
-function offsetOf(index: number): number {
-  let x = 0;
-  for (let i = 0; i < index; i++) x += widthOf(visibleCols[i]!);
-  return x;
+const hasSelectionColumn = $derived(visibleCols.some((column) => columnId(column) === "__selected"));
+const headerSelection = $derived.by(() => {
+  if (!hasSelectionColumn || !displayRows.length) return { all: false, mixed: false };
+  const first = isGridRowSelected(displayRows[0]!, 0);
+  const mixed = displayRows.some((row, index) => isGridRowSelected(row, index) !== first);
+  return { all: first && !mixed, mixed };
+});
+
+function selectDisplayedRows(event: GridActionEvent["originalEvent"], selected: boolean) {
+  const controlled = selectedRowIds !== undefined || displayRows.some((row) => Object.hasOwn(row, "__selected"));
+  if (!controlled) {
+    selection = selected
+      ? { ...selection, mode: "allMatching", ids: new Set() }
+      : { ...selection, mode: "explicit", ids: new Set() };
+    onselection?.(selection);
+  }
+  onaction?.({
+    actionId: "select-all",
+    row: {},
+    rowIndex: -1,
+    prop: "__selected",
+    originalEvent: event,
+    selected,
+    selectedIds: displayRows.map(rowKey),
+  });
+}
+
+function toggleRowSelection(row: GridRow, index: number, event: GridActionEvent["originalEvent"]) {
+  const selected = !isGridRowSelected(row, index);
+  if (selectedRowIds === undefined && !Object.hasOwn(row, "__selected")) {
+    selection = toggleId(selection, rowKey(row, index));
+    onselection?.(selection);
+  }
+  onaction?.({ actionId: "toggle-select", row, rowIndex: index, prop: "__selected", originalEvent: event, selected });
 }
 
 function measure() {
@@ -738,7 +772,7 @@ function requestMoreIfNeeded(force = false) {
     !onloadmore ||
     loading ||
     isLoadingMore ||
-    loadMoreError
+    (!force && loadMoreError)
   ) {
     return;
   }
@@ -748,6 +782,7 @@ function requestMoreIfNeeded(force = false) {
     if (remaining > rowSize * 8) return;
   }
 
+  const previousCount = safeSource.length;
   isLoadingMore = true;
   loadMoreError = null;
   Promise.resolve()
@@ -758,11 +793,11 @@ function requestMoreIfNeeded(force = false) {
     })
     .finally(() => {
       isLoadingMore = false;
-      if (!loadMoreError) requestAnimationFrame(() => requestMoreIfNeeded());
+      if (!loadMoreError && safeSource.length > previousCount) requestAnimationFrame(() => requestMoreIfNeeded());
     });
 }
 
-function setActive(row: number, col: number, extend = false) {
+function setActive(row: number, col: number, extend = false, reveal = true) {
   const r = clampIndex(row, Math.max(0, displayRows.length - 1));
   const c = clampIndex(col, Math.max(0, visibleCols.length - 1));
   if (extend && origin) {
@@ -782,7 +817,7 @@ function setActive(row: number, col: number, extend = false) {
     };
   }
   onselection?.(selection);
-  scrollActiveCellIntoView(r, c);
+  if (reveal) scrollActiveCellIntoView(r, c);
 }
 
 function scrollActiveCellIntoView(row: number, col: number) {
@@ -798,17 +833,20 @@ function scrollActiveCellIntoView(row: number, col: number) {
   }
   scrollTop = bodyEl.scrollTop;
 
-  if (col < frozenCount) return;
+  revealColumn(col);
+}
 
-  bodyEl.scrollLeft = scrollForColumn({
-    columnStart: offsetOf(col),
+function revealColumn(col: number) {
+  if (!bodyEl || col < frozenCount || col >= visibleCols.length) return;
+  const next = scrollForColumn({
+    columnStart: columnOffsets[col] ?? 0,
     columnWidth: columnSizes[col] ?? 0,
     viewportWidth: bodyEl.clientWidth,
     frozenWidth,
     scrollLeft: bodyEl.scrollLeft,
     rtl,
   });
-  scrollLeft = bodyEl.scrollLeft;
+  if (next !== bodyEl.scrollLeft) bodyEl.scrollLeft = next;
 }
 
 function commitOverlay(
@@ -817,7 +855,7 @@ function commitOverlay(
   newValue: unknown,
 ): boolean {
   const row = displayRows[rowIndex];
-  if (!row) return false;
+  if (!row || readonly || col.readonly) return false;
   const id = columnId(col);
   const oldValue = getCellValue(row, col);
   const validation = coerceValue(newValue, col, row);
@@ -917,21 +955,20 @@ function deleteSelectedRows() {
   onselection?.(selection);
 }
 
-function isCheckboxTarget(target: EventTarget | null): boolean {
+function isGridControl(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
-    Boolean(target.closest('[data-slot="checkbox"]'))
+    Boolean(target.closest('button,input,select,textarea,a,[role=checkbox],[contenteditable=true]'))
   );
 }
 
 function startEdit(row: number, col: number, seed?: string) {
   const column = visibleCols[col];
-  if (!column || readonly || column.readonly) return;
+  if (!column || readonly || column.readonly || columnId(column) === "__selected") return;
   const type = column.type;
   if (
     type === "boolean" ||
-    column.editor === "checkbox" ||
-    column.id === "__selected"
+    column.editor === "checkbox"
   ) {
     const current = displayRows[row]
       ? getCellValue(displayRows[row]!, column)
@@ -959,7 +996,7 @@ function commitEdit(moveRow = 0, moveCol = 0) {
   const r = editing.row;
   const c = editing.col;
   editing = null;
-  root?.focus();
+  root?.focus({ preventScroll: true });
   if (moveRow || moveCol) moveActiveAfterEdit(r, c, moveRow, moveCol);
 }
 
@@ -1032,6 +1069,7 @@ function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
   const cell = node instanceof Element ? node.closest("[data-grid-r]") : null;
   if (
     cell instanceof HTMLElement &&
+    bodyEl?.contains(cell) &&
     cell.dataset.gridR != null &&
     cell.dataset.gridC != null
   ) {
@@ -1059,21 +1097,17 @@ function maybeAutoScroll(e: PointerEvent) {
 }
 
 function handlePointer(row: number, col: number, e: PointerEvent) {
-  if (e.button !== 0) return;
-  if ((e.target as HTMLElement | null)?.closest(".resize-handle")) return;
-  if (isCheckboxTarget(e.target)) return;
-  if ((e.target as HTMLElement | null)?.closest(".orbis-action-btn")) return;
+  if (e.button !== 0 || e.pointerType === "touch" || isGridControl(e.target)) return;
   e.preventDefault();
-  root?.focus();
+  root?.focus({ preventScroll: true });
   if (e.ctrlKey || e.metaKey) {
     const data = displayRows[row];
     if (data) {
-      selection = toggleId(selection, rowKey(data, row));
-      onselection?.(selection);
+      toggleRowSelection(data, row, e);
     }
     return;
   }
-  setActive(row, col, e.shiftKey && !!origin);
+  setActive(row, col, e.shiftKey && !!origin, false);
   if (range && !editing) dragging = true;
   const data = displayRows[row];
   if (data) {
@@ -1088,6 +1122,7 @@ function handlePointer(row: number, col: number, e: PointerEvent) {
 }
 
 function handleDblClick(row: number, col: number, e: MouseEvent) {
+  if (isGridControl(e.target)) return;
   startEdit(row, col);
   const data = displayRows[row];
   if (data) {
@@ -1102,6 +1137,8 @@ function handleDblClick(row: number, col: number, e: MouseEvent) {
 }
 
 function handleRootKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented || isGridControl(event.target)) return;
+  if (event.target instanceof Element && event.target.closest(".orbis-grid-head")) return;
   if (
     event.target instanceof Element &&
     event.target.closest(".orbis-toolbar")
@@ -1112,10 +1149,17 @@ function handleRootKeydown(event: KeyboardEvent) {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  const active = selection.active ?? { row: 0, col: 0 };
+  const row = displayRows[active.row];
+  if (row && !editing && visibleCols[active.col] &&
+      columnId(visibleCols[active.col]!) === "__selected" && (e.key === " " || e.key === "Enter")) {
+    e.preventDefault();
+    toggleRowSelection(row, active.row, e);
+    return;
+  }
   const cmd = interpretKey(e, !!editing, rtl);
   if (cmd.action === "paste") return;
   if (cmd.preventDefault) e.preventDefault();
-  const active = selection.active ?? { row: 0, col: 0 };
   const page = Math.max(1, Math.floor((viewportH - totalHeaderHeight) / rowSize) - 1);
 
   switch (cmd.action) {
@@ -1165,13 +1209,7 @@ function handleKeydown(e: KeyboardEvent) {
       cutSelection();
       break;
     case "selectAll":
-      selection = selectScope(
-        displayRows.map((r, i) => rowKey(r, i)),
-        "filtered",
-        [],
-        [],
-      );
-      onselection?.(selection);
+      selectDisplayedRows(e, true);
       break;
     case "home":
       setActive(
@@ -1221,7 +1259,7 @@ function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
   if (e.target instanceof Element && e.target.closest(".resize-handle")) {
     return;
   }
-  if (isCheckboxTarget(e.target)) return;
+  if (isGridControl(e.target)) return;
   sortColumn(col, e.shiftKey);
 }
 
@@ -1259,7 +1297,7 @@ function onContext(row: number, col: number, e: MouseEvent) {
   };
 }
 
-function runMenu(id: string) {
+function runMenu(id: string, event: MouseEvent) {
   const active = selection.active ?? {
     row: menu?.row ?? 0,
     col: menu?.col ?? 0,
@@ -1322,15 +1360,11 @@ function runMenu(id: string) {
       break;
     case "select-row": {
       const row = displayRows[active.row];
-      if (row)
-        selection = toggleId(
-          { ...selection, mode: "explicit", ids: new Set() },
-          rowKey(row, active.row),
-        );
+      if (row) toggleRowSelection(row, active.row, event);
       break;
     }
     case "select-all":
-      selection = selectScope([], "filtered", [], []);
+      selectDisplayedRows(event, true);
       break;
     case "sort-asc":
       if (col) {
@@ -1359,7 +1393,7 @@ function runMenu(id: string) {
         row: displayRows[active.row] ?? {},
         rowIndex: active.row,
         prop: col ? columnId(col) : "",
-        originalEvent: new MouseEvent("contextmenu"),
+        originalEvent: event,
       });
   }
 }
@@ -1408,7 +1442,9 @@ function onPointerMove(e: PointerEvent) {
   if (!dragging || !range || editing) return;
   maybeAutoScroll(e);
   const hit = hitFromEvent(e);
-  if (hit) setActive(hit.row, hit.col, true);
+  if (hit && (selection.active?.row !== hit.row || selection.active?.col !== hit.col)) {
+    setActive(hit.row, hit.col, true, false);
+  }
 }
 
 function onPointerUp() {
@@ -1650,7 +1686,7 @@ export function scrollToRow(index: number) {
   if (bodyEl) bodyEl.scrollTop = index * rowSize;
 }
 export function scrollToColumnIndex(index: number) {
-  if (bodyEl) bodyEl.scrollLeft = offsetOf(index);
+  revealColumn(index);
 }
 export function scrollToColumnProp(prop: string) {
   const i = visibleCols.findIndex((c) => columnId(c) === prop);
@@ -1659,25 +1695,27 @@ export function scrollToColumnProp(prop: string) {
 
 const headerTracks = $derived(columnSizes.map((width) => width + "px"));
 const headerGridTemplateColumns = $derived(headerTracks.join(" "));
-const groupedHeaderPanes = $derived([
-  ...(frozenCount ? [{
-    start: 0,
-    pinned: true,
-    tracks: headerTracks.slice(0, frozenCount).join(" "),
-    cells: header.cells.filter((cell) => cell.colStart < frozenCount),
-  }] : []),
-  ...(frozenCount < visibleCols.length ? [{
-    start: frozenCount,
-    pinned: false,
-    tracks: headerTracks.slice(frozenCount).join(" "),
-    cells: header.cells.filter((cell) => cell.colStart >= frozenCount),
-  }] : []),
-]);
+const headerPanes = $derived.by(() => {
+  const multi = headerRowCount > 1;
+  const start = multi ? frozenCount : firstScrollingColumn;
+  const end = multi ? visibleCols.length : lastScrollingColumn;
+  const panes = [
+    { start: 0, end: frozenCount, pinned: true, offset: 0 },
+    { start, end, pinned: false, offset: multi ? 0 : scrollingColumnOffset },
+  ];
+  return panes.filter((pane) => pane.end > pane.start).map((pane) => ({
+    ...pane,
+    tracks: headerTracks.slice(pane.start, pane.end).join(" "),
+    cells: header.cells.filter((cell) => cell.colStart >= pane.start && cell.colStart < pane.end),
+  }));
+});
+
 </script>
 
 <svelte:window
   onpointermove={onPointerMove}
   onpointerup={onPointerUp}
+  onpointercancel={onPointerUp}
   onpointerdown={(e) => {
     if (menu && e.target instanceof Node && !(e.target as HTMLElement).closest(".orbis-menu")) {
       menu = null;
@@ -1887,6 +1925,7 @@ const groupedHeaderPanes = $derived([
         const node = el as HTMLDivElement;
         bodyEl = node;
         measure();
+        onScroll();
         const ro = new ResizeObserver(measure);
         ro.observe(node);
         return () => {
@@ -1896,180 +1935,69 @@ const groupedHeaderPanes = $derived([
       }}
     >
       <div class="orbis-spacer" style:height="{totalHeaderHeight + totalHeight}px" style:width="{totalWidth}px">
-        <div
-          class="orbis-grid-head"
-          role="row"
-          style:grid-template-rows={headerRowCount > 1 ? `repeat(${headerRowCount}, var(--header-row-h))` : undefined}
-        >
-          {#if headerRowCount > 1}
-            {#each groupedHeaderPanes as pane (pane.pinned)}
-              <div
-                class="orbis-header-pane orbis-grid-head--multi"
-                class:pinned={pane.pinned}
-                role="presentation"
-                style:grid-template-columns={pane.tracks}
-                style:grid-template-rows={`repeat(${headerRowCount}, var(--header-row-h))`}
-              >
-                {#each pane.cells as hc (hc.key)}
-                  {@const c = hc.colStart}
-                  {@const id = columnId(hc.col)}
-                  {@const Header = hc.col.headerCell}
-                  {@const isSelectCol = id === "__selected"}
-                  {@const isLeafLike = hc.kind === "leaf" || (hc.kind === "span" && hc.colSpan === 1)}
-                  <div
-                    class="orbis-hcell align-{defaultAlign(hc.col)}"
-                    class:emphasis={hc.col.emphasis && hc.kind !== "group"}
-                    class:orbis-hcell--group={hc.kind === "group"}
-                    class:orbis-hcell--sub={hc.kind === "sub"}
-                    class:orbis-hcell--span={hc.kind === "span"}
-                    role="columnheader"
-                    tabindex={isLeafLike ? 0 : -1}
-                    aria-colindex={c + 1}
-                    aria-colspan={hc.colSpan}
-                    aria-rowspan={hc.rowSpan}
-                    title={hc.label}
-                    aria-sort={isLeafLike ? (sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none") : "none"}
-                    style:grid-column={`${c - pane.start + 1} / span ${hc.colSpan}`}
-                    style:grid-row={`${hc.rowStart + 1} / span ${hc.rowSpan}`}
-                    onclick={(e) => { if (isLeafLike) onHeaderClick(hc.col, e); }}
-                    onkeydown={(e) => {
-                      if (!isLeafLike) return;
-                      if ((e.key === "Enter" || e.key === " ") && !isCheckboxTarget(e.target)) {
-                        e.preventDefault();
-                        sortColumn(hc.col, e.shiftKey);
-                      }
-                    }}
-                  >
-                    {#if isLeafLike}
-                      {#if Header}
-                        <Header row={{}} column={{ ...hc.col, id }} />
-                      {:else if isSelectCol}
-                        {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
-                        {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
-                        <Checkbox
-                          checked={isAllSelected}
-                          indeterminate={isSomeSelected}
-                          aria-label="Select all"
-                          onclick={(e: MouseEvent) => {
-                            e.stopPropagation();
-                            const selected = !isAllSelected;
-                            const selectedIds = displayRows.map((row, idx) => rowKey(row, idx));
-                            if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
-                              if (selected) {
-                                selection = selectScope(selectedIds, "filtered", [], []);
-                              } else {
-                                selection = emptySelection();
-                              }
-                              onselection?.(selection);
-                            }
-                            onaction?.({
-                              actionId: "select-all",
-                              row: {},
-                              rowIndex: -1,
-                              prop: id,
-                              originalEvent: e,
-                              selected,
-                              selectedIds,
-                            });
-                          }}
-                        />
-                      {:else}
-                        <span class="hlabel">{hc.label}</span>
-                      {/if}
-                      <button
-                        type="button"
-                        class="resize-handle"
-                        aria-label="Resize column"
-                        onpointerdown={(e) => onResizeStart(hc.col, e)}
-                        onclick={(e) => e.stopPropagation()}
-                        onkeydown={(e) => e.stopPropagation()}
-                        ondblclick={(e) => onResizeDblClick(hc.col, e)}
-                      ></button>
-                    {:else}
-                      <span class="hlabel hlabel--static">{hc.label}</span>
-                    {/if}
-                  </div>
-                {/each}
-              </div>
-            {/each}
-          {:else}
-            {#each windowedCols as { col, index: c }, i (columnId(col) || c)}
-              {@const id = columnId(col)}
-              {@const Header = col.headerCell}
-              {@const isSelectCol = id === "__selected"}
-              <div
-                class="orbis-hcell align-{defaultAlign(col)}"
-                class:pinned={c < frozenCount}
-                style:inset-inline-start={pinnedOffsets[c]}
-                class:emphasis={col.emphasis}
-                style:margin-inline-start={i === frozenCount && scrollingColumnOffset ? scrollingColumnOffset + "px" : undefined}
-                role="columnheader"
-                tabindex="0"
-                aria-colindex={c + 1}
-                aria-sort={sorts.find((s) => s.id === id)?.dir === "desc" ? "descending" : sorts.find((s) => s.id === id) ? "ascending" : "none"}
-                style:width="{widthOf(col)}px"
-                onclick={(e) => onHeaderClick(col, e)}
-                onkeydown={(e) => {
-                  if (
-                    (e.key === "Enter" || e.key === " ") &&
-                    !isCheckboxTarget(e.target)
-                  ) {
-                    e.preventDefault();
-                    sortColumn(col, e.shiftKey);
-                  }
-                }}
-              >
-                {#if Header}
-                  <Header row={{}} column={{ ...col, id }} />
-                {:else if isSelectCol}
-                  {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
-                  {@const isSomeSelected = !isAllSelected && displayRows.some((row, idx) => isGridRowSelected(row, idx))}
-                  <Checkbox
-                    checked={isAllSelected}
-                    indeterminate={isSomeSelected}
-                    aria-label="Select all"
-                    onclick={(e: MouseEvent) => {
-                      e.stopPropagation();
-                      const selected = !isAllSelected;
-                      const selectedIds = displayRows.map((row, idx) =>
-                        rowKey(row, idx),
-                      );
-                      if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
-                        if (selected) {
-                          selection = selectScope(selectedIds, "filtered", [], []);
-                        } else {
-                          selection = emptySelection();
-                        }
-                        onselection?.(selection);
-                      }
-                      onaction?.({
-                        actionId: "select-all",
-                        row: {},
-                        rowIndex: -1,
-                        prop: id,
-                        originalEvent: e,
-                        selected,
-                        selectedIds,
-                      });
-                    }}
-                  />
-                {:else}
-                  <span class="hlabel">{columnHeader(col)}</span>
-                {/if}
-                <button
-                  type="button"
-                  class="resize-handle"
-                  aria-label="Resize column"
-                  onpointerdown={(e) => onResizeStart(col, e)}
-                  onclick={(e) => e.stopPropagation()}
-                  onkeydown={(e) => e.stopPropagation()}
-                  ondblclick={(e) => onResizeDblClick(col, e)}
-                ></button>
-              </div>
-            {/each}
-          {/if}
+        <div class="orbis-grid-head" role="row">
+          {#each headerPanes as pane (pane.pinned)}
+            <div
+              class="orbis-header-pane orbis-grid-head--multi"
+              class:pinned={pane.pinned}
+              role="presentation"
+              style:margin-inline-start={pane.offset ? pane.offset + "px" : undefined}
+              style:grid-template-columns={pane.tracks}
+              style:grid-template-rows={"repeat(" + headerRowCount + ", var(--header-row-h))"}
+            >
+              {#each pane.cells as hc (hc.key)}
+                {@const id = columnId(hc.col)}
+                {@const Header = hc.col.headerCell}
+                {@const isFieldHeader = hc.kind === "leaf" || hc.kind === "span"}
+                {@const sortable = isFieldHeader && isColumnSortable(hc.col)}
+                <div
+                  class="orbis-hcell align-{defaultAlign(hc.col)}"
+                  class:emphasis={hc.col.emphasis && hc.kind !== "group"}
+                  class:orbis-hcell--group={hc.kind === "group"}
+                  class:orbis-hcell--sub={hc.kind === "sub"}
+                  class:orbis-hcell--span={hc.kind === "span"}
+                  role="columnheader"
+                  tabindex={sortable ? 0 : undefined}
+                  aria-colindex={hc.colStart + 1}
+                  aria-colspan={hc.colSpan}
+                  aria-rowspan={hc.rowSpan}
+                  aria-sort={sortable ? (sorts.find((sort) => sort.id === id)?.dir === "desc" ? "descending" : sorts.some((sort) => sort.id === id) ? "ascending" : "none") : undefined}
+                  title={hc.label}
+                  style:grid-column={(hc.colStart - pane.start + 1) + " / span " + hc.colSpan}
+                  style:grid-row={(hc.rowStart + 1) + " / span " + hc.rowSpan}
+                  onclick={(event) => { if (sortable) onHeaderClick(hc.col, event); }}
+                  onkeydown={(event) => {
+                    if (sortable && !isGridControl(event.target) && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      sortColumn(hc.col, event.shiftKey);
+                    }
+                  }}
+                >
+                  {#if isFieldHeader && Header}
+                    <Header row={{}} column={{ ...hc.col, id }} />
+                  {:else if isFieldHeader && id === "__selected"}
+                    <input type="checkbox" class="orbis-grid-checkbox"
+                      aria-label={rtl ? "تحديد كل الصفوف المعروضة" : "Select all displayed rows"}
+                      checked={headerSelection.all} indeterminate={headerSelection.mixed}
+                      onclick={(event) => {
+                        event.preventDefault();
+                        selectDisplayedRows(event, !headerSelection.all);
+                      }} />
+                  {:else}
+                    <span class="hlabel" class:hlabel--static={!isFieldHeader}>{hc.label}</span>
+                  {/if}
+                  {#if isFieldHeader && id !== "__selected" && hc.col.resizable !== false && hc.col.resize !== false}
+                    <button type="button" class="resize-handle" aria-label="Resize column"
+                      onpointerdown={(event) => onResizeStart(hc.col, event)}
+                      ondblclick={(event) => onResizeDblClick(hc.col, event)}
+                    ></button>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/each}
         </div>
-        <div class="orbis-window" style:padding-block-start="{rowWindow.offset}px">
+        <div class="orbis-window" style:inset-block-start="{totalHeaderHeight + rowWindow.offset}px">
           {#each { length: rowWindow.count } as _, i (rowWindow.start + i)}
             {@const r = rowWindow.start + i}
             {@const row = displayRows[r]}
@@ -2090,7 +2018,7 @@ const groupedHeaderPanes = $derived([
                     class={cellClass(row, col, r, c)}
                     class:is-editing={isEdit}
                     class:pinned={c < frozenCount}
-                    style:inset-inline-start={pinnedOffsets[c]}
+                    style:inset-inline-start={c < frozenCount ? columnOffsets[c] + "px" : undefined}
                     class:emphasis={col.emphasis}
                     style:margin-inline-start={i === frozenCount && scrollingColumnOffset ? scrollingColumnOffset + "px" : undefined}
                     role="gridcell"
@@ -2170,29 +2098,14 @@ const groupedHeaderPanes = $derived([
                       <span class="orbis-index-text">{getCellValue(row, col) ?? (r + 1)}</span>
                     {:else if isCheckboxColumn(col)}
                       {@const isChecked = id === "__selected" ? isGridRowSelected(row, r) : getCellValue(row, col) === true || getCellValue(row, col) === 1 || getCellValue(row, col) === "true"}
-                      <Checkbox
+                      <input type="checkbox" class="orbis-grid-checkbox"
                         checked={isChecked}
-                        class="orbis-grid-checkbox"
-                        aria-label={id === "__selected" ? "Select row" : columnHeader(col)}
-                        onclick={(e: MouseEvent) => {
-                          e.stopPropagation();
-                          if (id === "__selected") {
-                            const selected = !isChecked;
-                            if (!Object.hasOwn(row, "__selected")) {
-                              selection = toggleId(selection, rowKey(row, r));
-                              onselection?.(selection);
-                            }
-                            onaction?.({
-                              actionId: "toggle-select",
-                              row,
-                              rowIndex: r,
-                              prop: id,
-                              originalEvent: e,
-                              selected,
-                            });
-                          } else {
-                            commitOverlay(r, col, !isChecked);
-                          }
+                        disabled={id !== "__selected" && (readonly || col.readonly)}
+                        aria-label={id === "__selected" ? (rtl ? "تحديد الصف" : "Select row") : columnHeader(col)}
+                        onclick={(event) => {
+                          event.preventDefault();
+                          if (id === "__selected") toggleRowSelection(row, r, event);
+                          else commitOverlay(r, col, !isChecked);
                         }}
                       />
                     {:else if isAvatarColumn(col)}
@@ -2323,7 +2236,7 @@ const groupedHeaderPanes = $derived([
           role="menuitem"
           class:danger={item.danger}
           disabled={item.disabled}
-          onclick={() => runMenu(item.id)}
+          onclick={(event) => runMenu(item.id, event)}
         >
           {item.label}
         </button>
@@ -2553,20 +2466,21 @@ const groupedHeaderPanes = $derived([
     flex: none;
   }
   .orbis-header-pane.pinned,
-  .orbis-hcell.pinned,
   .orbis-cell.pinned {
     position: sticky;
   }
   .orbis-header-pane.pinned {
     inset-inline-start: 0;
   }
-  .orbis-header-pane.pinned,
-  .orbis-hcell.pinned {
+  .orbis-header-pane.pinned {
     z-index: 2;
   }
   .orbis-cell.pinned {
     z-index: 1;
     background: var(--card);
+  }
+  .orbis-row.selected .orbis-cell.pinned:not(.is-ranged):not(.is-error):not(.emphasis) {
+    background: color-mix(in oklab, var(--primary) 8%, var(--card));
   }
   .orbis-cell.pinned.is-ranged {
     background: color-mix(in oklab, var(--primary) 14%, var(--card));
@@ -2592,10 +2506,6 @@ const groupedHeaderPanes = $derived([
   .hlabel--static {
     width: 100%;
     text-align: center;
-  }
-  .orbis-hcell--offset {
-    padding: 0;
-    border-inline-end: 0;
   }
   .orbis-hcell:hover {
     color: var(--foreground);
@@ -2639,6 +2549,7 @@ const groupedHeaderPanes = $derived([
     border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
     border-radius: var(--radius-sm);
     overscroll-behavior: contain;
+    overflow-anchor: none;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
@@ -2665,6 +2576,7 @@ const groupedHeaderPanes = $derived([
   .orbis-load-status {
     position: sticky;
     bottom: 0;
+    margin-top: auto;
     z-index: 20;
     display: flex;
     align-items: center;
@@ -2692,7 +2604,8 @@ const groupedHeaderPanes = $derived([
     flex-direction: column;
   }
   .orbis-window {
-    contain: layout style;
+    position: absolute;
+    inset-inline: 0;
   }
   .orbis-row {
     box-sizing: border-box;
@@ -2827,7 +2740,16 @@ const groupedHeaderPanes = $derived([
   }
 
   .orbis-grid-checkbox {
+    accent-color: var(--primary);
     cursor: pointer;
+    inline-size: 1rem;
+    block-size: 1rem;
+    margin: 0;
+  }
+
+  .orbis-grid-checkbox:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   /* Actions Group */
