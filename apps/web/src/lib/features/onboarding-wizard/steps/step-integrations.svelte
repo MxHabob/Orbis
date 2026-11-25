@@ -16,7 +16,6 @@ import CategoryFilter from "$lib/features/ai/components/integrations/category-fi
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import AppDetailSheet from "$lib/features/ai/components/integrations/app-detail-sheet.svelte";
-import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { Check, Sparkles } from "@orbis/icons";
 
@@ -112,12 +111,6 @@ function refreshAfterIntegrationChange() {
 </script>
 
 <div class="space-y-6">
-  <!-- Onboarding Step Indicator & Title -->
-  <OnboardingStepHeader
-    title={m.onboarding_step_integrations_title()}
-    description={m.onboarding_step_integrations_subtitle()}
-  />
-
   <!-- Integrations Gallery Header with Centered Search -->
   <div class="space-y-4 pt-1">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">

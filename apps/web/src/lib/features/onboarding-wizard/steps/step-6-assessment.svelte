@@ -2,7 +2,6 @@
 import * as m from "$lib/paraglide/messages";
 import AcademicPolicyManager from "$lib/features/settings/academic-policy-manager.svelte";
 import AssessmentSchemesManager from "$lib/features/settings/assessment-schemes-manager.svelte";
-import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
@@ -52,11 +51,6 @@ const YEMEN_STATUTORY_TIERS = [
 </script>
 
 <div class="space-y-6">
-  <OnboardingStepHeader
-    title={m.onboarding_step6_title()}
-    description={m.onboarding_step6_subtitle()}
-  />
-
   {#if showYemenFramework}
   <!-- Official Yemeni Assessment Architecture Overview -->
   <div class="rounded-xl border border-primary/25 bg-card/60 p-4 shadow-xs space-y-4">

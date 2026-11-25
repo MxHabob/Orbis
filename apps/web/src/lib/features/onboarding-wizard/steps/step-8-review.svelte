@@ -6,7 +6,6 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Progress } from "@orbis/ui/progress";
 import { Card, CardContent } from "@orbis/ui/card";
-import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import {
   deriveSteps,
@@ -86,11 +85,6 @@ async function handleCompleteAndLaunch() {
 </script>
 
 <div class="space-y-6">
-  <OnboardingStepHeader
-    title={m.onboarding_step8_title()}
-    description={m.onboarding_step8_subtitle()}
-  />
-
   {#if isRefreshing && !systemStore.onboardingState}
     <Card>
       <CardContent class="min-h-56 items-center justify-center gap-3 p-8 text-center">

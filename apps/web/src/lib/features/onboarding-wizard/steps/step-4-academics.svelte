@@ -15,7 +15,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
@@ -327,12 +326,6 @@ async function handleBatchImportClasses() {
 </script>
 
 <div class="space-y-6">
-  <OnboardingStepHeader
-    title={m.onboarding_step4_title()}
-    description={m.onboarding_step4_subtitle()}
-  />
-
-
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
       <span>{successMessage}</span>

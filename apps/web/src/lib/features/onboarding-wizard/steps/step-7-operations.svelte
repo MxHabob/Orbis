@@ -20,7 +20,6 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
-import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
@@ -280,11 +279,6 @@ function conditionLabel(condition: string): string {
 </script>
 
 <div class="space-y-6">
-  <OnboardingStepHeader
-    title={m.onboarding_step7_title()}
-    description={m.onboarding_step7_subtitle()}
-  />
-
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
       <LoadingIndicator size={16} class="size-4 text-primary" />
