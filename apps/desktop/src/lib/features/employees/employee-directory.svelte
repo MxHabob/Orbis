@@ -629,33 +629,33 @@ function handleGridAction(event: GridActionEvent) {
 
     <!-- Middle Panel: Main Datagrid -->
     {#snippet middle()}
-      <div class="h-full flex flex-col p-6 overflow-hidden gap-4">
+      <div class="@container flex h-full min-w-0 flex-col gap-4 overflow-hidden p-3 lg:p-6">
         <!-- Top Stats Row using canonical Card primitive -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 select-none">
+        <div class="grid shrink-0 grid-cols-2 gap-3 @2xl:grid-cols-4">
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_total_count()}</span>
+              <span class="text-xs font-medium text-muted-foreground">{m.employees_total_count()}</span>
               <span class="font-mono text-lg font-bold text-foreground mt-0.5">{formatNumber(stats.total)}</span>
             </div>
           </Card>
 
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_active_count()}</span>
+              <span class="text-xs font-medium text-muted-foreground">{m.employees_active_count()}</span>
               <span class="font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{formatNumber(stats.active)}</span>
             </div>
           </Card>
 
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_on_leave_count()}</span>
+              <span class="text-xs font-medium text-muted-foreground">{m.employees_on_leave_count()}</span>
               <span class="font-mono text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">{formatNumber(stats.on_leave)}</span>
             </div>
           </Card>
 
           <Card class="flex items-center justify-between p-3.5 shadow-2xs">
             <div class="flex flex-col min-w-0 text-start">
-              <span class="text-[11px] font-medium text-muted-foreground truncate">{m.employees_suspended_count()}</span>
+              <span class="text-xs font-medium text-muted-foreground">{m.employees_suspended_count()}</span>
               <span class="font-mono text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5">{formatNumber(stats.suspended + stats.terminated)}</span>
             </div>
           </Card>
@@ -686,9 +686,19 @@ function handleGridAction(event: GridActionEvent) {
               onaction={handleGridAction}
               hasMore={employeesQuery.hasNextPage ?? false}
               onloadmore={loadMoreEmployees}
-              emptyTitle={m.ui_copy_no_employees_found_967f15bd()}
-              emptyDescription={m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2()}
+              emptyTitle={hasActiveFilters ? m.academics_schedule_no_search_results() : m.ui_copy_no_employees_found_967f15bd()}
+              emptyDescription={hasActiveFilters ? m.ui_copy_try_adjusting_your_search_or_filters_2c9b3cb2() : ""}
             >
+              {#snippet emptyActions()}
+                {#if hasActiveFilters}
+                  <Button variant="outline" size="sm" onclick={clearFilters}>{m.common_filter_clear()}</Button>
+                {:else}
+                  <Button variant="lime" size="sm" onclick={() => openEmployeeSheet(null, "create")}>
+                    <Plus size={14} class="me-1.5" />
+                    {m.employees_new_title()}
+                  </Button>
+                {/if}
+              {/snippet}
               {#snippet toolbarActions()}
                 <Button
                   variant="outline"

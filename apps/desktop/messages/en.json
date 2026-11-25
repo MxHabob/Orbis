@@ -1770,6 +1770,7 @@
   "common_search_group_users": "Users",
   "common_search_load_failed": "Some search data could not be loaded. Try again.",
   "common_search_loading": "Searching...",
+  "desktop_clear_search": "Clear search",
   "common_search_no_results": "No results match your search.",
   "common_search_no_results_partial": "No matches found in the data that could be loaded. Some sources are unavailable.",
   "common_select_nationality": "Select nationality...",

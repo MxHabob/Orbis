@@ -23,11 +23,11 @@ let {
 } = $props();
 </script>
 
-<div class="flex-1 overflow-y-auto p-2 scrollbar-hide">
-  {#if error}
+<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2" aria-busy={isLoading}>
+  {#if error && groups.length > 0}
     <p role="status" class="px-3 py-2 text-xs text-destructive">{error}</p>
   {/if}
-  {#if isLoading}
+  {#if isLoading && groups.length > 0}
     <p role="status" class="px-3 py-2 text-xs text-muted-foreground">
       {m.common_search_loading()}
     </p>
@@ -35,7 +35,7 @@ let {
 
   {#if groups.length === 0}
     {#if isLoading}
-      <div class="py-6 text-center text-sm text-muted-foreground select-none">
+      <div role="status" class="py-10 text-center text-sm text-muted-foreground">
         {m.common_search_loading()}
       </div>
     {:else if error}
@@ -68,7 +68,7 @@ let {
     {#each groups as group (group.label)}
       <section class="mb-4 last:mb-0">
         <h2
-          class="px-3 py-1 text-[10px] font-bold text-muted-foreground tracking-wider uppercase select-none text-start"
+          class="px-3 py-1.5 text-xs font-semibold text-muted-foreground text-start"
         >
           {group.label}
         </h2>
@@ -80,26 +80,26 @@ let {
               type="button"
               aria-current={item.id === selectedItemId ? "true" : undefined}
               onclick={() => onSelect(item)}
-              class="w-full text-start flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors group
+              class="group flex min-h-12 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-start text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ring
                 {item.id === selectedItemId
                 ? 'bg-accent text-accent-foreground font-medium'
                 : 'text-foreground hover:bg-accent/40 hover:text-accent-foreground'}"
             >
-              <span class="flex items-center gap-2.5 truncate">
+              <span class="flex min-w-0 items-center gap-3">
                 <Icon
                   class="size-4 text-muted-foreground group-hover:text-accent-foreground shrink-0"
                 />
-                <span class="truncate">{item.title}</span>
-                {#if item.subtitle}
-                  <span
-                    class="text-xs text-muted-foreground font-mono truncate"
-                  >
-                    {item.subtitle}
-                  </span>
-                {/if}
+                <span class="flex min-w-0 flex-col gap-0.5">
+                  <span class="truncate" dir="auto">{item.title}</span>
+                  {#if item.subtitle}
+                    <span class="truncate text-xs font-normal text-muted-foreground" dir="auto">
+                      {item.subtitle}
+                    </span>
+                  {/if}
+                </span>
               </span>
               <ArrowUturnLeft
-                class="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                class="size-3 shrink-0 text-muted-foreground transition-opacity {item.id === selectedItemId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'}"
               />
             </button>
           {/each}

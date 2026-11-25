@@ -75,6 +75,7 @@ interface Props {
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyActions?: Snippet;
   height?: string;
   rtl?: boolean;
   readonly?: boolean;
@@ -117,6 +118,7 @@ let {
   loading = false,
   emptyTitle = "No data",
   emptyDescription = "",
+  emptyActions,
   height = "100%",
   rtl = false,
   readonly = false,
@@ -2074,6 +2076,9 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
         <div class="orbis-empty-title">{emptyTitle}</div>
         {#if emptyDescription}
           <div class="orbis-empty-desc">{emptyDescription}</div>
+        {/if}
+        {#if emptyActions}
+          <div class="mt-3">{@render emptyActions()}</div>
         {/if}
       </div>
     {/if}

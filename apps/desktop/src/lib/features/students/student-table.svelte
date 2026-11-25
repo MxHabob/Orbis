@@ -3,6 +3,7 @@
 Renders the list of students using OrbisGrid with exact backend contract alignment.
 -->
 <script lang="ts">
+import { Button } from "@orbis/ui/button";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import type { StudentDetailDto, EnrollmentDto, ClassDto } from "$lib/api";
@@ -35,6 +36,8 @@ let {
   hasMore = false,
   onloadmore,
   extraToolbarActions,
+  hasDirectoryFilters = false,
+  onClearDirectoryFilters,
   orgId,
 }: {
   students: StudentDetailDto[];
@@ -48,6 +51,8 @@ let {
   hasMore?: boolean;
   onloadmore?: () => void | Promise<unknown>;
   extraToolbarActions?: Snippet;
+  hasDirectoryFilters?: boolean;
+  onClearDirectoryFilters?: () => void;
   orgId: string;
 } = $props();
 
@@ -198,6 +203,20 @@ let activeFilter = $state<UniversalFilter>({
   conditions: [],
   groups: [],
 });
+const hasFilters = $derived(
+  hasDirectoryFilters ||
+    !!search.trim() ||
+    activeFilter.conditions.length > 0 ||
+    (activeFilter.groups?.length ?? 0) > 0,
+);
+
+function clearFilters() {
+  activeFilter = { logic: "AND", conditions: [], groups: [] };
+  search = "";
+  onsearchchange?.("");
+  onClearDirectoryFilters?.();
+}
+
 const studentFilterFields = $derived<FieldDefinition[]>([
   { id: "full_name", label: m.common_word_fullname(), type: "string" },
   {
@@ -423,10 +442,15 @@ function handleGridAction(event: GridActionEvent) {
       onaction={handleGridAction}
       {hasMore}
       {onloadmore}
-      emptyTitle={m.common_table_no_students()}
-      emptyDescription={m.common_table_no_students_hint()}
+      emptyTitle={hasFilters ? m.academics_schedule_no_search_results() : m.common_table_no_students()}
+      emptyDescription={hasFilters ? m.academics_schedule_no_search_results_desc() : m.common_table_no_students_hint()}
       readonly
     >
+      {#snippet emptyActions()}
+        {#if hasFilters}
+          <Button variant="outline" size="sm" onclick={clearFilters}>{m.common_filter_clear()}</Button>
+        {/if}
+      {/snippet}
       {#snippet toolbarFilters()}
         <FilterTrigger
           bind:filter={activeFilter}

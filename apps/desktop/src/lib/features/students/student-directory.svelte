@@ -176,7 +176,7 @@ async function deleteSelectedStudents() {
 
     <!-- Middle Panel: Directory datagrid -->
     {#snippet middle()}
-      <div class="h-full flex flex-col p-6 overflow-hidden gap-4">
+      <div class="flex h-full min-w-0 flex-col gap-4 overflow-hidden p-3 lg:p-6">
         <!-- Student Grid -->
         <div class="flex-1 min-h-0 flex flex-col">
           {#if directory.studentsQuery.isLoading || directory.classesQuery.isLoading}
@@ -195,6 +195,8 @@ async function deleteSelectedStudents() {
               bind:selectedIds={selectedStudentIds}
               search={directory.search}
               onsearchchange={directory.updateSearch}
+              hasDirectoryFilters={directory.hasActiveFilters}
+              onClearDirectoryFilters={directory.clearFilters}
               hasMore={directory.hasMore}
               onloadmore={directory.loadMoreStudents}
               {orgId}

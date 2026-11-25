@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
-import { Dialog, DialogContent } from "@orbis/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { uiStore, authStore, operationStore } from "$lib/stores";
 import { createQuery } from "@tanstack/svelte-query";
@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   UserBadgeCheck,
   Users,
+  XMark,
 } from "@orbis/icons";
 import {
   matchStudent,
@@ -744,7 +745,8 @@ const filteredItems = $derived.by((): SearchItem[] => {
     return list;
   }
 
-  if (!queryIsSettled || !query) return list;
+  if (!queryIsSettled) return [];
+  if (!query) return list;
 
   list.push(
     ...shortcuts
@@ -1038,7 +1040,7 @@ function triggerAction(item: SearchItem | null) {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (!uiStore.showSearch) return;
+  if (!uiStore.showSearch || event.isComposing) return;
 
   if (event.key === "ArrowDown" && filteredItems.length > 0) {
     event.preventDefault();
@@ -1068,6 +1070,15 @@ function moveSelection(index: number) {
       .getElementById(`search-result-${selectedId}`)
       ?.scrollIntoView({ block: "nearest" });
   });
+}
+
+function clearSearch() {
+  clearTimeout(debounceTimer);
+  debounceTimer = undefined;
+  searchQuery = "";
+  debouncedQuery = "";
+  selectedIndex = 0;
+  inputEl?.focus();
 }
 
 function handleSearchInput(event: Event) {
@@ -1121,9 +1132,10 @@ function askOrbisAboutSearch() {
 >
   <DialogContent
     showCloseButton={false}
-    class="overflow-hidden p-0 max-w-full w-full md:max-w-185 h-133.75 m-0 select-none flex flex-col focus:outline-none"
+    class="flex h-[min(34rem,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-[46rem] flex-col overflow-hidden p-0 focus:outline-none"
   >
-    <div class="px-4 py-3 shrink-0">
+    <DialogTitle class="sr-only">{m.shared_ui_orbis_search()}</DialogTitle>
+    <div class="shrink-0 border-b border-border/60 px-4 py-3">
       <div
         class="flex items-center gap-2 rounded-lg border border-input bg-background p-1.5 shadow-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
       >
@@ -1139,6 +1151,11 @@ function askOrbisAboutSearch() {
           onkeydown={handleKeydown}
           class="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
+        {#if searchQuery}
+          <Button type="button" size="icon" variant="ghost" class="size-8 shrink-0" onclick={clearSearch} aria-label={m.desktop_clear_search()} title={m.desktop_clear_search()}>
+            <XMark class="size-4" />
+          </Button>
+        {/if}
         {#if showAskOrbisInInput}
           <Button
             variant="outline"
