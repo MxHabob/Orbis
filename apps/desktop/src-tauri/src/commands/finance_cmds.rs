@@ -47,6 +47,7 @@ fn parse_account_type(value: &str) -> Result<AccountType, String> {
 
 #[derive(Deserialize, Debug)]
 pub struct ProcessDisbursementInput {
+    pub additional_lines: Option<Vec<orbis_app::services::finance_service::DisbursementLineInput>>,
     pub treasury_account_id: String,
     pub beneficiary_account_id: String,
     pub amount: Decimal,
@@ -551,6 +552,8 @@ pub struct FeeFilterInput {
 
 #[derive(Deserialize, Debug)]
 pub struct ProcessPaymentInput {
+    pub additional_allocations:
+        Option<Vec<orbis_app::services::finance_service::ReceiptAllocationInput>>,
     pub idempotency_key: Option<String>,
     pub fee_id: Option<String>,
     pub student_id: Option<String>,
@@ -1164,6 +1167,7 @@ pub async fn finance_process_payment(
             account_id,
             receivable_account_id,
             request.amount,
+            request.additional_allocations.unwrap_or_default(),
             method,
             request.payer_name,
             request.payer_phone,
@@ -1798,6 +1802,7 @@ pub struct SplitFeeInput {
 
 #[derive(Deserialize, Debug)]
 pub struct RefundStudentFeeInput {
+    pub payment_id: Option<Uuid>,
     pub refund_amount: Decimal,
     pub notes: Option<String>,
 }
@@ -1848,6 +1853,7 @@ pub async fn finance_refund_student_fee(
             ctx.tenant_id,
             fee_id,
             request.refund_amount,
+            request.payment_id,
             request.notes,
         )
         .await
@@ -2011,6 +2017,7 @@ pub async fn finance_process_disbursement(
     };
 
     let input = DisbursementInput {
+        additional_lines: request.additional_lines.unwrap_or_default(),
         treasury_account_id,
         beneficiary_account_id,
         amount: request.amount,

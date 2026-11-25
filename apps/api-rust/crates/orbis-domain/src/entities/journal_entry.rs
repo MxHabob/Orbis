@@ -81,8 +81,18 @@ impl JournalEntry {
             }
             return Ok(());
         }
+        if self.lines.iter().any(|line| {
+            line.debit_amount < Decimal::ZERO
+                || line.credit_amount < Decimal::ZERO
+                || (line.debit_amount > Decimal::ZERO && line.credit_amount > Decimal::ZERO)
+        }) {
+            return Err("Journal lines must use one side with a nonnegative amount".into());
+        }
         let total_debit: Decimal = self.lines.iter().map(|l| l.debit_amount).sum();
         let total_credit: Decimal = self.lines.iter().map(|l| l.credit_amount).sum();
+        if total_debit <= Decimal::ZERO {
+            return Err("Transaction amount must be strictly greater than zero".into());
+        }
         if total_debit != total_credit {
             return Err(format!(
                 "Unbalanced journal entry: Total Debit ({}) != Total Credit ({})",

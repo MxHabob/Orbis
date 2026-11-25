@@ -9,6 +9,11 @@
   - Real backend double-entry recording and printable vouchers
 -->
 <script lang="ts">
+import JournalLineDetails from "./components/journal-line-details.svelte";
+import VoucherMetadata from "./components/voucher-metadata.svelte";
+import { authStore } from "$lib/stores";
+import { createCashierAssignmentQuery } from "./queries";
+import { eligibleTreasuries, resolveTreasury } from "./treasury-policy";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
@@ -111,13 +116,21 @@ const availableCurrencies = $derived([
         }) as CurrencyDto,
     ),
 ]);
-const treasuryAccountsForCurrency = $derived(
-  treasuries.filter(
-    (account) =>
-      String(account.currency).toUpperCase() ===
-      String(selectedCurrency).toUpperCase(),
-  ),
-);
+const settingsQuery = createCashierAssignmentQuery(() => orgId);
+const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
+  ? settingsQuery.data[authStore.userId ?? ""] ?? null
+  : undefined);
+const methodTreasuries = $derived(eligibleTreasuries(treasuries, paymentMethod, cashAssignment));
+const treasuryAccountsForCurrency = $derived(methodTreasuries.filter((account) => account.currency.toUpperCase() === selectedCurrency.toUpperCase()));
+const activeTreasuryId = $derived(resolveTreasury(treasuryAccountsForCurrency, treasuryAccountId));
+
+let initialTreasuryResolved = $state(false);
+$effect(() => {
+  if (initialTreasuryResolved || cashAssignment === undefined || !treasuries.length) return;
+  initialTreasuryResolved = true;
+  const initialId = activeTreasuryId || methodTreasuries[0]?.id;
+  if (initialId) handleTreasuryChange(initialId);
+});
 const disbursementAccounts = $derived(
   accounts.filter(
     (account) =>
@@ -170,20 +183,6 @@ async function loadData(reloadCatalogs = true) {
     if (reloadCatalogs) treasuries = accountsList.filter(isCashOrBankAccount);
     if (reloadCatalogs) currencies = currenciesList;
 
-    if (reloadCatalogs && treasuries.length > 0) {
-      const selectedTreasury = treasuries.find(
-        (account) => String(account.id) === String(treasuryAccountId),
-      );
-      const matchingTreasury =
-        selectedTreasury ||
-        treasuries.find(
-          (account) =>
-            String(account.currency).toUpperCase() ===
-            String(selectedCurrency).toUpperCase(),
-        ) ||
-        treasuries[0];
-      handleTreasuryChange(matchingTreasury.id);
-    }
 
     disbursements = entriesList.filter((entry) => entry.source_type === "disbursement_voucher");
   } catch (e) {
@@ -198,6 +197,7 @@ function clearForm() {
   referenceNumber = "";
   voucherDate = formatDateKey(new Date());
   paymentMethod = "Cash";
+  treasuryAccountId = "";
   disbursementLines = [createDisbursementLine()];
 }
 
@@ -224,7 +224,7 @@ function handleTreasuryChange(accountId: string) {
 function handleCurrencyChange(currencyCode: string | undefined) {
   if (!currencyCode || currencyCode === selectedCurrency) return;
   selectedCurrency = currencyCode.toUpperCase();
-  const treasury = treasuries.find(
+  const treasury = methodTreasuries.find(
     (account) => account.currency.toUpperCase() === currencyCode.toUpperCase(),
   );
   if (treasury) handleTreasuryChange(treasury.id);
@@ -281,7 +281,7 @@ async function handleSaveDisbursement() {
     formError = m.finance_ui_disbursement_amount_invalid();
     return;
   }
-  if (!treasuryAccountId) {
+  if (!activeTreasuryId) {
     formError = m.finance_ui_disbursement_treasury_required();
     return;
   }
@@ -302,7 +302,7 @@ async function handleSaveDisbursement() {
   }
   if (
     disbursementLines.some(
-      (line) => line.beneficiaryAccountId === treasuryAccountId,
+      (line) => line.beneficiaryAccountId === activeTreasuryId,
     )
   ) {
     formError = m.finance_ui_disbursement_accounts_must_differ();
@@ -310,49 +310,29 @@ async function handleSaveDisbursement() {
   }
 
   isSubmitting = true;
-  let savedCount = 0;
-  let failure: unknown;
-  const batchSize = disbursementLines.length;
   try {
-    for (const line of [...disbursementLines]) {
-      const baseReference = referenceNumber.trim();
-      const lineReference = baseReference
-        ? batchSize > 1 || line.sequence > 1
-          ? `${baseReference}-${String(line.sequence).padStart(2, "0")}`
-          : baseReference
-        : undefined;
-      try {
-        await api.processDisbursement({
-          treasury_account_id: treasuryAccountId,
-          beneficiary_account_id: line.beneficiaryAccountId,
-          amount: String(line.amount),
-          currency_code: selectedCurrency,
-          payment_method: paymentMethod.toLowerCase(),
-          reference: lineReference,
-          notes: line.notes.trim() || undefined,
-          voucher_date: voucherDate || undefined,
-        });
-        savedCount += 1;
-        disbursementLines = disbursementLines.filter(
-          (item) => item.id !== line.id,
-        );
-      } catch (err) {
-        failure = err;
-        break;
-      }
-    }
-
-    if (savedCount > 0) {
-      toast.success(m.finance_ui_disbursement_posted_success());
-      await loadData(false);
-    }
-    if (failure) {
-      console.error("Failed to record a disbursement in the batch:", failure);
-      formError = extractErrorMessage(failure) || m.finance_ui_disbursement_save_failed();
-    } else {
-      clearForm();
-      showAddForm = false;
-    }
+    const [first, ...additional] = disbursementLines.map((line) => ({
+      beneficiary_account_id: line.beneficiaryAccountId,
+      amount: String(line.amount),
+      notes: line.notes.trim() || undefined,
+    }));
+    if (!first) return;
+    await api.processDisbursement({
+      ...first,
+      additional_lines: additional,
+      treasury_account_id: activeTreasuryId,
+      currency_code: selectedCurrency,
+      payment_method: paymentMethod.toLowerCase(),
+      reference: referenceNumber.trim() || undefined,
+      voucher_date: voucherDate || undefined,
+    });
+    toast.success(m.finance_ui_disbursement_posted_success());
+    clearForm();
+    showAddForm = false;
+    await loadData(false);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.finance.accounts(orgId) });
+  } catch (error) {
+    formError = extractErrorMessage(error) || m.finance_ui_disbursement_save_failed();
   } finally {
     isSubmitting = false;
   }
@@ -361,7 +341,8 @@ async function handleSaveDisbursement() {
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   disbursements.map((d, idx) => {
-    const beneficiaryId = d.debit_account_id || d.lines?.[0]?.account_id;
+    const beneficiaryIds = [...new Set((d.lines ?? []).filter((line) => Number(line.debit_amount) > 0).map((line) => line.account_id))];
+    if (!beneficiaryIds.length && d.debit_account_id) beneficiaryIds.push(d.debit_account_id);
     const treasuryId = d.credit_account_id || d.lines?.[1]?.account_id;
     const amt = Number(d.amount || d.lines?.[0]?.debit_amount || 0);
     const curr = d.currency_code || orgContext.baseCurrency;
@@ -371,7 +352,7 @@ const gridSource = $derived(
       __idx: idx + 1,
       receipt_display: d.reference_number || d.id.slice(0, 8),
       date_display: d.accounting_date ? formatDate(d.accounting_date) : "—",
-      beneficiary_display: getAccountName(beneficiaryId),
+      beneficiary_display: beneficiaryIds.map(getAccountName).join(" / "),
       treasury_display: getAccountName(treasuryId),
       amount_formatted: formatCurrency(amt, curr),
       currency_display: curr,
@@ -663,38 +644,20 @@ function exportCsv() {
           onsave={handleSaveDisbursement}
           onclose={() => { formError = ""; showAddForm = false; }}
         >
-              <div class="grid min-w-0 grid-cols-1 gap-3 @min-[30rem]/workspace:grid-cols-2 @min-[72rem]/workspace:grid-cols-5">
-                <div class="min-w-0">
-                  <Label for="disbursement-voucher-number-optional" class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
-                  <Input id="disbursement-voucher-number-optional"
-                    type="text"
-                    bind:value={referenceNumber}
-                    placeholder={m.finance_ui_automatic()}
-                    class="h-9 text-xs font-mono"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div class="min-w-0">
-                  <Label for="disbursement-date" class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_date()}</Label>
-                  <Input id="disbursement-date" type="date" bind:value={voucherDate} class="h-9 text-xs font-mono" disabled={isSubmitting} />
-                </div>
-                <div class="min-w-0">
-                  <Label for="disbursement-disbursement-from-account" class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_from_account()}</Label>
-                  <AccountSearchInput inlineResults id="disbursement-disbursement-from-account"
-                    value={treasuryAccountId}
-                    placeholder={m.finance_ui_treasury_select_placeholder()}
-                    accounts={treasuryAccountsForCurrency}
-                    onchange={(value) => handleTreasuryChange(value ?? "")}
-                    disabled={isSubmitting}
-                  />
-                </div>
+          {#snippet metadata()}
+            <VoucherMetadata bind:number={referenceNumber} bind:date={voucherDate} />
+          {/snippet}
+              <div class="grid min-w-0 grid-cols-1 gap-3 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-3">
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_payment_method()}</Label>
                   <Select
                     type="single"
                     value={paymentMethod}
                     onValueChange={(value) => {
-                      if (value === "Cash" || value === "Bank" || value === "Check") paymentMethod = value;
+                      if (value === "Cash" || value === "Bank" || value === "Check") {
+                        paymentMethod = value;
+                        treasuryAccountId = "";
+                      }
                     }}
                     disabled={isSubmitting}
                   >
@@ -711,6 +674,16 @@ function exportCsv() {
                       <SelectItem value="Check">{m.finance_ui_payment_method_check()}</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div class="min-w-0">
+                  <Label for="disbursement-disbursement-from-account" class="mb-1 block text-xs font-semibold text-foreground">{paymentMethod === "Cash" ? m.finance_ui_cash_treasury() : m.finance_ui_account_type_bank()}</Label>
+                  <AccountSearchInput inlineResults id="disbursement-disbursement-from-account"
+                    value={activeTreasuryId}
+                    placeholder={treasuryAccountsForCurrency.length ? m.finance_ui_treasury_select_placeholder() : m.finance_ui_no_matching_treasury()}
+                    accounts={treasuryAccountsForCurrency}
+                    onchange={(value) => handleTreasuryChange(value ?? "")}
+                    disabled={isSubmitting}
+                  />
                 </div>
                 <div class="min-w-0">
                   <CurrencySelector
@@ -863,17 +836,7 @@ function exportCsv() {
   ] : []}
   onprint={printDetail}
 >
-  {#if detailRow?.lines?.length}
-    <dl class="divide-y divide-border border-y border-border">
-      {#each detailRow.lines as line (line.id)}
-        <div class="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
-          <dt class="text-sm font-medium">{getAccountName(line.account_id)}</dt>
-          <dd class="text-xs text-muted-foreground">{m.finance_ui_debit_account()}: {formatCurrency(Number(line.debit_amount), detailRow?.currency_code)}</dd>
-          <dd class="text-xs text-muted-foreground">{m.finance_ui_credit_account()}: {formatCurrency(Number(line.credit_amount), detailRow?.currency_code)}</dd>
-        </div>
-      {/each}
-    </dl>
-  {/if}
+  <JournalLineDetails entry={detailRow} accountName={getAccountName} />
 </FinanceRecordDialog>
 
 <PrintDialog

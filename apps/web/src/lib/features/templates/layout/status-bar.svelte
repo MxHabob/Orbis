@@ -42,6 +42,7 @@ let {
 
     <input
       type="range"
+      aria-label={m.template_zoom_level()}
       min="10"
       max="400"
       value={store.zoomPercent}
@@ -62,11 +63,11 @@ let {
 
     <Tooltip>
       <TooltipTrigger>
-        <button type="button" class="status-btn" onclick={() => store.zoomToFit(containerWidth, containerHeight)}>
+        <button type="button" class="status-btn" disabled={!containerWidth || !containerHeight} onclick={() => store.zoomToFit(containerWidth, containerHeight)}>
           <Expand size={12} />
         </button>
       </TooltipTrigger>
-      <TooltipContent>{m.template_tooltip_fullscreen()}</TooltipContent>
+      <TooltipContent>{m.template_zoom_fit()}</TooltipContent>
     </Tooltip>
   </div>
 

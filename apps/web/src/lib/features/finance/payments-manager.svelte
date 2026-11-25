@@ -9,11 +9,15 @@
   - Real backend payment recording and printable receipts
 -->
 <script lang="ts">
+import JournalLineDetails from "./components/journal-line-details.svelte";
+import VoucherMetadata from "./components/voucher-metadata.svelte";
+import { authStore } from "$lib/stores";
+import { createCashierAssignmentQuery } from "./queries";
+import { eligibleTreasuries, resolveTreasury } from "./treasury-policy";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { SvelteMap } from "svelte/reactivity";
-import { createInfiniteQuery } from "@tanstack/svelte-query";
+import { createInfiniteQuery, createQuery } from "@tanstack/svelte-query";
 import {
   api,
   extractErrorMessage,
@@ -114,8 +118,10 @@ let selectedTreasuryId = $state("");
 let selectedCurrency = $state(orgContext.baseCurrency || "");
 let paymentMethod = $state("cash");
 let sourceToken = $state("");
+let methodReference = $state("");
+const showsMethodReference = $derived(paymentMethod === "bank_transfer" || paymentMethod === "check");
 let receiptLines = $state<ReceiptLine[]>([createReceiptLine()]);
-const paymentAttemptKeys = new SvelteMap<number, SvelteMap<string, string>>();
+const paymentAttemptKeys = new Map<string, string>();
 const availableCurrencies = $derived([
   ...currencies,
   ...Array.from(
@@ -143,13 +149,21 @@ const availableCurrencies = $derived([
       }) as CurrencyDto,
   ),
 ]);
-const treasuryAccountsForCurrency = $derived(
-  treasuries.filter(
-    (account) =>
-      String(account.currency).toUpperCase() ===
-      String(selectedCurrency).toUpperCase(),
-  ),
-);
+const settingsQuery = createCashierAssignmentQuery(() => orgId);
+const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
+  ? settingsQuery.data[authStore.userId ?? ""] ?? null
+  : undefined);
+const methodTreasuries = $derived(eligibleTreasuries(treasuries, paymentMethod, cashAssignment));
+const treasuryAccountsForCurrency = $derived(methodTreasuries.filter((account) => account.currency.toUpperCase() === selectedCurrency.toUpperCase()));
+const activeTreasuryId = $derived(resolveTreasury(treasuryAccountsForCurrency, selectedTreasuryId));
+
+let initialTreasuryResolved = $state(false);
+$effect(() => {
+  if (initialTreasuryResolved || cashAssignment === undefined || !treasuries.length) return;
+  initialTreasuryResolved = true;
+  const initialId = activeTreasuryId || methodTreasuries[0]?.id;
+  if (initialId) handleTreasuryChange(initialId);
+});
 const receivableAccounts = $derived(
   accounts.filter(
     (account) =>
@@ -251,21 +265,6 @@ async function loadData(refreshPayments = true) {
 
     students = enrollmentsList || [];
 
-    if (treasuries.length > 0) {
-      const selectedTreasury = treasuries.find(
-        (account) => String(account.id) === String(selectedTreasuryId),
-      );
-      const matchingTreasury =
-        selectedTreasury ||
-        treasuries.find(
-          (account) =>
-            String(account.currency).toUpperCase() ===
-            String(selectedCurrency).toUpperCase(),
-        ) ||
-        treasuries[0];
-      selectedTreasuryId = String(matchingTreasury.id);
-      selectedCurrency = matchingTreasury.currency || selectedCurrency;
-    }
     if (refreshPayments) {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.finance.paymentsForOrg(orgId),
@@ -282,7 +281,7 @@ async function loadData(refreshPayments = true) {
 function handleCurrencyChange(currency: string | undefined) {
   if (!currency || currency === selectedCurrency) return;
   selectedCurrency = currency.toUpperCase();
-  const matchingTreasury = treasuries.find(
+  const matchingTreasury = methodTreasuries.find(
     (account) =>
       String(account.currency).toUpperCase() === String(currency).toUpperCase(),
   );
@@ -339,7 +338,6 @@ function handleQuickAddReceiptLine(event: KeyboardEvent) {
 }
 
 function removeReceiptLine(lineId: number) {
-  paymentAttemptKeys.delete(lineId);
   if (receiptLines.length === 1) {
     receiptLines = [createReceiptLine()];
     return;
@@ -351,26 +349,18 @@ function clearForm() {
   receiptNumber = "";
   paymentDate = formatDateKey(new Date());
   sourceToken = "";
+  methodReference = "";
   paymentAttemptKeys.clear();
   receiptLines = [createReceiptLine()];
   formError = "";
 }
 
-async function getPaymentAttemptKey(
-  lineId: number,
-  request: Parameters<typeof api.processPayment>[0],
-) {
+async function getPaymentAttemptKey(request: Parameters<typeof api.processPayment>[0]) {
   const fingerprint = await paymentRequestFingerprint(request);
-  let attempts = paymentAttemptKeys.get(lineId);
-  if (!attempts) {
-    attempts = new SvelteMap();
-    paymentAttemptKeys.set(lineId, attempts);
-  }
-  const previousKey = attempts.get(fingerprint);
-  if (previousKey) return previousKey;
-
+  const existing = paymentAttemptKeys.get(fingerprint);
+  if (existing) return existing;
   const key = crypto.randomUUID();
-  attempts.set(fingerprint, key);
+  paymentAttemptKeys.set(fingerprint, key);
   return key;
 }
 
@@ -396,7 +386,7 @@ async function handleSavePayment() {
     formError = m.finance_ui_credit_account_required();
     return;
   }
-  if (!selectedTreasuryId) {
+  if (!activeTreasuryId) {
     formError = m.finance_ui_treasury_required();
     return;
   }
@@ -420,56 +410,34 @@ async function handleSavePayment() {
   }
 
   isSubmitting = true;
-  let savedCount = 0;
-  let failure: unknown;
-  const batchSize = receiptLines.length;
   try {
-    for (const line of [...receiptLines]) {
-      const selectedAccount = accountsById.get(line.accountId);
-      const baseReceiptNumber = receiptNumber.trim();
-      const lineReceiptNumber = baseReceiptNumber
-        ? batchSize > 1 || line.sequence > 1
-          ? `${baseReceiptNumber}-${String(line.sequence).padStart(2, "0")}`
-          : baseReceiptNumber
-        : undefined;
-      const request = {
-        receivable_account_id: line.accountId,
-        account_id: selectedTreasuryId,
-        amount: String(line.amount),
-        method: paymentMethod,
-        source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
-        payer_name:
-          selectedAccount?.name_ar || selectedAccount?.name || undefined,
-        receipt_number: lineReceiptNumber,
-        payment_date: paymentDate || undefined,
-        notes: line.notes.trim() || undefined,
-      };
-
-      try {
-        await api.processPayment({
-          ...request,
-          idempotency_key: await getPaymentAttemptKey(line.id, request),
-        });
-        savedCount += 1;
-        paymentAttemptKeys.delete(line.id);
-        receiptLines = receiptLines.filter((item) => item.id !== line.id);
-      } catch (error) {
-        failure = error;
-        break;
-      }
-    }
-
-    if (savedCount > 0) {
-      toast.success(m.finance_ui_receipt_posted_success());
-      void refreshPaymentData(queryClient, orgId);
-    }
-    if (failure) {
-      console.error("Failed to record a receipt in the batch:", failure);
-      formError = extractErrorMessage(failure) || m.finance_ui_receipt_save_failed();
-    } else {
-      clearForm();
-      showAddForm = false;
-    }
+    const [first, ...additional] = receiptLines.map((line) => ({
+      account_id: line.accountId,
+      amount: String(line.amount),
+      notes: line.notes.trim() || undefined,
+    }));
+    if (!first) return;
+    const payer = additional.length ? undefined : accountsById.get(first.account_id);
+    const request = {
+      receivable_account_id: first.account_id,
+      account_id: activeTreasuryId,
+      amount: first.amount,
+      additional_allocations: additional,
+      method: paymentMethod,
+      source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
+      payer_name: payer?.name_ar || payer?.name || undefined,
+      receipt_number: receiptNumber.trim() || undefined,
+      payment_date: paymentDate || undefined,
+      reference: showsMethodReference ? methodReference.trim() || undefined : undefined,
+      notes: first.notes,
+    };
+    await api.processPayment({ ...request, idempotency_key: await getPaymentAttemptKey(request) });
+    toast.success(m.finance_ui_receipt_posted_success());
+    void refreshPaymentData(queryClient, orgId);
+    clearForm();
+    showAddForm = false;
+  } catch (error) {
+    formError = extractErrorMessage(error) || m.finance_ui_receipt_save_failed();
   } finally {
     isSubmitting = false;
   }
@@ -542,6 +510,18 @@ function handlePaymentSelection(selection: SelectionSnapshot) {
 const detailsColumn = $derived(financeRecordColumn());
 let detailsOpen = $state(false);
 let detailRow = $state<(typeof gridSource)[number] | undefined>();
+const receiptJournal = createQuery(() => {
+  const journalId = detailRow?.journal_entry_id ?? "";
+  return {
+    queryKey: [...queryKeys.finance.journalEntries(orgId), journalId],
+    queryFn: () => api.getJournalEntry(journalId),
+    enabled: detailsOpen && Boolean(journalId),
+  };
+});
+function receiptAccountName(accountId: string) {
+  const account = accountsById.get(accountId);
+  return account?.name_ar || account?.name || accountId;
+}
 
 function handleRecordAction(event: GridActionEvent) {
   if (event.actionId !== "dblclick" && event.actionId !== "view") return;
@@ -789,21 +769,7 @@ async function exportCsv() {
           onclose={() => { formError = ""; showAddForm = false; }}
         >
           {#snippet metadata()}
-            <div class="flex min-w-0 flex-wrap items-center gap-3">
-              <div class="w-36 max-w-full space-y-1">
-                <Label for="receipt-number" class="block text-xs text-muted-foreground">
-                  {m.finance_ui_voucher_number_optional()}
-                </Label>
-                <Input id="receipt-number" bind:value={receiptNumber}
-                  placeholder={m.finance_ui_automatic()} class="h-8 text-xs"
-                  disabled={isSubmitting} />
-              </div>
-              <div class="w-40 max-w-full space-y-1">
-                <Label for="receipt-date" class="block text-xs text-muted-foreground">{m.template_schema_receipt_date()}</Label>
-                <Input id="receipt-date" type="date" dir="ltr" bind:value={paymentDate}
-                  class="h-8 text-xs tabular-nums" disabled={isSubmitting} />
-              </div>
-            </div>
+            <VoucherMetadata bind:number={receiptNumber} bind:date={paymentDate} dateLabel={m.template_schema_receipt_date()} />
           {/snippet}
             <h3 class="text-sm font-semibold">{m.finance_ui_payment_details()}</h3>
             <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[50rem]/workspace:grid-cols-[minmax(9rem,0.7fr)_minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -818,28 +784,40 @@ async function exportCsv() {
                   disabled={isSubmitting || isLoading}
                 />
               </div>
-              <div class="min-w-0">
-                <Label for="receipt-receiving-account" class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_receiving_account()}</Label>
-                <AccountSearchInput inlineResults id="receipt-receiving-account"
-                  value={selectedTreasuryId}
-                  placeholder={m.finance_ui_treasury_select_placeholder()}
-                  accounts={treasuryAccountsForCurrency}
-                  onchange={(value) => handleTreasuryChange(value ?? "")}
-                  disabled={isSubmitting}
-                  class="h-9 w-full text-xs"
-                />
-              </div>
               <PaymentMethodField
-                {orgId}
                 methods={availablePaymentMethods}
                 value={paymentMethod}
                 disabled={isSubmitting}
                 loading={paymentMethodsQuery.isFetching}
                 loadFailed={paymentMethodsQuery.isError}
                 onretry={() => { void paymentMethodsQuery.refetch(); }}
-                onchange={(value) => { paymentMethod = value; sourceToken = ""; }}
+                onchange={(value) => { paymentMethod = value; selectedTreasuryId = ""; sourceToken = ""; methodReference = ""; }}
               />
+              <div class="min-w-0">
+                <Label for="receipt-receiving-account" class="mb-1 block text-xs font-semibold text-foreground">{paymentMethod === "cash" ? m.finance_ui_cash_treasury() : m.finance_ui_account_type_bank()}</Label>
+                <AccountSearchInput inlineResults id="receipt-receiving-account"
+                  value={activeTreasuryId}
+                  placeholder={treasuryAccountsForCurrency.length ? m.finance_ui_treasury_select_placeholder() : m.finance_ui_no_matching_treasury()}
+                  accounts={treasuryAccountsForCurrency}
+                  onchange={(value) => handleTreasuryChange(value ?? "")}
+                  disabled={isSubmitting}
+                  class="h-9 w-full text-xs"
+                />
+              </div>
             </div>
+            {#if showsMethodReference}
+              <div class="min-w-0">
+                <Label for="receipt-method-reference" class="mb-1 block text-xs font-semibold">
+                  {paymentMethod === "check" ? m.finance_ui_check_reference_label() : m.finance_ui_transfer_reference_label()}
+                </Label>
+                <Input id="receipt-method-reference"
+                  bind:value={methodReference}
+                  placeholder={paymentMethod === "check" ? m.finance_ui_check_reference_placeholder() : m.finance_ui_transfer_reference_placeholder()}
+                  class="h-9 text-xs"
+                  disabled={isSubmitting}
+                />
+              </div>
+            {/if}
             {#if selectedPaymentMethodObj?.requires_source_token}
               <div class="min-w-0">
                 <Label for="receipt-payment-gateway-token-label" class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_payment_gateway_token_label()}</Label>
@@ -955,7 +933,7 @@ async function exportCsv() {
                   class="h-9 text-xs font-bold"
                   disabled={isSubmitting || !selectedPaymentMethodObj || (selectedPaymentMethodObj.is_digital_gateway && receiptLines.length !== 1)}
                 >
-                  {isSubmitting ? m.finance_ui_saving() : `${m.finance_ui_receipt_save()} (${receiptLines.length})`}
+                  {isSubmitting ? m.finance_ui_saving() : m.finance_ui_receipt_save()}
                 </Button>
               </div>
             </div>
@@ -1001,7 +979,9 @@ async function exportCsv() {
     { label: m.finance_ui_description_notes(), value: detailRow.reference },
   ] : []}
   onprint={printDetail}
-/>
+>
+  <JournalLineDetails entry={receiptJournal.data} accountName={receiptAccountName} />
+</FinanceRecordDialog>
 
 <PrintDialog
   bind:open={printDialogOpen}

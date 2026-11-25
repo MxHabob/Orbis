@@ -270,7 +270,7 @@ fn paginated_to_dto<T: Serialize, U: Serialize, F: Fn(T) -> U>(
 pub struct RegisterStudentRequest {
     pub person_id: Option<String>,
     pub user_id: Option<String>,
-    pub student_number: String,
+    pub student_number: Option<String>,
     pub first_name: String,
     pub middle_name: Option<String>,
     pub last_name: String,
@@ -477,11 +477,9 @@ pub async fn student_register_student(
     let input = ServiceRegisterStudentInput {
         person_id,
         user_id,
-        student_number: if request.student_number.trim().is_empty() {
-            None
-        } else {
-            Some(request.student_number)
-        },
+        student_number: request
+            .student_number
+            .filter(|number| !number.trim().is_empty()),
         first_name: request.first_name,
         middle_name: request.middle_name,
         last_name: request.last_name,
@@ -997,11 +995,10 @@ fn to_domain_bulk_items(
                     .user_id
                     .as_deref()
                     .and_then(|id| Uuid::parse_str(id).ok()),
-                student_number: if item.registration.student_number.trim().is_empty() {
-                    None
-                } else {
-                    Some(item.registration.student_number)
-                },
+                student_number: item
+                    .registration
+                    .student_number
+                    .filter(|number| !number.trim().is_empty()),
                 first_name: item.registration.first_name,
                 middle_name: item.registration.middle_name,
                 last_name: item.registration.last_name,

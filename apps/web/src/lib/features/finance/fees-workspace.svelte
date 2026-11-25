@@ -9,6 +9,7 @@
   - Real backend fee calculation and invoice tracking
 -->
 <script lang="ts">
+import { createPaymentsQuery, refreshPaymentData } from "./queries";
 import { Card, LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
@@ -96,6 +97,7 @@ function setInstallmentCount(count: number) {
 // Refund Form
 let selectedFeeForRefund = $state<StudentFeeDto | null>(null);
 let refundAmount = $state<number | null>(null);
+let refundPaymentId = $state<string | null>(null);
 let refundNotes = $state("");
 
 // Filters
@@ -151,6 +153,17 @@ const feesQuery = createInfiniteQuery(() => ({
   enabled: !!orgId,
   staleTime: 2 * 60 * 1000,
 }));
+const refundPaymentsQuery = createPaymentsQuery(
+  () => orgId,
+  () => selectedFeeForRefund ? { fee_id: selectedFeeForRefund.id } : undefined,
+  () => activeForm === "refund" && Boolean(selectedFeeForRefund),
+);
+const refundablePayments = $derived((refundPaymentsQuery.data ?? []).filter((payment) =>
+  ["cash", "bank_transfer", "check", "other"].includes(payment.method.toLowerCase())
+));
+const refundPayment = $derived(refundablePayments.find((payment) => payment.id === refundPaymentId)
+  ?? (refundablePayments.length === 1 ? refundablePayments[0] : undefined));
+
 const feeSummaryQuery = createQuery(() => ({
   queryKey: queryKeys.finance.studentFeeSummary(orgId),
   queryFn: () => api.getStudentFeeSummary(),
@@ -386,6 +399,10 @@ async function handleRefundFee() {
     formError = m.finance_ui_fee_refund_record_required();
     return;
   }
+  if (!refundPayment) {
+    formError = m.finance_ui_refund_payment_source();
+    return;
+  }
   if (refundAmount == null || !Number.isFinite(refundAmount) || refundAmount <= 0 || refundAmount > Number(selectedFeeForRefund.paid_amount)) {
     formError = m.finance_ui_refund_amount_invalid();
     return;
@@ -395,12 +412,15 @@ async function handleRefundFee() {
   try {
     await api.refundStudentFee(selectedFeeForRefund.id, {
       refund_amount: String(refundAmount),
+      payment_id: refundPayment.id,
       notes: refundNotes.trim() || undefined,
     });
     toast.success(m.finance_ui_fee_refund_success());
     activeForm = "none";
     selectedFeeForRefund = null;
     refundAmount = null;
+    refundPaymentId = null;
+    void refreshPaymentData(queryClient, orgId);
     refundNotes = "";
     void refreshFeeData();
   } catch (err) {
@@ -989,6 +1009,7 @@ async function exportCsv() {
                   }}
                   onchange={(val) => {
                     selectedFeeForRefund = fees.find((f) => f.id === val) || null;
+                    refundPaymentId = null;
                     if (selectedFeeForRefund) {
                       refundAmount = Number(selectedFeeForRefund.paid_amount || 0);
                     }
@@ -997,6 +1018,22 @@ async function exportCsv() {
                 />
               </div>
 
+              <div>
+                <Label for="fee-refund-payment" class="mb-1 block text-xs font-semibold">{m.finance_ui_refund_payment_source()}</Label>
+                <SearchableSelect id="fee-refund-payment"
+                  items={refundablePayments}
+                  value={refundPayment?.id ?? null}
+                  disabled={!selectedFeeForRefund || refundPaymentsQuery.isFetching}
+                  placeholder={refundPaymentsQuery.isFetching ? m.common_loading() : m.finance_ui_refund_payment_source()}
+                  emptyText={m.finance_ui_refund_no_manual_payments()}
+                  getItemLabel={(payment) => (payment.receipt_number || payment.id.slice(0, 8)) + " / " + formatFeeAmount(Number(payment.amount), payment.currency_code ?? "")}
+                  onchange={(value) => {
+                    refundPaymentId = value;
+                    const payment = refundablePayments.find((item) => item.id === value);
+                    if (payment && selectedFeeForRefund) refundAmount = Math.min(Number(payment.amount), Number(selectedFeeForRefund.paid_amount));
+                  }}
+                />
+              </div>
               <div>
                 <Label for="fee-refund-amount" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_refund_amount()}</Label>
                 <Input id="fee-refund-amount"

@@ -1,9 +1,10 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import { onMount, untrack } from "svelte";
+import { onMount, tick, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
+import { Card } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
 import { ArrowLeft, Check, ChevronDown, Printer } from "@orbis/icons";
 import {
@@ -12,34 +13,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@orbis/ui/accordion";
 
+import { l } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { StudentFormState } from "./form-state.svelte";
 import { createClassesQuery } from "$lib/features/academics";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { academicContext } from "$lib/stores/academic-context.svelte";
-import { authStore } from "$lib/stores/auth.svelte";
-import { uiStore } from "$lib/stores/ui.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 
+import AdmissionRules from "./components/admission-rules.svelte";
 import ProfileSection from "./sections/profile-section.svelte";
 import FamilySection from "./sections/family-section.svelte";
 import LocationSection from "./sections/location-section.svelte";
+import EnrollmentSection from "./sections/enrollment-section.svelte";
 import FinancialsSection from "./sections/financials-section.svelte";
 import DocumentsSection from "./sections/documents-section.svelte";
 
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
 
-const state = untrack(() => new StudentFormState(orgId || "", studentId));
+const form = untrack(() => new StudentFormState(orgId, studentId));
 const queryClient = useQueryClient();
 const classesQuery = createClassesQuery(() => orgId);
-let initialFormSnapshot: string | null = null;
+let initialFormSnapshot = $state<string | null>(null);
+let initialClassId = $state("");
 const currentPeriod = $derived(
   academicContext.periods.find(
     (period) => period.id === effectiveContext.currentPeriodId,
@@ -50,51 +47,75 @@ $effect(() => {
   const classes = classesQuery.data;
   if (!classes) return;
 
-  state.classes = classes;
-  if (!state.isEditMode && !state.personal.classId) {
-    const contextualClassId =
-      effectiveContext.activeClassId || academicContext.selectedClassId;
-    const rememberedClassId = uiStore.getPreference(
-      { userId: authStore.userId, organizationId: orgId },
-      "students.classId",
-      "",
-      (value): value is string => typeof value === "string",
-    );
-    const defaultClassId = [rememberedClassId, contextualClassId].find(
-      (classId) =>
-        classes.some((classItem) => String(classItem.id) === classId),
-    );
-    if (defaultClassId) {
-      state.personal.classId = defaultClassId;
-    }
-  }
+  const contextualIds = [
+    effectiveContext.activeClassId,
+    academicContext.selectedClassId,
+  ];
+  const defaultClassId = untrack(() => form.applyClassOptions(classes, contextualIds));
+  if (defaultClassId) initialClassId = defaultClassId;
 });
 
-onMount(async () => {
-  if (orgId) state.orgId = orgId;
-  if (studentId) {
-    state.studentId = studentId;
-    state.isEditMode = true;
+async function initializeForm() {
+  await form.init();
+  if (!form.initializationFailed) {
+    initialClassId = form.personal.classId;
+    initialFormSnapshot = getFormSnapshot();
   }
-  await state.init();
-  initialFormSnapshot = getFormSnapshot();
+}
+
+onMount(() => {
+  void initializeForm();
 });
+
+const steps = [
+  { id: "profile", label: m.common_form_student_info, sections: [ProfileSection] },
+  { id: "contacts", label: m.student_registration_step_contacts, sections: [FamilySection, LocationSection] },
+  { id: "enrollment", label: m.student_registration_step_enrollment, sections: [EnrollmentSection, FinancialsSection] },
+  { id: "documents", label: m.student_registration_step_documents, sections: [DocumentsSection] },
+  { id: "review", label: m.student_registration_step_review, sections: [] },
+] as const;
+
+type StepId = (typeof steps)[number]["id"];
+let activeStep = $state<StepId>("profile");
+let returnToReview = $state(false);
+let stepPanels = $state<HTMLDivElement>();
+let scrollArea = $state<HTMLDivElement>();
+const stepIndex = $derived(steps.findIndex((step) => step.id === activeStep));
+const isReview = $derived(activeStep === "review");
+
+async function openStep(step: StepId, fromReview = false) {
+  if (form.isSaving) return;
+  if (step !== activeStep) attemptedSave = null;
+  activeStep = step;
+  returnToReview = fromReview;
+  await tick();
+  scrollArea?.scrollTo({ top: 0 });
+  stepPanels?.querySelector<HTMLElement>(`#registration-${step}-heading`)?.focus({ preventScroll: true });
+}
+
+function findField(id: string) {
+  return stepPanels?.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
+}
+
+function isFieldInStep(id: string, step: StepId) {
+  return findField(id)?.closest("[data-registration-step]")?.getAttribute("data-registration-step") === step;
+}
 
 const documentStats = $derived.by(() => {
-  const fulfillments = state.document.fulfillments;
+  const fulfillments = form.document.fulfillments;
   if (fulfillments.length > 0) {
     const fulfilled = fulfillments.filter(
       (item) =>
         item.is_fulfilled ||
-        state.document.submittedDocs.includes(item.requirement.code) ||
-        !!state.document.attachments[item.requirement.code],
+        form.document.submittedDocs.includes(item.requirement.code) ||
+        !!form.document.attachments[item.requirement.code],
     ).length;
     return { total: fulfillments.length, fulfilled };
   }
 
-  const requirements = state.document.requirements.filter((item) => {
-    const selectedClassId = state.personal.classId;
-    const selectedClassLevel = state.selectedClass?.level;
+  const requirements = form.document.requirements.filter((item) => {
+    const selectedClassId = form.personal.classId;
+    const selectedClassLevel = form.selectedClass?.level;
     if (!item.target_id || !selectedClassId) return true;
     return (
       item.target_id === selectedClassId ||
@@ -104,19 +125,19 @@ const documentStats = $derived.by(() => {
   if (requirements.length > 0) {
     const fulfilled = requirements.filter(
       (item) =>
-        state.document.submittedDocs.includes(item.code) ||
-        !!state.document.attachments[item.code],
+        form.document.submittedDocs.includes(item.code) ||
+        !!form.document.attachments[item.code],
     ).length;
     return { total: requirements.length, fulfilled };
   }
 
-  const requiredDocs = state.document.orgRequiredDocuments;
+  const requiredDocs = form.document.orgRequiredDocuments;
   return {
     total: requiredDocs.length,
     fulfilled: requiredDocs.filter(
       (code) =>
-        state.document.submittedDocs.includes(code) ||
-        !!state.document.attachments[code],
+        form.document.submittedDocs.includes(code) ||
+        !!form.document.attachments[code],
     ).length,
   };
 });
@@ -124,40 +145,39 @@ const documentStats = $derived.by(() => {
 function getFormSnapshot(): string {
   return JSON.stringify({
     personal: {
-      nameAr: state.personal.nameAr,
-      nameEn: state.personal.nameEn,
-      nationalId: state.personal.nationalId,
-      sex: state.personal.sex,
-      classId: state.personal.classId,
-      birthDate: state.personal.birthDate,
-      studentNumber: state.personal.studentNumber,
-      email: state.personal.email,
-      phone: state.personal.phone,
-      address: state.personal.address,
-      previousSchool: state.personal.previousSchool,
-      district: state.personal.district,
-      governorate: state.personal.governorate,
-      nationality: state.personal.nationality,
-      placeOfBirth: state.personal.placeOfBirth,
-      passportNumber: state.personal.passportNumber,
-      bloodType: state.personal.bloodType,
-      emergencyContact: state.personal.emergencyContact,
-      medicalNotes: state.personal.medicalNotes,
-      specialNeedsNotes: state.personal.specialNeedsNotes,
+      nameAr: form.personal.nameAr,
+      nameEn: form.personal.nameEn,
+      nationalId: form.personal.nationalId,
+      sex: form.personal.sex,
+      birthDate: form.personal.birthDate,
+      studentNumber: form.personal.studentNumber,
+      email: form.personal.email,
+      phone: form.personal.phone,
+      address: form.personal.address,
+      previousSchool: form.personal.previousSchool,
+      district: form.personal.district,
+      governorate: form.personal.governorate,
+      nationality: form.personal.nationality,
+      placeOfBirth: form.personal.placeOfBirth,
+      passportNumber: form.personal.passportNumber,
+      bloodType: form.personal.bloodType,
+      emergencyContact: form.personal.emergencyContact,
+      medicalNotes: form.personal.medicalNotes,
+      specialNeedsNotes: form.personal.specialNeedsNotes,
     },
-    guardians: state.guardian.linkedGuardians,
-    studyMode: state.studyMode,
-    createLoginAccount: state.createLoginAccount,
+    guardians: form.guardian.linkedGuardians,
+    studyMode: form.studyMode,
+    createLoginAccount: form.createLoginAccount,
     financial: {
-      applyDiscount: state.financial.applyDiscount,
-      discountType: state.financial.discountType,
-      selectedDiscountTemplateId: state.financial.selectedDiscountTemplateId,
-      customDiscountAmount: state.financial.customDiscountAmount,
-      selectedOptionalFees: state.financial.selectedOptionalFees,
+      applyDiscount: form.financial.applyDiscount,
+      discountType: form.financial.discountType,
+      selectedDiscountTemplateId: form.financial.selectedDiscountTemplateId,
+      customDiscountAmount: form.financial.customDiscountAmount,
+      selectedOptionalFees: form.financial.selectedOptionalFees,
     },
     documents: {
-      submittedDocs: [...state.document.submittedDocs].sort(),
-      attachments: Object.entries(state.document.attachments)
+      submittedDocs: [...form.document.submittedDocs].sort(),
+      attachments: Object.entries(form.document.attachments)
         .map(([code, attachment]) => [
           code,
           attachment.fileName,
@@ -166,133 +186,179 @@ function getFormSnapshot(): string {
         ])
         .sort(([left], [right]) => String(left).localeCompare(String(right))),
     },
-    avatar: state.avatarFile
+    avatar: form.avatarFile
       ? [
-          state.avatarFile.name,
-          state.avatarFile.size,
-          state.avatarFile.lastModified,
+          form.avatarFile.name,
+          form.avatarFile.size,
+          form.avatarFile.lastModified,
         ]
       : null,
   });
 }
 
 const isFormDirty = $derived(
-  initialFormSnapshot !== null && getFormSnapshot() !== initialFormSnapshot,
+  initialFormSnapshot !== null &&
+    (form.personal.classId !== initialClassId || getFormSnapshot() !== initialFormSnapshot),
 );
 
 const canSubmit = $derived(
-  !state.isInitializing &&
-    !state.initializationFailed &&
+  initialFormSnapshot !== null &&
+    !form.isInitializing &&
+    !form.initializationFailed &&
     !classesQuery.isLoading &&
     !classesQuery.isError &&
-    ((state.isEditMode &&
-      state.originalStudent?.student?.status !== "inactive") ||
-      (state.admissionPolicy.registrationEnabled && !!currentPeriod)),
+    ((form.isEditMode &&
+      form.originalStudent?.student?.status !== "inactive") ||
+      (form.admissionPolicy.registrationEnabled && !!currentPeriod)),
 );
 const canSaveDraft = $derived(
-  !state.isInitializing && !state.initializationFailed,
+  initialFormSnapshot !== null && !form.isInitializing && !form.initializationFailed,
 );
 const isSavedDraft = $derived(
-  state.isEditMode && state.originalStudent?.student?.status === "inactive",
+  form.isEditMode && form.originalStudent?.student?.status === "inactive",
 );
 
-async function handleSave(saveAsDraft = false) {
-  if (!saveAsDraft && (!state.isEditMode || isSavedDraft)) {
-    if (!state.admissionPolicy.registrationEnabled) {
-      return;
-    }
-    if (!currentPeriod) {
-      return;
-    }
-  }
-  await state.handleSave(queryClient, saveAsDraft);
+type ValidationAttempt = { draft: boolean; step?: StepId };
+let attemptedSave = $state<ValidationAttempt | null>(null);
+
+function getValidationIssue({ draft, step }: ValidationAttempt) {
+  return form.getRequiredFieldIssue(draft, (id) => !step || isFieldInStep(id, step)) ??
+    form.getAdmissionIssue(draft, step);
 }
+const requiredFieldIssue = $derived.by(() => {
+  const attempt = attemptedSave;
+  if (!attempt) return null;
+  return getValidationIssue(attempt);
+});
+
+async function focusFieldIssue(
+  issue: { id: string; step?: StepId },
+  attempt: ValidationAttempt,
+) {
+  const panel = findField(issue.id)?.closest("[data-registration-step]");
+  const step = issue.step ??
+    steps.find((item) => item.id === panel?.getAttribute("data-registration-step"))?.id;
+  if (step && step !== activeStep) await openStep(step, isReview);
+  attemptedSave = attempt;
+  const field = findField(issue.id) ?? findField(`registration-${activeStep}-heading`);
+  field?.focus({ preventScroll: true });
+  field?.scrollIntoView({ block: "center", inline: "nearest" });
+}
+
+async function advance() {
+  const issue = getValidationIssue({ draft: false, step: activeStep });
+  if (issue) {
+    await focusFieldIssue(issue, { draft: false, step: activeStep });
+    return;
+  }
+
+  const next = returnToReview ? "review" : steps[stepIndex + 1]?.id;
+  if (next) await openStep(next);
+}
+
+async function handleSave(saveAsDraft = false) {
+  if (form.isSaving || (saveAsDraft ? !canSaveDraft : !canSubmit)) return;
+  const issue = getValidationIssue({ draft: saveAsDraft });
+  if (issue) {
+    await focusFieldIssue(issue, { draft: saveAsDraft });
+    return;
+  }
+  attemptedSave = null;
+  await form.handleSave(queryClient, saveAsDraft);
+}
+
+const reviewItems = $derived([
+  { step: steps[0], value: (form.personal.nameAr.trim() || form.personal.nameEn.trim()) },
+  { step: steps[1], value: [
+      form.guardian.linkedGuardians.map((guardian) => guardian.full_name.trim()).filter(Boolean).join(" ? "),
+      [form.personal.governorate, form.personal.district, form.personal.address].filter(Boolean).join(" ? "),
+    ].filter(Boolean).join("\n") },
+  { step: steps[2], value: [
+      form.selectedClassName,
+      l(currentPeriod?.name_ar, currentPeriod?.name),
+    ].filter(Boolean).join(" ? ") },
+  { step: steps[3], value: documentStats.total
+      ? `${documentStats.fulfilled} / ${documentStats.total}`
+      : m.ui_copy_no_document_requirements_configured_07292a9d() },
+]);
 
 function cancel() {
   goto(localizeHref(`/${orgId}/students`));
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto text-foreground text-start pb-24">
-  <div class="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-    <header class="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 pb-4">
+<div class="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-background text-start text-foreground">
+  <header class="shrink-0 border-b border-border bg-background">
+    <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
       <div class="flex min-w-0 items-start gap-3">
         <Button
           variant="ghost"
           size="icon-sm"
           class="mt-0.5 shrink-0"
           onclick={cancel}
-          aria-label={m.common_action_cancel()}
+          aria-label={m.common_action_back()}
+          disabled={form.isSaving}
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <h1 class="truncate text-xl font-semibold">
-              {state.personal.nameAr
-                || state.personal.nameEn
-                || (state.isEditMode
-                  ? m.ui_copy_edit_student_8d69c746()
-                  : m.ui_copy_new_student_admission_37fb2c3c())}
+              {form.isEditMode
+                ? form.personal.nameAr || form.personal.nameEn || m.ui_copy_edit_student_8d69c746()
+                : m.ui_copy_new_student_admission_37fb2c3c()}
             </h1>
-            {#if state.isEditMode}
+            {#if form.isEditMode}
               <Badge
-                variant={state.registrationStatus === "approved"
+                variant={form.registrationStatus === "approved"
                   ? "lime"
-                  : state.registrationStatus === "pending_review"
+                  : form.registrationStatus === "pending_review"
                     ? "warning"
                     : "secondary"}
               >
-                {state.registrationStatus === "approved"
+                {form.registrationStatus === "approved"
                   ? m.ui_copy_approved_39578cc4()
-                  : state.registrationStatus === "pending_review"
+                  : form.registrationStatus === "pending_review"
                     ? m.ui_copy_under_review_46b36239()
-                    : state.registrationStatus === "active"
+                    : form.registrationStatus === "active"
                       ? m.common_phase_active()
-                    : state.registrationStatus === "inactive"
+                    : form.registrationStatus === "inactive"
                       ? m.common_status_draft()
-                      : state.registrationStatus === "withdrawn"
+                      : form.registrationStatus === "withdrawn"
                       ? m.common_status_withdrawn()
-                      : state.registrationStatus === "graduated"
+                      : form.registrationStatus === "graduated"
                         ? m.ui_copy_graduated_dc58b020()
                         : m.ui_copy_draft_873425fa()}
               </Badge>
             {/if}
           </div>
-          <p class="mt-1 text-sm text-muted-foreground">
-            {state.personal.studentNumber
-              || m.ui_copy_auto_generated_academic_id_a05c74f0()}
-          </p>
+          {#if form.personal.studentNumber}
+            <p class="mt-1 text-sm text-muted-foreground">{form.personal.studentNumber}</p>
+          {/if}
         </div>
       </div>
 
-      {#if state.availableTemplates.length > 0}
+      {#if form.availableTemplates.length > 0}
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Button variant="outline" size="sm" class="gap-2">
+            {#snippet child({ props })}
+            <Button {...props} variant="outline" size="sm" class="gap-2">
               <Printer class="h-4 w-4" />
-              <span>
-                {state.availableTemplates.find(
-                  (template) => template.id === state.selectedTemplateId,
-                )?.name_ar
-                  || state.availableTemplates.find(
-                    (template) => template.id === state.selectedTemplateId,
-                  )?.name
-                  || m.ui_copy_print_form_ce69ef6c()}
-              </span>
+              <span>{m.ui_copy_print_form_ce69ef6c()}</span>
               <ChevronDown class="h-3.5 w-3.5" />
             </Button>
+            {/snippet}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="min-w-48">
-            {#each state.availableTemplates as template (template.id)}
+            {#each form.availableTemplates as template (template.id)}
               <DropdownMenuItem
                 onclick={async () => {
-                  state.selectedTemplateId = template.id;
-                  await state.handleDownloadRegistrationForm();
+                  form.selectedTemplateId = template.id;
+                  await form.handleDownloadRegistrationForm();
                 }}
               >
                 <span>{template.name_ar || template.name}</span>
-                {#if state.selectedTemplateId === template.id}
+                {#if form.selectedTemplateId === template.id}
                   <Check class="ms-auto h-4 w-4" />
                 {/if}
               </DropdownMenuItem>
@@ -300,250 +366,180 @@ function cancel() {
           </DropdownMenuContent>
         </DropdownMenu>
       {/if}
-    </header>
+    </div>
+  </header>
 
-    <Accordion
-      type="single"
-      value="admission-rules"
-      class="w-full"
-    >
-      <AccordionItem value="admission-rules" class="border-0">
-        <AccordionTrigger class="py-4 text-sm font-semibold hover:no-underline">
-          {m.student_registration_policy_title()}
-        </AccordionTrigger>
-        <AccordionContent>
-          <div class="flex flex-col divide-y divide-border">
-            <section class="pb-4">
-              <h3 class="mb-3 text-xs font-semibold text-foreground">
-                {m.student_registration_enrollment_rules()}
-              </h3>
-              <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">{m.student_registration_active_period()}</p>
-                  <p class="truncate text-sm font-medium">
-                    {currentPeriod?.name_ar || currentPeriod?.name || "—"}
-                  </p>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_enable_registration_portal_dbaf8a8e()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.registrationEnabled
-                      ? m.student_registration_policy_enabled()
-                      : m.student_registration_policy_disabled()}
-                  </p>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_require_academic_registrar_admin_approval_b147c1b8()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.requiresApproval
-                      ? m.ui_copy_under_review_46b36239()
-                      : m.ui_copy_approved_39578cc4()}
-                  </p>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_allow_late_enrollment_06114ddb()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.allowLateEnrollment
-                      ? m.student_registration_policy_enabled()
-                      : m.student_registration_policy_disabled()}
-                  </p>
-                </div>
-              </div>
-            </section>
+  <div bind:this={scrollArea} class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+    <div class="mx-auto w-full max-w-7xl space-y-4 px-4 py-4 sm:px-6 lg:px-8">
 
-            <section class="py-4">
-              <h3 class="mb-3 text-xs font-semibold text-foreground">
-                {m.student_registration_capacity_rules()}
-              </h3>
-              <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_default_class_capacity_limit_700d9cac()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.selectedClass?.capacity ?? state.admissionPolicy.maxClassCapacity}
-                  </p>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_enable_waitlist_on_capacity_189ed812()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.allowWaitlist
-                      ? m.student_registration_policy_enabled()
-                      : m.student_registration_policy_disabled()}
-                  </p>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_sibling_priority_enrollment_b6d49ba5()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.siblingPriorityEnabled
-                      ? m.student_registration_policy_enabled()
-                      : m.student_registration_policy_disabled()}
-                  </p>
-                </div>
-              </div>
-            </section>
+      {#if form.isInitializing || (initialFormSnapshot === null && !form.initializationFailed)}
+        <div role="status" class="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+          <LoadingIndicator size={18} />
+          {m.common_loading()}
+        </div>
+      {:else if form.initializationFailed}
+        <div
+          role="alert"
+          class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          {m.student_registration_initialization_error()}
+          <Button variant="outline" size="sm" class="ms-2" onclick={initializeForm}>{m.common_action_retry()}</Button>
+        </div>
+      {:else if classesQuery.isError}
+        <div
+          role="alert"
+          class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          {m.student_registration_classes_load_error()}
+          <Button variant="outline" size="sm" class="ms-2" onclick={() => classesQuery.refetch()} disabled={classesQuery.isFetching}>{m.common_action_retry()}</Button>
+        </div>
+      {:else if academicContext.isInitialized && !currentPeriod && (!form.isEditMode || isSavedDraft)}
+        <div
+          role="alert"
+          class="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {m.student_registration_period_required()}
+        </div>
+      {:else if !form.admissionPolicy.registrationEnabled && (!form.isEditMode || isSavedDraft)}
+        <div
+          role="alert"
+          class="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {m.student_registration_disabled()}
+        </div>
+      {:else if currentPeriod && !currentPeriod.is_enrollment_open && !form.admissionPolicy.allowLateEnrollment && (!form.isEditMode || isSavedDraft)}
+        <div
+          role="alert"
+          class="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {m.student_registration_period_closed()}
+        </div>
+      {/if}
 
-            <section class="py-4">
-              <h3 class="mb-3 text-xs font-semibold text-foreground">
-                {m.student_registration_identity_rules()}
-              </h3>
-              <div class="grid gap-4 sm:grid-cols-2">
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_allow_independent_enrollment_no_guardian_7ce5a41b()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.allowNoGuardian
-                      ? m.bulk_entry_workbook_optional()
-                      : m.common_validation_guardian_name_required()}
-                  </p>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-xs text-muted-foreground">
-                    {m.ui_copy_national_id_c94d5a1a()}
-                  </p>
-                  <p class="text-sm font-medium">
-                    {state.admissionPolicy.allowDuplicateNationalId
-                      ? m.student_registration_duplicate_nid_allowed()
-                      : m.student_registration_duplicate_nid_blocked()}
-                  </p>
-                </div>
-              </div>
-            </section>
+      {#if initialFormSnapshot !== null && !form.isInitializing && !form.initializationFailed}
+        <nav aria-label={m.student_registration_step_navigation()} class="rounded-xl border border-border bg-card p-2">
+          <ol class="flex flex-wrap gap-1">
+            {#each steps as step, index (step.id)}
+              <li class="flex-1">
+                <Button
+                  variant={step.id === activeStep ? "secondary" : "ghost"}
+                  size="sm"
+                  class="w-full justify-center gap-2 text-start"
+                  aria-current={step.id === activeStep ? "step" : undefined}
+                  disabled={form.isSaving}
+                  onclick={() => openStep(step.id)}
+                >
+                  <span
+                    class="grid size-5 shrink-0 place-items-center rounded-full text-xs tabular-nums {step.id === activeStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}"
+                    aria-hidden="true"
+                  >{index + 1}</span>
+                  <span>{step.label()}</span>
+                </Button>
+              </li>
+            {/each}
+          </ol>
+        </nav>
 
-            <section class="pt-4">
-              <h3 class="mb-3 text-xs font-semibold text-foreground">
-                {m.student_registration_finance_rules()}
-              </h3>
-              <div>
-                <p class="text-xs text-muted-foreground">
-                  {m.ui_copy_auto_assign_tuition_fee_template_on_enroll_5ed6c3b1()}
-                </p>
-                <p class="text-sm font-medium">
-                  {state.admissionPolicy.autoAssignFees
-                    ? m.student_registration_policy_enabled()
-                    : m.student_registration_policy_disabled()}
-                </p>
-              </div>
-            </section>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+        <div bind:this={stepPanels} class="w-full min-w-0">
+            {#each steps as step, index (step.id)}
+              <section
+                data-registration-step={step.id}
+                aria-labelledby={`registration-${step.id}-heading`}
+                hidden={activeStep !== step.id}
+                class="@container/form-section min-w-0"
+              >
+                <h2 id={`registration-${step.id}-heading`} tabindex="-1" class="sr-only">
+                  {step.label()} ? {m.student_registration_step_position({ current: index + 1, total: steps.length })}
+                </h2>
 
-    {#if state.initializationFailed}
-      <div
-        role="alert"
-        class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
-      >
-        {m.student_registration_initialization_error()}
-      </div>
-    {:else if classesQuery.isError}
-      <div
-        role="alert"
-        class="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
-      >
-        {m.student_registration_classes_load_error()}
-      </div>
-    {:else if academicContext.isInitialized && !currentPeriod && (!state.isEditMode || isSavedDraft)}
-      <div
-        role="alert"
-        class="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
-      >
-        {m.student_registration_period_required()}
-      </div>
-    {:else if !state.admissionPolicy.registrationEnabled && (!state.isEditMode || isSavedDraft)}
-      <div
-        role="alert"
-        class="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
-      >
-        {m.student_registration_disabled()}
-      </div>
-    {:else if currentPeriod && !currentPeriod.is_enrollment_open && !state.admissionPolicy.allowLateEnrollment && (!state.isEditMode || isSavedDraft)}
-      <div
-        role="alert"
-        class="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
-      >
-        {m.student_registration_period_closed()}
-      </div>
-    {/if}
-
-    {#if documentStats.total > 0}
-      <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>{m.common_form_documents_title()}</span>
-        <Badge variant={documentStats.fulfilled === documentStats.total ? "lime" : "outline"}>
-          {documentStats.fulfilled} / {documentStats.total}
-        </Badge>
-      </div>
-    {/if}
-
-    <div class="flex flex-col gap-4">
-      <ProfileSection {state} />
-      <FamilySection {state} />
-      <LocationSection {state} />
-      <FinancialsSection {state} />
-      <DocumentsSection {state} />
+                {#if step.id === "review"}
+                  <Card class="gap-0">
+                    <dl class="divide-y divide-border">
+                      {#each reviewItems as item (item.step.id)}
+                        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 sm:px-5">
+                          <dt class="text-sm font-medium">{item.step.label()}</dt>
+                          <dd class="col-start-1 row-start-2 text-sm whitespace-pre-line text-muted-foreground [overflow-wrap:anywhere]" dir="auto">
+                            {item.value || m.student_registration_review_empty()}
+                          </dd>
+                          <dd class="col-start-2 row-span-2 row-start-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={m.student_registration_review_edit({ section: item.step.label() })}
+                              disabled={form.isSaving}
+                              onclick={() => openStep(item.step.id, true)}
+                            >{m.common_action_edit()}</Button>
+                          </dd>
+                        </div>
+                      {/each}
+                    </dl>
+                  </Card>
+                  <div class="mt-4">
+                    <AdmissionRules state={form} period={currentPeriod} />
+                  </div>
+                {:else}
+                  <div class="grid items-start gap-4 {step.sections.length > 1 ? '@min-[54rem]/form-section:grid-cols-2' : ''}">
+                    {#each step.sections as Section (Section)}
+                      <div class="@container/registration-panel min-w-0">
+                        <Section state={form} />
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </section>
+            {/each}
+        </div>
+      {/if}
     </div>
   </div>
 
-  {#if isFormDirty}
-  <div class="fixed inset-x-3 bottom-3 z-40 mx-auto w-auto max-w-4xl rounded-xl border border-border/80 bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:px-4 sm:py-3">
-    <div class="flex items-center justify-between gap-3">
-      <p class="hidden min-w-0 truncate text-sm text-muted-foreground md:block">
-        {#if state.isEditMode}
-          {state.personal.nameAr || state.personal.nameEn || m.settings_action_save_changes()}
-        {:else if state.admissionPolicy.requiresApproval}
-          {m.student_registration_approval_policy()}
-        {:else}
-          {m.student_registration_direct_policy()}
-        {/if}
-      </p>
+  <footer class="shrink-0 border-t border-border bg-background">
+    <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      {#if requiredFieldIssue}
+        <p role="alert" class="text-sm font-medium text-destructive">{requiredFieldIssue.message}</p>
+      {/if}
       <div class="ms-auto flex flex-wrap items-center justify-end gap-2">
-        <Button variant="ghost" onclick={cancel} disabled={state.isSaving}>
-          {m.common_action_cancel()}
-        </Button>
-        {#if !state.isEditMode || isSavedDraft}
+        {#if !form.isEditMode || isSavedDraft}
           <Button
             variant="outline"
             onclick={() => handleSave(true)}
-            disabled={state.isSaving || !canSaveDraft || !isFormDirty}
+            disabled={form.isSaving || !canSaveDraft || !isFormDirty}
           >
-            {m.student_registration_save_draft()}
+            {m.student_registration_save_draft_short()}
           </Button>
         {/if}
+        {#if stepIndex > 0}
+          <Button variant="ghost" onclick={() => openStep(steps[stepIndex - 1].id)} disabled={form.isSaving}>
+            {m.common_action_back()}
+          </Button>
+        {/if}
+        {#if !isReview && (!form.isEditMode || isSavedDraft)}
+          <Button class="min-w-32" onclick={advance} disabled={!canSaveDraft || form.isSaving}>
+            {returnToReview ? m.student_registration_review_return() : m.ui_onboarding_onboarding_footer_continue()}
+          </Button>
+        {:else}
         <Button
-          variant="lime"
           class="min-w-36"
           onclick={() => handleSave(false)}
-          disabled={state.isSaving || !canSubmit || (!isFormDirty && !state.isEditMode)}
+          disabled={form.isSaving || !canSubmit || (!isFormDirty && !isSavedDraft)}
         >
-          {#if state.isSaving}
+          {#if form.isSaving}
             <LoadingIndicator class="me-2" size={15} />
             {m.common_state_saving()}
-          {:else if state.isEditMode}
+          {:else if form.isEditMode}
             {#if isSavedDraft}
               {m.student_registration_complete_draft()}
             {:else}
               {m.settings_action_save_changes()}
             {/if}
-          {:else if state.admissionPolicy.requiresApproval}
+          {:else if form.admissionPolicy.requiresApproval}
             {m.ui_copy_submit_for_approval_4cea7b71()}
           {:else}
             {m.ui_copy_save_direct_enroll_ed9ff0dc()}
           {/if}
         </Button>
+        {/if}
       </div>
     </div>
-  </div>
-  {/if}
+  </footer>
 </div>

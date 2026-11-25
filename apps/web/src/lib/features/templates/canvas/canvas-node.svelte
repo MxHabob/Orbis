@@ -9,6 +9,7 @@ import CanvasNode from "./canvas-node.svelte";
 import type { TemplateNode } from "@docforge/core";
 import { mmToPx } from "@docforge/core/canvas";
 import type { EditorStore } from "../stores/editor-store.svelte";
+import { resolveTemplateColor } from "../template-brand";
 
 let {
   node,
@@ -252,7 +253,7 @@ const tableLayout = $derived.by(() => {
     numRows,
     headerBgColor: style.headerBgColor || "#0f172a",
     headerTextColor: style.headerTextColor || "#ffffff",
-    alternateRowBgColor: style.alternateRowBgColor || "#f8fafc",
+    alternateRowBgColor: style.altRowBgColor || style.alternateRowBgColor || "#f8fafc",
     borderColor: style.borderColor || "#cbd5e1",
     borderWidth: style.borderWidth ?? 0.75,
     headerFontSize: style.headerFontSize ?? 8,
@@ -415,8 +416,8 @@ function getTotalDisplayText(col: any): string {
     {:else if node.type === "Shape"}
       <!-- Shape Node -->
       {@const shapeType = nodeProps.shapeType || nodeProps.shape}
-      {@const fill = nodeProps.fill || nodeProps.fillColor || "transparent"}
-      {@const stroke = nodeProps.stroke || nodeProps.strokeColor || "#000"}
+      {@const fill = resolveTemplateColor(nodeProps.fill || nodeProps.fillColor || "transparent")}
+      {@const stroke = resolveTemplateColor(nodeProps.stroke || nodeProps.strokeColor || "#000")}
       {#if shapeType === "circle" || shapeType === "ellipse"}
         <ellipse
           cx={w / 2}
@@ -443,9 +444,9 @@ function getTotalDisplayText(col: any): string {
     {:else if node.type === "Separator"}
       <!-- Separator -->
       {#if nodeProps.direction === "vertical"}
-        <line x1={w / 2} y1="0" x2={w / 2} y2={h} stroke={nodeProps.color || "#d1d5db"} stroke-width={nodeProps.thickness || 0.5} />
+        <line x1={w / 2} y1="0" x2={w / 2} y2={h} stroke={resolveTemplateColor(nodeProps.color || "#d1d5db")} stroke-width={nodeProps.thickness || 0.5} />
       {:else}
-        <line x1="0" y1={h / 2} x2={w} y2={h / 2} stroke={nodeProps.color || "#d1d5db"} stroke-width={nodeProps.thickness || 0.5} />
+        <line x1="0" y1={h / 2} x2={w} y2={h / 2} stroke={resolveTemplateColor(nodeProps.color || "#d1d5db")} stroke-width={nodeProps.thickness || 0.5} />
       {/if}
 
     {:else if node.type === "Spacer"}

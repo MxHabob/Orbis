@@ -21,12 +21,13 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
     for (code, name_en, name_ar, entity, r_type, page_sz, page_or, doc_json) in &templates {
         let tid = Uuid::new_v4();
         let doc_str = doc_json.to_string();
+        let margins = doc_json["meta"]["pageSetup"]["margins"].to_string();
 
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
             "INSERT INTO report_templates (id, org_id, code, name, name_ar, description, description_ar, document_type, entity_type, master_template_id, status, version, published_version, published_at, published_by, page_size, orientation, margins_json, document_json, locale, tags, is_system, is_default, created_by, deleted_at, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, '{\"top\":10,\"bottom\":10,\"left\":10,\"right\":10}', $12, 'ar', '[\"templates\"]', 1, \
-             CASE WHEN NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND document_type = $6 AND entity_type = $7 AND is_default = 1 AND deleted_at IS NULL) THEN 1 ELSE 0 END, \
+             SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, $12, $13, 'ar', '[\"templates\"]', TRUE, \
+             NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND document_type = $6 AND entity_type = $7 AND is_default = TRUE AND deleted_at IS NULL), \
              $9, NULL, $8, $8 \
              WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND code = $3)",
             vec![
@@ -35,60 +36,12 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
                 (*r_type).into(), (*entity).into(),
                 now.to_string().into(), admin_id.into(),
                 (*page_sz).into(), (*page_or).into(),
-                doc_str.clone().into(),
+                margins.into(), doc_str.into(),
             ]
         )).await.map_err(|error| {
             DomainError::Internal(format!("Failed to provision template {code}: {error}"))
         })?;
-
-        // Synchronize system template AST definitions and metadata
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "UPDATE report_templates \
-             SET document_json = $1, name = $2, name_ar = $3, page_size = $4, orientation = $5, document_type = $6, entity_type = $7, updated_at = $8 \
-             WHERE org_id = $9 AND code = $10 AND is_system = 1",
-            vec![
-                doc_str.into(), (*name_en).into(), (*name_ar).into(),
-                (*page_sz).into(), (*page_or).into(), (*r_type).into(), (*entity).into(),
-                now.to_string().into(), org_id.into(), (*code).into(),
-            ]
-        )).await.map_err(|error| {
-            DomainError::Internal(format!("Failed to update system template {code}: {error}"))
-        })?;
     }
-
-    // Authoritatively reconcile default templates across all system entities and document types
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "UPDATE report_templates \
-         SET is_default = CASE \
-             WHEN code IN ( \
-                 'academic.student-certificate-yemeni', \
-                 'academic.official-transcript', \
-                 'academic.student-term-report-card', \
-                 'academic.class-schedule', \
-                 'administration.enrollment-certificate', \
-                 'administration.student-id-card', \
-                 'administration.staff-id-card', \
-                 'administration.user-id-card', \
-                 'examinations.hall-seating-card', \
-                 'examinations.hall-register', \
-                 'examinations.student-exam-card', \
-                 'finance.payment-receipt', \
-                 'finance.disbursement-voucher', \
-                 'finance.journal-voucher', \
-                 'finance.account-statement', \
-                 'administration.organization-letterhead' \
-             ) THEN 1 \
-             ELSE 0 \
-         END \
-         WHERE org_id = $1 AND deleted_at IS NULL",
-        vec![org_id.into()],
-    ))
-    .await
-    .map_err(|error| {
-        DomainError::Internal(format!("Failed to reconcile default templates: {error}"))
-    })?;
 
     Ok(())
 }
@@ -628,169 +581,13 @@ pub fn get_master_template_definitions() -> Vec<(
             }),
         ),
         // ── 5. Payment Receipt Voucher (A4 Portrait 210mm x 297mm) ────────────
-        (
+        finance_document(
             "finance.payment-receipt",
-            "Official Electronic Payment Receipt",
-            "سند قبض مالي إلكتروني رسمي مزود بـ QR",
+            "Payment Receipt",
+            "سند قبض",
             "finance",
             "RECEIPT",
-            "A4",
-            "portrait",
-            json!({
-                "version": "2.0",
-                "meta": {
-                    "name": "Official Electronic Payment Receipt",
-                    "nameAr": "سند قبض مالي إلكتروني رسمي مزود بـ QR",
-                    "documentType": "RECEIPT",
-                    "entityType": "finance",
-                    "locale": "ar",
-                    "pageSetup": { "size": "A4", "orientation": "portrait", "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 }, "unit": "mm" }
-                },
-                "variables": {
-                    "receipt.number": { "source": "receipt.number", "type": "string", "label": "Receipt No", "labelAr": "رقم السند" },
-                    "receipt.date": { "source": "receipt.date", "type": "string", "label": "Date", "labelAr": "التاريخ" },
-                    "receipt.payerName": { "source": "receipt.payer_name", "type": "string", "label": "Payer Name", "labelAr": "استلمنا من السيد/ة" },
-                    "receipt.studentName": { "source": "receipt.student_name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
-                    "receipt.amount": { "source": "receipt.amount", "type": "number", "label": "Amount", "labelAr": "المبلغ رقماً" },
-                    "receipt.amountWords": { "source": "receipt.amount_words", "type": "string", "label": "Amount in Words", "labelAr": "المبلغ كتابة" },
-                    "receipt.description": { "source": "receipt.description", "type": "string", "label": "Description", "labelAr": "البيان" },
-                    "receipt.paymentMethod": { "source": "receipt.payment_method", "type": "string", "label": "Payment Method", "labelAr": "طريقة الدفع" },
-                    "receipt.referenceNumber": { "source": "receipt.reference_number", "type": "string", "label": "Reference Number", "labelAr": "رقم المرجع" },
-                    "receipt.cashierName": { "source": "receipt.cashier_name", "type": "string", "label": "Cashier", "labelAr": "أمين الصندوق" }
-                },
-                "assets": {},
-                "pages": [{
-                    "type": "Page",
-                    "id": "p1",
-                    "children": [
-                        // Border Frame
-                        {
-                            "type": "Shape",
-                            "id": "rcpt-border",
-                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#d8e2eb", "strokeWidth": 0.7, "borderRadius": 4 },
-                            "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
-                        },
-                        // Branded header
-                        {
-                            "type": "Shape",
-                            "id": "rcpt-header-bg",
-                            "props": { "shapeType": "rectangle", "fillColor": "#0f766e", "strokeColor": "#0f766e", "strokeWidth": 0, "borderRadius": 4 },
-                            "position": { "x": 8, "y": 8, "width": 194, "height": 42 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-org-title",
-                            "props": { "content": "{{$org.name_ar}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 18, "y": 12, "width": 174, "height": 7 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-title",
-                            "props": { "content": "سـنـد قـبـض مـالـي\nOFFICIAL PAYMENT RECEIPT", "fontSize": 14, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
-                            "position": { "x": 18, "y": 20, "width": 174, "height": 15 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-meta",
-                            "props": { "content": "رقم السند: {{receipt.number}}  |  التاريخ: {{receipt.date}}", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#e2e8f0", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 18, "y": 37, "width": 174, "height": 7 }
-                        },
-                        // Divider
-                        {
-                            "type": "Separator",
-                            "id": "rcpt-sep-1",
-                            "props": { "direction": "horizontal", "color": "#d8e2eb", "thickness": 0.5 },
-                            "position": { "x": 18, "y": 54, "width": 174, "height": 1 }
-                        },
-                        // Receipt parties
-                        {
-                            "type": "Text",
-                            "id": "rcpt-body",
-                            "props": {
-                                "content": "استلمنا من: {{receipt.payerName}}\nعن الطالب / الطالبة: {{receipt.studentName}}",
-                                "fontSize": 10,
-                                "fontFamily": "Rubik",
-                                "fontWeight": "bold",
-                                "color": "#334155",
-                                "textAlign": "end",
-                                "direction": "rtl",
-                                "lineHeight": 1.7
-                            },
-                            "position": { "x": 22, "y": 60, "width": 166, "height": 17 }
-                        },
-                        {
-                            "type": "Shape",
-                            "id": "rcpt-amount-bg",
-                            "props": { "shapeType": "rectangle", "fillColor": "#f0fdfa", "strokeColor": "#cce9e3", "strokeWidth": 0.5, "borderRadius": 3 },
-                            "position": { "x": 22, "y": 84, "width": 166, "height": 34 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-amount",
-                            "props": { "content": "مبلغ القبض: {{receipt.amount}} {{$org.currency}}", "fontSize": 16, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f766e", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 27, "y": 90, "width": 156, "height": 11 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-amount-words",
-                            "props": { "content": "فقط كتابة: {{receipt.amountWords}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 27, "y": 104, "width": 156, "height": 8 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-description",
-                            "props": { "content": "وذلك مقابل: {{receipt.description}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "end", "direction": "rtl" },
-                            "position": { "x": 22, "y": 127, "width": 166, "height": 12 }
-                        },
-                        // QR Code (ZATCA compliant)
-                        {
-                            "type": "QRCode",
-                            "id": "rcpt-qr",
-                            "props": { "data": "{{receipt.number}}", "size": 32, "errorCorrection": "M" },
-                            "position": { "x": 28, "y": 166, "width": 32, "height": 32 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "qr-lbl",
-                            "props": { "content": "رمز التحقق الإلكتروني", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 22, "y": 200, "width": 44, "height": 5 }
-                        },
-                        // Payment Mode & Signatures
-                        {
-                            "type": "Separator",
-                            "id": "rcpt-sep-2",
-                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.5 },
-                            "position": { "x": 18, "y": 151, "width": 174, "height": 1 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-method",
-                            "props": { "content": "طريقة الدفع: {{receipt.paymentMethod}}\nرقم المرجع: {{receipt.referenceNumber}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "end", "direction": "rtl", "lineHeight": 1.7 },
-                            "position": { "x": 78, "y": 166, "width": 105, "height": 14 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "sig-cashier",
-                            "props": { "content": "أمين الصندوق / المحاسب: {{receipt.cashierName}}\n\nالتوقيع: ___________________", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.5 },
-                            "position": { "x": 78, "y": 213, "width": 105, "height": 20 }
-                        },
-                        {
-                            "type": "Separator",
-                            "id": "rcpt-sep-footer",
-                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.5 },
-                            "position": { "x": 18, "y": 263, "width": 174, "height": 1 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "rcpt-footer",
-                            "props": { "content": "هذا السند صادر إلكترونياً من {{$org.name_ar}}", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 18, "y": 270, "width": 174, "height": 7 }
-                        }
-                    ]
-                }]
-            }),
         ),
-        // ── 6. Student Exam Admission Card (A5 Portrait 148mm x 210mm) ───────
         (
             "examinations.student-exam-card",
             "Student Exam Admission & Seating Card",
@@ -1044,41 +841,82 @@ pub fn get_master_template_definitions() -> Vec<(
     templates.push(default_exam_hall_register_template());
     templates.push(default_user_id_card_template());
     templates.push(default_letterhead_template());
-    templates.push(default_finance_voucher_template(
+    templates.push(finance_document(
         "finance.disbursement-voucher",
         "Disbursement Voucher",
         "سند صرف",
         "finance_disbursement",
-        "سند صرف مالي | DISBURSEMENT VOUCHER",
-        "#be123c",
-        "المستفيد",
-        "حساب الخزينة",
+        "VOUCHER",
     ));
-    templates.push(default_finance_voucher_template(
+    templates.push(finance_document(
         "finance.journal-voucher",
         "Journal Voucher",
         "سند قيد يومية",
         "finance_journal",
-        "سند قيد يومية | JOURNAL VOUCHER",
-        "#1d4ed8",
-        "من الحساب",
-        "إلى الحساب",
+        "VOUCHER",
     ));
     templates.extend(default_grade_certificate_templates());
     templates.push(default_class_schedule_template());
     templates.push(default_account_statement_template());
+    for (_, _, _, _, _, _, _, document) in &mut templates {
+        if let Some(pages) = document
+            .get_mut("pages")
+            .and_then(serde_json::Value::as_array_mut)
+        {
+            pages.iter_mut().for_each(apply_stock_template_style);
+        }
+    }
     templates
 }
 
-fn default_finance_voucher_template(
+fn apply_stock_template_style(node: &mut serde_json::Value) {
+    let node_type = node["type"].as_str().unwrap_or_default().to_owned();
+    let id = node["id"].as_str().unwrap_or_default().to_owned();
+    if let Some(props) = node
+        .get_mut("props")
+        .and_then(serde_json::Value::as_object_mut)
+    {
+        if props.get("fontFamily").and_then(serde_json::Value::as_str) == Some("Rubik") {
+            props.insert("fontFamily".into(), json!("Noto Sans Arabic"));
+        }
+        if node_type == "Table" {
+            if let Some(style) = props
+                .get_mut("style")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                style.insert("fontFamily".into(), json!("Noto Sans Arabic"));
+                style.insert("headerBgColor".into(), json!("#eaf0f5"));
+                style.insert("headerTextColor".into(), json!("#0f172a"));
+                style
+                    .entry("altRowBgColor")
+                    .or_insert_with(|| json!("#f8fafc"));
+            }
+        }
+        if node_type == "Separator" {
+            props.insert("color".into(), json!("org-primary"));
+        }
+        if node_type == "Shape" {
+            if id.ends_with("-accent") || id.ends_with("-stripe") || id.ends_with("-strip") {
+                props.insert("fillColor".into(), json!("org-primary"));
+            } else if id.ends_with("-border") || id.ends_with("-frame") || id.starts_with("bg-") {
+                props.insert("strokeColor".into(), json!("org-primary"));
+            }
+        }
+    }
+    if let Some(children) = node
+        .get_mut("children")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        children.iter_mut().for_each(apply_stock_template_style);
+    }
+}
+
+fn finance_document(
     code: &'static str,
     name: &'static str,
     name_ar: &'static str,
     entity: &'static str,
-    heading: &'static str,
-    accent: &'static str,
-    primary_label: &'static str,
-    secondary_label: &'static str,
+    document_type: &'static str,
 ) -> (
     &'static str,
     &'static str,
@@ -1089,113 +927,229 @@ fn default_finance_voucher_template(
     &'static str,
     serde_json::Value,
 ) {
+    let receipt = document_type == "RECEIPT";
+    let namespace = if receipt { "receipt" } else { "voucher" };
+    let mut variables = serde_json::Map::new();
+    let text = |id: &str, content: &str, y: f64, size: f64, bold: bool, align: &str| {
+        json!({
+            "type": "Text", "id": id, "props": {
+                "content": content, "fontFamily": "Noto Sans Arabic", "fontSize": size,
+                "fontWeight": if bold { "bold" } else { "normal" },
+                "direction": if id == "amount" { "ltr" } else { "rtl" }, "textAlign": align, "lineHeight": 1.25,
+                "color": if bold { "#0f172a" } else { "#475569" }
+            },
+            "position": { "x": 12, "y": y, "width": 124, "height": 10 }
+        })
+    };
+    let divider = |id: &str, y: f64| {
+        json!({
+            "type": "Separator", "id": id,
+            "props": { "direction": "horizontal", "color": "#d8e0e7", "thickness": 0.65 },
+            "position": { "x": 12, "y": y, "width": 124, "height": 1 }
+        })
+    };
+    let mut children = vec![
+        text(
+            "organization",
+            "{{$org.name_ar | default:$org.name}}",
+            12.0,
+            11.0,
+            true,
+            "start",
+        ),
+        text("title-ar", name_ar, 25.0, 17.0, true, "start"),
+        text("title-en", name, 35.0, 9.0, false, "start"),
+        divider("header-divider", 46.0),
+    ];
+    let fields: &[(&str, &str, &str)] = if receipt {
+        &[
+            ("number", "Receipt number", "رقم السند"),
+            ("date", "Date", "التاريخ"),
+            ("payerName", "Received from", "استلمنا من"),
+            ("studentName", "Student", "الطالب"),
+            ("paymentMethod", "Payment method", "طريقة الدفع"),
+            ("referenceNumber", "Reference", "رقم المرجع"),
+            ("description", "Description", "البيان"),
+        ]
+    } else {
+        &[
+            ("number", "Voucher number", "رقم السند"),
+            ("date", "Date", "التاريخ"),
+            (
+                "primaryName",
+                "Debit account",
+                if entity == "finance_disbursement" {
+                    "المستفيد"
+                } else {
+                    "الحساب المدين"
+                },
+            ),
+            (
+                "secondaryName",
+                "Credit account",
+                if entity == "finance_disbursement" {
+                    "حساب الخزينة"
+                } else {
+                    "الحساب الدائن"
+                },
+            ),
+            ("description", "Description", "البيان"),
+        ]
+    };
+    for (index, &(field, label, label_ar)) in fields.iter().enumerate() {
+        let key = format!("{namespace}.{field}");
+        variables.insert(
+            key.clone(),
+            json!({ "source": key, "type": "string", "label": label, "labelAr": label_ar }),
+        );
+        let y = if index < 2 {
+            51.0 + index as f64 * 10.0
+        } else {
+            98.0 + (index - 2) as f64 * 10.0
+        };
+        let value_format = if field == "date" {
+            " | date:'yyyy/MM/dd'"
+        } else {
+            ""
+        };
+        children.push(text(
+            field,
+            &format!("{label_ar}: {{{{{key}{value_format} | default:'—'}}}}"),
+            y,
+            10.0,
+            false,
+            "start",
+        ));
+    }
+    let amount_key = format!("{namespace}.amount");
+    let currency_key = format!("{namespace}.currency");
+    variables.insert(
+        amount_key.clone(),
+        json!({ "source": amount_key, "type": "number", "label": "Amount", "labelAr": "المبلغ" }),
+    );
+    variables.insert(currency_key.clone(), json!({ "source": currency_key, "type": "string", "label": "Currency", "labelAr": "العملة" }));
+    children.extend([
+        json!({
+            "type": "Shape", "id": "amount-background",
+            "props": { "shapeType": "rectangle", "fillColor": "#eaf0f5", "strokeWidth": 0, "borderRadius": 2 },
+            "position": { "x": 12, "y": 73, "width": 124, "height": 18 }
+        }),
+        text("amount", &format!("{{{{{amount_key} | default:'—'}}}}  {{{{{currency_key} | default:$org.currency}}}}"), 77.0, 16.0, true, "center"),
+        divider("footer-divider", 155.0),
+    ]);
+    if receipt {
+        children.push(json!({
+            "type": "QRCode", "id": "receipt-reference-code",
+            "props": { "data": "{{receipt.number}}", "size": 22, "errorCorrection": "M" },
+            "position": { "x": 12, "y": 166, "width": 22, "height": 22 }
+        }));
+        children.push(text(
+            "signature",
+            "توقيع أمين الصندوق  __________________",
+            174.0,
+            9.0,
+            false,
+            "start",
+        ));
+    } else {
+        children.push(text(
+            "signature",
+            "المحاسب  __________________     الاعتماد  __________________",
+            170.0,
+            9.0,
+            false,
+            "center",
+        ));
+    }
     (
         code,
         name,
         name_ar,
         entity,
-        "VOUCHER",
-        "A4",
+        document_type,
+        "A5",
         "portrait",
         json!({
             "version": "2.0",
             "meta": {
-                "name": name,
-                "nameAr": name_ar,
-                "documentType": "VOUCHER",
-                "entityType": entity,
-                "locale": "ar",
+                "name": name, "nameAr": name_ar, "documentType": document_type, "entityType": entity, "locale": "ar",
                 "pageSetup": {
-                    "size": "A4",
-                    "orientation": "portrait",
-                    "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 },
-                    "unit": "mm"
+                    "size": "A5", "orientation": "portrait", "unit": "mm",
+                    "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 }
                 }
             },
-            "variables": {
-                "voucher.number": { "source": "voucher.number", "type": "string", "label": "Voucher No.", "labelAr": "رقم السند" },
-                "voucher.date": { "source": "voucher.date", "type": "string", "label": "Date", "labelAr": "التاريخ" },
-                "voucher.primaryName": { "source": "voucher.primary_name", "type": "string", "label": "Primary Account", "labelAr": primary_label },
-                "voucher.secondaryName": { "source": "voucher.secondary_name", "type": "string", "label": "Secondary Account", "labelAr": secondary_label },
-                "voucher.amount": { "source": "voucher.amount", "type": "number", "label": "Amount", "labelAr": "المبلغ" },
-                "voucher.currency": { "source": "voucher.currency", "type": "string", "label": "Currency", "labelAr": "العملة" },
-                "voucher.description": { "source": "voucher.description", "type": "string", "label": "Description", "labelAr": "البيان" }
-            },
-            "assets": {},
-            "pages": [{
-                "type": "Page",
-                "id": "p1",
-                "children": [
-                    {
-                        "type": "Shape",
-                        "id": "voucher-frame",
-                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.7, "borderRadius": 3 },
-                        "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
-                    },
-                    {
-                        "type": "Shape",
-                        "id": "voucher-header",
-                        "props": { "shapeType": "rectangle", "fillColor": accent, "strokeColor": accent, "strokeWidth": 0, "borderRadius": 3 },
-                        "position": { "x": 8, "y": 8, "width": 194, "height": 42 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-org",
-                        "props": { "content": "{{$org.name_ar}}", "fontSize": 11, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 18, "y": 13, "width": 174, "height": 8 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-title",
-                        "props": { "content": heading, "fontSize": 13, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 18, "y": 28, "width": 174, "height": 10 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-reference",
-                        "props": { "content": "رقم السند: {{voucher.number}}     التاريخ: {{voucher.date}}", "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "end", "direction": "rtl" },
-                        "position": { "x": 20, "y": 64, "width": 170, "height": 12 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-primary",
-                        "props": { "content": format!("{primary_label}: {{{{voucher.primaryName}}}}"), "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#334155", "textAlign": "end", "direction": "rtl" },
-                        "position": { "x": 20, "y": 90, "width": 170, "height": 14 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-secondary",
-                        "props": { "content": format!("{secondary_label}: {{{{voucher.secondaryName}}}}"), "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#334155", "textAlign": "end", "direction": "rtl" },
-                        "position": { "x": 20, "y": 112, "width": 170, "height": 14 }
-                    },
-                    {
-                        "type": "Shape",
-                        "id": "voucher-amount-bg",
-                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 3 },
-                        "position": { "x": 20, "y": 145, "width": 170, "height": 32 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-amount",
-                        "props": { "content": "المبلغ: {{voucher.amount}} {{voucher.currency}}", "fontSize": 16, "fontFamily": "Rubik", "fontWeight": "bold", "color": accent, "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 24, "y": 154, "width": 162, "height": 12 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-description",
-                        "props": { "content": "البيان: {{voucher.description}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "end", "direction": "rtl", "lineHeight": 1.6 },
-                        "position": { "x": 20, "y": 190, "width": 170, "height": 26 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "voucher-signatures",
-                        "props": { "content": "المستلم\n\n____________________                         المحاسب\n\n____________________", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#334155", "textAlign": "center", "direction": "rtl", "lineHeight": 1.5 },
-                        "position": { "x": 20, "y": 245, "width": 170, "height": 28 }
-                    }
-                ]
-            }]
+            "variables": variables, "pages": [{ "type": "Page", "id": "p1", "children": children }]
         }),
     )
+}
+
+#[cfg(test)]
+#[test]
+fn financial_master_templates_render_as_single_a5_pages() {
+    use docforge_engine::{
+        layout::engine::LayoutEngine,
+        model::document::TemplateDocument,
+        render::{
+            font_cache::FontCache,
+            types::{PositionedElement, TextAlign},
+        },
+    };
+
+    let fonts = FontCache::with_system_fonts();
+    let engine = LayoutEngine::new(&fonts);
+    let context = json!({
+        "$org": { "name": "Orbis School", "currency": "SAR", "primary_color": "#086f72" },
+        "receipt": { "number": "R-125", "amount": 825, "date": "2026-11-25T02:00:00+03:00",
+            "payerName": "أحمد محمد", "studentName": "محمد أحمد", "paymentMethod": "تحويل بنكي",
+            "referenceNumber": "TX-451", "description": "رسوم الفصل الدراسي الأول" },
+        "voucher": { "number": "V-125", "amount": 825, "date": "2026-11-25" }
+    });
+    let mut checked = 0;
+    for (code, _, _, _, _, size, _, definition) in get_master_template_definitions() {
+        let document: TemplateDocument =
+            serde_json::from_value(definition).unwrap_or_else(|error| panic!("{code}: {error}"));
+        if !matches!(
+            code,
+            "finance.payment-receipt" | "finance.disbursement-voucher" | "finance.journal-voucher"
+        ) {
+            continue;
+        }
+        assert_eq!(size, "A5");
+        let layout = engine.layout(&document, &context).unwrap();
+        assert_eq!(layout.pages.len(), 1);
+        let page = &layout.pages[0];
+        if code == "finance.payment-receipt" {
+            if let Some(directory) = std::env::var_os("ORBIS_PRINT_PREVIEW") {
+                let pdf = docforge_engine::render::pdf_renderer::render_to_pdf(
+                    &layout,
+                    &fonts,
+                    &Default::default(),
+                )
+                .unwrap();
+                std::fs::write(
+                    std::path::Path::new(&directory).join("receipt.pdf"),
+                    pdf.bytes,
+                )
+                .unwrap();
+            }
+        }
+        assert!((page.width_pt - 419.53).abs() < 0.2);
+        assert!((page.height_pt - 595.28).abs() < 0.2);
+        assert!(page.elements.iter().any(
+            |element| matches!(element, PositionedElement::Text(text) if text.content.contains("825") && text.content.contains("SAR"))
+        ));
+        assert!(page.elements.iter().any(
+            |element| matches!(element, PositionedElement::Text(text) if text.content.contains("2026/11/25"))
+        ));
+        assert!(page.elements.iter().any(
+            |element| matches!(element, PositionedElement::Text(text) if text.content == "Orbis School" && matches!(text.text_align, TextAlign::Start))
+        ));
+        assert!(page.elements.iter().any(
+            |element| matches!(element, PositionedElement::Line(line) if (line.color.r, line.color.g, line.color.b) == (8, 111, 114))
+        ));
+        checked += 1;
+    }
+    assert_eq!(checked, 3);
 }
 
 fn default_grade_certificate_templates() -> Vec<(
@@ -2632,11 +2586,12 @@ mod tests {
             .expect("payment receipt template");
         let serialized = receipt.7.to_string();
 
-        assert!(serialized.contains("{{$org.currency}}"));
+        assert!(serialized.contains("default:$org.currency"));
+        assert_eq!(receipt.5, "A5");
         assert!(!serialized.contains("ريال سعودي"));
         assert!(!serialized.contains("SAR"));
-        assert!(serialized.contains("rcpt-amount-bg"));
-        assert!(serialized.contains("rcpt-header-bg"));
+        assert!(serialized.contains("amount-background"));
+        assert!(serialized.contains("header-divider"));
     }
 
     #[test]
@@ -2652,7 +2607,7 @@ mod tests {
                 .expect("default finance voucher template");
             assert_eq!(template.3, entity_type);
             assert_eq!(template.4, "VOUCHER");
-            assert_eq!(template.5, "A4");
+            assert_eq!(template.5, "A5");
             assert_eq!(template.7["meta"]["entityType"], entity_type);
             assert_eq!(template.7["meta"]["documentType"], "VOUCHER");
             assert!(template.7["variables"]["voucher.number"].is_object());

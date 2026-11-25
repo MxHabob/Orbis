@@ -11094,6 +11094,11 @@
         ],
         "properties": {
           "allow_partial_payments": { "type": "boolean" },
+          "cashier_cash_accounts": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "format": "uuid" },
+            "nullable": true
+          },
           "currency": { "type": "string" },
           "invoice_due_days": { "type": "integer", "format": "int32" },
           "invoicing_integration_id": {
@@ -12357,6 +12362,11 @@
         "type": "object",
         "required": ["account_id", "amount", "method"],
         "properties": {
+          "additional_allocations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReceiptAllocationRequest" },
+            "nullable": true
+          },
           "account_id": { "type": "string", "format": "uuid" },
           "amount": { "type": "string" },
           "enrollment_id": {
@@ -12718,10 +12728,20 @@
           "student_id": { "type": "string", "format": "uuid" }
         }
       },
+      "ReceiptAllocationRequest": {
+        "type": "object",
+        "required": ["account_id", "amount"],
+        "properties": {
+          "account_id": { "type": "string", "format": "uuid" },
+          "amount": { "type": "string" },
+          "notes": { "type": "string", "nullable": true }
+        }
+      },
       "RefundStudentFeeRequest": {
         "type": "object",
         "required": ["refund_amount"],
         "properties": {
+          "payment_id": { "type": "string", "format": "uuid", "nullable": true },
           "notes": { "type": "string", "nullable": true },
           "refund_amount": { "type": "string" }
         }

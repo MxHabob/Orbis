@@ -103,7 +103,7 @@ let { state }: { state: StudentFormState } = $props();
       <CardContent class="p-0">
         <div class="flex flex-col divide-y divide-border">
           <!-- Discount Type -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="px-6 py-4 grid items-start gap-3 @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">
                 {m.ui_copy_discount_policy_type_1b319712()}
@@ -112,7 +112,7 @@ let { state }: { state: StudentFormState } = $props();
                 {m.ui_copy_apply_discount_from_approved_templates_or__043a0d02()}
               </span>
             </div>
-            <div class="w-full md:w-120 shrink-0 flex gap-2">
+            <div class="w-full min-w-0 flex gap-2">
               <Button
                 variant="ghost"
                 type="button"
@@ -134,7 +134,7 @@ let { state }: { state: StudentFormState } = $props();
 
           <!-- Discount Selection / Input -->
           {#if state.financial.discountType === 'template'}
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+            <div class="px-6 py-4 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] last:border-b-0 gap-3">
               <div class="flex flex-col gap-1 text-start">
                 <Label class="text-xs font-semibold text-foreground">
                   {m.ui_copy_discount_template_9e6c5879()}
@@ -143,7 +143,7 @@ let { state }: { state: StudentFormState } = $props();
                   {m.ui_copy_select_one_of_the_approved_discount_templa_44351fda()}
                 </span>
               </div>
-              <div class="w-full md:w-120 shrink-0">
+              <div class="w-full min-w-0">
                 <Select 
                   type="single"
                   value={state.financial.selectedDiscountTemplateId}
@@ -165,14 +165,14 @@ let { state }: { state: StudentFormState } = $props();
               </div>
             </div>
           {:else}
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+            <div class="px-6 py-4 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] last:border-b-0 gap-3">
               <div class="flex flex-col gap-1 text-start">
                 <Label for="customDiscount" class="text-xs font-semibold text-foreground">{m.common_form_discount_custom_amount()}</Label>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">
                   {m.ui_copy_enter_direct_discount_amount_ada748b6()}
                 </span>
               </div>
-              <div class="w-full md:w-120 shrink-0">
+              <div class="w-full min-w-0">
                 <Input 
                   id="customDiscount"
                   type="number"

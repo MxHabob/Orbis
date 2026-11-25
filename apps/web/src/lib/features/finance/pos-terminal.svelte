@@ -5,6 +5,11 @@
   canonical multi-channel payment method handling, and atomic General Ledger posting.
 -->
 <script lang="ts">
+import VoucherMetadata from "./components/voucher-metadata.svelte";
+import { formatDateKey } from "$lib/core/i18n/format";
+import { authStore } from "$lib/stores";
+import { createCashierAssignmentQuery } from "./queries";
+import { eligibleTreasuries, resolveTreasury } from "./treasury-policy";
 import { LoadingIndicator } from "@orbis/ui";
 import { onDestroy, onMount, tick } from "svelte";
 import { slide } from "svelte/transition";
@@ -69,6 +74,8 @@ let formMethod = $state("cash");
 let formFeeId = $state("");
 let formAmount = $state<number | null>(null);
 let referenceNumber = $state("");
+let voucherNumber = $state("");
+let voucherDate = $state(formatDateKey(new Date()));
 let sourceToken = $state("");
 let notes = $state("");
 let shouldPrintReceipt = $state(true);
@@ -80,9 +87,11 @@ let printReceiptContext = $state<Record<string, unknown>[]>([]);
 
 // ── Queries & Mutations ───────────────────────────────────────────────
 
+const settingsQuery = createCashierAssignmentQuery(() => orgId);
+const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
+  ? settingsQuery.data[authStore.userId ?? ""] ?? null
+  : undefined);
 const cashAccountsQuery = createCashAccountsQuery(() => orgId);
-const cashAccounts = $derived(cashAccountsQuery.data ?? []);
-const activeAccountId = $derived(formAccountId || cashAccounts[0]?.id || "");
 
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
 const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? manualPaymentMethods());
@@ -117,6 +126,10 @@ let paymentError = $state("");
 const isSubmittingPayment = $derived(isPreparingPayment || processPaymentMutation.isPending);
 
 const feeTemplatesById = $derived(new Map(feeTemplates.map((template) => [template.id, template])));
+const linkedFee = $derived(activeStudentFees.find((fee) => fee.id === formFeeId));
+const feeCurrency = $derived(linkedFee ? feeTemplatesById.get(linkedFee.fee_template_id)?.currency : undefined);
+const cashAccounts = $derived(eligibleTreasuries(cashAccountsQuery.data ?? [], formMethod, cashAssignment, feeCurrency));
+const activeAccountId = $derived(resolveTreasury(cashAccounts, formAccountId));
 
 function getFeeTemplateName(feeTemplateId: string): string {
   const template = feeTemplatesById.get(feeTemplateId);
@@ -241,6 +254,8 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       amount: String(formAmount),
       method: formMethod,
       reference: referenceNumber.trim() || undefined,
+      receipt_number: voucherNumber.trim() || undefined,
+      payment_date: voucherDate || undefined,
       source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
       payer_name:
         `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() ||
@@ -261,6 +276,8 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     formAmount = null;
     formFeeId = "";
     referenceNumber = "";
+    voucherNumber = "";
+    voucherDate = formatDateKey(new Date());
     sourceToken = "";
     notes = "";
 
@@ -357,11 +374,11 @@ const rtl = $derived(getLocale() === "ar");
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 bg-background border border-border/80 rounded-md px-2.5 py-1 text-[11px]">
         <BuildingLibrary size={13} class="text-muted-foreground" />
-        <span class="text-muted-foreground">{m.finance_ui_receiving_treasury_label()}</span>
+        <span class="text-muted-foreground">{formMethod === "cash" ? m.finance_ui_cash_treasury() : m.finance_ui_account_type_bank()}</span>
         <AccountSearchInput
           value={activeAccountId}
           accounts={cashAccounts}
-          placeholder={m.finance_ui_receiving_treasury_label()}
+          placeholder={cashAccounts.length ? m.finance_ui_receiving_treasury_label() : m.finance_ui_no_matching_treasury()}
           onchange={(accountId) => (formAccountId = accountId ?? "")}
           size="sm"
           class="max-w-44 border-0 bg-transparent font-medium"
@@ -603,11 +620,14 @@ const rtl = $derived(getLocale() === "ar");
       <form onsubmit={handlePaymentSubmit} aria-busy={isSubmittingPayment} class="flex min-h-0 flex-1 flex-col">
       <fieldset disabled={isSubmittingPayment} class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         
-        <div class="border-b border-border/60 pb-2">
-          <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
-            <Banknotes size={15} class="text-emerald-600" />
-            {m.finance_ui_receipt_and_payment_details()}
-          </h2>
+        <div class="border-b border-border/60 pb-3">
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <h2 class="flex items-center gap-1.5 text-sm font-semibold">
+              <Banknotes size={15} class="text-emerald-600" />
+              {m.finance_ui_receipt_create_heading()}
+            </h2>
+            <VoucherMetadata bind:number={voucherNumber} bind:date={voucherDate} dateLabel={m.template_schema_receipt_date()} />
+          </div>
           <p class="text-[10px] text-muted-foreground mt-0.5">
             {m.finance_ui_pos_payment_accounting_note()}
           </p>
@@ -646,14 +666,13 @@ const rtl = $derived(getLocale() === "ar");
         </div>
 
         <PaymentMethodField
-          {orgId}
           methods={availablePaymentMethods}
           value={formMethod}
           disabled={isSubmittingPayment}
           loading={paymentMethodsQuery.isFetching}
           loadFailed={paymentMethodsQuery.isError}
           onretry={() => { void paymentMethodsQuery.refetch(); }}
-          onchange={(value) => { formMethod = value; sourceToken = ""; referenceNumber = ""; }}
+          onchange={(value) => { formMethod = value; formAccountId = ""; sourceToken = ""; referenceNumber = ""; }}
         />
 
         <!-- Electronic Source Token (if Gateway method requires token) -->
@@ -723,7 +742,7 @@ const rtl = $derived(getLocale() === "ar");
           {#if paymentError}<p class="text-sm text-destructive" role="alert">{paymentError}</p>{/if}
           <Button
             type="submit"
-            disabled={!selectedStudent || !selectedPaymentMethodObj || !formAmount || formAmount <= 0 || isSubmittingPayment}
+            disabled={!selectedStudent || !activeAccountId || !selectedPaymentMethodObj || !formAmount || formAmount <= 0 || isSubmittingPayment}
             class="h-10 w-full gap-2"
           >
             {#if isSubmittingPayment}

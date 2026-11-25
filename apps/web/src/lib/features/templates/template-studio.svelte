@@ -4,6 +4,7 @@ import { api } from "$lib/api/client";
 import type { TemplateDto, UpdateTemplateRequest } from "$lib/api/types";
 import { l } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
 import {
@@ -25,6 +26,8 @@ import PropertiesInspector from "./panels/properties-inspector.svelte";
 import { copyNodes, cutNodes, pasteNodes } from "./stores/clipboard-manager";
 import { createEditorStore } from "./stores/editor-store.svelte";
 import { registerTemplateAiEditor } from "./template-ai-bridge";
+import { templateBindingSchemas } from "./binding-schemas";
+import { templatePreviewData } from "./preview-data";
 
 let { orgId, templateId }: { orgId: string; templateId: string } = $props();
 
@@ -37,6 +40,16 @@ let isPropertiesOpen = $state(false);
 let contextMenuVisible = $state(false);
 let contextMenuX = $state(0);
 let contextMenuY = $state(0);
+let canvasWidth = $state(0);
+let canvasHeight = $state(0);
+let cursorMm = $state({ x: 0, y: 0 });
+
+function updateCanvasSize(width: number, height: number) {
+  if (width <= 0 || height <= 0) return;
+  if (!canvasWidth) store.zoomToFit(width, height);
+  canvasWidth = width;
+  canvasHeight = height;
+}
 
 // Editor Store
 let store = createEditorStore({
@@ -62,18 +75,21 @@ let propertiesWidth = $state(300);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 let unregisterTemplateAiEditor: (() => void) | null = null;
+let mounted = false;
 
 $effect(() => {
   if (store.selectedIds.length > 0) {
     isPropertiesOpen = true;
-    store.activeRailPanel = null;
+    if (window.matchMedia("(max-width: 900px)").matches) store.activeRailPanel = null;
   }
 });
 
 function toggleProperties() {
   const shouldOpen = !isPropertiesOpen;
   isPropertiesOpen = shouldOpen;
-  if (shouldOpen) store.activeRailPanel = null;
+  if (shouldOpen && window.matchMedia("(max-width: 900px)").matches) {
+    store.activeRailPanel = null;
+  }
 }
 
 // Initialize
@@ -82,6 +98,7 @@ async function initEditor() {
   error = null;
   try {
     const data = await api.getTemplate(templateId || "");
+    if (!mounted) return;
     templateRecord = data;
 
     const rawJson = data.document_json ?? (data as any).documentJson;
@@ -126,338 +143,7 @@ async function initEditor() {
       doc.meta.pageSetup.orientation = data.orientation as any;
     }
 
-    // System schemas for data variables and auto-completion
-    store.setSystemSchemas({
-      student: {
-        type: "object",
-        label: m.template_schema_student_group(),
-        properties: {
-          name: {
-            type: "string",
-            label: m.template_schema_student_full_name(),
-          },
-          student_number: {
-            type: "string",
-            label: m.template_schema_student_number(),
-          },
-          studentNumber: {
-            type: "string",
-            label: m.template_schema_student_number(),
-          },
-          national_id: {
-            type: "string",
-            label: m.template_schema_student_national_id(),
-          },
-          nationalId: {
-            type: "string",
-            label: m.template_schema_student_national_id(),
-          },
-          seat_number: {
-            type: "string",
-            label: m.template_schema_student_seat_number(),
-          },
-          class_name: {
-            type: "string",
-            label: m.template_schema_student_class_section(),
-          },
-          className: {
-            type: "string",
-            label: m.template_schema_student_class_section(),
-          },
-          classNameAr: {
-            type: "string",
-            label: m.template_schema_student_class_section(),
-          },
-          class_name_ar: {
-            type: "string",
-            label: m.template_schema_student_class_section(),
-          },
-          grade_level: {
-            type: "string",
-            label: m.template_schema_student_grade_level(),
-          },
-          academic_calendar: {
-            type: "string",
-            label: m.template_schema_academic_year(),
-          },
-          birth_date: { type: "string", label: m.template_schema_birth_date() },
-          birth_place: {
-            type: "string",
-            label: m.template_schema_birth_place(),
-          },
-          nationality: {
-            type: "string",
-            label: m.template_schema_nationality(),
-          },
-          guardian_name: {
-            type: "string",
-            label: m.template_schema_guardian_name(),
-          },
-          avatar_url: {
-            type: "image",
-            label: m.ui_copy_student_profile_photo_de522661(),
-          },
-          avatarUrl: {
-            type: "image",
-            label: m.ui_copy_student_profile_photo_de522661(),
-          },
-        },
-      },
-      academic: {
-        type: "object",
-        label: m.template_schema_academic_group(),
-        properties: {
-          subjects: {
-            type: "array",
-            label: m.template_schema_subjects_grades_table(),
-            items: { type: "object" },
-          },
-          annual_total: {
-            type: "number",
-            label: m.template_schema_annual_total(),
-          },
-          max_score: {
-            type: "number",
-            label: m.template_schema_maximum_score(),
-          },
-          min_score: {
-            type: "number",
-            label: m.template_schema_minimum_score(),
-          },
-          percentage: {
-            type: "string",
-            label: m.template_schema_cumulative_percentage(),
-          },
-          appreciation: {
-            type: "string",
-            label: m.template_schema_overall_grade(),
-          },
-          status: { type: "string", label: m.template_schema_final_result() },
-          rank_in_class: {
-            type: "string",
-            label: m.template_schema_class_rank(),
-          },
-        },
-      },
-      summary: {
-        type: "object",
-        label: m.template_schema_summary_group(),
-        properties: {
-          total_score: {
-            type: "number",
-            label: m.template_schema_total_score(),
-          },
-          percentage: {
-            type: "string",
-            label: m.template_schema_overall_percentage(),
-          },
-          status: {
-            type: "string",
-            label: m.template_schema_academic_status_decision(),
-          },
-          appreciation: {
-            type: "string",
-            label: m.template_schema_cumulative_grade(),
-          },
-          rank_in_class: {
-            type: "string",
-            label: m.template_schema_academic_rank(),
-          },
-        },
-      },
-      report: {
-        type: "object",
-        label: m.template_schema_report_group(),
-        properties: {
-          period_name: {
-            type: "string",
-            label: m.template_schema_report_period(),
-          },
-          academic_calendar: {
-            type: "string",
-            label: m.template_schema_academic_year(),
-          },
-          issued_date: {
-            type: "string",
-            label: m.template_schema_issued_date(),
-          },
-          principal_name: {
-            type: "string",
-            label: m.template_schema_principal_name(),
-          },
-          class_teacher: {
-            type: "string",
-            label: m.template_schema_class_teacher(),
-          },
-          verification_url: {
-            type: "string",
-            label: m.template_schema_verification_qr(),
-          },
-        },
-      },
-      exam: {
-        type: "object",
-        label: m.template_schema_exam_group(),
-        properties: {
-          session_name: {
-            type: "string",
-            label: m.template_schema_exam_session_name(),
-          },
-          hall_name: { type: "string", label: m.template_schema_exam_hall() },
-          seating_number: {
-            type: "string",
-            label: m.template_schema_official_seat_number(),
-          },
-          desk_number: {
-            type: "string",
-            label: m.template_schema_desk_number(),
-          },
-          subject_name: {
-            type: "string",
-            label: m.template_schema_subject_name(),
-          },
-          exam_date: {
-            type: "string",
-            label: m.template_schema_exam_date_time(),
-          },
-          total_count: {
-            type: "string",
-            label: m.template_schema_committee_student_count(),
-          },
-        },
-      },
-      employee: {
-        type: "object",
-        label: m.template_schema_employee_group(),
-        properties: {
-          name: { type: "string", label: m.template_schema_employee_name() },
-          job_title: { type: "string", label: m.template_schema_job_title() },
-          employee_number: {
-            type: "string",
-            label: m.template_schema_employee_number(),
-          },
-          department: { type: "string", label: m.template_schema_department() },
-        },
-      },
-      receipt: {
-        type: "object",
-        label: m.template_schema_receipt_group(),
-        properties: {
-          number: { type: "string", label: m.template_schema_receipt_number() },
-          date: { type: "string", label: m.template_schema_receipt_date() },
-          payer_name: {
-            type: "string",
-            label: m.template_schema_payer_recipient(),
-          },
-          student_name: {
-            type: "string",
-            label: m.template_schema_student_name(),
-          },
-          amount: { type: "number", label: m.template_schema_amount_numeric() },
-          amount_words: {
-            type: "string",
-            label: m.template_schema_amount_words(),
-          },
-          description: {
-            type: "string",
-            label: m.template_schema_description(),
-          },
-          payment_method: {
-            type: "string",
-            label: m.template_schema_payment_method(),
-          },
-          cashier_name: {
-            type: "string",
-            label: m.template_schema_cashier_name(),
-          },
-        },
-      },
-      org: {
-        type: "object",
-        label: m.template_schema_organization_group(),
-        properties: {
-          country_name: {
-            type: "string",
-            label: m.template_schema_country_name(),
-          },
-          ministry_name: {
-            type: "string",
-            label: m.template_schema_ministry_name(),
-          },
-          region_name: {
-            type: "string",
-            label: m.template_schema_region_name(),
-          },
-          phone: {
-            type: "string",
-            label: m.settings_general_phone(),
-          },
-          website: {
-            type: "string",
-            label: m.settings_general_website(),
-          },
-          name_ar: {
-            type: "string",
-            label: m.template_schema_organization_name_ar(),
-          },
-          name: {
-            type: "string",
-            label: m.template_schema_organization_name_en(),
-          },
-          logo_url: {
-            type: "string",
-            label: m.template_schema_organization_logo(),
-          },
-          emblem_url: {
-            type: "string",
-            label: m.template_schema_ministry_emblem(),
-          },
-        },
-      },
-      $org: {
-        type: "object",
-        label: m.template_schema_organization_group(),
-        properties: {
-          country_name: {
-            type: "string",
-            label: m.template_schema_country_name(),
-          },
-          ministry_name: {
-            type: "string",
-            label: m.template_schema_ministry_name(),
-          },
-          region_name: {
-            type: "string",
-            label: m.template_schema_region_name(),
-          },
-          phone: {
-            type: "string",
-            label: m.settings_general_phone(),
-          },
-          website: {
-            type: "string",
-            label: m.settings_general_website(),
-          },
-          name_ar: {
-            type: "string",
-            label: m.template_schema_organization_name_ar(),
-          },
-          name: {
-            type: "string",
-            label: m.template_schema_organization_name_en(),
-          },
-          logo_url: {
-            type: "string",
-            label: m.template_schema_organization_logo(),
-          },
-          emblem_url: {
-            type: "string",
-            label: m.template_schema_ministry_emblem(),
-          },
-        },
-      },
-    });
-
+    store.setSystemSchemas(templateBindingSchemas());
     store.loadDocument(doc);
     unregisterTemplateAiEditor = registerTemplateAiEditor(store);
     isLoading = false;
@@ -470,99 +156,64 @@ async function initEditor() {
   }
 }
 
-// Rename
-async function renameTemplate(newName: string) {
-  if (!templateRecord || !newName || newName.trim() === "") return;
-  const currentName = templateRecord.name;
-  const currentNameAr = templateRecord.name ?? templateRecord.name_ar;
+async function saveTemplate(newName?: string) {
+  if (!templateRecord || isSaving) return;
+  const name = newName?.trim();
+  const arabic = getLocale() === "ar";
+  const record = templateRecord;
+  const renamed = !!name && name !== l(record.name_ar, record.name);
+  if (!renamed && !store.isDirty) return;
 
-  // Optimistic UI update
-  templateRecord.name = newName;
-  templateRecord.name = newName;
-
-  try {
-    const docJson = serializeDocument(store.document);
-    const setup = store.document.meta.pageSetup;
-
-    const updateRequest: UpdateTemplateRequest = {
-      name: newName,
-      name_ar: newName,
-      page_size: setup.size,
-      orientation: setup.orientation,
-      margins_json: JSON.stringify(setup.margins),
-      document_json: docJson,
-    };
-
-    await api.updateTemplate(templateId || "", updateRequest);
-
-    if (store.isDirty) {
-      store.markSaved();
-    }
-  } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_template_rename_failed();
-    toast.error(msg);
-    // revert
-    templateRecord.name = currentName;
-    templateRecord.name_ar = currentNameAr;
-  }
-}
-
-// Save
-async function saveTemplate() {
-  if (!templateRecord || !store.isDirty || isSaving) return;
   isSaving = true;
+  const snapshot = JSON.stringify(store.document);
   try {
-    const docJson = serializeDocument(store.document);
-    const setup = store.document.meta.pageSetup;
-
-    const updateRequest: UpdateTemplateRequest = {
-      name: templateRecord.name,
-      name_ar: templateRecord.name_ar,
-      description: templateRecord.description,
-      description_ar: templateRecord.description_ar,
-      page_size: setup.size,
-      orientation: setup.orientation,
-      margins_json: JSON.stringify(setup.margins),
-      document_json: docJson,
+    const document = JSON.parse(snapshot) as TemplateDocument;
+    const update: UpdateTemplateRequest = {
+      name: renamed && !arabic ? name : record.name,
+      name_ar: renamed && arabic ? name : record.name_ar,
+      description: record.description,
+      description_ar: record.description_ar,
+      page_size: document.meta.pageSetup.size,
+      orientation: document.meta.pageSetup.orientation,
+      margins_json: JSON.stringify(document.meta.pageSetup.margins),
+      document_json: serializeDocument(document),
     };
-
-    await api.updateTemplate(templateId || "", updateRequest);
-
-    store.markSaved();
+    await api.updateTemplate(record.id, update);
+    if (!mounted) return;
+    templateRecord = { ...record, name: update.name ?? record.name, name_ar: update.name_ar };
+    store.markSaved(snapshot);
     toast.success(m.ui_copy_template_saved_successfully_299be978());
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_template_save_failed();
-    toast.error(msg);
+    toast.error(e instanceof Error ? e.message : m.shared_ui_template_save_failed());
   } finally {
     isSaving = false;
   }
 }
 
-// Preview
+function closePreview() {
+  store.editorMode = "design";
+  if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+  previewPdfUrl = null;
+}
+
 async function generatePreview() {
+  if (isPreviewLoading) return;
   isPreviewLoading = true;
   try {
-    const docJson = serializeDocument(store.document);
     const pdfBytes = await api.previewTemplate(
-      docJson,
-      {},
-      templateRecord?.locale ?? "ar",
+      serializeDocument(store.document),
+      templatePreviewData(store.document),
+      store.document.meta.locale ?? templateRecord?.locale ?? "ar",
     );
-    const isPdf =
-      pdfBytes.length >= 4 &&
-      pdfBytes[0] === 0x25 &&
-      pdfBytes[1] === 0x50 &&
-      pdfBytes[2] === 0x44 &&
-      pdfBytes[3] === 0x46;
-    const blob = new Blob([pdfBytes as unknown as BlobPart], {
-      type: isPdf ? "application/pdf" : "text/html;charset=utf-8",
-    });
-    if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
-    previewPdfUrl = URL.createObjectURL(blob);
-    toast.success(m.shared_ui_template_preview_generated());
+    if (!mounted) return;
+    const isPdf = pdfBytes[0] === 0x25 && pdfBytes[1] === 0x50 &&
+      pdfBytes[2] === 0x44 && pdfBytes[3] === 0x46;
+    if (!isPdf) throw new Error(m.shared_ui_template_preview_failed());
+    closePreview();
+    previewPdfUrl = URL.createObjectURL(new Blob([Uint8Array.from(pdfBytes)], { type: "application/pdf" }));
+    store.editorMode = "preview";
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_template_preview_failed();
-    toast.error(msg);
+    toast.error(e instanceof Error ? e.message : m.shared_ui_template_preview_failed());
   } finally {
     isPreviewLoading = false;
   }
@@ -570,10 +221,15 @@ async function generatePreview() {
 
 // Keyboard Shortcuts
 function handleKeydown(e: KeyboardEvent) {
+  if (e.defaultPrevented) return;
   const isCtrl = e.ctrlKey || e.metaKey;
-  const isInputFocused =
-    e.target instanceof HTMLInputElement ||
-    e.target instanceof HTMLTextAreaElement;
+  const isInputFocused = e.target instanceof HTMLElement &&
+    (e.target.isContentEditable || !!e.target.closest("input, textarea, select, [role=combobox]"));
+
+  if (store.editorMode === "preview") {
+    if (e.key === "Escape") closePreview();
+    return;
+  }
 
   if (contextMenuVisible) {
     contextMenuVisible = false;
@@ -599,7 +255,7 @@ function handleKeydown(e: KeyboardEvent) {
   } else if (isCtrl && e.code === "KeyS") {
     e.preventDefault();
     saveTemplate();
-  } else if (isCtrl && e.code === "KeyD") {
+  } else if (isCtrl && e.code === "KeyD" && !isInputFocused) {
     e.preventDefault();
     store.duplicateSelected();
   } else if (isCtrl && e.code === "KeyA" && !isInputFocused) {
@@ -665,11 +321,14 @@ function handleContextMenu(e: MouseEvent) {
   contextMenuVisible = true;
 }
 
-function goBack() {
-  goto(`/${orgId}/templates`);
+async function goBack() {
+  if (isSaving) return;
+  if (store.isDirty) await saveTemplate();
+  if (!store.isDirty) await goto(`/${orgId}/templates`);
 }
 
 onMount(() => {
+  mounted = true;
   store.setAutoSaveCallback(() => {
     void saveTemplate();
   });
@@ -677,13 +336,15 @@ onMount(() => {
   window.addEventListener("keydown", handleKeydown);
   return () => {
     window.removeEventListener("keydown", handleKeydown);
+    mounted = false;
+    closePreview();
     unregisterTemplateAiEditor?.();
     store.destroy();
   };
 });
 </script>
 
-<div class="editor-root" role="application" oncontextmenu={handleContextMenu}>
+<div class="editor-root">
   {#if isLoading}
     <TemplateEditorSkeleton />
   {:else if error}
@@ -695,11 +356,7 @@ onMount(() => {
       />
     </div>
   {:else}
-    <div class="editor-main">
-      <SideRail {store} onopen={() => isPropertiesOpen = false} />
-
-      <div class="canvas-area">
-        <ContextToolbar
+    <ContextToolbar
           {store}
           isPropertiesVisible={isPropertiesOpen}
           ontoggleproperties={toggleProperties}
@@ -707,23 +364,41 @@ onMount(() => {
           onback={goBack}
           onsave={saveTemplate}
           onpreview={generatePreview}
-          onrename={renameTemplate}
+          onrename={(name) => {
+            const value = name.trim();
+            if (value && templateRecord && value !== l(templateRecord.name_ar, templateRecord.name)) void saveTemplate(value);
+          }}
+          {isSaving}
+          {isPreviewLoading}
         />
+    <div class="editor-main">
+      {#if store.editorMode === "design"}
+        <SideRail {store} onopen={() => {
+          if (window.matchMedia("(max-width: 900px)").matches) isPropertiesOpen = false;
+        }} />
+        <FlyoutPanel {store} {orgId} />
+      {/if}
+
+      <div class="canvas-area">
+
 
         {#if store.editorMode === "preview" && previewPdfUrl}
-          <div class="grow relative">
-            <iframe src={previewPdfUrl} title={m.shared_ui_pdf_preview()} class="w-full h-full border-none"></iframe>
-            <div class="absolute top-2 inset-e-2">
-              <Button variant="outline" size="xs" onclick={() => { store.editorMode = "design"; }} class="cursor-pointer">
+          <div class="flex grow flex-col min-h-0">
+            <div class="flex items-center justify-between gap-4 border-b bg-card px-4 py-2">
+              <span class="text-sm font-medium">{m.template_preview_sample_data()}</span>
+              <Button variant="outline" size="sm" onclick={closePreview}>
                 {m.common_td_back_to_editor()}
               </Button>
             </div>
+            <iframe src={previewPdfUrl} title={m.shared_ui_pdf_preview()} class="w-full grow border-none"></iframe>
           </div>
         {:else}
-          <CanvasRoot {store} />
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="canvas-workspace" oncontextmenu={handleContextMenu}>
+            <CanvasRoot {store} onresize={updateCanvasSize} oncursor={(position) => { cursorMm = position; }} />
+          </div>
         {/if}
 
-        <FlyoutPanel {store} {orgId} />
       </div>
       {#if store.editorMode === "design" && isPropertiesOpen}
         <PropertiesInspector
@@ -733,7 +408,9 @@ onMount(() => {
         />
       {/if}
     </div>
-    <StatusBar {store} />
+    {#if store.editorMode === "design"}
+      <StatusBar {store} containerWidth={canvasWidth} containerHeight={canvasHeight} {cursorMm} />
+    {/if}
   {/if}
 
   <CanvasContextMenu
@@ -763,6 +440,12 @@ onMount(() => {
     min-width: 0;
     min-height: 0;
     background: var(--color-muted);
+  }
+
+  .canvas-workspace {
+    flex: 1;
+    min-height: 0;
+    display: flex;
   }
 
   .canvas-area {

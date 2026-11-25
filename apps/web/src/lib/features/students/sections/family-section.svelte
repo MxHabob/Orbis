@@ -30,12 +30,10 @@ import type { StudentFormState } from "../form-state.svelte";
 let { state }: { state: StudentFormState } = $props();
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-3">
   <!-- Section Title & Add Button -->
   <div class="flex justify-between items-center px-1">
-    <div class="flex flex-col text-start gap-0.5">
-      <span class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_desc()}</span>
-    </div>
+    <h3 class="text-sm font-semibold">{m.common_guardians_tab()}</h3>
     <Button 
       type="button" 
       variant="outline" 
@@ -81,12 +79,11 @@ let { state }: { state: StudentFormState } = $props();
       <CardContent class="p-0">
         <div class="flex flex-col divide-y divide-border">
           <!-- Autocomplete Search -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_search_label()}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_search_placeholder()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0 relative">
+            <div class="w-full min-w-0 relative">
               <Input 
                 placeholder={m.common_form_guardian_search_placeholder_ext()} 
                 class="h-9 w-full bg-background"
@@ -111,41 +108,38 @@ let { state }: { state: StudentFormState } = $props();
           </div>
 
           <!-- Guardian Full Name -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
-              <Label class="text-xs font-semibold text-foreground flex items-center gap-1">
+              <Label for={`guardian-name-${index}`} class="text-xs font-semibold text-foreground flex items-center gap-1">
                 {m.common_word_fullname()}
                 {#if !state.admissionPolicy.allowNoGuardian}
                   <span class="text-destructive">*</span>
                 {/if}
               </Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0">
-              <Input bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder={m.common_guardians_col_name()} />
+            <div class="w-full min-w-0">
+              <Input id={`guardian-name-${index}`} bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder={m.common_guardians_col_name()} />
             </div>
           </div>
 
           <!-- Phone Number -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground flex items-center gap-1">
                 {m.common_word_phone()}
               </Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0">
+            <div class="w-full min-w-0">
               <Input type="tel" bind:value={guardian.phone} class="h-9 w-full bg-background font-mono" placeholder="777000000" />
             </div>
           </div>
 
           <!-- Relationship -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.common_bulk_col_guardian_rel()}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_rel_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0">
+            <div class="w-full min-w-0">
               <Select 
                 type="single"
                 value={guardian.relationship}
@@ -178,46 +172,42 @@ let { state }: { state: StudentFormState } = $props();
           </div>
 
           <!-- National ID -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_national_id_label()}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_nid_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0">
+            <div class="w-full min-w-0">
               <Input bind:value={guardian.national_id} class="h-9 w-full bg-background font-mono" placeholder={m.common_form_guardian_national_id_label()} />
             </div>
           </div>
 
           <!-- Occupations / Job & Employer -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_job_label()}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_job_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="w-full min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Input bind:value={guardian.occupation} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_job_placeholder()} />
               <Input bind:value={guardian.employer} class="h-9 w-full bg-background" placeholder={m.ui_copy_employer_company_e5ea9ad3()} />
             </div>
           </div>
 
           <!-- Work Phone -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-border gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.ui_copy_work_phone_993d8321()}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_guardian_workplace_phone_number_cc339fc4()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0">
+            <div class="w-full min-w-0">
               <Input type="tel" bind:value={guardian.work_phone} class="h-9 w-full bg-background font-mono" placeholder="01-234567" />
             </div>
           </div>
 
           <!-- Permissions Checkboxes -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+          <div class="px-4 py-3 grid items-start @min-[36rem]/registration-panel:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] last:border-b-0 gap-3">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_perms_label()}</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_perms_desc()}</span>
             </div>
-            <div class="w-full md:w-120 shrink-0 flex flex-col gap-4">
+            <div class="w-full min-w-0 flex flex-col gap-4">
               <div class="grid grid-cols-3 gap-3">
                 <div class="flex items-center gap-2">
                   <Checkbox id={`primary_${index}`} checked={guardian.is_primary} onCheckedChange={(val) => guardian.is_primary = !!val} />

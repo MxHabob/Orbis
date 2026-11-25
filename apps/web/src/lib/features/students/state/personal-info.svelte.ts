@@ -1,15 +1,116 @@
 import type { StudentDetailDto } from "$lib/api";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { studentRegistrationSchema } from "@orbis/schemas";
 
 export class PersonalInfoState {
-  nameAr = $state("");
-  nameEn = $state("");
-  nationalId = $state("");
-  sex = $state("male");
-  classId = $state("");
+  private readonly registration = new FormController({
+    initialValues: {
+      name: "",
+      name_en: "",
+      national_id: "",
+      gender: "",
+      class_id: "",
+      email: "",
+      phone: "",
+      address: "",
+      nationality: "",
+      passport_number: "",
+    },
+    schema: studentRegistrationSchema.pick({
+      name: true,
+      name_en: true,
+      national_id: true,
+      gender: true,
+      class_id: true,
+      email: true,
+      phone: true,
+      address: true,
+      nationality: true,
+      passport_number: true,
+    }),
+  });
+
+  get nameAr() {
+    return this.registration.values.name;
+  }
+
+  set nameAr(value: string) {
+    this.registration.setField("name", value);
+  }
+
+  get nameEn() {
+    return this.registration.values.name_en;
+  }
+
+  set nameEn(value: string) {
+    this.registration.setField("name_en", value);
+  }
+
+  get nationalId() {
+    return this.registration.values.national_id;
+  }
+
+  set nationalId(value: string) {
+    this.registration.setField("national_id", value);
+  }
+
+  get sex() {
+    return this.registration.values.gender;
+  }
+
+  set sex(value: string) {
+    this.registration.setField("gender", value);
+  }
+
+  get classId() {
+    return this.registration.values.class_id;
+  }
+
+  set classId(value: string) {
+    this.registration.setField("class_id", value);
+  }
+
+  get email() {
+    return this.registration.values.email;
+  }
+
+  set email(value: string) {
+    this.registration.setField("email", value);
+  }
+
+  get phone() {
+    return this.registration.values.phone;
+  }
+
+  set phone(value: string) {
+    this.registration.setField("phone", value);
+  }
+
+  get address() {
+    return this.registration.values.address;
+  }
+
+  set address(value: string) {
+    this.registration.setField("address", value);
+  }
+
+  get nationality() {
+    return this.registration.values.nationality;
+  }
+
+  set nationality(value: string) {
+    this.registration.setField("nationality", value);
+  }
+
+  get passportNumber() {
+    return this.registration.values.passport_number;
+  }
+
+  set passportNumber(value: string) {
+    this.registration.setField("passport_number", value);
+  }
+
   studentNumber = $state("");
-  email = $state("");
-  phone = $state("");
-  address = $state("");
   status = $state("active");
 
   // Date picker components
@@ -30,9 +131,7 @@ export class PersonalInfoState {
   governorate = $state("");
 
   // Additional fields
-  nationality = $state("");
   placeOfBirth = $state("");
-  passportNumber = $state("");
   bloodType = $state("");
   emergencyContact = $state("");
   medicalNotes = $state("");
@@ -66,7 +165,7 @@ export class PersonalInfoState {
       }
     }
 
-    this.sex = p.gender || "male";
+    this.sex = p.gender || "";
     this.classId = String(e?.section_id || "");
     this.studentNumber = s.student_number || "";
     this.email = p.email || "";

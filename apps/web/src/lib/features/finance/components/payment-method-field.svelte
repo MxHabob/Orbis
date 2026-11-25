@@ -1,15 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { localizeHref } from "$lib/paraglide/runtime";
 import { Button } from "@orbis/ui/button";
 import { Label } from "@orbis/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
 import type { AvailablePaymentMethod } from "../queries";
 
 let {
-  orgId, methods, value, disabled = false, loading = false, loadFailed = false, onretry, onchange,
+  methods, value, disabled = false, loading = false, loadFailed = false, onretry, onchange,
 }: {
-  orgId: string;
   methods: AvailablePaymentMethod[];
   value: string;
   disabled?: boolean;
@@ -53,10 +51,6 @@ const selected = $derived(methods.find((method) => method.id === value));
       </div>
     {:else if loading && !electronic.length}
       <span role="status">{m.common_loading()}</span>
-    {:else if !electronic.length}
-      <a class="text-primary underline underline-offset-2" href={localizeHref("/" + orgId + "/settings/integrations")}>
-        {m.finance_ui_payment_configure_gateway()}
-      </a>
     {/if}
   </div>
 </div>

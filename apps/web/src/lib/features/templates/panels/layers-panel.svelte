@@ -8,9 +8,8 @@ import type { EditorStore } from "../stores/editor-store.svelte";
 import type { TemplateNode } from "@docforge/core";
 import { isContainerNode } from "@docforge/core";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import {
-  AdjustmentsHorizontal,
-  Bold,
   CheckBox,
   CheckSquare,
   ChevronDown,
@@ -67,38 +66,27 @@ function getIcon(type: string) {
   }
 }
 
-function getIconColor(type: string): string {
-  switch (type) {
-    case "Text":
-      return "text-emerald-500";
-    case "Image":
-      return "text-violet-500";
-    case "Shape":
-      return "text-blue-500";
-    case "Frame":
-    case "Grid":
-      return "text-amber-500";
-    case "Table":
-      return "text-cyan-500";
-    case "Barcode":
-      return "text-orange-500";
-    case "QRCode":
-      return "text-purple-500";
-    default:
-      return "text-muted-foreground";
+let search = $state("");
+const filter = $derived(search.trim().toLocaleLowerCase());
+
+function matches(node: TemplateNode): boolean {
+  if (!filter) return true;
+  if ([node.name, node.id, node.type].some((value) => value?.toLocaleLowerCase().includes(filter))) {
+    return true;
   }
+  return isContainerNode(node) && node.children.some(matches);
 }
 </script>
 
 <div class="flex flex-col h-full text-start">
   <!-- Header -->
-  <div class="px-3 py-2.5 border-b border-border flex items-center justify-between">
-    <h3 class="text-sm font-semibold text-foreground">{m.template_panel_layers()}</h3>
+  <div class="px-3 py-2.5 border-b border-border flex items-center gap-2">
+    <Input type="search" class="h-8" aria-label={m.common_header_search()} placeholder={m.common_header_search()} bind:value={search} />
     <div class="flex items-center gap-1">
       <span class="text-[11px] text-muted-foreground">
         {store.activePageIndex + 1}/{store.pageCount}
       </span>
-      <Button variant="ghost" size="icon-sm" class="cursor-pointer" onclick={() => store.addPage()}>
+      <Button variant="ghost" size="icon-sm" aria-label={m.shared_ui_add_page()} onclick={() => store.addPage()}>
         <Plus size={14} />
       </Button>
     </div>
@@ -127,19 +115,19 @@ function getIconColor(type: string): string {
     {#if store.activePage}
       {#snippet treeNode(node: TemplateNode, depth: number)}
         {@const isContainer = isContainerNode(node)}
-        {@const isCollapsed = collapsed.has(node.id)}
+        {@const isCollapsed = !filter && collapsed.has(node.id)}
         {@const isSelected = store.selectedIds.includes(node.id)}
         {@const IconComp = getIcon(node.type)}
-        {@const iconColor = getIconColor(node.type)}
 
         <div class="flex flex-col">
-          <!-- Node row -->
+          <div class="group flex min-w-0 items-center">
           <button
             type="button"
-            class="w-full flex items-center gap-2 py-1.5 px-2 rounded-md text-xs transition-colors cursor-pointer group
+            class="min-w-0 flex-1 flex items-center gap-2 py-1.5 px-2 rounded-md text-xs transition-colors cursor-pointer
               {isSelected ? 'bg-primary/10 text-primary font-medium' : 'text-foreground hover:bg-muted/60'}"
             style="padding-inline-start: {depth * 12 + 6}px;"
             aria-expanded={isContainer ? !isCollapsed : undefined}
+            aria-pressed={isSelected}
             onclick={(event) => {
               if ((event.target as HTMLElement).closest(".collapse-toggle")) {
                 toggleCollapse(node.id);
@@ -154,6 +142,7 @@ function getIconColor(type: string): string {
                   (event.key === "ArrowLeft" && !isCollapsed))
               ) {
                 event.preventDefault();
+                event.stopPropagation();
                 toggleCollapse(node.id);
               }
             }}
@@ -172,38 +161,42 @@ function getIconColor(type: string): string {
             {/if}
 
             <!-- Icon -->
-            <IconComp size={14} class="shrink-0 {iconColor}" />
+            <IconComp size={14} class="shrink-0 text-muted-foreground" />
 
             <!-- Name -->
             <span class="truncate flex-grow">
               {node.name || node.id}
             </span>
 
-            <!-- Visibility toggle (on hover) -->
-            <span class="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5">
-              {#if node.visible === false}
-                <EyeSlash size={12} class="text-muted-foreground/60" />
-              {:else}
-                <Eye size={12} class="text-muted-foreground/50" />
-              {/if}
-            </span>
-
-            <!-- Lock indicator -->
             {#if node.locked}
-              <Lock size={11} class="text-muted-foreground/50 shrink-0" />
+              <Lock size={11} class="text-muted-foreground shrink-0" />
             {/if}
           </button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            class="shrink-0"
+            aria-label={node.visible === false ? m.template_action_show() : m.template_action_hide()}
+            onclick={() => store.updateNodeProps(node.id, { visible: node.visible === false })}
+          >
+            {#if node.visible === false}
+              <EyeSlash size={13} />
+            {:else}
+              <Eye size={13} />
+            {/if}
+          </Button>
+          </div>
 
           <!-- Children (if expanded) -->
-          {#if isContainer && !isCollapsed && (node as any).children}
-            {#each (node as any).children as child (child.id)}
+          {#if isContainer && !isCollapsed}
+            {#each node.children.filter(matches) as child (child.id)}
               {@render treeNode(child, depth + 1)}
             {/each}
           {/if}
         </div>
       {/snippet}
 
-      {#each store.activePage.children as child (child.id)}
+      {#each store.activePage.children.filter(matches) as child (child.id)}
         {@render treeNode(child, 0)}
       {/each}
 
@@ -211,6 +204,8 @@ function getIconColor(type: string): string {
         <div class="text-center py-8 text-xs text-muted-foreground">
           {m.template_msg_empty_page()}
         </div>
+      {:else if !store.activePage.children.some(matches)}
+        <p class="py-8 text-center text-xs text-muted-foreground">{m.template_msg_no_results()}</p>
       {/if}
     {/if}
   </div>

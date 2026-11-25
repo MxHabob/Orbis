@@ -36,17 +36,22 @@ import {
   type DisbursePayrollRequest,
 } from "$lib/api";
 
+import { authStore } from "$lib/stores";
+import { treasuryKind } from "./treasury-policy";
+
+export function createCashierAssignmentQuery(orgId: () => string) {
+  return createQuery(() => ({
+    queryKey: queryKeys.org.settings(orgId()),
+    queryFn: () => api.getSettings(),
+    enabled: Boolean(orgId()) && Boolean(authStore.userId),
+    staleTime: 5 * 60 * 1000,
+    select: (settings) => settings.finance?.cashier_cash_accounts ?? {},
+  }));
+}
+
 /** Treasuries for an organization. */
 export function isCashOrBankAccount(account: AccountDto): boolean {
-  const accountType = account.account_type.toLowerCase();
-  const subType = account.sub_type?.toLowerCase();
-  return (
-    account.is_active &&
-    accountType === "asset" &&
-    (subType === "cash" ||
-      subType === "bank" ||
-      ["110101", "110102", "110103", "110104"].includes(account.code))
-  );
+  return treasuryKind(account) !== undefined;
 }
 
 export function createCashAccountsQuery(
@@ -231,6 +236,7 @@ export async function refreshPaymentData(client: ReturnType<typeof useQueryClien
     client.invalidateQueries({ queryKey: queryKeys.finance.studentFeesForOrg(orgId) }),
     client.invalidateQueries({ queryKey: queryKeys.finance.studentFeeSummary(orgId) }),
     client.invalidateQueries({ queryKey: queryKeys.finance.journalEntries(orgId) }),
+    client.invalidateQueries({ queryKey: queryKeys.finance.accounts(orgId) }),
   ]);
 }
 

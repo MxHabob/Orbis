@@ -8,6 +8,8 @@
   - Real backend double-entry posting and reversals
 -->
 <script lang="ts">
+import JournalLineDetails from "./components/journal-line-details.svelte";
+import VoucherMetadata from "./components/voucher-metadata.svelte";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
@@ -561,16 +563,11 @@ function exportCsv() {
           onsave={handleSaveNew}
           onclose={() => { formError = ""; showAddForm = false; }}
         >
+          {#snippet metadata()}
+            <VoucherMetadata bind:number={referenceNumber} bind:date={accountingDate} />
+          {/snippet}
             <h3 class="text-sm font-semibold">{m.finance_ui_payment_details()}</h3>
-            <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-4">
-              <div class="min-w-0">
-                <Label for="journal-date" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
-                <Input id="journal-date"
-                  type="date"
-                  bind:value={accountingDate}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
-              </div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2">
               <div class="min-w-0">
                 <CurrencySelector
                   compact
@@ -592,15 +589,6 @@ function exportCsv() {
                   bind:value={amount}
                   placeholder="0.00"
                   class="h-8 text-xs font-mono font-bold text-primary bg-background border-border/60"
-                />
-              </div>
-              <div class="min-w-0">
-                <Label for="journal-voucher-number-optional" class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
-                <Input id="journal-voucher-number-optional"
-                  type="text"
-                  bind:value={referenceNumber}
-                  placeholder={m.finance_ui_automatic()}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
                 />
               </div>
             </div>
@@ -689,17 +677,7 @@ function exportCsv() {
   ] : []}
   onprint={printDetail}
 >
-  {#if detailRow?.lines?.length}
-    <dl class="divide-y divide-border border-y border-border">
-      {#each detailRow.lines as line (line.id)}
-        <div class="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
-          <dt class="text-sm font-medium">{getAccountName(line.account_id)}</dt>
-          <dd class="text-xs text-muted-foreground">{m.finance_ui_debit_account()}: {formatCurrency(Number(line.debit_amount), detailRow?.currency_code)}</dd>
-          <dd class="text-xs text-muted-foreground">{m.finance_ui_credit_account()}: {formatCurrency(Number(line.credit_amount), detailRow?.currency_code)}</dd>
-        </div>
-      {/each}
-    </dl>
-  {/if}
+  <JournalLineDetails entry={detailRow} accountName={getAccountName} />
 </FinanceRecordDialog>
 
 <PrintDialog

@@ -58,6 +58,8 @@ let {
   onsave,
   onpreview,
   onrename,
+  isSaving = false,
+  isPreviewLoading = false,
 }: {
   store: EditorStore;
   templateName?: string;
@@ -67,6 +69,8 @@ let {
   onsave: () => void;
   onpreview: () => void;
   onrename?: (newName: string) => void;
+  isSaving?: boolean;
+  isPreviewLoading?: boolean;
 } = $props();
 
 const FONT_FAMILIES = [
@@ -269,7 +273,7 @@ function handleAlign(
       <div class="ctx-divider"></div>
 
       <div class="ctx-group">
-        <button type="button" class="ctx-format-btn" class:active={nodeProps.fontWeight === "700" || nodeProps.fontWeight === "bold"} onclick={() => updateProp("fontWeight", nodeProps.fontWeight === "700" ? "400" : "700")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.fontWeight === "700" || nodeProps.fontWeight === "bold"} onclick={() => updateProp("fontWeight", nodeProps.fontWeight === "700" || nodeProps.fontWeight === "bold" ? "400" : "700")}>
           <Bold size={13} />
         </button>
         <button type="button" class="ctx-format-btn" class:active={nodeProps.fontStyle === "italic"} onclick={() => updateProp("fontStyle", nodeProps.fontStyle === "italic" ? "normal" : "italic")}>
@@ -535,13 +539,13 @@ function handleAlign(
 
     <div class="ctx-divider"></div>
 
-    <Button variant="ghost" size="xs" class="cursor-pointer text-[10px]" onclick={onpreview}>
+    <Button variant="outline" size="sm" onclick={onpreview} disabled={isPreviewLoading} aria-busy={isPreviewLoading}>
       <Eye size={13} class="me-1" />
-      {m.template_btn_preview()}
+      {isPreviewLoading ? m.common_print_multi_up_preview_loading() : m.template_btn_preview()}
     </Button>
-    <Button variant="lime" size="xs" class="cursor-pointer text-[10px]" onclick={onsave} disabled={!store.isDirty}>
+    <Button size="sm" onclick={onsave} disabled={!store.isDirty || isSaving} aria-busy={isSaving}>
       <FloppyDisk size={13} class="me-1" />
-      {m.template_btn_save()}
+      {isSaving ? m.common_state_saving() : m.template_btn_save()}
     </Button>
   </div>
 </div>

@@ -14,6 +14,8 @@ interface Props {
   value?: string;
   placeholder?: string;
   disabled?: boolean;
+  required?: boolean;
+  preferredCountry?: string;
   size?: "sm" | "default";
   class?: string;
   id?: string;
@@ -24,6 +26,8 @@ let {
   value = $bindable(""),
   placeholder = m.common_select_nationality(),
   disabled = false,
+  required = false,
+  preferredCountry = "",
   size = "default",
   class: className = "",
   id = undefined,
@@ -31,7 +35,7 @@ let {
 }: Props = $props();
 
 // Common Arabic nationalities dictionary mapping ISO alpha2 to Arabic nationality / demonym
-const NATIONALITY_MESSAGES: Record<string, () => string> = {
+const NATIONALITY_MESSAGES: Partial<Record<string, typeof m.nationality_sa>> = {
   SA: m.nationality_sa,
   YE: m.nationality_ye,
   EG: m.nationality_eg,
@@ -111,9 +115,11 @@ interface CountryItem {
   name_ar: string;
   emoji: string;
   demonym: string;
+  searchNames: string[];
 }
 
 const countryList = $derived.by<CountryItem[]>(() => {
+  const preferred = preferredCountry.trim().toUpperCase();
   const arabicCountryNames = new Intl.DisplayNames(["ar"], {
     type: "region",
   });
@@ -121,17 +127,28 @@ const countryList = $derived.by<CountryItem[]>(() => {
   const mapped: CountryItem[] = countries.map((c) => {
     const known = NATIONALITY_MESSAGES[c.alpha2];
     const demonym = known ? known() : c.name;
+    const nameAr = arabicCountryNames.of(c.alpha2) || c.name;
     return {
       alpha2: c.alpha2,
       alpha3: c.alpha3,
       name: c.name,
-      name_ar: arabicCountryNames.of(c.alpha2) || c.name,
+      name_ar: nameAr,
       emoji: c.emoji || "🌐",
       demonym,
+      searchNames: [
+        c.alpha2,
+        c.alpha3,
+        c.name,
+        nameAr,
+        ...(known ? [known({}, { locale: "ar" }), known({}, { locale: "en" })] : []),
+      ],
     };
   });
 
   return mapped.sort((a, b) => {
+    if (a.alpha2 === preferred || b.alpha2 === preferred) {
+      return Number(b.alpha2 === preferred) - Number(a.alpha2 === preferred);
+    }
     const aPri = PRIORITY_CODES.indexOf(a.alpha2);
     const bPri = PRIORITY_CODES.indexOf(b.alpha2);
     if (aPri !== -1 && bPri !== -1) return aPri - bPri;
@@ -139,6 +156,16 @@ const countryList = $derived.by<CountryItem[]>(() => {
     if (bPri !== -1) return 1;
     return a.demonym.localeCompare(b.demonym);
   });
+});
+
+const selectedValue = $derived.by(() => {
+  const key = value.trim().toLowerCase();
+  if (!key) return "";
+
+  const selected = countryList.find((country) =>
+    [...country.searchNames, country.demonym].some((name) => name.toLowerCase() === key),
+  );
+  return selected?.demonym ?? value;
 });
 
 function getCountryValue(c: CountryItem): string {
@@ -159,16 +186,18 @@ function handleChange(val: string | null) {
 </script>
 
 <SearchableSelect
-  bind:value
+  value={selectedValue}
   items={countryList}
   {placeholder}
   searchPlaceholder={m.ui_copy_search_nationality_9c3a6b9d()}
   emptyText={m.ui_copy_no_matching_nationalities_found_65a71c81()}
   {disabled}
+  {required}
   {size}
   {id}
   getItemValue={getCountryValue}
   getItemLabel={getCountryLabel}
+  getItemSearchText={(country) => country.searchNames.join(" ")}
   onchange={handleChange}
   class={className}
 />

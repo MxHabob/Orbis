@@ -77,7 +77,9 @@ fn format_date(value: &Value, format_str: Option<&str>) -> Value {
     }
 
     use chrono::NaiveDateTime;
-    let parsed_date = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S")
+    let parsed_date = chrono::DateTime::parse_from_rfc3339(&date_str)
+        .map(|date| date.naive_local())
+        .or_else(|_| NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%dT%H:%M:%S"))
         .or_else(|_| NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H:%M:%S"))
         .or_else(|_| {
             chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")

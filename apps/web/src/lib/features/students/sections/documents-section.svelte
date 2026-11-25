@@ -115,7 +115,7 @@ function formatBytes(bytes?: number) {
 </script>
 
 <Card class="w-full border-border/80 shadow-xs">
-  <CardHeader class="py-3 px-6 flex flex-row items-center justify-between border-b border-border/40">
+  <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border/40 px-4 py-3 @sm/form-section:px-6">
     <div class="flex items-center gap-2">
       <DocumentCheck class="h-4 w-4 text-primary" />
       <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
@@ -130,7 +130,7 @@ function formatBytes(bytes?: number) {
     {/if}
   </CardHeader>
 
-  <CardContent class="p-6">
+  <CardContent class="p-4 @sm/form-section:p-6">
     {#if docItems.length === 0}
       <div class="py-8 flex flex-col items-center justify-center text-center gap-2.5">
         <div class="w-10 h-10 rounded-full bg-muted/50 border border-border/60 flex items-center justify-center text-muted-foreground">
@@ -146,7 +146,7 @@ function formatBytes(bytes?: number) {
         </div>
       </div>
     {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 @min-[40rem]/form-section:grid-cols-2">
       {#each docItems as doc (doc.id)}
         {@const isChecked = doc.isFulfilled}
         {@const isUploading = state.document.isUploading[doc.id]}
@@ -194,7 +194,7 @@ function formatBytes(bytes?: number) {
           </div>
 
           <!-- Attachment Status or Upload Area -->
-          <div class="ms-7 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+          <div class="ms-7 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2">
             {#if doc.fileName}
               <div class="flex items-center gap-2 min-w-0">
                 <div class="flex flex-col min-w-0">

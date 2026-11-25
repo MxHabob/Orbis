@@ -1,4 +1,5 @@
 <script lang="ts">
+import PanelResizeHandle from "../layout/panel-resize-handle.svelte";
 import {
   getDocumentSource,
   useUploadFile,
@@ -164,40 +165,6 @@ function updatePosition(key: string, val: number | string) {
   }
 }
 
-function startResize(event: PointerEvent) {
-  event.preventDefault();
-  const startX = event.clientX;
-  const startWidth = width;
-  const direction = getComputedStyle(document.documentElement).direction;
-  const handleMove = (moveEvent: PointerEvent) => {
-    const delta =
-      direction === "rtl"
-        ? moveEvent.clientX - startX
-        : startX - moveEvent.clientX;
-    width = Math.min(400, Math.max(260, startWidth + delta));
-  };
-  const stopResize = () => {
-    window.removeEventListener("pointermove", handleMove);
-    window.removeEventListener("pointerup", stopResize);
-    window.removeEventListener("pointercancel", stopResize);
-  };
-  window.addEventListener("pointermove", handleMove);
-  window.addEventListener("pointerup", stopResize, { once: true });
-  window.addEventListener("pointercancel", stopResize, { once: true });
-}
-
-function resizeWithKeyboard(event: KeyboardEvent) {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-  event.preventDefault();
-  const direction = getComputedStyle(document.documentElement).direction;
-  const expands =
-    direction === "rtl"
-      ? event.key === "ArrowRight"
-      : event.key === "ArrowLeft";
-  width = Math.min(400, Math.max(260, width + (expands ? 16 : -16)));
-}
-
-// ── Table Column Helpers ─────────────────────────────────────
 const columns = $derived<any[]>(nodeProps.columns || []);
 
 function addColumn() {
@@ -344,15 +311,13 @@ function applyYemeniCertificateColumnsPreset() {
 </script>
 
 <aside class="properties-inspector" style:width={`${width}px`} aria-label={m.template_inspector_editor_properties()}>
-  <Button
-    variant="ghost"
-    size="icon-xs"
-    class="resize-handle"
-    type="button"
-    aria-label={m.template_inspector_resize_panel()}
-    title={m.template_inspector_resize_hint()}
-    onpointerdown={startResize}
-    onkeydown={resizeWithKeyboard}
+  <PanelResizeHandle
+    edge="start"
+    {width}
+    min={260}
+    max={400}
+    label={m.template_inspector_resize_panel()}
+    onresize={(value) => { width = value; }}
   />
   <div class="inspector-header">
     <div class="flex min-w-0 items-center gap-2">
@@ -735,6 +700,7 @@ function applyYemeniCertificateColumnsPreset() {
                 <span class="text-[11px] text-muted-foreground">{m.template_inspector_border_color()}</span>
                 <ColorPicker
                   value={nodeProps.style?.borderColor || "#475569"}
+                  allowNone
                   onchange={(c) => updateTableStyle("borderColor", c)}
                 />
               </div>
@@ -911,7 +877,7 @@ function applyYemeniCertificateColumnsPreset() {
             </div>
             <div class="space-y-1">
               <Label class="property-label">{m.template_inspector_background_color()}</Label>
-              <ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} />
+              <ColorPicker value={nodeProps.backgroundColor || "transparent"} allowNone onchange={(c) => updateProp("backgroundColor", c)} />
             </div>
           </div>
 
@@ -972,7 +938,7 @@ function applyYemeniCertificateColumnsPreset() {
               <div class="space-y-1"><Label class="property-label">{m.template_inspector_corner_radius()}</Label><Input type="number" min="0" step="0.5" value={nodeProps.borderRadius ?? 0} onchange={(e) => updateProp("borderRadius", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
               <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_width()}</Label><Input type="number" min="0" step="0.25" value={nodeProps.borderWidth ?? 0} onchange={(e) => updateProp("borderWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
             </div>
-            <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_color()}</Label><ColorPicker value={nodeProps.borderColor || "#000000"} onchange={(c) => updateProp("borderColor", c)} /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_color()}</Label><ColorPicker value={nodeProps.borderColor || (nodeProps.borderWidth > 0 ? "#000000" : "transparent")} allowNone onchange={(c) => updateProp("borderColor", c)} /></div>
           </div>
 
         <!-- ══════════════ SHAPE NODE INSPECTOR ══════════════ -->
@@ -1202,8 +1168,8 @@ function applyYemeniCertificateColumnsPreset() {
               <div class="space-y-1"><Label class="property-label">{m.template_inspector_inner_padding()}</Label><Input type="number" min="0" value={typeof nodeProps.padding === "number" ? nodeProps.padding : nodeProps.padding?.top ?? 0} onchange={(e) => { const value = Number((e.target as HTMLInputElement).value); updateProp("padding", { top: value, right: value, bottom: value, left: value }); }} class="h-8 text-xs" /></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1"><Label class="property-label">{m.template_inspector_background_color()}</Label><ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} /></div>
-              <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_color()}</Label><ColorPicker value={nodeProps.borderColor || "#cbd5e1"} onchange={(c) => updateProp("borderColor", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_background_color()}</Label><ColorPicker value={nodeProps.backgroundColor || "transparent"} allowNone onchange={(c) => updateProp("backgroundColor", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_color()}</Label><ColorPicker value={nodeProps.borderColor || "transparent"} allowNone onchange={(c) => updateProp("borderColor", c)} /></div>
             </div>
           </div>
         {:else if node.type === "Repeater"}
@@ -1342,31 +1308,15 @@ function applyYemeniCertificateColumnsPreset() {
     z-index: 10;
   }
 
-  :global(.resize-handle) {
-    position: absolute;
-    z-index: 2;
-    inset-block: 0;
-    inset-inline-start: -3px;
-    width: 6px;
-    border: 0;
-    background: transparent;
-    cursor: col-resize;
-    touch-action: none;
-  }
-
-  :global(.resize-handle)::after {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 2px;
-    width: 1px;
-    background: transparent;
-    content: "";
-    transition: background 0.15s ease;
-  }
-
-  :global(.resize-handle:hover)::after,
-  :global(.resize-handle:focus-visible)::after {
-    background: var(--color-primary);
+  @media (max-width: 900px) {
+    .properties-inspector {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      max-width: calc(100% - 64px);
+      z-index: 16;
+      box-shadow: 0 8px 28px color-mix(in srgb, var(--color-foreground) 14%, transparent);
+    }
   }
 
   .inspector-header {

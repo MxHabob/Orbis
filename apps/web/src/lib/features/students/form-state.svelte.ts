@@ -15,9 +15,7 @@ import { toast } from "@orbis/ui";
 
 import { formatDate, formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { studentRegistrationSchema } from "@orbis/schemas";
 import type { DuplicateCheckRequest } from "@orbis/sdk";
-import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import {
   createShowInFolderToastAction,
   downloadBlob,
@@ -155,25 +153,6 @@ export class StudentFormState {
   orgName = $state("");
   isDownloadingForm = $state(false);
 
-  registrationForm = new FormController({
-    initialValues: {
-      name: "",
-      name_en: null as string | null,
-      email: null as string | null,
-      phone: null as string | null,
-      gender: null as string | null,
-      birth_date: null as string | null,
-      nationality: null as string | null,
-      national_id: null as string | null,
-      address: null as string | null,
-      class_id: "",
-      guardian_name: null as string | null,
-      guardian_phone: null as string | null,
-      guardian_relationship: null as string | null,
-    },
-    schema: studentRegistrationSchema,
-  });
-
   // Printing templates & staged media files
   availableTemplates = $state<TemplateDto[]>([]);
   selectedTemplateId = $state("");
@@ -202,6 +181,30 @@ export class StudentFormState {
         value === "exchange" ||
         value === "special_needs",
     );
+  }
+
+  private appliedClassDefault = false;
+
+  applyClassOptions(classes: ClassDto[], contextualIds: readonly (string | null)[]) {
+    this.classes = classes;
+    if (this.isEditMode || this.appliedClassDefault || classes.length === 0) return;
+    this.appliedClassDefault = true;
+    if (this.personal.classId) return;
+
+    const rememberedClassId = uiStore.getPreference(
+      { userId: authStore.userId, organizationId: this.orgId },
+      "students.classId",
+      "",
+      (value): value is string => typeof value === "string",
+    );
+    const classIds = classes.map((item) => String(item.id));
+    const defaultClassId = [
+      ...contextualIds,
+      rememberedClassId,
+      classIds.length === 1 ? classIds[0] : "",
+    ].find((id) => id !== null && classIds.includes(id));
+    if (defaultClassId) this.personal.classId = defaultClassId;
+    return defaultClassId;
   }
 
   async init() {
@@ -543,126 +546,140 @@ export class StudentFormState {
   }
 
   // Save operation
+  getRequiredFieldIssue(saveAsDraft: boolean, includesField = (_id: string) => true) {
+    if (includesField("nameAr") && !this.personal.nameAr.trim() && !this.personal.nameEn.trim()) {
+      return { id: "nameAr", message: m.common_form_error_name_required() };
+    }
+    if (saveAsDraft) return null;
+    if (includesField("classSelect") && !this.personal.classId) {
+      return { id: "classSelect", message: m.common_form_error_class_required() };
+    }
+
+    const fields = [
+      ["national_id", this.personal.nationalId, "nationalId"],
+      ["passport_number", this.personal.passportNumber, "passportNumber"],
+      ["nationality", this.personal.nationality, "nationality"],
+      ["place_of_birth", this.personal.placeOfBirth, "placeOfBirth"],
+      ["birth_date", this.personal.birthDate, "student-birth-day"],
+      ["sex", this.personal.sex, "student-sex"],
+      ["phone", this.personal.phone, "phone"],
+      ["email", this.personal.email, "email"],
+      ["blood_type", this.personal.bloodType, "bloodType"],
+      ["emergency_contact", this.personal.emergencyContact, "emergencyContact"],
+      ["medical_notes", this.personal.medicalNotes, "medicalNotes"],
+      ["special_needs_notes", this.personal.specialNeedsNotes, "specialNeedsNotes"],
+      ["previous_school", this.personal.previousSchool, "previousSchool"],
+      ["address", this.personal.address, "address"],
+    ] as const;
+    const missing = fields.find(([key, value, id]) => includesField(id) && this.requiredFields[key] && !value.trim());
+    return missing ? { id: missing[2], message: m.common_form_error_required_fields() } : null;
+  }
+
+  private get primaryGuardian() {
+    return this.guardian.linkedGuardians.find((guardian) => guardian.is_primary) ??
+      this.guardian.linkedGuardians[0];
+  }
+
+  private get blockingDocumentRequirements() {
+    return this.document.requirements.filter((requirement) => requirement.blocks_enrollment);
+  }
+
+  getAdmissionIssue(
+    saveAsDraft: boolean,
+    step?: "profile" | "contacts" | "enrollment" | "documents" | "review",
+  ) {
+    if (saveAsDraft) return null;
+
+    if (!step || step === "profile") {
+      const fields = [
+        ["national_id", "nationalId"],
+        ["phone", "phone"],
+        ["email", "email"],
+        ["full_name", "nameAr"],
+      ] as const;
+      const duplicate = fields.find(([key]) => this.duplicateWarnings[key]);
+      if (duplicate) {
+        return {
+          id: duplicate[1],
+          step: "profile" as const,
+          message: m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb(),
+        };
+      }
+    }
+
+    if (this.isEditMode && this.originalStudent?.student?.status !== "inactive") return null;
+
+    if (!step || step === "contacts") {
+      const guardians = this.guardian.linkedGuardians;
+      const primary = this.primaryGuardian;
+      if (!this.admissionPolicy.allowNoGuardian && !primary?.full_name.trim()) {
+        return {
+          id: primary ? `guardian-name-${guardians.indexOf(primary)}` : "registration-contacts-heading",
+          step: "contacts" as const,
+          message: m.common_validation_guardian_name_required(),
+        };
+      }
+
+      const unlinked = guardians.findIndex((guardian) =>
+        guardian !== primary && !guardian.guardian_id &&
+        (guardian.full_name.trim() || guardian.phone.trim()),
+      );
+      if (unlinked >= 0) {
+        return {
+          id: `guardian-name-${unlinked}`,
+          step: "contacts" as const,
+          message: m.student_registration_guardian_unlinked(),
+        };
+      }
+    }
+
+    if (!step || step === "documents") {
+      const requirements = this.blockingDocumentRequirements;
+      const codes = requirements.length
+        ? requirements.map((requirement) => requirement.code)
+        : this.document.orgRequiredDocuments;
+      const fulfilled = new Set(
+        this.document.fulfillments
+          .filter((item) => item.is_fulfilled)
+          .map((item) => item.requirement.code),
+      );
+      const missing = codes.find((code) =>
+        !fulfilled.has(code) &&
+        !this.document.submittedDocs.includes(code) &&
+        !this.document.attachments[code],
+      );
+      if (missing) {
+        return {
+          id: `doc_${missing}`,
+          step: "documents" as const,
+          message: m.student_registration_documents_pending(),
+        };
+      }
+    }
+
+    return null;
+  }
+
   async handleSave(queryClient?: QueryClient, saveAsDraft = false) {
     const isCompletingDraft =
       this.isEditMode &&
       this.originalStudent?.student?.status === "inactive" &&
       !saveAsDraft;
-    const displayName = (
-      this.personal.nameAr ||
-      this.personal.nameEn ||
-      ""
-    ).trim();
-    if (!displayName) {
-      toast.error(m.common_form_error_name_required());
-      return;
-    }
-    if (!saveAsDraft && !this.personal.classId) {
-      toast.error(m.common_form_error_class_required());
-      return;
-    }
-    const requiredValues: Record<string, string> = {
-      national_id: this.personal.nationalId,
-      phone: this.personal.phone,
-      email: this.personal.email,
-      birth_date: this.personal.birthDate,
-      sex: this.personal.sex,
-      nationality: this.personal.nationality,
-      address: this.personal.address,
-      place_of_birth: this.personal.placeOfBirth,
-      passport_number: this.personal.passportNumber,
-      blood_type: this.personal.bloodType,
-      emergency_contact: this.personal.emergencyContact,
-      medical_notes: this.personal.medicalNotes,
-      special_needs_notes: this.personal.specialNeedsNotes,
-      previous_school: this.personal.previousSchool,
-    };
-    requiredValues.sex = this.activeFields.sex ? this.personal.sex : "";
-    if (
-      !saveAsDraft &&
-      Object.entries(this.requiredFields).some(
-        ([key, required]) =>
-          required && !String(requiredValues[key] ?? "").trim(),
-      )
-    ) {
-      toast.error(m.common_form_error_required_fields());
+    const displayName = this.personal.nameAr.trim() || this.personal.nameEn.trim();
+    const issue = this.getRequiredFieldIssue(saveAsDraft);
+    if (issue) {
+      toast.error(issue.message);
       return;
     }
 
-    const primaryGuardian =
-      this.guardian.linkedGuardians.find((guardian) => guardian.is_primary) ??
-      this.guardian.linkedGuardians[0];
-    if (
-      (!this.isEditMode || isCompletingDraft) &&
-      !saveAsDraft &&
-      !this.admissionPolicy.allowNoGuardian &&
-      !primaryGuardian?.full_name.trim()
-    ) {
-      toast.error(m.common_form_error_required_fields());
+    const admissionIssue = this.getAdmissionIssue(saveAsDraft);
+    if (admissionIssue) {
+      toast.error(admissionIssue.message);
       return;
     }
 
-    const unlinkedAdditionalGuardian = this.guardian.linkedGuardians
-      .filter((guardian) => guardian !== primaryGuardian)
-      .find(
-        (guardian) =>
-          !guardian.guardian_id &&
-          (guardian.full_name.trim() || guardian.phone.trim()),
-      );
-    if (
-      (!this.isEditMode || isCompletingDraft) &&
-      !saveAsDraft &&
-      unlinkedAdditionalGuardian
-    ) {
-      toast.error(m.student_registration_guardian_unlinked());
-      return;
-    }
-
-    const blockingRequirements = this.document.requirements.filter(
-      (requirement) => requirement.blocks_enrollment,
-    );
-    const fulfilledCodes = new Set(
-      this.document.fulfillments
-        .filter((item) => item.is_fulfilled)
-        .map((item) => item.requirement.code),
-    );
-    const missingBlockingRequirements = blockingRequirements.filter(
-      (requirement) =>
-        !fulfilledCodes.has(requirement.code) &&
-        !this.document.submittedDocs.includes(requirement.code) &&
-        !this.document.attachments[requirement.code],
-    );
-    const missingOrganizationDocuments =
-      blockingRequirements.length === 0
-        ? this.document.orgRequiredDocuments.filter(
-            (code) =>
-              !this.document.submittedDocs.includes(code) &&
-              !this.document.attachments[code],
-          )
-        : [];
-    if (
-      (!this.isEditMode || isCompletingDraft) &&
-      !saveAsDraft &&
-      (missingBlockingRequirements.length > 0 ||
-        missingOrganizationDocuments.length > 0)
-    ) {
-      toast.error(m.student_registration_documents_pending());
-      return;
-    }
-
-    // Check duplicate blockers
-    if (
-      !saveAsDraft &&
-      (this.duplicateWarnings.national_id ||
-        this.duplicateWarnings.phone ||
-        this.duplicateWarnings.email ||
-        this.duplicateWarnings.full_name)
-    ) {
-      toast.error(
-        m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb(),
-      );
-      return;
-    }
+    const primaryGuardian = this.primaryGuardian;
+    const blockingRequirements = this.blockingDocumentRequirements;
 
     this.isSaving = true;
     let targetStudentId = "";
@@ -1127,7 +1144,7 @@ export class StudentFormState {
         name_ar: this.personal.nameAr,
         name_en: this.personal.nameEn,
         birth_date: this.personal.birthDate,
-        sex: this.personal.sex === "male" ? "ذكر" : "أنثى",
+        sex: this.personal.sex === "male" ? "ذكر" : this.personal.sex === "female" ? "أنثى" : "",
         sex_en: this.personal.sex,
         class_name: this.selectedClassName,
         student_number: this.personal.studentNumber,

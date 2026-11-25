@@ -8,6 +8,8 @@
   - Instant transition between Tree/Form Split View and Full Ledger Grid
 -->
 <script lang="ts">
+import { effectiveContext } from "$lib/stores";
+import CashierCashAccounts from "./components/cashier-cash-accounts.svelte";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { useQueryClient } from "@tanstack/svelte-query";
@@ -92,8 +94,31 @@ let formCode = $state("");
 let formNameAr = $state("");
 let formNameEn = $state("");
 let formAccountType = $state("asset"); // asset | liability | equity | revenue | expense
-let formSubType = $state<string>("general"); // general | cash | bank | supplier | customer | employee
-let formAccountLevel = $state<"primary" | "sub">("sub"); // رئيسي أو فرعي
+let formSubType = $state("general");
+const accountCategories = [
+  { id: "asset", label: m.finance_ui_account_type_asset_numbered },
+  { id: "liability", label: m.finance_ui_account_type_liability_numbered },
+  { id: "equity", label: m.finance_ui_account_type_equity_numbered },
+  { id: "revenue", label: m.finance_ui_account_type_revenue_numbered },
+  { id: "expense", label: m.finance_ui_account_type_expense_numbered },
+];
+const accountSubtypes = [
+  { id: "general", label: m.finance_ui_account_type_general },
+  { id: "cash", category: "asset", label: m.finance_ui_cash_treasury },
+  { id: "bank", category: "asset", label: m.finance_ui_account_type_bank },
+  { id: "gateway_clearing", category: "asset", label: m.finance_ui_account_type_gateway_clearing },
+  { id: "customer", category: "asset", label: m.finance_ui_account_type_customer_student },
+  { id: "supplier", category: "liability", label: m.finance_ui_account_type_supplier },
+  { id: "employee", label: m.finance_ui_account_type_employee },
+  { id: "owner", category: "equity", label: m.finance_ui_account_type_owner },
+  { id: "gateway_fee", category: "expense", label: m.finance_ui_account_type_gateway_fee },
+];
+const availableSubtypes = $derived(accountSubtypes.filter((item) => !item.category || item.category === formAccountType));
+
+function setAccountType(value: string) {
+  formAccountType = value;
+  if (!availableSubtypes.some((item) => item.id === formSubType)) formSubType = "general";
+}
 let formCurrency = $state(orgContext.baseCurrency || "");
 
 let activeFilter = $state<UniversalFilter>({
@@ -205,8 +230,6 @@ function handleSelectAccount(account: AccountNode) {
   formSubType = account.sub_type || "general";
   formCurrency = account.currency || baseCurrency;
 
-  const hasChildren = parentAccountIds.has(account.id);
-  formAccountLevel = hasChildren ? "primary" : "sub";
 }
 
 function startAddSubAccount(
@@ -219,12 +242,9 @@ function startAddSubAccount(
   formCode = suggestNextChildCode(parentAccount);
   formNameAr = "";
   formNameEn = "";
-  formAccountLevel = "sub";
-
-  if (parentAccount) {
-    formAccountType = parentAccount.account_type.toLowerCase();
-    formCurrency = parentAccount.currency || baseCurrency;
-  }
+  formSubType = "general";
+  formAccountType = parentAccount?.account_type.toLowerCase() ?? "asset";
+  formCurrency = parentAccount?.currency || baseCurrency;
 }
 
 const parentAccountNode = $derived(
@@ -240,7 +260,7 @@ const isFinancePurposeAccount = $derived(
       selectedAccount.is_control_account),
 );
 const isAccountStructureLocked = $derived(
-  isFinancePurposeAccount || selectedAccountHasChildren,
+  !isAddingNew && (isFinancePurposeAccount || selectedAccountHasChildren),
 );
 
 // Determine Closing Statement based on Account Type
@@ -617,13 +637,13 @@ function exportAccountsCsv() {
 
               <CardContent class="min-h-0 flex-1 overflow-y-auto p-4">
               <fieldset class="flex min-w-0 flex-col gap-4" disabled={isSubmitting}>
-                {#if isFinancePurposeAccount}
+                {#if isFinancePurposeAccount && !isAddingNew}
                   <div class="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
                     {m.finance_ui_fixed_finance_account_notice()}
                   </div>
                 {/if}
 
-                <!-- Row 1: الحساب الأب (Parent Account) -->
+                <h3 class="text-sm font-semibold">{m.finance_ui_account_identity()}</h3>
                 <div class="flex flex-col gap-1">
                   <Label class="text-xs font-semibold text-foreground">{m.finance_ui_parent_account()}</Label>
                   <div class="p-2 rounded-md bg-muted/30 border border-border/50 flex items-center justify-between text-xs">
@@ -686,56 +706,31 @@ function exportAccountsCsv() {
 
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_level()}</Label>
-                    <Select
-                      type="single"
-                      value={formAccountLevel}
-                      disabled={isAccountStructureLocked}
-                      onValueChange={(value) => {
-                        if (value === "primary" || value === "sub") formAccountLevel = value;
-                      }}
-                    >
-                      <SelectTrigger class="h-8 w-full bg-background text-xs">
-                        {formAccountLevel === "primary"
-                          ? m.finance_ui_account_level_primary()
-                          : m.finance_ui_account_level_sub()}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="primary">{m.finance_ui_account_level_primary()}</SelectItem>
-                        <SelectItem value="sub">{m.finance_ui_account_level_sub()}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <p class="flex h-8 items-center rounded-md border border-border/60 px-3 text-xs text-muted-foreground">
+                      {formParentId ? m.finance_ui_account_level_sub() : m.finance_ui_account_level_primary()}
+                    </p>
                   </div>
                 </div>
 
-                <!-- Row 4: التصنيف المالي + النوع الفرعي + العملة -->
+                <h3 class="border-t border-border pt-3 text-sm font-semibold">{m.finance_ui_account_classification()}</h3>
                 <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_category()}</Label>
                     <Select
                       type="single"
                       value={formAccountType}
-                      disabled={isAccountStructureLocked}
+                      disabled={isAccountStructureLocked || Boolean(formParentId)}
                       onValueChange={(value) => {
-                        if (value === "asset" || value === "liability" || value === "equity" || value === "revenue" || value === "expense") formAccountType = value;
+                        if (value) setAccountType(value);
                       }}
                     >
                       <SelectTrigger class="h-8 w-full bg-background text-xs">
-                        {formAccountType === "asset"
-                          ? m.finance_ui_account_type_asset_numbered()
-                          : formAccountType === "liability"
-                            ? m.finance_ui_account_type_liability_numbered()
-                            : formAccountType === "equity"
-                              ? m.finance_ui_account_type_equity_numbered()
-                              : formAccountType === "revenue"
-                                ? m.finance_ui_account_type_revenue_numbered()
-                                : m.finance_ui_account_type_expense_numbered()}
+                        {accountCategories.find((category) => category.id === formAccountType)?.label() ?? formAccountType}
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="asset">{m.finance_ui_account_type_asset_numbered()}</SelectItem>
-                        <SelectItem value="liability">{m.finance_ui_account_type_liability_numbered()}</SelectItem>
-                        <SelectItem value="equity">{m.finance_ui_account_type_equity_numbered()}</SelectItem>
-                        <SelectItem value="revenue">{m.finance_ui_account_type_revenue_numbered()}</SelectItem>
-                        <SelectItem value="expense">{m.finance_ui_account_type_expense_numbered()}</SelectItem>
+                        {#each accountCategories as category (category.id)}
+                          <SelectItem value={category.id}>{category.label()}</SelectItem>
+                        {/each}
                       </SelectContent>
                     </Select>
                   </div>
@@ -747,29 +742,16 @@ function exportAccountsCsv() {
                       value={formSubType}
                       disabled={isAccountStructureLocked}
                       onValueChange={(value) => {
-                        if (value === "general" || value === "cash" || value === "bank" || value === "customer" || value === "supplier" || value === "employee") formSubType = value;
+                        if (value) formSubType = value;
                       }}
                     >
                       <SelectTrigger class="h-8 w-full bg-background text-xs">
-                        {formSubType === "general"
-                          ? m.finance_ui_account_type_general()
-                          : formSubType === "cash"
-                            ? m.finance_ui_cash_treasury()
-                            : formSubType === "bank"
-                              ? m.finance_ui_account_type_bank()
-                              : formSubType === "customer"
-                                ? m.finance_ui_account_type_customer_student()
-                                : formSubType === "supplier"
-                                  ? m.finance_ui_account_type_supplier()
-                                  : m.finance_ui_account_type_employee()}
+                        {accountSubtypes.find((item) => item.id === formSubType)?.label() ?? formSubType}
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">{m.finance_ui_account_type_general()}</SelectItem>
-                        <SelectItem value="cash">{m.finance_ui_cash_treasury()}</SelectItem>
-                        <SelectItem value="bank">{m.finance_ui_account_type_bank()}</SelectItem>
-                        <SelectItem value="customer">{m.finance_ui_account_type_customer_student()}</SelectItem>
-                        <SelectItem value="supplier">{m.finance_ui_account_type_supplier()}</SelectItem>
-                        <SelectItem value="employee">{m.finance_ui_account_type_employee()}</SelectItem>
+                        {#each availableSubtypes as item (item.id)}
+                          <SelectItem value={item.id}>{item.label()}</SelectItem>
+                        {/each}
                       </SelectContent>
                     </Select>
                   </div>
@@ -893,6 +875,9 @@ function exportAccountsCsv() {
             </div>
           </div>
 
+          {#if effectiveContext.hasPermission("organization:write")}
+            <CashierCashAccounts {orgId} accounts={accountsQuery.data ?? []} />
+          {/if}
           <div class="flex-1 min-h-0">
             <OrbisGrid
               columns={[...treasuryCols, detailsColumn]}

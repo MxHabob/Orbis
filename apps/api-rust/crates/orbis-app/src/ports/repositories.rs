@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -726,11 +727,25 @@ pub trait AccountRepository: Send + Sync {
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
+pub type LedgerAccountBalances =
+    std::collections::HashMap<Uuid, std::collections::BTreeMap<String, Decimal>>;
+
 #[async_trait]
 pub trait JournalEntryRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<JournalEntry>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<JournalEntry>, DomainError>;
+    async fn account_balances_at(
+        &self,
+        org_id: Uuid,
+        date: chrono::NaiveDate,
+    ) -> Result<LedgerAccountBalances, DomainError>;
     async fn save(&self, entry: &JournalEntry) -> Result<(), DomainError>;
+    async fn save_reversal(
+        &self,
+        entry: &JournalEntry,
+        original_id: Uuid,
+        reason: &str,
+    ) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
@@ -766,6 +781,23 @@ pub trait StudentFeeRepository: Send + Sync {
         filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<Vec<StudentFeeCurrencySummary>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
+    async fn delete_fee_posting(&self, fee: &StudentFee) -> Result<(), DomainError>;
+    async fn save_fee_installments(
+        &self,
+        original: &StudentFee,
+        installments: &[StudentFee],
+    ) -> Result<(), DomainError>;
+    async fn save_fee_refund(
+        &self,
+        previous: &StudentFee,
+        updated: &StudentFee,
+        entry: &JournalEntry,
+    ) -> Result<(), DomainError>;
+    async fn save_fee_invoice(
+        &self,
+        fee: &StudentFee,
+        entry: &JournalEntry,
+    ) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
@@ -780,6 +812,11 @@ pub trait PaymentRepository: Send + Sync {
         filter: orbis_domain::queries::filters::PaymentFilter,
     ) -> Result<PaginatedList<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
+    async fn delete_payment_posting(
+        &self,
+        payment: &Payment,
+        fee_update: Option<(&StudentFee, &StudentFee)>,
+    ) -> Result<(), DomainError>;
     async fn save_payment_posting(
         &self,
         payment: &Payment,

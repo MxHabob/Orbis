@@ -702,6 +702,7 @@ export interface StatementFilterParams {
 }
 
 export interface ProcessDisbursementRequest {
+  additional_lines?: Array<{ beneficiary_account_id: string; amount: number | string; notes?: string }>;
   treasury_account_id: string;
   beneficiary_account_id: string;
   amount: number | string;

@@ -8,6 +8,22 @@ use crate::expr::evaluator::{evaluate_condition, evaluate_expression, resolve_pa
 use crate::model::nodes::*;
 use serde_json::Value;
 
+fn resolve_brand_color(color: &mut Option<String>, context: &Value) {
+    if color.as_deref() != Some("org-primary") {
+        return;
+    }
+    let brand = ["$org", "org"]
+        .iter()
+        .filter_map(|key| context.get(key).and_then(|org| org.get("primary_color")))
+        .filter_map(Value::as_str)
+        .find(|value| {
+            value.len() == 7
+                && value.starts_with('#')
+                && value.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit)
+        });
+    *color = Some(brand.unwrap_or("#475569").to_owned());
+}
+
 #[derive(Debug, Clone)]
 pub enum EvaluatedNode {
     Page(EvaluatedPage),
@@ -199,6 +215,8 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         TemplateNode::Shape(n) => {
             let mut props = n.props.clone();
             props.position = n.position.clone().or(props.position);
+            resolve_brand_color(&mut props.fill, context);
+            resolve_brand_color(&mut props.stroke, context);
             vec![EvaluatedNode::Shape(EvaluatedShape {
                 id: n.id.clone(),
                 name: n.name.clone(),
@@ -248,6 +266,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         TemplateNode::Separator(n) => {
             let mut props = n.props.clone();
             props.position = n.position.clone().or(props.position);
+            resolve_brand_color(&mut props.color, context);
             vec![EvaluatedNode::Separator(EvaluatedSeparator {
                 id: n.id.clone(),
                 name: n.name.clone(),

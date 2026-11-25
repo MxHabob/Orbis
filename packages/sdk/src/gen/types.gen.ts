@@ -1528,6 +1528,7 @@ export type FeeTemplateDto = {
 
 export type FinanceSettingsDto = {
   allow_partial_payments: boolean;
+  cashier_cash_accounts?: Record<string, string> | null;
   currency: string;
   invoice_due_days: number;
   invoicing_integration_id?: string | null;
@@ -2173,6 +2174,7 @@ export type PreviewTemplateRequest = {
 };
 
 export type ProcessPaymentRequest = {
+  additional_allocations?: Array<ReceiptAllocationRequest> | null;
   account_id: string;
   amount: string;
   enrollment_id?: string | null;
@@ -2336,7 +2338,14 @@ export type RecordGradeRequest = {
   student_id: string;
 };
 
+export type ReceiptAllocationRequest = {
+  account_id: string;
+  amount: string;
+  notes?: string | null;
+};
+
 export type RefundStudentFeeRequest = {
+  payment_id?: string | null;
   notes?: string | null;
   refund_amount: string;
 };

@@ -506,6 +506,7 @@ pub struct FinanceSettingsDto {
     pub late_fee_type: String,
     pub late_fee_value: f64,
     pub allow_partial_payments: bool,
+    pub cashier_cash_accounts: Option<std::collections::BTreeMap<Uuid, Uuid>>,
     pub primary_payment_gateway_id: Option<Uuid>,
     pub invoicing_integration_id: Option<Uuid>,
 }
@@ -650,6 +651,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 late_fee_type: s.finance.late_fee_type,
                 late_fee_value: s.finance.late_fee_value,
                 allow_partial_payments: s.finance.allow_partial_payments,
+                cashier_cash_accounts: s.finance.cashier_cash_accounts,
                 primary_payment_gateway_id: s.finance.primary_payment_gateway_id,
                 invoicing_integration_id: s.finance.invoicing_integration_id,
             },
@@ -779,6 +781,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 late_fee_type: s.finance.late_fee_type,
                 late_fee_value: s.finance.late_fee_value,
                 allow_partial_payments: s.finance.allow_partial_payments,
+                cashier_cash_accounts: s.finance.cashier_cash_accounts,
                 primary_payment_gateway_id: s.finance.primary_payment_gateway_id,
                 invoicing_integration_id: s.finance.invoicing_integration_id,
             },

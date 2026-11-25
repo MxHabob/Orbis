@@ -603,9 +603,10 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   // ── FloppyDisk ─────────────────────────────────────────────────
 
-  function markSaved(): void {
-    savedSnapshot = JSON.stringify(document);
-    isDirty = false;
+  function markSaved(snapshot = JSON.stringify(document)): void {
+    savedSnapshot = snapshot;
+    isDirty = JSON.stringify(document) !== savedSnapshot;
+    if (isDirty) scheduleAutoSave();
   }
 
   function setAutoSaveCallback(cb: (doc: TemplateDocument) => void): void {

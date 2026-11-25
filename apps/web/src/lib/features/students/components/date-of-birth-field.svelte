@@ -1,12 +1,14 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
+import { normalizeDigits } from "$lib/shared/utils/search";
 
 interface Props {
   day?: string;
   month?: string;
   year?: string;
   disabled?: boolean;
+  required?: boolean;
   idPrefix?: string;
 }
 
@@ -15,6 +17,7 @@ let {
   month = $bindable(""),
   year = $bindable(""),
   disabled = false,
+  required = false,
   idPrefix = "birth",
 }: Props = $props();
 
@@ -31,8 +34,9 @@ function focusNext(input: HTMLInputElement, maxLength: number) {
 }
 
 function clampValue(value: string, min: number, max: number): string {
-  if (!/^[0-9]+$/.test(value)) return "";
-  return String(Math.min(max, Math.max(min, Number(value))));
+  const digits = normalizeDigits(value);
+  if (!/^[0-9]+$/.test(digits)) return "";
+  return String(Math.min(max, Math.max(min, Number(digits))));
 }
 
 function normalizeDay() {
@@ -61,6 +65,7 @@ function normalizeYear() {
     onblur={normalizeDay}
     disabled={disabled}
     aria-label={m.common_form_day()}
+    aria-required={required}
     class="h-9 w-full bg-background text-center text-xs"
   />
   <Input
@@ -75,6 +80,7 @@ function normalizeYear() {
     onblur={normalizeMonth}
     disabled={disabled}
     aria-label={m.common_form_month()}
+    aria-required={required}
     class="h-9 w-full bg-background text-center text-xs"
   />
   <Input
@@ -88,6 +94,7 @@ function normalizeYear() {
     onblur={normalizeYear}
     disabled={disabled}
     aria-label={m.common_form_year()}
+    aria-required={required}
     class="h-9 w-full bg-background text-center text-xs"
   />
 </div>

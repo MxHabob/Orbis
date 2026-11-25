@@ -30,6 +30,7 @@ interface Props {
   getItemLabel?: (item: T) => string;
   getItemSubtitle?: (item: T) => string | undefined;
   getItemBadge?: (item: T) => string | undefined;
+  getItemSearchText?: (item: T) => string;
   showAllOption?: boolean;
   allOptionLabel?: string;
   required?: boolean;
@@ -75,6 +76,7 @@ let {
       ? `#${item.employee_number}`
       : item?.code || item?.subtitle || undefined,
   getItemBadge = (item: any) => item?.badge || item?.status || undefined,
+  getItemSearchText,
   showAllOption = false,
   allOptionLabel = m.shared_ui_all(),
   required = false,
@@ -116,7 +118,8 @@ const filteredItems = $derived.by(() => {
       val.includes(q) ||
       nameAr.includes(q) ||
       nameEn.includes(q) ||
-      empNum.includes(q)
+      empNum.includes(q) ||
+      (getItemSearchText?.(item).toLowerCase().includes(q) ?? false)
     );
   });
 });

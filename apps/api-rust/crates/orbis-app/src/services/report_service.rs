@@ -574,7 +574,12 @@ impl ReportService {
             })?;
 
         let export_result = match renderer
-            .render(&dataset, template.as_ref(), master_template.as_ref())
+            .render(
+                &dataset,
+                &input.locale,
+                template.as_ref(),
+                master_template.as_ref(),
+            )
             .await
         {
             Ok(res) => res,
@@ -695,10 +700,9 @@ impl ReportService {
                 published_report_templates,
                 ctx.tenant_id,
                 input.locale.primary_lang(),
+                &definition.code,
             );
         }
-
-        validate_pdf_template_presence(&input.output_format, template.as_ref())?;
 
         if let Some(template) = &template {
             ensure_published_template(template, ctx.tenant_id)?;
@@ -896,7 +900,9 @@ fn select_default_report_template(
     templates: Vec<ReportTemplate>,
     tenant_id: Uuid,
     locale: &str,
+    report_code: &str,
 ) -> Option<ReportTemplate> {
+    let template_code = report_code.strip_prefix("rep.").unwrap_or(report_code);
     let candidates: Vec<_> = templates
         .into_iter()
         .filter(|template| {
@@ -904,7 +910,17 @@ fn select_default_report_template(
                 && template.status == TemplateStatus::Published
                 && template.deleted_at.is_none()
                 && template.document_type.eq_ignore_ascii_case("report")
+                && (template.code.as_deref() == Some(template_code)
+                    || (template.entity_type == "report" && template.is_default))
+                && template.document_json.trim_start().starts_with('{')
         })
+        .collect();
+    let has_specific = candidates
+        .iter()
+        .any(|template| template.code.as_deref() == Some(template_code));
+    let candidates: Vec<_> = candidates
+        .into_iter()
+        .filter(|template| !has_specific || template.code.as_deref() == Some(template_code))
         .collect();
     let locale_candidates: Vec<_> = candidates
         .iter()
@@ -937,18 +953,6 @@ fn select_default_report_template(
     }
 
     None
-}
-
-fn validate_pdf_template_presence(
-    output_format: &OutputFormat,
-    template: Option<&ReportTemplate>,
-) -> Result<(), DomainError> {
-    if *output_format == OutputFormat::Pdf && template.is_none() {
-        return Err(DomainError::Validation(
-            "PDF reports require a published DocForge report template. Bind a template to this report or set a published report template as the organization default.".into(),
-        ));
-    }
-    Ok(())
 }
 
 fn select_report_columns(
@@ -1104,25 +1108,6 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn pdf_reports_require_a_published_template_or_default() {
-        let error = validate_pdf_template_presence(&OutputFormat::Pdf, None)
-            .expect_err("PDF generation without a template must be rejected");
-
-        assert!(
-            error
-                .to_string()
-                .contains("published DocForge report template")
-        );
-        assert!(error.to_string().contains("organization default"));
-    }
-
-    #[test]
-    fn non_pdf_reports_can_use_their_default_renderer_without_a_template() {
-        validate_pdf_template_presence(&OutputFormat::Xlsx, None)
-            .expect("XLSX generation does not require a report template");
-    }
-
     fn report_template(
         org_id: Uuid,
         locale: &str,
@@ -1170,14 +1155,15 @@ mod tests {
         let arabic = report_template(org_id, "ar", true, TemplateStatus::Published, "REPORT");
         let expected_id = arabic.id;
 
-        let selected = select_default_report_template(vec![english, arabic], org_id, "ar")
-            .expect("matching locale default should be selected");
+        let selected =
+            select_default_report_template(vec![english, arabic], org_id, "ar", "rep.example")
+                .expect("matching locale default should be selected");
 
         assert_eq!(selected.id, expected_id);
 
         let fallback = report_template(org_id, "en", true, TemplateStatus::Published, "report");
         let fallback_id = fallback.id;
-        let selected = select_default_report_template(vec![fallback], org_id, "ar")
+        let selected = select_default_report_template(vec![fallback], org_id, "ar", "rep.example")
             .expect("unique organization default should be used as a locale fallback");
         assert_eq!(selected.id, fallback_id);
     }
@@ -1185,16 +1171,18 @@ mod tests {
     #[test]
     fn default_report_template_selection_rejects_ambiguous_or_unpublished_templates() {
         let org_id = Uuid::new_v4();
-        let first = report_template(org_id, "ar", false, TemplateStatus::Published, "report");
-        let second = report_template(org_id, "ar", false, TemplateStatus::Published, "report");
+        let first = report_template(org_id, "ar", true, TemplateStatus::Published, "report");
+        let second = report_template(org_id, "ar", true, TemplateStatus::Published, "report");
         assert!(
-            select_default_report_template(vec![first, second], org_id, "ar").is_none(),
+            select_default_report_template(vec![first, second], org_id, "ar", "rep.example")
+                .is_none(),
             "multiple unbound templates require an explicit report binding"
         );
 
         let unpublished = report_template(org_id, "ar", true, TemplateStatus::Draft, "report");
         assert!(
-            select_default_report_template(vec![unpublished], org_id, "ar").is_none(),
+            select_default_report_template(vec![unpublished], org_id, "ar", "rep.example")
+                .is_none(),
             "draft templates must never be selected for PDF output"
         );
 
@@ -1206,9 +1194,34 @@ mod tests {
             "report",
         );
         assert!(
-            select_default_report_template(vec![other_tenant], org_id, "ar").is_none(),
+            select_default_report_template(vec![other_tenant], org_id, "ar", "rep.example")
+                .is_none(),
             "templates from another organization must never be selected"
         );
+
+        let mut student = report_template(org_id, "ar", true, TemplateStatus::Published, "report");
+        student.entity_type = "student".into();
+        assert!(
+            select_default_report_template(vec![student], org_id, "ar", "rep.example").is_none()
+        );
+    }
+
+    #[test]
+    fn default_report_template_selection_prefers_the_exact_report_code() {
+        let org_id = Uuid::new_v4();
+        let generic = report_template(org_id, "ar", true, TemplateStatus::Published, "report");
+        let mut specific =
+            report_template(org_id, "ar", false, TemplateStatus::Published, "report");
+        specific.code = Some("finance.account-statement".into());
+        let expected = specific.id;
+        let selected = select_default_report_template(
+            vec![generic, specific],
+            org_id,
+            "ar",
+            "rep.finance.account-statement",
+        )
+        .unwrap();
+        assert_eq!(selected.id, expected);
     }
 
     #[tokio::test]

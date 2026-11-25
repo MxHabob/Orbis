@@ -180,7 +180,9 @@ export const ar = {
   visitor_teacher_description:
     "متابعة الفصول والطلاب وإدارة الأعمال الأكاديمية وفق الصلاحيات.",
   visitor_sign_in: "تسجيل الدخول",
-  visitor_register: "إنشاء حساب",
+  visitor_register: "الحصول على حساب",
+  auth_account_access_description:
+    "تواصل مع مسؤول مؤسستك للحصول على حساب أوربس. بعد استلام بيانات الدخول، يمكنك تسجيل الدخول من هنا.",
   visitor_explore: "استكشاف التطبيق كزائر",
   onboarding_title: "رحلتك التعليمية تبدأ من هنا",
   onboarding_description: "تابع يومك الدراسي وكل ما يهمك في تجربة واحدة.",

@@ -15,6 +15,8 @@ mod m20261124_000002_grade_component_code;
 mod m20261125_000001_exam_proctor_uniqueness;
 mod m20261125_000002_autopilot_idempotency;
 mod m20261125_000003_override_approval_policy;
+mod m20261125_000004_refresh_stock_templates;
+mod m20261125_000005_finance_ledger_indexes;
 
 pub struct Migrator;
 
@@ -36,6 +38,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20261125_000001_exam_proctor_uniqueness::Migration),
             Box::new(m20261125_000002_autopilot_idempotency::Migration),
             Box::new(m20261125_000003_override_approval_policy::Migration),
+            Box::new(m20261125_000004_refresh_stock_templates::Migration),
+            Box::new(m20261125_000005_finance_ledger_indexes::Migration),
         ]
     }
 }

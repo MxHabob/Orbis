@@ -23,16 +23,97 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Arc};
 use uuid::Uuid;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TreasuryKind {
+    Cash,
+    Bank,
+}
+
+fn treasury_kind(account: &Account) -> Option<TreasuryKind> {
+    if account.account_type != AccountType::Asset {
+        return None;
+    }
+    match account.sub_type.as_deref() {
+        Some(kind) if kind.eq_ignore_ascii_case("cash") => Some(TreasuryKind::Cash),
+        Some(kind) if kind.eq_ignore_ascii_case("bank") => Some(TreasuryKind::Bank),
+        _ => match account.code.as_str() {
+            "110101" => Some(TreasuryKind::Cash),
+            "110102" | "110103" | "110104" => Some(TreasuryKind::Bank),
+            _ => None,
+        },
+    }
+}
+
 fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
-    account.org_id == org_id
-        && account.is_active
-        && account.account_type == AccountType::Asset
-        && (account.sub_type.as_deref().is_some_and(|sub_type| {
-            sub_type.eq_ignore_ascii_case("cash") || sub_type.eq_ignore_ascii_case("bank")
-        }) || matches!(
-            account.code.as_str(),
-            "110101" | "110102" | "110103" | "110104"
-        ))
+    account.org_id == org_id && account.is_active && treasury_kind(account).is_some()
+}
+
+fn validate_treasury_method(account: &Account, method: PaymentMethod) -> Result<(), DomainError> {
+    let required = match method {
+        PaymentMethod::Cash => TreasuryKind::Cash,
+        PaymentMethod::BankTransfer
+        | PaymentMethod::Check
+        | PaymentMethod::CreditCard
+        | PaymentMethod::Mada
+        | PaymentMethod::ApplePay => TreasuryKind::Bank,
+        PaymentMethod::Other => return Ok(()),
+    };
+    if treasury_kind(account) != Some(required) {
+        return Err(DomainError::Validation(
+            "The selected treasury does not match the payment method".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn assigned_cash_account(
+    settings: &orbis_domain::entities::settings::FinanceSettings,
+    ctx: &RequestContext,
+) -> Option<Uuid> {
+    settings
+        .cashier_cash_accounts
+        .as_ref()?
+        .get(&ctx.user_id()?)
+        .copied()
+}
+
+fn validate_account_subtype(
+    account_type: AccountType,
+    subtype: Option<&str>,
+) -> Result<(), DomainError> {
+    let expected = match subtype {
+        Some("cash" | "bank" | "customer" | "gateway_clearing") => AccountType::Asset,
+        Some("supplier") => AccountType::Liability,
+        Some("owner") => AccountType::Equity,
+        Some("gateway_fee") => AccountType::Expense,
+        _ => return Ok(()),
+    };
+    if account_type != expected {
+        return Err(DomainError::Validation(format!(
+            "Account subtype requires the {} category",
+            expected
+        )));
+    }
+    Ok(())
+}
+
+fn validate_cashier_account(
+    account: &Account,
+    assignment: Option<Uuid>,
+) -> Result<(), DomainError> {
+    if treasury_kind(account) == Some(TreasuryKind::Cash)
+        && assignment.is_some_and(|assigned| assigned != account.id)
+    {
+        return Err(DomainError::Unauthorized(
+            "You may only post to your assigned cash account".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn is_gateway_clearing_account(account: &Account) -> bool {
+    account.account_type == AccountType::Asset
+        && (account.code == "110107" || account.sub_type.as_deref() == Some("gateway_clearing"))
 }
 
 fn is_receivable_account(account: &Account, org_id: Uuid, currency_code: &str) -> bool {
@@ -47,8 +128,8 @@ fn is_receivable_account(account: &Account, org_id: Uuid, currency_code: &str) -
 pub enum AccountPurpose {
     MainCashbox,                 // 110101
     MainBank,                    // 110102
-    PettyCash,                   // 110103
-    ElectronicGatewayClearing,   // 110106
+    PettyCash,                   // 110108
+    ElectronicGatewayClearing,   // 110107
     StudentReceivableTuition,    // 110301
     StudentReceivableTransport,  // 110302
     StudentReceivableActivities, // 110304
@@ -62,7 +143,7 @@ pub enum AccountPurpose {
     AllowancesPayable,           // 210202
     SocialInsuranceGosiPayable,  // 210203
     EndOfServiceProvision,       // 210204
-    UnearnedTuition,             // 210301
+    UnearnedTuition,             // 210601
     VatOutputPayable,            // 210401
     TuitionRevenue,              // 410101
     TransportRevenue,            // 410201
@@ -74,7 +155,7 @@ pub enum AccountPurpose {
     EarlyPaymentDiscount,        // 410304
     AcademicSalariesExpense,     // 510101
     AdminSalariesExpense,        // 520101
-    BankGatewayFeesExpense,      // 520301
+    BankGatewayFeesExpense,      // 590108
 }
 
 impl AccountPurpose {
@@ -141,11 +222,11 @@ fn resolve_default_account_from_accounts(
         AccountPurpose::PettyCash => posting_accounts
             .iter()
             .copied()
-            .find(|account| account.code == "110103"),
+            .find(|account| account.code == "110108"),
         AccountPurpose::ElectronicGatewayClearing => posting_accounts
             .iter()
             .copied()
-            .find(|account| account.code == "110106" || account.code == "110102"),
+            .find(|account| is_gateway_clearing_account(account)),
         AccountPurpose::StudentReceivableTuition => {
             posting_accounts.iter().copied().find(|account| {
                 account.code == "110301"
@@ -204,10 +285,9 @@ fn resolve_default_account_from_accounts(
             .iter()
             .copied()
             .find(|account| account.code == "210204" || account.code == "210201"),
-        AccountPurpose::UnearnedTuition => posting_accounts
-            .iter()
-            .copied()
-            .find(|account| account.code == "210301" || account.code.starts_with("2103")),
+        AccountPurpose::UnearnedTuition => posting_accounts.iter().copied().find(|account| {
+            account.code == "210601" && account.account_type == AccountType::Liability
+        }),
         AccountPurpose::VatOutputPayable => posting_accounts
             .iter()
             .copied()
@@ -259,10 +339,13 @@ fn resolve_default_account_from_accounts(
                 || account.code == "5201"
                 || (account.account_type == AccountType::Expense && account.code.starts_with("52"))
         }),
-        AccountPurpose::BankGatewayFeesExpense => posting_accounts
-            .iter()
-            .copied()
-            .find(|account| account.code == "520301" || account.code.starts_with("52")),
+        AccountPurpose::BankGatewayFeesExpense => {
+            posting_accounts.iter().copied().find(|account| {
+                account.account_type == AccountType::Expense
+                    && (account.code == "590108"
+                        || account.sub_type.as_deref() == Some("gateway_fee"))
+            })
+        }
     }
 }
 
@@ -276,7 +359,23 @@ fn resolved_purpose_account_ids(accounts: &[Account]) -> Vec<Option<Uuid>> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReceiptAllocationInput {
+    pub account_id: Uuid,
+    pub amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DisbursementLineInput {
+    pub beneficiary_account_id: Uuid,
+    pub amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DisbursementInput {
+    #[serde(default)]
+    pub additional_lines: Vec<DisbursementLineInput>,
     pub treasury_account_id: Uuid,
     pub beneficiary_account_id: Uuid,
     pub amount: Decimal,
@@ -398,6 +497,77 @@ pub struct StudentFeeSummary {
 }
 
 impl FinanceService {
+    async fn gateway_clearing_account(
+        &self,
+        org_id: Uuid,
+        currency: &str,
+    ) -> Result<Account, DomainError> {
+        self.account_repo
+            .find_by_org(org_id)
+            .await?
+            .into_iter()
+            .find(|account| {
+                is_gateway_clearing_account(account)
+                    && is_receivable_account(account, org_id, currency)
+            })
+            .ok_or_else(|| {
+                DomainError::Validation(
+                    "Configure an active online payment clearing account in this currency".into(),
+                )
+            })
+    }
+
+    async fn rate_to_base(
+        &self,
+        org_id: Uuid,
+        currency: &str,
+        base: &str,
+    ) -> Result<Decimal, DomainError> {
+        if currency.eq_ignore_ascii_case(base) {
+            return Ok(Decimal::ONE);
+        }
+        if let Some(rate) = self
+            .currency_repo
+            .get_exchange_rate(org_id, currency, base)
+            .await?
+        {
+            if rate.rate > Decimal::ZERO {
+                return Ok(rate.rate);
+            }
+        }
+        if let Some(rate) = self
+            .currency_repo
+            .get_exchange_rate(org_id, base, currency)
+            .await?
+        {
+            if rate.rate > Decimal::ZERO {
+                if let Some(inverse) = Decimal::ONE.checked_div(rate.rate) {
+                    return Ok(inverse);
+                }
+            }
+        }
+        Err(DomainError::Validation(format!(
+            "No valid exchange rate from {currency} to {base}"
+        )))
+    }
+
+    async fn validate_cashier_posting_accounts(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        account_ids: impl IntoIterator<Item = Uuid>,
+    ) -> Result<(), DomainError> {
+        let settings = self.policy_repo.get_settings(org_id).await?;
+        if let Some(assigned) = assigned_cash_account(&settings.finance, ctx) {
+            for id in account_ids.into_iter().collect::<HashSet<_>>() {
+                if let Some(account) = self.account_repo.find_by_id(id).await? {
+                    validate_cashier_account(&account, Some(assigned))?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     async fn organization_timezone(&self, org_id: Uuid) -> Result<chrono_tz::Tz, DomainError> {
         let organization = self
             .organization_repo
@@ -484,6 +654,7 @@ impl FinanceService {
         account_id: Uuid,
         receivable_account_id: Option<Uuid>,
         amount: Decimal,
+        additional_allocations: Vec<ReceiptAllocationInput>,
         method: PaymentMethod,
         payer_name: Option<String>,
         payer_phone: Option<String>,
@@ -503,6 +674,27 @@ impl FinanceService {
                 "Payment amount must be greater than zero".into(),
             ));
         }
+
+        if !additional_allocations.is_empty()
+            && (receivable_account_id.is_none() || fee_id.is_some())
+        {
+            return Err(DomainError::Validation(
+                "Additional allocations require a direct account receipt".into(),
+            ));
+        }
+        let first_amount = amount;
+        let amount = additional_allocations
+            .iter()
+            .try_fold(amount, |total, line| {
+                if line.amount <= Decimal::ZERO {
+                    return Err(DomainError::Validation(
+                        "Receipt allocation must be greater than zero".into(),
+                    ));
+                }
+                total
+                    .checked_add(line.amount)
+                    .ok_or_else(|| DomainError::Validation("Receipt total is too large".into()))
+            })?;
 
         let now = Utc::now();
         let (accounting_date, timezone) = self
@@ -541,6 +733,7 @@ impl FinanceService {
 
         // 1. Fetch org settings to determine base currency
         let org_settings = self.policy_repo.get_settings(org_id).await?;
+        let assignment = assigned_cash_account(&org_settings.finance, ctx);
         let base_currency = org_settings.finance.currency;
 
         // 2. Fetch target account to determine transaction currency
@@ -559,6 +752,8 @@ impl FinanceService {
                 "Payment account must be an active cash or bank treasury account".into(),
             ));
         }
+        validate_treasury_method(&account, method)?;
+        validate_cashier_account(&account, assignment)?;
         let transaction_currency = account.currency_code;
 
         if let Some(existing) = self.payment_repo.find_by_id(payment_id).await? {
@@ -582,7 +777,33 @@ impl FinanceService {
                     existing.receipt_number.as_ref() == Some(number)
                 });
             if request_matches {
-                return Ok(existing);
+                let matches_allocations = if let (Some(receivable), Some(journal_id)) =
+                    (receivable_account_id, existing.journal_entry_id)
+                {
+                    let stored = self.journal_repo.find_by_id(journal_id).await?;
+                    let mut requested = vec![(receivable, first_amount)];
+                    requested.extend(
+                        additional_allocations
+                            .iter()
+                            .map(|line| (line.account_id, line.amount)),
+                    );
+                    requested.sort_unstable();
+                    stored.is_some_and(|entry| {
+                        let mut recorded: Vec<_> = entry
+                            .lines
+                            .iter()
+                            .filter(|line| line.credit_amount > Decimal::ZERO)
+                            .map(|line| (line.account_id, line.credit_amount))
+                            .collect();
+                        recorded.sort_unstable();
+                        recorded == requested
+                    })
+                } else {
+                    additional_allocations.is_empty()
+                };
+                if matches_allocations {
+                    return Ok(existing);
+                }
             }
             return Err(DomainError::ConcurrencyConflict(
                 "Idempotency key was already used with a different payment request".into(),
@@ -626,24 +847,12 @@ impl FinanceService {
             None
         };
 
-        let mut exchange_rate_value = Decimal::from(1);
-        if transaction_currency != base_currency {
-            let rate_opt = self
-                .currency_repo
-                .get_exchange_rate(org_id, &base_currency, &transaction_currency)
-                .await?;
-            if let Some(rate) = rate_opt {
-                exchange_rate_value = rate.rate;
-            } else {
-                return Err(DomainError::Validation(format!(
-                    "Exchange rate not found from {} to {}",
-                    base_currency, transaction_currency
-                )));
-            }
-        }
+        let exchange_rate_value = self
+            .rate_to_base(org_id, &transaction_currency, &base_currency)
+            .await?;
 
         // 3. Validate and prepare StudentFee update if fee_id is provided
-        let mut receivable_acct = direct_receivable_account.unwrap_or(account_id);
+        let mut receivable_acct = direct_receivable_account;
         let mut student_resolved_id = student_id;
         let mut enrollment_resolved_id = enrollment_id;
         let mut fee_update = None;
@@ -687,10 +896,89 @@ impl FinanceService {
                         "Fee template belongs to another organization".into(),
                     ));
                 }
-                receivable_acct = template.receivable_account_id;
+                if !template
+                    .currency_code
+                    .eq_ignore_ascii_case(&transaction_currency)
+                {
+                    return Err(DomainError::Validation(
+                        "Fee and payment account currency must match".into(),
+                    ));
+                }
+                if assignment.is_some() {
+                    if let Some(receivable) = self
+                        .account_repo
+                        .find_by_id(template.receivable_account_id)
+                        .await?
+                    {
+                        validate_cashier_account(&receivable, assignment)?;
+                    }
+                }
+                receivable_acct = Some(template.receivable_account_id);
             }
         }
 
+        let receivable_acct = match receivable_acct {
+            Some(id) if id != account_id => id,
+            _ if fee_id.is_none() && student_resolved_id.is_some() => {
+                let advance = self
+                    .resolve_default_account(org_id, AccountPurpose::UnearnedTuition)
+                    .await?;
+                if !advance
+                    .currency_code
+                    .eq_ignore_ascii_case(&transaction_currency)
+                {
+                    return Err(DomainError::Validation(
+                        "Student advance account currency must match the payment".into(),
+                    ));
+                }
+                advance.id
+            }
+            _ => {
+                return Err(DomainError::Validation(
+                    "Payment requires a distinct counterpart account".into(),
+                ));
+            }
+        };
+
+        let mut allocation_lines = Vec::with_capacity(additional_allocations.len());
+        for allocation in additional_allocations {
+            let account = self
+                .get_account(org_id, allocation.account_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::NotFound("Receipt allocation account not found".into())
+                })?;
+            if !is_receivable_account(&account, org_id, &transaction_currency) {
+                return Err(DomainError::Validation("Receipt allocation requires an active, non-treasury account in the receipt currency".into()));
+            }
+            allocation_lines.push(JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: account.id,
+                debit_amount: Decimal::ZERO,
+                credit_amount: allocation.amount,
+                description: allocation.notes,
+                entity_type: None,
+                entity_id: None,
+            });
+        }
+
+        let posting_treasury_id = if requires_gateway {
+            let clearing = self
+                .gateway_clearing_account(org_id, &transaction_currency)
+                .await?;
+            if clearing.id == receivable_acct
+                || allocation_lines
+                    .iter()
+                    .any(|line| line.account_id == clearing.id)
+            {
+                return Err(DomainError::Validation(
+                    "Online payment clearing cannot be its own counterpart".into(),
+                ));
+            }
+            clearing.id
+        } else {
+            account_id
+        };
         let mut final_reference = reference.clone();
         if requires_gateway {
             let src = source.ok_or_else(|| {
@@ -727,10 +1015,10 @@ impl FinanceService {
         } else {
             "إيصال قبض دفعة رسوم دراسية"
         };
-        let lines = vec![
+        let mut lines = vec![
             JournalEntryLine {
                 id: Uuid::new_v4(),
-                account_id, // Debit Cash/Bank
+                account_id: posting_treasury_id,
                 debit_amount: amount,
                 credit_amount: Decimal::ZERO,
                 description: Some(receipt_description.into()),
@@ -741,7 +1029,7 @@ impl FinanceService {
                 id: Uuid::new_v4(),
                 account_id: receivable_acct, // Credit Accounts Receivable / Revenue
                 debit_amount: Decimal::ZERO,
-                credit_amount: amount,
+                credit_amount: first_amount,
                 description: Some(
                     if is_account_receipt {
                         "General account receipt"
@@ -755,6 +1043,8 @@ impl FinanceService {
             },
         ];
 
+        lines.extend(allocation_lines);
+
         let entry = JournalEntry {
             id: journal_entry_id,
             org_id,
@@ -767,7 +1057,7 @@ impl FinanceService {
             currency_code: transaction_currency.clone(),
             exchange_rate: exchange_rate_value,
             base_amount,
-            debit_account_id: account_id,
+            debit_account_id: posting_treasury_id,
             credit_account_id: receivable_acct,
             description: receipt_description.into(),
             description_ar: Some(receipt_description_ar.into()),
@@ -927,7 +1217,13 @@ impl FinanceService {
             updated_at: now,
         };
 
-        self.student_fee_repo.save(&fee).await?;
+        let exchange_rate = self
+            .rate_to_base(
+                org_id,
+                &template.currency_code,
+                &org_settings.finance.currency,
+            )
+            .await?;
 
         // Double-entry ledger accrual for student fee invoice (قيد استحقاق الرسوم)
         let journal_entry_id = Uuid::new_v4();
@@ -979,8 +1275,8 @@ impl FinanceService {
             accounting_date: current_date,
             amount: template.default_amount,
             currency_code: template.currency_code.clone(),
-            exchange_rate: Decimal::from(1),
-            base_amount: template.default_amount,
+            exchange_rate,
+            base_amount: template.default_amount * exchange_rate,
             debit_account_id: template.receivable_account_id,
             credit_account_id: template.revenue_account_id,
             description: format!("Tuition fee invoice for student: {}", template.name),
@@ -1006,20 +1302,20 @@ impl FinanceService {
             version: 1,
         };
 
-        if invoice_entry.validate_balance().is_ok() {
-            let _ = self.journal_repo.save(&invoice_entry).await;
-            let _ = self
-                .event_bus
-                .publish(
-                    ctx,
-                    &DomainEvent::JournalEntryPosted {
-                        entry_id: journal_entry_id,
-                        amount: template.default_amount,
-                        timestamp: now,
-                    },
-                )
-                .await;
-        }
+        self.student_fee_repo
+            .save_fee_invoice(&fee, &invoice_entry)
+            .await?;
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::JournalEntryPosted {
+                    entry_id: journal_entry_id,
+                    amount: template.default_amount,
+                    timestamp: now,
+                },
+            )
+            .await;
 
         let _ = self
             .event_bus
@@ -1336,8 +1632,42 @@ impl FinanceService {
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
+        validate_account_subtype(account_type, sub_type.as_deref())?;
+        let code = code.trim().to_owned();
+        let name = name.trim().to_owned();
+        if code.is_empty() || code.contains('/') || name.is_empty() {
+            return Err(DomainError::Validation(
+                "Account requires a valid code and name".into(),
+            ));
+        }
+        if self
+            .account_repo
+            .find_by_code(org_id, &code)
+            .await?
+            .is_some()
+        {
+            return Err(DomainError::Validation(
+                "An account with this code already exists".into(),
+            ));
+        }
+        let (path, depth) = if let Some(parent_id) = parent_id {
+            let parent = self
+                .get_account(org_id, parent_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Parent account not found".into()))?;
+            if !parent.is_active || parent.account_type != account_type {
+                return Err(DomainError::Validation(
+                    "Select an active parent in the same account category".into(),
+                ));
+            }
+            (
+                format!("{}/{}/", parent.path.trim_end_matches('/'), code),
+                parent.depth + 1,
+            )
+        } else {
+            (format!("/{}/", code), 0)
+        };
         let now = Utc::now();
-        let path = format!("/{}", code);
         let account = Account {
             id: Uuid::new_v4(),
             org_id,
@@ -1348,7 +1678,7 @@ impl FinanceService {
             sub_type,
             parent_id,
             path,
-            depth: 1,
+            depth,
             currency_code,
             entity_type: None,
             entity_id: None,
@@ -1411,10 +1741,15 @@ impl FinanceService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
+        self.validate_cashier_posting_accounts(ctx, org_id, [id])
+            .await?;
         let all_accounts = self.account_repo.find_by_org(org_id).await?;
         let current_purpose_ids = resolved_purpose_account_ids(&all_accounts);
         let fixed_account_ids: HashSet<Uuid> =
             current_purpose_ids.iter().flatten().copied().collect();
+        if account.account_type != account_type || account.sub_type != sub_type {
+            validate_account_subtype(account_type, sub_type.as_deref())?;
+        }
         let changes_posting_structure = account.code != code
             || account.account_type != account_type
             || account.sub_type != sub_type
@@ -1550,6 +1885,8 @@ impl FinanceService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
+        self.validate_cashier_posting_accounts(ctx, org_id, [id])
+            .await?;
         let all_accounts = self.account_repo.find_by_org(org_id).await?;
         let fixed_account_ids: HashSet<Uuid> = resolved_purpose_account_ids(&all_accounts)
             .into_iter()
@@ -1572,6 +1909,21 @@ impl FinanceService {
             ));
         }
 
+        if self
+            .journal_repo
+            .find_by_org(org_id)
+            .await?
+            .iter()
+            .any(|entry| {
+                entry.debit_account_id == id
+                    || entry.credit_account_id == id
+                    || entry.lines.iter().any(|line| line.account_id == id)
+            })
+        {
+            return Err(DomainError::Validation(
+                "An account with journal activity cannot be deleted".into(),
+            ));
+        }
         self.account_repo.delete(id).await?;
 
         let _ = self
@@ -1591,7 +1943,27 @@ impl FinanceService {
 
     /// List general ledger accounts
     pub async fn list_accounts(&self, org_id: Uuid) -> Result<Vec<Account>, DomainError> {
-        self.account_repo.find_by_org(org_id).await
+        let date = self.current_financial_date(org_id).await?;
+        let (mut accounts, mut balances) = tokio::try_join!(
+            self.account_repo.find_by_org(org_id),
+            self.journal_repo.account_balances_at(org_id, date)
+        )?;
+        for account in &mut accounts {
+            let mut amounts = balances.remove(&account.id).unwrap_or_default();
+            if matches!(
+                account.account_type,
+                AccountType::Liability | AccountType::Equity | AccountType::Revenue
+            ) {
+                for amount in amounts.values_mut() {
+                    *amount = -*amount;
+                }
+            }
+            if !amounts.is_empty() {
+                account.balances = serde_json::to_value(amounts)
+                    .map_err(|error| DomainError::Internal(error.to_string()))?;
+            }
+        }
+        Ok(accounts)
     }
 
     /// List student fees
@@ -1645,33 +2017,53 @@ impl FinanceService {
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
-        let mut original_entry =
-            self.journal_repo
-                .find_by_id(entry_id)
-                .await?
-                .ok_or_else(|| {
-                    DomainError::NotFound(format!("Journal entry {} not found", entry_id))
-                })?;
+        let original_entry = self
+            .journal_repo
+            .find_by_id(entry_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Journal entry {} not found", entry_id))
+            })?;
 
         if original_entry.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
+        if matches!(
+            original_entry.source_type.as_str(),
+            "student_payment"
+                | "payment"
+                | "account_receipt"
+                | "student_fee_invoice"
+                | "student_fee_refund"
+        ) {
+            return Err(DomainError::Validation(
+                "Manage this entry from its source document".into(),
+            ));
+        }
         if original_entry.is_reversed {
             return Err(DomainError::Validation(
                 "Journal entry is already reversed".into(),
             ));
         }
 
+        self.validate_cashier_posting_accounts(
+            ctx,
+            org_id,
+            original_entry
+                .lines
+                .iter()
+                .map(|line| line.account_id)
+                .chain([
+                    original_entry.debit_account_id,
+                    original_entry.credit_account_id,
+                ]),
+        )
+        .await?;
+
         let now = Utc::now();
         let current_date = self.current_financial_date(org_id).await?;
         let user_id = ctx.user_id().unwrap_or(Uuid::nil());
-
-        // Mark original as reversed
-        original_entry.is_reversed = true;
-        original_entry.reversed_by = Some(user_id);
-        original_entry.reversal_reason = Some(reason.clone());
-        self.journal_repo.save(&original_entry).await?;
 
         // Create opposing reversing entry
         let reversal_id = Uuid::new_v4();
@@ -1720,7 +2112,9 @@ impl FinanceService {
             version: 1,
         };
 
-        self.journal_repo.save(&reversing_entry).await?;
+        self.journal_repo
+            .save_reversal(&reversing_entry, entry_id, &reason)
+            .await?;
         Ok(reversing_entry)
     }
 
@@ -1731,6 +2125,7 @@ impl FinanceService {
         org_id: Uuid,
         fee_id: Uuid,
         refund_amount: Decimal,
+        payment_id: Option<Uuid>,
         notes: Option<String>,
     ) -> Result<StudentFee, DomainError> {
         self.permission_checker
@@ -1754,6 +2149,138 @@ impl FinanceService {
             )));
         }
 
+        let payment = if let Some(id) = payment_id {
+            self.payment_repo
+                .find_by_id(id)
+                .await?
+                .filter(|payment| payment.org_id == org_id && payment.fee_id == Some(fee_id))
+                .ok_or_else(|| {
+                    DomainError::NotFound("Original payment not found for this fee".into())
+                })?
+        } else {
+            let mut payments = self
+                .payment_repo
+                .find_by_student(fee.student_id)
+                .await?
+                .into_iter()
+                .filter(|payment| payment.org_id == org_id && payment.fee_id == Some(fee_id));
+            let payment = payments
+                .next()
+                .ok_or_else(|| DomainError::NotFound("Original payment not found".into()))?;
+            if payments.next().is_some() {
+                return Err(DomainError::Validation(
+                    "Select the payment to refund".into(),
+                ));
+            }
+            payment
+        };
+        if matches!(
+            payment.method,
+            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
+        ) {
+            return Err(DomainError::Validation(
+                "Electronic payments require a gateway refund".into(),
+            ));
+        }
+        let prior_refunds: Decimal = self
+            .journal_repo
+            .find_by_org(org_id)
+            .await?
+            .into_iter()
+            .filter(|entry| {
+                entry.source_type == "student_fee_refund" && entry.source_id == Some(payment.id)
+            })
+            .map(|entry| entry.amount)
+            .sum();
+        if refund_amount > payment.amount - prior_refunds {
+            return Err(DomainError::Validation(
+                "Refund exceeds the remaining balance of the original payment".into(),
+            ));
+        }
+        let original_id = payment.journal_entry_id.ok_or_else(|| {
+            DomainError::Validation("Original payment has no posted journal entry".into())
+        })?;
+        let original = self
+            .journal_repo
+            .find_by_id(original_id)
+            .await?
+            .filter(|entry| entry.org_id == org_id && !entry.is_reversed)
+            .ok_or_else(|| {
+                DomainError::Validation("Original payment journal is missing or reversed".into())
+            })?;
+        let treasury = self
+            .get_account(org_id, payment.account_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Refund treasury account not found".into()))?;
+        if !is_cash_or_bank_treasury(&treasury, org_id)
+            || !treasury
+                .currency_code
+                .eq_ignore_ascii_case(&payment.currency_code)
+        {
+            return Err(DomainError::Validation(
+                "Refund requires an active treasury in the original payment currency".into(),
+            ));
+        }
+        self.validate_cashier_posting_accounts(
+            ctx,
+            org_id,
+            [payment.account_id, original.credit_account_id],
+        )
+        .await?;
+        let receivable = self
+            .get_account(org_id, original.credit_account_id)
+            .await?
+            .filter(|account| is_receivable_account(account, org_id, &payment.currency_code))
+            .ok_or_else(|| {
+                DomainError::Validation("Original receivable account is unavailable".into())
+            })?;
+        let previous = fee.clone();
+        let now = Utc::now();
+        let id = Uuid::new_v4();
+        let entry = JournalEntry {
+            id,
+            org_id,
+            reference_number: format!("RFND-{}", id.simple()),
+            accounting_date: self.current_financial_date(org_id).await?,
+            amount: refund_amount,
+            currency_code: payment.currency_code,
+            exchange_rate: original.exchange_rate,
+            base_amount: refund_amount * original.exchange_rate,
+            debit_account_id: receivable.id,
+            credit_account_id: treasury.id,
+            description: notes.clone().unwrap_or_else(|| "Student fee refund".into()),
+            description_ar: None,
+            source_type: "student_fee_refund".into(),
+            source_id: Some(payment.id),
+            status: JournalPostingStatus::Posted,
+            lines: [
+                (receivable.id, refund_amount, Decimal::ZERO),
+                (treasury.id, Decimal::ZERO, refund_amount),
+            ]
+            .into_iter()
+            .map(
+                |(account_id, debit_amount, credit_amount)| JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id,
+                    debit_amount,
+                    credit_amount,
+                    description: notes.clone(),
+                    entity_type: Some("student".into()),
+                    entity_id: Some(fee.student_id),
+                },
+            )
+            .collect(),
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: ctx.user_id(),
+            created_at: now,
+            updated_at: now,
+            updated_by: ctx.user_id(),
+            org_unit_id: original.org_unit_id,
+            version: 1,
+        };
+
         fee.paid_amount -= refund_amount;
         fee.balance_due += refund_amount;
         if fee.paid_amount == Decimal::ZERO {
@@ -1769,7 +2296,9 @@ impl FinanceService {
         }
         fee.updated_at = Utc::now();
 
-        self.student_fee_repo.save(&fee).await?;
+        self.student_fee_repo
+            .save_fee_refund(&previous, &fee, &entry)
+            .await?;
         Ok(fee)
     }
 
@@ -1786,9 +2315,12 @@ impl FinanceService {
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
-        if num_installments < 2 || due_dates.len() != num_installments as usize {
+        if num_installments < 2
+            || due_dates.len() != num_installments as usize
+            || due_dates.windows(2).any(|dates| dates[0] >= dates[1])
+        {
             return Err(DomainError::Validation(
-                "Installment count must match number of due dates".into(),
+                "Provide strictly increasing due dates for at least two installments".into(),
             ));
         }
 
@@ -1808,12 +2340,52 @@ impl FinanceService {
             ));
         }
 
-        let installment_amount =
-            (base_fee.net_amount / Decimal::from(num_installments)).round_dp(2);
+        if base_fee.installment_number.is_some()
+            || !matches!(base_fee.status, FeeStatus::Pending | FeeStatus::Overdue)
+        {
+            return Err(DomainError::Validation(
+                "Only open, unsplit fees can be scheduled into installments".into(),
+            ));
+        }
+        let template = self
+            .fee_template_repo
+            .find_by_id(base_fee.fee_template_id)
+            .await?
+            .filter(|template| template.org_id == org_id)
+            .ok_or_else(|| DomainError::NotFound("Fee template not found".into()))?;
+        let precision = self
+            .currency_repo
+            .find_by_code(org_id, &template.currency_code)
+            .await?
+            .map_or(2, |currency| currency.decimal_places.min(28));
+        let count = Decimal::from(num_installments);
+        let mut allocated_net = Decimal::ZERO;
+        let mut allocated_discount = Decimal::ZERO;
         let mut created_fees = Vec::new();
         let now = Utc::now();
 
         for (i, due_date) in due_dates.into_iter().enumerate() {
+            let progress = Decimal::from((i + 1) as u32) / count;
+            let last = i + 1 == num_installments as usize;
+            let net_to_date = if last {
+                base_fee.net_amount
+            } else {
+                (base_fee.net_amount * progress).round_dp(precision)
+            };
+            let discount_to_date = if last {
+                base_fee.discount_amount
+            } else {
+                (base_fee.discount_amount * progress).round_dp(precision)
+            };
+            let installment_amount = net_to_date - allocated_net;
+            let installment_discount = discount_to_date - allocated_discount;
+            if installment_amount <= Decimal::ZERO {
+                return Err(DomainError::Validation(
+                    "Fee amount is too small for this installment count".into(),
+                ));
+            }
+            allocated_net = net_to_date;
+            allocated_discount = discount_to_date;
             let inst_fee = StudentFee {
                 id: if i == 0 { base_fee.id } else { Uuid::new_v4() },
                 org_id: base_fee.org_id,
@@ -1821,8 +2393,8 @@ impl FinanceService {
                 student_id: base_fee.student_id,
                 enrollment_id: base_fee.enrollment_id,
                 fee_template_id: base_fee.fee_template_id,
-                original_amount: installment_amount,
-                discount_amount: Decimal::ZERO,
+                original_amount: installment_amount + installment_discount,
+                discount_amount: installment_discount,
                 net_amount: installment_amount,
                 paid_amount: Decimal::ZERO,
                 balance_due: installment_amount,
@@ -1835,10 +2407,12 @@ impl FinanceService {
                 created_at: now,
                 updated_at: now,
             };
-            self.student_fee_repo.save(&inst_fee).await?;
             created_fees.push(inst_fee);
         }
 
+        self.student_fee_repo
+            .save_fee_installments(&base_fee, &created_fees)
+            .await?;
         Ok(created_fees)
     }
 
@@ -1979,7 +2553,7 @@ impl FinanceService {
             ));
         }
 
-        self.student_fee_repo.delete(id).await?;
+        self.student_fee_repo.delete_fee_posting(&fee).await?;
 
         let _ = self
             .event_bus
@@ -2017,22 +2591,50 @@ impl FinanceService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
-        // If linked to a student fee, adjust the fee's paid_amount and balance_due
-        if let Some(fee_id) = payment.fee_id {
-            if let Some(mut fee) = self.student_fee_repo.find_by_id(fee_id).await? {
-                fee.paid_amount = (fee.paid_amount - payment.amount).max(Decimal::ZERO);
-                fee.balance_due = (fee.net_amount - fee.paid_amount).max(Decimal::ZERO);
-                if fee.paid_amount == Decimal::ZERO {
-                    fee.status = FeeStatus::Pending;
-                } else {
-                    fee.status = FeeStatus::PartiallyPaid;
-                }
-                fee.updated_at = Utc::now();
-                self.student_fee_repo.save(&fee).await?;
-            }
-        }
+        self.validate_cashier_posting_accounts(ctx, org_id, [payment.account_id])
+            .await?;
 
-        self.payment_repo.delete(id).await?;
+        if matches!(
+            payment.method,
+            PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay
+        ) {
+            return Err(DomainError::Validation(
+                "Electronic payments require a gateway refund".into(),
+            ));
+        }
+        let fee_update = if let Some(fee_id) = payment.fee_id {
+            let fee = self
+                .student_fee_repo
+                .find_by_id(fee_id)
+                .await?
+                .filter(|fee| fee.org_id == org_id)
+                .ok_or_else(|| DomainError::NotFound("Payment fee not found".into()))?;
+            if fee.paid_amount < payment.amount {
+                return Err(DomainError::Validation(
+                    "Payment amount exceeds the recorded paid balance".into(),
+                ));
+            }
+            let mut updated = fee.clone();
+            updated.paid_amount -= payment.amount;
+            updated.balance_due = (updated.net_amount - updated.paid_amount).max(Decimal::ZERO);
+            updated.status = if updated.paid_amount == Decimal::ZERO {
+                FeeStatus::Pending
+            } else {
+                FeeStatus::PartiallyPaid
+            };
+            updated.updated_at = Utc::now();
+            Some((fee, updated))
+        } else {
+            None
+        };
+        self.payment_repo
+            .delete_payment_posting(
+                &payment,
+                fee_update
+                    .as_ref()
+                    .map(|(previous, updated)| (previous, updated)),
+            )
+            .await?;
 
         let _ = self
             .event_bus
@@ -2070,6 +2672,31 @@ impl FinanceService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
+        if matches!(
+            entry.source_type.as_str(),
+            "student_payment"
+                | "payment"
+                | "account_receipt"
+                | "student_fee_invoice"
+                | "student_fee_refund"
+                | "reversal"
+        ) || entry.is_reversed
+            || entry.status == JournalPostingStatus::Reconciled
+        {
+            return Err(DomainError::Validation(
+                "This journal entry must be managed through its source or reversal history".into(),
+            ));
+        }
+        self.validate_cashier_posting_accounts(
+            ctx,
+            org_id,
+            entry
+                .lines
+                .iter()
+                .map(|line| line.account_id)
+                .chain([entry.debit_account_id, entry.credit_account_id]),
+        )
+        .await?;
         self.journal_repo.delete(id).await?;
 
         let _ = self
@@ -2141,6 +2768,8 @@ impl FinanceService {
         )
         .await?;
 
+        let settings = self.policy_repo.get_settings(org_id).await?;
+        let assignment = assigned_cash_account(&settings.finance, ctx);
         let mut total_debit = Decimal::ZERO;
         let mut total_credit = Decimal::ZERO;
         for line in &entry.lines {
@@ -2174,6 +2803,7 @@ impl FinanceService {
                 ));
             }
 
+            validate_cashier_account(&account, assignment)?;
             total_debit += line.debit_amount;
             total_credit += line.credit_amount;
         }
@@ -2199,22 +2829,9 @@ impl FinanceService {
         }
 
         let settings = self.policy_repo.get_settings(org_id).await?;
-        let base_currency = settings.finance.currency;
-        if entry.currency_code.eq_ignore_ascii_case(&base_currency) {
-            entry.exchange_rate = Decimal::ONE;
-        } else {
-            let rate = self
-                .currency_repo
-                .get_exchange_rate(org_id, &base_currency, &entry.currency_code)
-                .await?
-                .ok_or_else(|| {
-                    DomainError::Validation(format!(
-                        "Exchange rate not found from {} to {}",
-                        base_currency, entry.currency_code
-                    ))
-                })?;
-            entry.exchange_rate = rate.rate;
-        }
+        entry.exchange_rate = self
+            .rate_to_base(org_id, &entry.currency_code, &settings.finance.currency)
+            .await?;
         entry.base_amount = entry.amount * entry.exchange_rate;
 
         entry.validate_balance().map_err(DomainError::Validation)?;
@@ -2261,6 +2878,9 @@ impl FinanceService {
                 "Disbursement source must be an active cash or bank treasury account".into(),
             ));
         }
+        validate_treasury_method(&treasury, input.payment_method)?;
+        let settings = self.policy_repo.get_settings(org_id).await?;
+        validate_cashier_account(&treasury, assigned_cash_account(&settings.finance, ctx))?;
         let beneficiary = self
             .account_repo
             .find_by_id(input.beneficiary_account_id)
@@ -2277,6 +2897,7 @@ impl FinanceService {
                 "Organization mismatch for accounts".into(),
             ));
         }
+        validate_cashier_account(&beneficiary, assigned_cash_account(&settings.finance, ctx))?;
         if !beneficiary.is_active {
             return Err(DomainError::Validation(
                 "Disbursement beneficiary account must be active".into(),
@@ -2299,33 +2920,62 @@ impl FinanceService {
             ));
         }
 
+        let exchange_rate = self
+            .rate_to_base(org_id, &currency, &settings.finance.currency)
+            .await?;
+
         // 2. Multi-line balanced entry
-        let lines = vec![
-            JournalEntryLine {
+        let mut lines = vec![JournalEntryLine {
+            id: Uuid::new_v4(),
+            account_id: input.beneficiary_account_id,
+            debit_amount: input.amount,
+            credit_amount: Decimal::ZERO,
+            description: input
+                .notes
+                .clone()
+                .or_else(|| Some("Disbursement - Beneficiary / Expense".into())),
+            entity_type: input.beneficiary_type.clone(),
+            entity_id: input.beneficiary_id,
+        }];
+        let mut amount = input.amount;
+        for line in input.additional_lines {
+            if line.amount <= Decimal::ZERO || line.beneficiary_account_id == treasury.id {
+                return Err(DomainError::Validation("Invalid disbursement line".into()));
+            }
+            let account = self
+                .get_account(org_id, line.beneficiary_account_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::NotFound("Disbursement beneficiary account not found".into())
+                })?;
+            if !account.is_active || !account.currency_code.eq_ignore_ascii_case(&currency) {
+                return Err(DomainError::Validation(
+                    "Disbursement requires active beneficiaries in the voucher currency".into(),
+                ));
+            }
+            validate_cashier_account(&account, assigned_cash_account(&settings.finance, ctx))?;
+            amount = amount
+                .checked_add(line.amount)
+                .ok_or_else(|| DomainError::Validation("Disbursement total is too large".into()))?;
+            lines.push(JournalEntryLine {
                 id: Uuid::new_v4(),
-                account_id: input.beneficiary_account_id,
-                debit_amount: input.amount,
+                account_id: account.id,
+                debit_amount: line.amount,
                 credit_amount: Decimal::ZERO,
-                description: input
-                    .notes
-                    .clone()
-                    .or_else(|| Some("Disbursement - Beneficiary / Expense".into())),
-                entity_type: input.beneficiary_type.clone(),
-                entity_id: input.beneficiary_id,
-            },
-            JournalEntryLine {
-                id: Uuid::new_v4(),
-                account_id: input.treasury_account_id,
-                debit_amount: Decimal::ZERO,
-                credit_amount: input.amount,
-                description: input
-                    .notes
-                    .clone()
-                    .or_else(|| Some("Disbursement - Treasury / Cashbox".into())),
-                entity_type: Some("treasury".into()),
-                entity_id: Some(input.treasury_account_id),
-            },
-        ];
+                description: line.notes,
+                entity_type: None,
+                entity_id: None,
+            });
+        }
+        lines.push(JournalEntryLine {
+            id: Uuid::new_v4(),
+            account_id: input.treasury_account_id,
+            debit_amount: Decimal::ZERO,
+            credit_amount: amount,
+            description: Some("Disbursement - Treasury / Cashbox".into()),
+            entity_type: Some("treasury".into()),
+            entity_id: Some(input.treasury_account_id),
+        });
 
         let ref_num = input.reference.unwrap_or_else(|| {
             format!(
@@ -2343,10 +2993,10 @@ impl FinanceService {
             org_id,
             reference_number: ref_num,
             accounting_date,
-            amount: input.amount,
+            amount,
             currency_code: currency,
-            exchange_rate: Decimal::from(1),
-            base_amount: input.amount,
+            exchange_rate,
+            base_amount: amount * exchange_rate,
             debit_account_id: input.beneficiary_account_id,
             credit_account_id: input.treasury_account_id,
             description: input
@@ -2386,7 +3036,7 @@ impl FinanceService {
                 ctx,
                 &DomainEvent::JournalEntryPosted {
                     entry_id: journal_entry_id,
-                    amount: input.amount,
+                    amount,
                     timestamp: now,
                 },
             )
@@ -2406,13 +3056,16 @@ impl FinanceService {
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
-        if input.gross_amount <= Decimal::ZERO {
+        if input.gross_amount <= Decimal::ZERO
+            || input.net_amount < Decimal::ZERO
+            || input.fee_amount < Decimal::ZERO
+        {
             return Err(DomainError::Validation(
-                "Gross settlement amount must be greater than zero".into(),
+                "Settlement must have a positive gross amount and nonnegative net and fees".into(),
             ));
         }
 
-        if input.net_amount + input.fee_amount != input.gross_amount {
+        if input.net_amount.checked_add(input.fee_amount) != Some(input.gross_amount) {
             return Err(DomainError::Validation(format!(
                 "Net amount ({}) + Fee amount ({}) != Gross amount ({})",
                 input.net_amount, input.fee_amount, input.gross_amount
@@ -2425,16 +3078,6 @@ impl FinanceService {
             .await?;
         let journal_entry_id = Uuid::new_v4();
 
-        // 1. Resolve accounts
-        let clearing_acct_id = match input.clearing_account_id {
-            Some(id) => id,
-            None => {
-                self.resolve_default_account(org_id, AccountPurpose::ElectronicGatewayClearing)
-                    .await?
-                    .id
-            }
-        };
-
         let bank = self
             .account_repo
             .find_by_id(input.bank_account_id)
@@ -2443,10 +3086,35 @@ impl FinanceService {
                 DomainError::NotFound(format!("Bank account {} not found", input.bank_account_id))
             })?;
 
-        let fee_acct = self
-            .resolve_default_account(org_id, AccountPurpose::BankGatewayFeesExpense)
-            .await
-            .unwrap_or_else(|_| bank.clone());
+        if !is_cash_or_bank_treasury(&bank, org_id)
+            || treasury_kind(&bank) != Some(TreasuryKind::Bank)
+        {
+            return Err(DomainError::Validation(
+                "Gateway settlements require an active organization bank account".into(),
+            ));
+        }
+
+        let clearing = if let Some(id) = input.clearing_account_id {
+            self.get_account(org_id, id)
+                .await?
+                .filter(|account| {
+                    is_gateway_clearing_account(account)
+                        && is_receivable_account(account, org_id, &bank.currency_code)
+                })
+                .ok_or_else(|| {
+                    DomainError::Validation(
+                        "Select an active online payment clearing account in the bank currency"
+                            .into(),
+                    )
+                })?
+        } else {
+            self.gateway_clearing_account(org_id, &bank.currency_code)
+                .await?
+        };
+        let settings = self.policy_repo.get_settings(org_id).await?;
+        let exchange_rate = self
+            .rate_to_base(org_id, &bank.currency_code, &settings.finance.currency)
+            .await?;
 
         let mut lines = vec![
             // Dr Bank Account (Net received)
@@ -2466,6 +3134,17 @@ impl FinanceService {
 
         // Dr Fee Account if any
         if input.fee_amount > Decimal::ZERO {
+            let fee_acct = self
+                .resolve_default_account(org_id, AccountPurpose::BankGatewayFeesExpense)
+                .await?;
+            if !fee_acct
+                .currency_code
+                .eq_ignore_ascii_case(&bank.currency_code)
+            {
+                return Err(DomainError::Validation(
+                    "Gateway fee account must use the bank currency".into(),
+                ));
+            }
             lines.push(JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id: fee_acct.id,
@@ -2483,7 +3162,7 @@ impl FinanceService {
         // Cr Electronic Gateway Clearing Account (Gross collected)
         lines.push(JournalEntryLine {
             id: Uuid::new_v4(),
-            account_id: clearing_acct_id,
+            account_id: clearing.id,
             debit_amount: Decimal::ZERO,
             credit_amount: input.gross_amount,
             description: Some(format!(
@@ -2491,8 +3170,15 @@ impl FinanceService {
                 input.payout_reference
             )),
             entity_type: Some("gateway_clearing".into()),
-            entity_id: Some(clearing_acct_id),
+            entity_id: Some(clearing.id),
         });
+
+        self.validate_cashier_posting_accounts(
+            ctx,
+            org_id,
+            lines.iter().map(|line| line.account_id),
+        )
+        .await?;
 
         let entry = JournalEntry {
             id: journal_entry_id,
@@ -2501,10 +3187,10 @@ impl FinanceService {
             accounting_date,
             amount: input.gross_amount,
             currency_code: bank.currency_code.clone(),
-            exchange_rate: Decimal::from(1),
-            base_amount: input.gross_amount,
+            exchange_rate,
+            base_amount: input.gross_amount * exchange_rate,
             debit_account_id: bank.id,
-            credit_account_id: clearing_acct_id,
+            credit_account_id: clearing.id,
             description: format!(
                 "Payment Gateway Payout Settlement: {}",
                 input.payout_reference
@@ -2749,6 +3435,7 @@ impl FinanceService {
             })?;
 
         let input = DisbursementInput {
+            additional_lines: Vec::new(),
             treasury_account_id: bank.id,
             beneficiary_account_id: salaries_payable.id,
             amount,
@@ -2850,7 +3537,7 @@ impl FinanceService {
         let mut running_balance = Decimal::ZERO;
 
         for entry in sorted_entries {
-            if entry.is_reversed || entry.status == JournalPostingStatus::Draft {
+            if entry.status == JournalPostingStatus::Draft {
                 continue;
             }
 
@@ -3099,6 +3786,31 @@ mod treasury_account_tests {
         assert!(!is_cash_or_bank_treasury(&account, org_id));
         account.is_active = true;
         assert!(!is_cash_or_bank_treasury(&account, Uuid::new_v4()));
+    }
+
+    #[test]
+    fn enforces_method_and_cashier_assignment_independently() {
+        let org_id = Uuid::new_v4();
+        let mut cashbox = account(org_id);
+        cashbox.sub_type = Some("cash".into());
+        let mut bank = account(org_id);
+        bank.sub_type = Some("bank".into());
+        let other_cashbox = Some(Uuid::new_v4());
+
+        assert!(validate_treasury_method(&cashbox, PaymentMethod::Cash).is_ok());
+        assert!(validate_treasury_method(&bank, PaymentMethod::Cash).is_err());
+        for method in [
+            PaymentMethod::BankTransfer,
+            PaymentMethod::Check,
+            PaymentMethod::Mada,
+        ] {
+            assert!(validate_treasury_method(&bank, method).is_ok());
+            assert!(validate_treasury_method(&cashbox, method).is_err());
+        }
+        assert!(validate_cashier_account(&cashbox, None).is_ok());
+        assert!(validate_cashier_account(&cashbox, Some(cashbox.id)).is_ok());
+        assert!(validate_cashier_account(&cashbox, other_cashbox).is_err());
+        assert!(validate_cashier_account(&bank, other_cashbox).is_ok());
     }
 
     #[test]

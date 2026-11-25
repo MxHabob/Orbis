@@ -1,14 +1,7 @@
 //! Report infrastructure adapters — renderers, registries, and org context.
 //!
-//! DocForge stays in crates-legacy/ and is accessed ONLY through the
-//! DocumentRendererPort trait. The domain/application layers never
-//! reference it directly.
-//!
-//! Rendering decision: We use Tera HTML templates for report rendering.
-//! DocForge is a layout engine for structured documents (ID cards, certificates),
-//! not tabular reports. For tabular data with org headers, HTML→PDF via
-//! Tera is the right fit — simpler, more maintainable, no heavy deps
-//! (krilla, cosmic-text, taffy) needed in the new architecture.
+//! The application layer selects an exporter through the DocumentRenderer port.
+//! This adapter uses Tera for HTML and DocForge for PDF layout and rendering.
 
 use async_trait::async_trait;
 use orbis_app::ports::reporting::*;
@@ -144,6 +137,7 @@ impl DocumentRenderer for JsonRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        _locale: &ReportLocale,
         _template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
@@ -173,6 +167,7 @@ impl DocumentRenderer for DataOnlyRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        _locale: &ReportLocale,
         _template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
@@ -204,6 +199,7 @@ impl DocumentRenderer for CsvRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        _locale: &ReportLocale,
         _template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
@@ -279,6 +275,7 @@ impl DocumentRenderer for XlsxRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        _locale: &ReportLocale,
         _template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
@@ -486,21 +483,98 @@ mod xlsx_tests {
     async fn html_renderer_wraps_default_reports_with_organization_branding() {
         let dataset = empty_dataset();
         let export = HtmlRenderer
-            .render(&dataset, None, None)
+            .render(&dataset, &ReportLocale::En, None, None)
             .await
             .expect("HTML rendering should succeed with default master");
         let html = String::from_utf8(export.data).expect("HTML output should be utf-8");
 
         assert!(html.contains("North Campus"));
         assert!(html.contains("Student overview"));
-        assert!(html.contains("Orbis Educational System"));
+        assert!(html.contains("No data to display"));
+        assert!(html.contains("lang=\"en\" dir=\"ltr\""));
     }
 
     #[tokio::test]
-    async fn pdf_renderer_rejects_missing_docforge_template_instead_of_mislabelling_html() {
-        let result = PdfRenderer.render(&empty_dataset(), None, None).await;
+    async fn pdf_renderer_exports_real_pdf_without_a_bound_template() {
+        let result = PdfRenderer
+            .render(&empty_dataset(), &ReportLocale::En, None, None)
+            .await
+            .expect("default DocForge PDF");
+        assert_eq!(result.mime_type, "application/pdf");
+        assert!(result.data.starts_with(b"%PDF"));
+    }
 
-        assert!(matches!(result, Err(DomainError::Validation(_))));
+    #[test]
+    fn default_pdf_repeats_headers_and_keeps_wide_report_pages_within_a4() {
+        use docforge_engine::{
+            layout::engine::LayoutEngine, render::font_cache::FontCache,
+            render::types::PositionedElement,
+        };
+
+        let mut dataset = empty_dataset();
+        dataset.columns = (0..11)
+            .map(|column| ColumnDef {
+                key: format!("c{column}"),
+                header: format!("Column {column}"),
+                header_ar: String::new(),
+                data_type: ColumnDataType::Text,
+                width: None,
+                align: None,
+                format: None,
+                visible: true,
+                total_type: None,
+            })
+            .collect();
+        dataset.rows = (0..14)
+            .map(|row| {
+                serde_json::Value::Object(
+                    (0..11)
+                        .map(|column| {
+                            (
+                                format!("c{column}"),
+                                serde_json::json!(format!("Record {row}-{column}")),
+                            )
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+        dataset.rows[0]["c1"] = serde_json::json!(824.57);
+        dataset.total_count = 14;
+
+        let (document, context) =
+            super::super::tabular_pdf::build(&dataset, &ReportLocale::En).unwrap();
+        let fonts = FontCache::with_system_fonts();
+        let layout = LayoutEngine::new(&fonts)
+            .layout(&document, &context)
+            .unwrap();
+        if let Some(directory) = std::env::var_os("ORBIS_PRINT_PREVIEW") {
+            let pdf = docforge_engine::render::pdf_renderer::render_to_pdf(
+                &layout,
+                &fonts,
+                &Default::default(),
+            )
+            .unwrap();
+            std::fs::write(
+                std::path::Path::new(&directory).join("report.pdf"),
+                pdf.bytes,
+            )
+            .unwrap();
+        }
+        assert_eq!(layout.pages.len(), 4);
+        assert!(layout.pages[0].elements.iter().any(
+            |element| matches!(element, PositionedElement::Text(text) if text.content == "824.57")
+        ));
+        for page in &layout.pages {
+            assert!((page.width_pt - 841.89).abs() < 0.2);
+            assert!((page.height_pt - 595.28).abs() < 0.2);
+            assert!(page.elements.iter().any(
+                |element| matches!(element, PositionedElement::Text(text) if text.content == "Column 0")
+            ));
+        }
+        assert!(layout.pages[3].elements.iter().any(
+            |element| matches!(element, PositionedElement::Text(text) if text.content == "Record 13-10")
+        ));
     }
 
     #[tokio::test]
@@ -547,7 +621,7 @@ mod xlsx_tests {
         };
 
         let export = XlsxRenderer
-            .render(&dataset, None, None)
+            .render(&dataset, &ReportLocale::Ar, None, None)
             .await
             .expect("xlsx rendering should succeed");
         let mut archive = ZipArchive::new(Cursor::new(export.data))
@@ -579,10 +653,11 @@ impl DocumentRenderer for HtmlRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        locale: &ReportLocale,
         template: Option<&ReportTemplate>,
         master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
-        let is_rtl = dataset.org.name_ar.len() > dataset.org.name.len();
+        let is_rtl = locale.is_rtl();
 
         let mut context = Context::new();
         context.insert("is_rtl", &is_rtl);
@@ -592,6 +667,17 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("org_type_ar", &"");
         context.insert("currency", &dataset.org.currency_code);
         context.insert("primary_color", &dataset.org.primary_color);
+        let brand_color = dataset
+            .org
+            .primary_color
+            .as_deref()
+            .filter(|value| {
+                value.len() == 7
+                    && value.starts_with('#')
+                    && value.as_bytes()[1..].iter().all(u8::is_ascii_hexdigit)
+            })
+            .unwrap_or("#334155");
+        context.insert("brand_color", brand_color);
         context.insert("org_website", &dataset.org.website);
         context.insert("report_name", &dataset.report_name);
         context.insert("report_name_ar", &dataset.report_name_ar);
@@ -607,26 +693,48 @@ impl DocumentRenderer for HtmlRenderer {
             .unwrap_or_else(|| "System".to_string());
         context.insert("printed_by", &printed_by);
 
-        context.insert("total_pages", &1);
+        let parameters: Vec<_> = dataset
+            .parameter_summary
+            .iter()
+            .map(|item| {
+                let (label, value) = if is_rtl {
+                    (&item.label_ar, &item.value_ar)
+                } else {
+                    (&item.label, &item.value)
+                };
+                serde_json::json!({ "label": label, "value": value })
+            })
+            .collect();
+        let parameter_map: HashMap<_, _> = dataset
+            .parameter_summary
+            .iter()
+            .map(|item| {
+                if is_rtl {
+                    (&item.label_ar, &item.value_ar)
+                } else {
+                    (&item.label, &item.value)
+                }
+            })
+            .collect();
+        context.insert("parameters", &parameter_map);
+        context.insert("parameter_items", &parameters);
         context.insert("current_page", &1);
-
-        let mut param_map = HashMap::new();
-        for p in &dataset.parameter_summary {
-            param_map.insert(
-                if is_rtl {
-                    p.label_ar.clone()
-                } else {
-                    p.label.clone()
-                },
-                if is_rtl {
-                    p.value_ar.clone()
-                } else {
-                    p.value.clone()
-                },
-            );
-        }
-        context.insert("parameters", &param_map);
-        context.insert("has_parameters", &!param_map.is_empty());
+        context.insert("total_pages", &1);
+        context.insert("has_parameters", &!parameters.is_empty());
+        let column_count = dataset
+            .columns
+            .iter()
+            .filter(|column| column.visible)
+            .count();
+        context.insert("column_count", &column_count);
+        context.insert(
+            "paper_orientation",
+            if column_count > 6 {
+                "landscape"
+            } else {
+                "portrait"
+            },
+        );
         context.insert("columns", &dataset.columns);
         context.insert("rows", &dataset.rows);
 
@@ -635,16 +743,17 @@ impl DocumentRenderer for HtmlRenderer {
         }
 
         let mut tera = Tera::default();
+        tera.autoescape_on(vec![".html"]);
 
         let inner_template_str = template
             .and_then(|t| t.document_json.clone().into())
             .unwrap_or_else(|| crate::adapters::report_defaults::TABULAR_REPORT_HTML.to_string());
 
-        tera.add_raw_template("inner", &inner_template_str)
+        tera.add_raw_template("inner.html", &inner_template_str)
             .map_err(|e| DomainError::Internal(format!("Tera inner parse error: {}", e)))?;
 
         let inner_html = tera
-            .render("inner", &context)
+            .render("inner.html", &context)
             .map_err(|e| DomainError::Internal(format!("Tera inner render error: {}", e)))?;
 
         context.insert("inner_content", &inner_html);
@@ -652,10 +761,10 @@ impl DocumentRenderer for HtmlRenderer {
             crate::adapters::report_defaults::MASTER_TEMPLATE_HTML,
             |template| template.document_json.as_str(),
         );
-        tera.add_raw_template("master", master_str)
+        tera.add_raw_template("master.html", master_str)
             .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
         let final_html = tera
-            .render("master", &context)
+            .render("master.html", &context)
             .map_err(|e| DomainError::Internal(format!("Tera master render error: {}", e)))?;
 
         let bytes = final_html.into_bytes();
@@ -683,6 +792,7 @@ fn docforge_org_context(org_context: &OrgReportContext) -> Result<serde_json::Va
             ("address_ar", "addressAr"),
             ("primary_color", "primaryColor"),
             ("currency_code", "currencyCode"),
+            ("currency", "currencyCode"),
             ("country_name", "countryName"),
             ("ministry_name", "ministryName"),
             ("region_name", "regionName"),
@@ -697,8 +807,7 @@ fn docforge_org_context(org_context: &OrgReportContext) -> Result<serde_json::Va
     Ok(value)
 }
 
-/// PDF renderer — uses docforge-engine for visual AST templates,
-/// with fallback to HTML renderer for legacy tabular Tera templates.
+/// Renders a published DocForge template or the built-in tabular document.
 pub struct PdfRenderer;
 
 #[async_trait]
@@ -710,91 +819,82 @@ impl DocumentRenderer for PdfRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        locale: &ReportLocale,
         template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
-        if template.is_none() {
-            return Err(DomainError::Validation(
-                "A DocForge template is required to render a PDF".into(),
-            ));
-        }
+        let (doc, context_val) = if let Some(template) = template {
+            let doc = serde_json::from_str::<docforge_engine::model::document::TemplateDocument>(
+                &template.document_json,
+            )
+            .map_err(|error| {
+                DomainError::Validation(format!("Invalid DocForge report template: {error}"))
+            })?;
+            let mut ctx_obj = serde_json::Map::new();
+            let branding = docforge_org_context(&dataset.org)?;
+            ctx_obj.insert("org".into(), branding.clone());
+            ctx_obj.insert("$org".into(), branding);
+            ctx_obj.insert(
+                "columns".into(),
+                serde_json::to_value(&dataset.columns).unwrap_or_default(),
+            );
+            ctx_obj.insert(
+                "rows".into(),
+                serde_json::Value::Array(dataset.rows.clone()),
+            );
+            ctx_obj.insert(
+                "subjects".into(),
+                serde_json::Value::Array(dataset.rows.clone()),
+            );
 
-        if let Some(t) = template {
-            if let Ok(doc) = serde_json::from_str::<
-                docforge_engine::model::document::TemplateDocument,
-            >(&t.document_json)
-            {
-                let mut ctx_obj = serde_json::Map::new();
-                ctx_obj.insert("org".into(), docforge_org_context(&dataset.org)?);
-                ctx_obj.insert(
-                    "columns".into(),
-                    serde_json::to_value(&dataset.columns).unwrap_or_default(),
-                );
-                ctx_obj.insert(
-                    "rows".into(),
-                    serde_json::Value::Array(dataset.rows.clone()),
-                );
-                ctx_obj.insert(
-                    "subjects".into(),
-                    serde_json::Value::Array(dataset.rows.clone()),
-                );
+            if let Some(aggs) = &dataset.aggregations {
+                ctx_obj.insert("totals".into(), aggs.totals.clone());
+                ctx_obj.insert("summary".into(), aggs.totals.clone());
 
-                if let Some(aggs) = &dataset.aggregations {
-                    ctx_obj.insert("totals".into(), aggs.totals.clone());
-                    ctx_obj.insert("summary".into(), aggs.totals.clone());
+                if let serde_json::Value::Object(map) = &aggs.totals {
+                    for (k, v) in map {
+                        ctx_obj.insert(k.clone(), v.clone());
+                    }
+                }
+            }
 
-                    if let serde_json::Value::Object(map) = &aggs.totals {
-                        for (k, v) in map {
+            if let Some(first_row) = dataset.rows.first() {
+                if let serde_json::Value::Object(map) = first_row {
+                    for (k, v) in map {
+                        if !ctx_obj.contains_key(k) {
                             ctx_obj.insert(k.clone(), v.clone());
                         }
                     }
                 }
-
-                if let Some(first_row) = dataset.rows.first() {
-                    if let serde_json::Value::Object(map) = first_row {
-                        for (k, v) in map {
-                            if !ctx_obj.contains_key(k) {
-                                ctx_obj.insert(k.clone(), v.clone());
-                            }
-                        }
-                    }
-                }
-
-                let context_val = serde_json::Value::Object(ctx_obj);
-
-                let fonts = docforge_engine::render::font_cache::FontCache::with_system_fonts();
-
-                let layout_engine = docforge_engine::layout::engine::LayoutEngine::new(&fonts);
-                let layout = layout_engine.layout(&doc, &context_val).map_err(|e| {
-                    DomainError::Internal(format!("DocForge layout error: {:?}", e))
-                })?;
-
-                let config = docforge_engine::render::pdf_renderer::PdfRenderConfig {
-                    title: Some(doc.meta.name.clone()),
-                    ..Default::default()
-                };
-
-                let pdf_out =
-                    docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
-                        .map_err(|e| {
-                            DomainError::Internal(format!("DocForge PDF render error: {:?}", e))
-                        })?;
-
-                let bytes = pdf_out.bytes;
-                let size = bytes.len() as u64;
-                return Ok(ExportResult {
-                    format: OutputFormat::Pdf,
-                    mime_type: "application/pdf".into(),
-                    filename: format!("{}.pdf", dataset.report_code.replace('.', "_")),
-                    data: bytes,
-                    size,
-                });
             }
-        }
 
-        // When no DocForge visual template is bound, fall back to HtmlRenderer
-        let html_renderer = HtmlRenderer;
-        html_renderer.render(dataset, template, _master).await
+            let context_val = serde_json::Value::Object(ctx_obj);
+
+            (doc, context_val)
+        } else {
+            crate::adapters::tabular_pdf::build(dataset, locale)?
+        };
+
+        let fonts = docforge_engine::render::font_cache::FontCache::with_system_fonts();
+        let layout = docforge_engine::layout::engine::LayoutEngine::new(&fonts)
+            .layout(&doc, &context_val)
+            .map_err(|error| DomainError::Internal(format!("DocForge layout error: {error:?}")))?;
+        let config = docforge_engine::render::pdf_renderer::PdfRenderConfig {
+            title: Some(doc.meta.name.clone()),
+            ..Default::default()
+        };
+        let bytes = docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
+            .map_err(|error| {
+                DomainError::Internal(format!("DocForge PDF render error: {error:?}"))
+            })?
+            .bytes;
+        Ok(ExportResult {
+            format: OutputFormat::Pdf,
+            mime_type: "application/pdf".into(),
+            filename: format!("{}.pdf", dataset.report_code.replace('.', "_")),
+            size: bytes.len() as u64,
+            data: bytes,
+        })
     }
 }
 

@@ -123,6 +123,7 @@ const rawStatementRows = $derived.by((): StatementMovement[] => {
   const journalEntryIds = new Set(journalEntries.map((entry) => entry.id));
 
   for (const entry of journalEntries) {
+    if (entry.status === "draft") continue;
     const entryDate = entry.accounting_date
       ? String(entry.accounting_date).slice(0, 10)
       : "";
@@ -143,7 +144,7 @@ const rawStatementRows = $derived.by((): StatementMovement[] => {
           const crd = Number(line.credit_amount || 0);
           if (deb > 0 || crd > 0) {
             rows.push({
-              id: `je-line-${line.id || entry.id}`,
+              id: `je-line-${entry.id}-${line.id}`,
               date: entryDate,
               date_raw: entry.accounting_date || entry.created_at,
               ref,

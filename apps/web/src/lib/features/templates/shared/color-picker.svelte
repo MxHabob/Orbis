@@ -12,6 +12,7 @@ import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { AdjustmentsHorizontal } from "@orbis/icons";
+import { organizationBrandColor, resolveTemplateColor } from "../template-brand";
 
 let {
   value = "#000000",
@@ -32,14 +33,17 @@ let {
 } = $props();
 
 // ── State ────────────────────────────────────────────────────
-let hexInput = $state(untrack(() => value));
+const isNone = $derived(value.toLowerCase() === "transparent");
+const resolvedColor = $derived(resolveTemplateColor(value));
+const hexValue = $derived(isNone ? "" : resolvedColor.replace(/^#/, ""));
+let hexInput = $state(untrack(() => hexValue));
 let isOpen = $state(false);
 
 // Recent colors (persisted in memory)
 let recentColors = $state<string[]>([]);
 const MAX_RECENT = 12;
 const pickerValue = $derived(
-  value.toLowerCase() === "transparent" ? "#000000" : value,
+  /^#[0-9a-f]{6}$/i.test(resolvedColor) ? resolvedColor : "#000000",
 );
 
 // Preset swatches — curated palette
@@ -85,36 +89,36 @@ const presetColors = [
 // ── Handlers ─────────────────────────────────────────────────
 
 function handleColorInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const newColor = target.value;
-  hexInput = newColor;
-  onchange(newColor);
-  addToRecent(newColor);
+  selectPreset((e.target as HTMLInputElement).value);
 }
 
-function handleHexInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  let hex = target.value.trim();
-  if (!hex.startsWith("#")) hex = "#" + hex;
-  hexInput = hex;
+function commitHex() {
+  const hex = "#" + hexInput.trim().replace(/^#/, "");
+  if (hex === "#" && allowNone) {
+    selectNone();
+    return;
+  }
   if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-    onchange(hex);
-    addToRecent(hex);
+    if (hex.toLowerCase() !== resolvedColor.toLowerCase()) selectPreset(hex);
+    else hexInput = hexValue;
+  } else {
+    hexInput = hexValue;
   }
 }
 
 function selectPreset(color: string) {
-  hexInput = color;
+  hexInput = color.slice(1);
   onchange(color);
   addToRecent(color);
 }
 
 function selectNone() {
-  onchange("transparent");
+  hexInput = "";
+  if (!isNone) onchange("transparent");
 }
 
 function handleOpacityInput(e: Event) {
-  const val = parseInt((e.target as HTMLInputElement).value) || 100;
+  const val = Number((e.target as HTMLInputElement).value);
   const clamped = Math.max(0, Math.min(100, val));
   onopacitychange?.(clamped / 100);
 }
@@ -129,7 +133,7 @@ function addToRecent(color: string) {
 
 // Keep hexInput in sync when value prop changes externally
 $effect(() => {
-  hexInput = pickerValue;
+  hexInput = hexValue;
 });
 
 const swatchSize = $derived(size === "sm" ? 20 : 24);
@@ -141,11 +145,12 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
       type="button"
       class="color-trigger"
       style="width: {swatchSize}px; height: {swatchSize}px;"
-      aria-label={m.template_color_picker_open()}
+      aria-label={isNone ? `${m.template_color_picker_open()} · ${m.template_color_none()}` : m.template_color_picker_open()}
+      title={isNone ? m.template_color_none() : resolvedColor}
     >
       <span
         class="color-preview"
-        style="background: {value}; opacity: {opacity};"
+        style="background: {resolvedColor}; opacity: {opacity};"
       ></span>
     </button>
   </PopoverTrigger>
@@ -158,16 +163,25 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
           value={pickerValue}
           oninput={handleColorInput}
           class="spectrum-input"
+          aria-label={m.template_color_picker_open()}
         />
         <div class="hex-row">
           <span class="hex-label">#</span>
           <Input
             type="text"
-            value={hexInput.replace("#", "")}
-            oninput={handleHexInput}
+            bind:value={hexInput}
+            onblur={commitHex}
+            onkeydown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
             class="h-7 text-[10px] font-mono flex-grow"
             maxlength={7}
-            placeholder="000000"
+            dir="ltr"
+            aria-label="HEX"
+            placeholder={isNone ? m.template_color_none() : "000000"}
           />
         </div>
       </div>
@@ -176,8 +190,8 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
         <button
           type="button"
           class="none-option"
-          class:active={value.toLowerCase() === "transparent"}
-          aria-pressed={value.toLowerCase() === "transparent"}
+          class:active={isNone}
+          aria-pressed={isNone}
           onclick={selectNone}
         >
           <span class="none-swatch"></span>
@@ -204,7 +218,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
       <div class="swatches-section">
         <span class="section-label">{m.template_color_colors()}</span>
         <div class="swatches-grid">
-          {#each presetColors as color (color)}
+          {#each [organizationBrandColor(), ...presetColors.filter((color) => color !== organizationBrandColor())] as color (color)}
             <button
               type="button"
               class="swatch"

@@ -489,7 +489,9 @@ impl PaymentGatewayPort for IntegrationResolver {
             .find(|secret| secret.key_name == "secret_key")
             .map(|secret| secret.secret_key)
             .filter(|key| !key.trim().is_empty())
-            .ok_or_else(|| DomainError::Validation("Moyasar secret key is not configured".into()))?;
+            .ok_or_else(|| {
+                DomainError::Validation("Moyasar secret key is not configured".into())
+            })?;
 
         MoyasarAdapter::new(secret_key)
             .process_payment(ctx, amount, currency, source, idempotency_key)

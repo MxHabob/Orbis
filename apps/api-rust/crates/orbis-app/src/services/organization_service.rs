@@ -472,6 +472,15 @@ impl OrganizationService {
             .check(ctx, Permission::OrganizationWrite)
             .await?;
 
+        if settings.finance.cashier_cash_accounts.is_none() {
+            settings.finance.cashier_cash_accounts = self
+                .settings_repo
+                .get_settings(org_id)
+                .await?
+                .finance
+                .cashier_cash_accounts;
+        }
+
         if settings.student_sort.then_by.len() > 2 {
             return Err(DomainError::Validation(
                 "Student sorting supports up to three criteria".into(),

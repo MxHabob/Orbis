@@ -567,6 +567,7 @@ use api::{
             api::finance_routes::GenerateFeeRequest,
             api::finance_routes::PaymentDto,
             api::finance_routes::ProcessPaymentRequest,
+            api::finance_routes::ReceiptAllocationRequest,
             api::finance_routes::CurrencyDto,
             api::finance_routes::CurrencyInput,
             api::finance_routes::JournalEntryDto,

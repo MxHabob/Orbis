@@ -18,8 +18,12 @@ import FloatingActionBar from "../layout/floating-action-bar.svelte";
 
 let {
   store,
+  onresize,
+  oncursor,
 }: {
   store: EditorStore;
+  onresize?: (width: number, height: number) => void;
+  oncursor?: (position: { x: number; y: number }) => void;
 } = $props();
 
 // ── Local State ──────────────────────────────────────────────
@@ -64,14 +68,10 @@ onMount(() => {
       for (const entry of entries) {
         containerWidth = entry.contentRect.width;
         containerHeight = entry.contentRect.height;
+        onresize?.(containerWidth, containerHeight);
       }
     });
     obs.observe(containerEl);
-
-    // Initial zoom to fit
-    setTimeout(() => {
-      store.zoomToFit(containerWidth, containerHeight);
-    }, 50);
 
     return () => obs.disconnect();
   }
@@ -96,6 +96,7 @@ function handleMouseMove(e: MouseEvent) {
   const screenX = e.clientX - rect.left - offsetX;
   const screenY = e.clientY - rect.top - offsetY;
   cursorDocMm = screenToDoc(screenX, screenY, { ...vp, panX: 0, panY: 0 });
+  oncursor?.(cursorDocMm);
 
   if (isPanning) {
     const dx = e.clientX - panStartX;

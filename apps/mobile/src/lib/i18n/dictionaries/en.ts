@@ -192,7 +192,9 @@ export const en: Record<TranslationKey, string> = {
   visitor_teacher_description:
     "Follow classes and students and manage academic work according to your permissions.",
   visitor_sign_in: "Sign in",
-  visitor_register: "Create account",
+  visitor_register: "Get an account",
+  auth_account_access_description:
+    "Contact your institution administrator to get an Orbis account. Once you receive your sign-in details, you can sign in here.",
   visitor_explore: "Explore as a visitor",
   onboarding_title: "Your learning journey starts here",
   onboarding_description:

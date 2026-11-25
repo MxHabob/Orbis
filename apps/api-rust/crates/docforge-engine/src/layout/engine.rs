@@ -687,19 +687,7 @@ pub fn layout_table_elements(
 
             let formatted = match raw_val {
                 Some(Value::String(s)) => s.clone(),
-                Some(Value::Number(n)) => {
-                    if let Some(i) = n.as_i64() {
-                        i.to_string()
-                    } else if let Some(f) = n.as_f64() {
-                        if f.fract() == 0.0 {
-                            format!("{:.0}", f)
-                        } else {
-                            format!("{:.1}", f)
-                        }
-                    } else {
-                        n.to_string()
-                    }
-                }
+                Some(Value::Number(n)) => n.to_string(),
                 Some(Value::Bool(b)) => b.to_string(),
                 Some(Value::Null) | None => {
                     col.default_value.clone().unwrap_or_else(|| "-".to_string())
