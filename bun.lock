@@ -16,11 +16,11 @@
     },
     "apps/api-rust": {
       "name": "@orbis/api-rust",
-      "version": "1.2.1",
+      "version": "1.2.2",
     },
     "apps/desktop": {
       "name": "@orbis/desktop",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "devDependencies": {
         "@orbis/web": "workspace:*",
         "@tauri-apps/cli": "latest",
@@ -28,7 +28,7 @@
     },
     "apps/mobile": {
       "name": "@orbis/mobile",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@orbis/avatar-engine": "workspace:*",
@@ -93,7 +93,7 @@
     },
     "apps/web": {
       "name": "@orbis/web",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@internationalized/date": "^3.12.0",
