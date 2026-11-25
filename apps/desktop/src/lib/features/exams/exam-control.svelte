@@ -300,14 +300,14 @@ async function loadGradeMatrix() {
           {
             code: "monthly",
             name: "Monthly",
-            name_ar: "ط§ظ„ط¹ظ…ظ„ظٹط©",
+            name_ar: "العملية",
             max: 20,
             sort_order: 1,
           },
           {
             code: "final",
             name: "Final",
-            name_ar: "ط§ظ„ط§ط®طھط¨ط§ط±",
+            name_ar: "الاختبار",
             max: 30,
             sort_order: 2,
           },

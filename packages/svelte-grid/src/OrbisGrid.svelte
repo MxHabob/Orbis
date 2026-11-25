@@ -1469,10 +1469,10 @@ function getBadgeVariant(
       "approved",
       "open",
       "success",
-      "ظ†ط§ط¬ط­",
-      "ط­ط§ط¶ط±",
-      "ظ†ط´ط·",
-      "ظ…ط¯ظپظˆط¹",
+      "ناجح",
+      "حاضر",
+      "نشط",
+      "مدفوع",
       "passing",
       "true",
       "1",
@@ -1489,10 +1489,10 @@ function getBadgeVariant(
       "locked",
       "withdrawn",
       "error",
-      "ط±ط§ط³ط¨",
-      "ط؛ط§ط¦ط¨",
-      "ط؛ظٹط± ظ†ط´ط·",
-      "ظ…ط¹ظ„ظ‚",
+      "راسب",
+      "غائب",
+      "غير نشط",
+      "معلق",
       "false",
       "0",
     ].includes(s)
@@ -1504,9 +1504,9 @@ function getBadgeVariant(
       "late",
       "partial",
       "warning",
-      "ظ…طھط£ط®ط±",
-      "ط¬ط²ط¦ظٹ",
-      "ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±",
+      "متأخر",
+      "جزئي",
+      "قيد الانتظار",
     ].includes(s)
   )
     return "secondary";
@@ -1577,22 +1577,22 @@ function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
         "warning",
         "open",
         "closed",
-        "ظ†ط§ط¬ط­",
-        "ط±ط§ط³ط¨",
-        "ط­ط§ط¶ط±",
-        "ط؛ط§ط¦ط¨",
-        "ظ…طھط£ط®ط±",
-        "ظ…ط¹ط°ظˆط±",
-        "ظ†ط´ط·",
-        "ط؛ظٹط± ظ†ط´ط·",
-        "ظ…ط¯ظپظˆط¹",
-        "ظ…ط¹ظ„ظ‚",
-        "ط¬ط²ط¦ظٹ",
-        "ظ…ط³ظˆط¯ط©",
-        "ظ…ط±ط­ظ„",
-        "ظ…ظ„ط؛ظ‰",
-        "ظ…ظ‚ط¨ظˆظ„",
-        "ظ…ط±ظپظˆط¶",
+        "ناجح",
+        "راسب",
+        "حاضر",
+        "غائب",
+        "متأخر",
+        "معذور",
+        "نشط",
+        "غير نشط",
+        "مدفوع",
+        "معلق",
+        "جزئي",
+        "مسودة",
+        "مرحل",
+        "ملغى",
+        "مقبول",
+        "مرفوض",
       ].includes(val.toLowerCase().trim())
     ) {
       return true;
@@ -1924,7 +1924,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
     <div
       class="orbis-toolbar"
       role="toolbar"
-      aria-label={rtl ? "ط£ط¯ظˆط§طھ ط§ظ„ط¬ط¯ظˆظ„" : "Grid tools"}
+      aria-label={rtl ? "أدوات الجدول" : "Grid tools"}
     >
       {#if showSearch || showFilterButton || toolbarFilters}
         <div class="orbis-toolbar-controls">
@@ -1937,8 +1937,8 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
               <input
                 type="text"
                 value={search}
-                placeholder={searchPlaceholder ?? (rtl ? "ط¨ط­ط« ظپظٹ ط§ظ„ط³ط¬ظ„ط§طھâ€¦" : "Search recordsâ€¦")}
-                aria-label={rtl ? "ط¨ط­ط« ظپظٹ ط¬ظ…ظٹط¹ ط§ظ„ط£ط¹ظ…ط¯ط©" : "Search all columns"}
+                placeholder={searchPlaceholder ?? (rtl ? "بحث في السجلات…" : "Search records…")}
+                aria-label={rtl ? "بحث في جميع الأعمدة" : "Search all columns"}
                 oninput={handleSearchInput}
                 onkeydown={(event) => {
                   if (event.key === "Enter") event.preventDefault();
@@ -1949,7 +1949,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
                 <button
                   type="button"
                   class="orbis-toolbar-clear"
-                  aria-label={rtl ? "ظ…ط³ط­ ط§ظ„ط¨ط­ط«" : "Clear search"}
+                  aria-label={rtl ? "مسح البحث" : "Clear search"}
                   onclick={clearSearch}
                 >أ—</button>
               {/if}
@@ -1996,7 +1996,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
               onclick={addRowFromToolbar}
             >
               <span aria-hidden="true">+</span>
-              {rtl ? "ط¥ط¶ط§ظپط© طµظپ" : "Add row"}
+              {rtl ? "إضافة صف" : "Add row"}
             </button>
           {/if}
         </div>
@@ -2061,12 +2061,12 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
   {:else if displayRows.length === 0}
     {#if loadMoreError}
       <div class="orbis-empty-wrap" role="alert">
-        <div class="orbis-empty-title">{rtl ? "طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ط³ط¬ظ„ط§طھ" : "Couldn't load records"}</div>
+        <div class="orbis-empty-title">{rtl ? "تعذر تحميل السجلات" : "Couldn't load records"}</div>
         <div class="orbis-empty-desc">
           {loadMoreError instanceof Error ? loadMoreError.message : String(loadMoreError)}
         </div>
         <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
-          {rtl ? "ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©" : "Retry"}
+          {rtl ? "إعادة المحاولة" : "Retry"}
         </button>
       </div>
     {:else}
@@ -2410,7 +2410,7 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
                       {@const val = getCellValue(row, col)}
                       {@const formatted = formatCell(row, col, rtl ? "ar" : "en")}
                       <Badge variant={getBadgeVariant(val)} class="orbis-grid-badge">
-                        {formatted || "â€”"}
+                        {formatted || "—"}
                       </Badge>
                     {:else if Array.isArray(getCellValue(row, col))}
                       {@const arr = getCellValue(row, col) as unknown[]}
@@ -2480,14 +2480,14 @@ const headerModel = $derived.by((): HeaderCellModel[] => {
           <div class="orbis-load-status" role={loadMoreError ? "alert" : "status"}>
             {#if loadMoreError}
               <span>
-                {rtl ? "طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ظ…ط²ظٹط¯" : "Couldn't load more"}
+                {rtl ? "تعذر تحميل المزيد" : "Couldn't load more"}
                 {loadMoreError instanceof Error ? `: ${loadMoreError.message}` : ""}
               </span>
               <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
-                {rtl ? "ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©" : "Retry"}
+                {rtl ? "إعادة المحاولة" : "Retry"}
               </button>
             {:else}
-              {rtl ? "ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ظ…ط²ظٹط¯â€¦" : "Loading moreâ€¦"}
+              {rtl ? "جارٍ تحميل المزيد…" : "Loading more…"}
             {/if}
           </div>
         {/if}

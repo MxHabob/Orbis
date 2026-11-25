@@ -1,4 +1,4 @@
-﻿{
+{
   "academics_attendance_absent_days": "Absent Days",
   "academics_attendance_col_notes": "Notes",
   "academics_attendance_day_unit": "Days",
@@ -5985,5 +5985,5 @@
   "common_grades_clear_saved_not_supported": "Clearing previously saved grades is not supported yet; cleared cells were ignored.",
   "common_grades_save_partial_cleared_ignored": "Changes saved. Some cleared cells could not be deleted.",
   "settings_students_prevent_duplicate_full_name": "Prevent duplicate student full name (block registering/importing a student with the same name in the organization)",
-  "settings_students_prevent_duplicate_full_name_hint": "When enabled, the system rejects creating a new student record if the full name matches an existing student. To register twins or a genuine same-name case, distinguish the name (for example by adding the father?s/grandfather?s name) or review the existing record."
+  "settings_students_prevent_duplicate_full_name_hint": "When enabled, the system rejects creating a new student record if the full name matches an existing student. To register twins or a genuine same-name case, distinguish the name (for example by adding the father's/grandfather's name) or review the existing record."
 }
