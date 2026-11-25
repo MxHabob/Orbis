@@ -61,10 +61,11 @@ jobs:
 
           VERSION="${TAG#v}"
           DESKTOP_VERSION=$(node -p "require('./apps/desktop/package.json').version")
+          WEB_VERSION=$(node -p "require('./apps/web/package.json').version")
           TAURI_VERSION=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
           CARGO_VERSION=$(node -e "const fs=require('node:fs');const manifest=fs.readFileSync('apps/desktop/src-tauri/Cargo.toml','utf8');const match=manifest.match(/^version\\s*=\\s*\"([^\"]+)\"/m);process.stdout.write(match?.[1] ?? '')")
-          if [[ "$DESKTOP_VERSION" != "$VERSION" || "$TAURI_VERSION" != "$VERSION" || "$CARGO_VERSION" != "$VERSION" ]]; then
-            echo "::error::Tag v$VERSION does not match desktop package, Tauri, and Cargo versions: desktop=$DESKTOP_VERSION tauri=$TAURI_VERSION cargo=$CARGO_VERSION"
+          if [[ "$DESKTOP_VERSION" != "$VERSION" || "$WEB_VERSION" != "$VERSION" || "$TAURI_VERSION" != "$VERSION" || "$CARGO_VERSION" != "$VERSION" ]]; then
+            echo "::error::Tag v$VERSION does not match desktop, web, Tauri, and Cargo versions: desktop=$DESKTOP_VERSION web=$WEB_VERSION tauri=$TAURI_VERSION cargo=$CARGO_VERSION"
             exit 1
           fi
 

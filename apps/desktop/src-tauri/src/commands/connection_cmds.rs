@@ -88,9 +88,7 @@ pub async fn connection_set_config(
         },
         "remote" | "api" => {
             let url = server_url.ok_or("Server URL is required for remote mode")?;
-            if url.trim().is_empty() {
-                return Err("Server URL cannot be empty".to_string());
-            }
+            let url = crate::connection::normalize_server_url(&url)?;
             ConnectionConfig {
                 mode: ConnectionMode::Api,
                 local: None,
@@ -203,6 +201,9 @@ pub async fn connection_connect(
     app: tauri::AppHandle,
     conn_state: State<'_, ConnectionState>,
 ) -> Result<serde_json::Value, String> {
+    let _lock = crate::features::database_manager::OPERATION_LOCK
+        .lock()
+        .await;
     let config = conn_state
         .config
         .read()
@@ -227,14 +228,20 @@ pub async fn connection_connect(
                 ConnectionMode::Direct => "direct",
                 ConnectionMode::Api => unreachable!(),
             };
-            let app_state = crate::state::AppState::init(
-                &conn_state.app_data_dir,
-                &db_url,
-                config.mode == ConnectionMode::Local,
-            )
-            .await
-            .map_err(|e| format!("Failed to initialize {mode} database connection: {e}"))?;
-            app.manage(app_state);
+            if let Some(active) = app.try_state::<crate::state::AppState>() {
+                if !active.uses_database(&db_url) {
+                    return Err("Restart Orbis to switch to the newly configured database".into());
+                }
+            } else {
+                let app_state = crate::state::AppState::init(
+                    &conn_state.app_data_dir,
+                    &db_url,
+                    config.mode == ConnectionMode::Local,
+                )
+                .await
+                .map_err(|e| format!("Failed to initialize {mode} database connection: {e}"))?;
+                app.manage(app_state);
+            }
             Ok(serde_json::json!({
                 "connected": true,
                 "mode": mode,
@@ -242,10 +249,12 @@ pub async fn connection_connect(
             }))
         }
         ConnectionMode::Api => {
-            let server_url = config
-                .remote_server_url()
-                .ok_or("Remote server URL not configured")?
-                .to_string();
+            if app.try_state::<crate::state::AppState>().is_some() {
+                return Err("Restart Orbis to switch from the local database to the API".into());
+            }
+            let server_url = validation
+                .resolved_url
+                .ok_or("Remote server URL not configured")?;
 
             // Health check first
             let health = crate::connection::check_remote_health(&server_url).await;
@@ -290,6 +299,11 @@ pub async fn connection_run_migrations(
     let _lock = crate::features::database_manager::OPERATION_LOCK
         .lock()
         .await;
+    if app.try_state::<crate::state::AppState>().is_some() {
+        return Err(
+            "Restart Orbis before applying migrations to the newly configured database".into(),
+        );
+    }
     let db = sea_orm::Database::connect(&db_url)
         .await
         .map_err(|e| format!("Failed to connect to PostgreSQL for migrations: {e}"))?;

@@ -18,9 +18,9 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository, OrgUnitRepository,
-    RoomRepository, ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository,
-    TimeSlotRepository,
+    AcademicPeriodRepository, ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository,
+    OrgUnitRepository, RoomRepository, ScheduledLessonRepository, SeatingNumberRepository,
+    SecretNumberRepository, SectionSubjectRepository, TimeSlotRepository,
 };
 
 pub struct SchedulingService {
@@ -28,6 +28,8 @@ pub struct SchedulingService {
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
     pub time_slot_repo: Arc<dyn TimeSlotRepository>,
     pub lesson_repo: Arc<dyn ScheduledLessonRepository>,
+    period_repo: Arc<dyn AcademicPeriodRepository>,
+    section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub exam_session_repo: Arc<dyn ExamSessionRepository>,
     pub exam_schedule_repo: Arc<dyn ExamScheduleRepository>,
     pub seating_number_repo: Arc<dyn SeatingNumberRepository>,
@@ -53,12 +55,62 @@ fn validate_exam_session(
     Ok(())
 }
 
+fn validate_time_slots(existing: &[TimeSlot], candidates: &[TimeSlot]) -> Result<(), DomainError> {
+    let mut seen: Vec<&TimeSlot> = Vec::with_capacity(existing.len() + candidates.len());
+    for slot in existing {
+        if !candidates.iter().any(|candidate| candidate.id == slot.id) {
+            seen.push(slot);
+        }
+    }
+
+    for candidate in candidates {
+        if !(1..=7).contains(&candidate.day_of_week) {
+            return Err(DomainError::Validation(
+                "Day of week must be between 1 and 7".into(),
+            ));
+        }
+        if candidate.slot_index < 1 {
+            return Err(DomainError::Validation(
+                "Slot index must be 1 or greater".into(),
+            ));
+        }
+        if candidate.end_time <= candidate.start_time {
+            return Err(DomainError::Validation(
+                "Time slot end time must be after start time".into(),
+            ));
+        }
+
+        for other in &seen {
+            if other.day_of_week != candidate.day_of_week {
+                continue;
+            }
+            if other.slot_index == candidate.slot_index {
+                return Err(DomainError::Validation(format!(
+                    "Duplicate slot index {} on day {}",
+                    candidate.slot_index, candidate.day_of_week
+                )));
+            }
+            if candidate.start_time < other.end_time && other.start_time < candidate.end_time {
+                return Err(DomainError::Validation(format!(
+                    "Time slot overlaps with existing slot on day {}",
+                    candidate.day_of_week
+                )));
+            }
+        }
+        seen.push(candidate);
+    }
+
+    Ok(())
+}
+
 impl SchedulingService {
     pub fn new(
         room_repo: Arc<dyn RoomRepository>,
         org_unit_repo: Arc<dyn OrgUnitRepository>,
         time_slot_repo: Arc<dyn TimeSlotRepository>,
         lesson_repo: Arc<dyn ScheduledLessonRepository>,
+        period_repo: Arc<dyn AcademicPeriodRepository>,
+        section_subject_repo: Arc<dyn SectionSubjectRepository>,
         exam_session_repo: Arc<dyn ExamSessionRepository>,
         exam_schedule_repo: Arc<dyn ExamScheduleRepository>,
         seating_number_repo: Arc<dyn SeatingNumberRepository>,
@@ -72,6 +124,8 @@ impl SchedulingService {
             org_unit_repo,
             time_slot_repo,
             lesson_repo,
+            period_repo,
+            section_subject_repo,
             exam_session_repo,
             exam_schedule_repo,
             seating_number_repo,
@@ -282,6 +336,9 @@ impl SchedulingService {
             updated_at: now,
         };
 
+        let existing = self.time_slot_repo.find_by_period(period_id).await?;
+        validate_time_slots(&existing, std::slice::from_ref(&slot))?;
+
         self.time_slot_repo.save(&slot).await?;
 
         let event = DomainEvent::TimeSlotCreated {
@@ -343,6 +400,9 @@ impl SchedulingService {
             slot.break_type = bt;
         }
         slot.updated_at = now;
+
+        let existing = self.time_slot_repo.find_by_period(slot.period_id).await?;
+        validate_time_slots(&existing, std::slice::from_ref(&slot))?;
 
         self.time_slot_repo.save(&slot).await?;
 
@@ -423,6 +483,9 @@ impl SchedulingService {
             };
             slots.push(slot);
         }
+
+        let existing = self.time_slot_repo.find_by_period(period_id).await?;
+        validate_time_slots(&existing, &slots)?;
 
         self.time_slot_repo.save_bulk(&slots).await?;
 
@@ -656,6 +719,11 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ExamSessionWrite)
             .await?;
+        self.period_repo
+            .find_by_id(period_id)
+            .await?
+            .filter(|period| period.org_id == ctx.tenant_id && org_id == ctx.tenant_id)
+            .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
         validate_exam_session(&session_type, start_date, end_date)?;
 
         let now = Utc::now();
@@ -689,16 +757,56 @@ impl SchedulingService {
 
     pub async fn list_exam_sessions(
         &self,
+        ctx: &RequestContext,
         period_id: Uuid,
     ) -> Result<Vec<ExamSession>, DomainError> {
-        self.exam_session_repo.find_by_period(period_id).await
+        self.permission_checker
+            .check(ctx, Permission::ExamSessionRead)
+            .await?;
+        self.exam_session_repo
+            .find_by_period(ctx.tenant_id, period_id)
+            .await
     }
 
-    pub async fn get_exam_session(&self, id: Uuid) -> Result<Option<ExamSession>, DomainError> {
-        self.exam_session_repo.find_by_id(id).await
+    pub async fn get_exam_session(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ExamSession, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ExamSessionRead)
+            .await?;
+        self.exam_session_in_tenant(ctx, id).await
     }
 
     // ── Exam Schedules ──────────────────────────────────────────────
+
+    async fn exam_session_in_tenant(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ExamSession, DomainError> {
+        self.exam_session_repo
+            .find_by_id(id)
+            .await?
+            .filter(|session| session.org_id == ctx.tenant_id)
+            .ok_or_else(|| DomainError::NotFound("Exam session not found".into()))
+    }
+
+    async fn exam_schedule_in_tenant(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ExamSchedule, DomainError> {
+        let schedule = self
+            .exam_schedule_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".into()))?;
+        self.exam_session_in_tenant(ctx, schedule.exam_session_id)
+            .await?;
+        Ok(schedule)
+    }
 
     pub async fn schedule_exam(
         &self,
@@ -712,6 +820,26 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ExamScheduleWrite)
             .await?;
+        let session = self.exam_session_in_tenant(ctx, session_id).await?;
+        if end_time <= start_time {
+            return Err(DomainError::Validation(
+                "Exam end time must be after its start time".into(),
+            ));
+        }
+        if !(session.start_date..=session.end_date).contains(&exam_date) {
+            return Err(DomainError::Validation(
+                "Exam date must fall within its session".into(),
+            ));
+        }
+        self.section_subject_repo
+            .find_by_id(section_subject_id)
+            .await?
+            .filter(|subject| {
+                subject.org_id == ctx.tenant_id && subject.period_id == session.period_id
+            })
+            .ok_or_else(|| {
+                DomainError::NotFound("Subject not found in exam session period".into())
+            })?;
 
         let now = Utc::now();
         let schedule_id = Uuid::new_v4();
@@ -741,8 +869,13 @@ impl SchedulingService {
 
     pub async fn list_exam_schedules(
         &self,
+        ctx: &RequestContext,
         session_id: Uuid,
     ) -> Result<Vec<ExamSchedule>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ExamScheduleRead)
+            .await?;
+        self.exam_session_in_tenant(ctx, session_id).await?;
         self.exam_schedule_repo.find_by_session(session_id).await
     }
 
@@ -763,6 +896,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::SeatingNumberGenerate)
             .await?;
+        self.exam_session_in_tenant(ctx, session_id).await?;
 
         let now = Utc::now();
         let seating_id = Uuid::new_v4();
@@ -792,8 +926,13 @@ impl SchedulingService {
 
     pub async fn list_seating_numbers(
         &self,
+        ctx: &RequestContext,
         session_id: Uuid,
     ) -> Result<Vec<SeatingNumber>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::SeatingNumberRead)
+            .await?;
+        self.exam_session_in_tenant(ctx, session_id).await?;
         self.seating_number_repo.find_by_session(session_id).await
     }
 
@@ -819,6 +958,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::SeatingNumberGenerate)
             .await?;
+        self.exam_session_in_tenant(ctx, session_id).await?;
 
         let now = Utc::now();
         let prefix = prefix.unwrap_or_else(|| "SEAT-".to_string());
@@ -905,7 +1045,7 @@ impl SchedulingService {
         }
 
         if !seatings.is_empty() {
-            self.seating_number_repo.save_bulk(&seatings).await?;
+            self.seating_number_repo.insert_bulk(&seatings).await?;
         }
 
         for s in &seatings {
@@ -933,6 +1073,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::SecretNumberGenerate)
             .await?;
+        self.exam_schedule_in_tenant(ctx, schedule_id).await?;
 
         let now = Utc::now();
         let id = Uuid::new_v4();
@@ -958,6 +1099,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::SecretNumberReveal)
             .await?;
+        self.exam_schedule_in_tenant(ctx, schedule_id).await?;
         self.secret_number_repo.find_by_schedule(schedule_id).await
     }
 
@@ -971,10 +1113,7 @@ impl SchedulingService {
             .check(ctx, Permission::SecretNumberGenerate)
             .await?;
 
-        self.exam_schedule_repo
-            .find_by_id(schedule_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
+        self.exam_schedule_in_tenant(ctx, schedule_id).await?;
 
         let now = Utc::now();
         let existing = self
@@ -1019,7 +1158,7 @@ impl SchedulingService {
         }
 
         if !secrets.is_empty() {
-            self.secret_number_repo.save_bulk(&secrets).await?;
+            self.secret_number_repo.insert_bulk(&secrets).await?;
         }
         Ok(secrets)
     }
@@ -1038,14 +1177,12 @@ impl SchedulingService {
             .check(ctx, Permission::ProctorAssign)
             .await?;
 
-        self.exam_schedule_repo
-            .find_by_id(schedule_id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
+        self.exam_schedule_in_tenant(ctx, schedule_id).await?;
         let room = self
             .room_repo
             .find_by_id(room_id)
             .await?
+            .filter(|room| room.org_id == ctx.tenant_id)
             .ok_or_else(|| DomainError::NotFound("Room not found".to_string()))?;
         if !room.is_exam_hall {
             return Err(DomainError::Validation(
@@ -1102,11 +1239,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ExamSessionWrite)
             .await?;
-        let mut session = self
-            .exam_session_repo
-            .find_by_id(id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound("Exam session not found".to_string()))?;
+        let mut session = self.exam_session_in_tenant(ctx, id).await?;
 
         if let Some(n) = name {
             session.name = n;
@@ -1148,11 +1281,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ExamSessionDelete)
             .await?;
-        let session = self
-            .exam_session_repo
-            .find_by_id(id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound("Exam session not found".to_string()))?;
+        let session = self.exam_session_in_tenant(ctx, id).await?;
 
         self.exam_session_repo.delete(id).await?;
 
@@ -1173,11 +1302,7 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ExamScheduleWrite)
             .await?;
-        let schedule = self
-            .exam_schedule_repo
-            .find_by_id(id)
-            .await?
-            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
+        let schedule = self.exam_schedule_in_tenant(ctx, id).await?;
 
         self.exam_schedule_repo.delete(id).await?;
 
@@ -1198,6 +1323,13 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::SeatingNumberGenerate)
             .await?;
+        let record = self
+            .seating_number_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Exam record not found".into()))?;
+        self.exam_session_in_tenant(ctx, record.exam_session_id)
+            .await?;
         self.seating_number_repo.delete(id).await?;
         let event = DomainEvent::SeatingNumberDeleted {
             seating_id: id,
@@ -1215,6 +1347,13 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::SecretNumberGenerate)
             .await?;
+        let record = self
+            .secret_number_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Exam record not found".into()))?;
+        self.exam_schedule_in_tenant(ctx, record.exam_schedule_id)
+            .await?;
         self.secret_number_repo.delete(id).await?;
         let event = DomainEvent::SecretNumberDeleted {
             secret_id: id,
@@ -1228,6 +1367,13 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ProctorAssign)
             .await?;
+        let record = self
+            .exam_proctor_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Exam record not found".into()))?;
+        self.exam_schedule_in_tenant(ctx, record.exam_schedule_id)
+            .await?;
         self.exam_proctor_repo.delete(id).await?;
         let event = DomainEvent::ProctorDeleted {
             proctor_id: id,
@@ -1237,7 +1383,15 @@ impl SchedulingService {
         Ok(())
     }
 
-    pub async fn list_proctors(&self, schedule_id: Uuid) -> Result<Vec<ExamProctor>, DomainError> {
+    pub async fn list_proctors(
+        &self,
+        ctx: &RequestContext,
+        schedule_id: Uuid,
+    ) -> Result<Vec<ExamProctor>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ProctorRead)
+            .await?;
+        self.exam_schedule_in_tenant(ctx, schedule_id).await?;
         self.exam_proctor_repo.find_by_schedule(schedule_id).await
     }
 }
@@ -1267,6 +1421,69 @@ mod exam_session_validation_tests {
         ));
         assert!(matches!(
             validate_exam_session("final", start, earlier),
+            Err(DomainError::Validation(_))
+        ));
+    }
+}
+
+#[cfg(test)]
+mod time_slot_validation_tests {
+    use super::validate_time_slots;
+    use chrono::{NaiveTime, Utc};
+    use orbis_domain::entities::time_slot::TimeSlot;
+    use orbis_domain::errors::DomainError;
+    use uuid::Uuid;
+
+    fn make_slot(
+        day_of_week: i16,
+        slot_index: i32,
+        start: (u32, u32),
+        end: (u32, u32),
+    ) -> TimeSlot {
+        let now = Utc::now();
+        TimeSlot {
+            id: Uuid::new_v4(),
+            period_id: Uuid::nil(),
+            day_of_week,
+            slot_index,
+            name: None,
+            name_ar: None,
+            start_time: NaiveTime::from_hms_opt(start.0, start.1, 0).unwrap(),
+            end_time: NaiveTime::from_hms_opt(end.0, end.1, 0).unwrap(),
+            is_break: false,
+            break_type: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    #[test]
+    fn accepts_adjacent_slots_and_same_index_across_different_days() {
+        let existing = vec![make_slot(1, 1, (8, 0), (8, 45))];
+        let candidates = vec![
+            make_slot(1, 2, (8, 45), (9, 30)),
+            make_slot(2, 1, (8, 0), (8, 45)),
+        ];
+        assert!(validate_time_slots(&existing, &candidates).is_ok());
+    }
+
+    #[test]
+    fn rejects_overlapping_or_duplicate_slots_on_same_day() {
+        let existing = vec![make_slot(1, 1, (8, 0), (8, 45))];
+        let duplicate_index = vec![make_slot(1, 1, (9, 0), (9, 45))];
+        let overlapping_time = vec![make_slot(1, 2, (8, 30), (9, 15))];
+        let reversed_time = vec![make_slot(1, 2, (9, 30), (9, 0))];
+
+        assert!(matches!(
+            validate_time_slots(&existing, &duplicate_index),
+            Err(DomainError::Validation(_))
+        ));
+        assert!(matches!(
+            validate_time_slots(&existing, &overlapping_time),
+            Err(DomainError::Validation(_))
+        ));
+        assert!(matches!(
+            validate_time_slots(&existing, &reversed_time),
             Err(DomainError::Validation(_))
         ));
     }

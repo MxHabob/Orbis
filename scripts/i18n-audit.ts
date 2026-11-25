@@ -10,11 +10,11 @@ type SvelteNode = {
 };
 
 const root = process.cwd();
-const appRoot = join(root, "apps", "desktop");
+const appRoot = join(root, "apps", "web");
 const sourceRoot = join(appRoot, "src");
 const messagesRoot = join(appRoot, "messages");
-const requireFromDesktop = createRequire(join(appRoot, "package.json"));
-const { parse } = requireFromDesktop("svelte/compiler") as {
+const requireFromWeb = createRequire(join(appRoot, "package.json"));
+const { parse } = requireFromWeb("svelte/compiler") as {
   parse: (
     source: string,
     options?: { filename?: string },

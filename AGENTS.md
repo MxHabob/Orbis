@@ -15,7 +15,8 @@ This repository is a Turborepo monorepo powered by Bun containing the Orbis scho
 
 ## Monorepo Architecture
 - **`apps/mobile` (`@orbis/mobile`)**: React Native application powered by Expo SDK 57, Expo Router, NativeWind 5 (RC), Tailwind CSS 4, and React Native Reanimated 4.
-- **`apps/desktop`**: Desktop application powered by Svelte / Tauri.
+- **`apps/web` (`@orbis/web`)**: SvelteKit interface shared by the browser and desktop app.
+- **`apps/desktop` (`@orbis/desktop`)**: Native Tauri host for the web build.
 - **`apps/api-rust`**: Backend API server in Rust.
 - **`apps/cli`**: CLI administration utility.
 - **`packages/*`**: Shared domain SDK, icons (`@orbis/icons`), and utilities.

@@ -6,7 +6,12 @@ The native release archives contain the API executable, a version file, and a se
 
 The customer supplies and operates PostgreSQL; no package creates a database or opens a database port. Before starting Orbis API, create the database and configure a restricted database account. If the server configuration is missing, the API creates `server.json` with an empty `database_url`, reports its location, and exits. Set that value to the customer-managed PostgreSQL connection string, then start the API again. Use TLS for database connections and protect the configuration file because it contains credentials.
 
-The database must already contain the Orbis schema and required migrations. The API intentionally refuses to start against an uninitialized or incompatible schema. Back up the database before applying migrations or upgrading the API.
+Run `orbis-server migrate` with the new release before starting the API against
+a new or older schema. The command uses the server configuration and exits
+after applying migrations. Use a protected configuration via
+`ORBIS_SERVER_CONFIG_FILE` for a separate database role with schema modification
+privileges. Back up an existing database first, stop all API instances that
+share it, and run the migration once.
 
 On first startup with a configured database, the API generates independent cryptographically random JWT and MFA-encryption keys and stores them in the protected `server.json`. No secret environment variables are needed for a single server installation, and these keys are never sent to Desktop clients. Keep the configuration file private and include it in protected backups. Existing valid `JWT_SECRET` and `MFA_ENCRYPTION_KEY` environment variables override the stored values; clustered deployments must provide the same stable overrides to every instance. Rotating the JWT key invalidates existing sessions. Rotating the MFA key makes previously encrypted integration credentials unreadable unless they are re-encrypted with the replacement key.
 
@@ -21,7 +26,56 @@ Installers register the service but do not configure the database or start the A
 
 ## Upgrade and rollback
 
-Back up PostgreSQL and retain the existing configuration before upgrading. On Linux and macOS, the installer stops an active service before replacing the executable and leaves it stopped; on Windows, the installer stops and re-registers the service. Start it only after confirming the database schema is compatible. To roll back, run the installer from the previous package; the installer preserves the current customer configuration. Database migrations may not be reversible; restore a matching database backup if a rollback requires the previous schema.
+### Backup and recovery
+
+Schedule backups on the PostgreSQL host or through the institution's database
+backup service. For self-managed PostgreSQL, [pgBackRest](https://pgbackrest.org/user-guide.html)
+can keep database backups and WAL archives for point-in-time recovery. Monitor
+the age of the latest successful backup and WAL archive, and alert when either
+exceeds the institution's recovery point objective.
+
+Keep protected copies of the effective server configuration and secrets, license
+data, and files from every configured document storage provider. Record the Orbis
+version and the corresponding database recovery point and storage snapshot.
+Use a coordinated snapshot or pause application writes during capture when the
+storage provider cannot recover to the same point as PostgreSQL.
+
+Rehearse recovery before upgrading and after changes to storage or database
+configuration. Restore a copy into an isolated environment using the matching
+Orbis release and a database and storage configuration that point to the restored
+resources. Keep outbound integrations disabled during the rehearsal. Verify
+the API readiness endpoint, sign-in, document downloads and uploads, and a
+representative academic and finance record. Record the time taken and the latest
+recovered transaction to check the institution's recovery objectives.
+
+### Service probes
+
+Use `GET /api/v1/live` to check that the API process can serve requests.
+Use `GET /api/v1/health` for traffic readiness. It returns HTTP 503 if the
+database cannot answer within the probe deadline.
+
+### Client connections
+
+Configure Desktop with the externally visible HTTPS URL of the API or its
+reverse proxy. HTTP is supported by Desktop for localhost development. Browser
+clients hosted on a different origin need their exact origins in the comma-separated
+`ORBIS_WEB_ORIGINS` setting, such as `https://orbis.school.example`. The packaged
+Tauri origins and local Desktop development origins are included by the API.
+
+The API uses up to 10 database connections per replica by default. Set
+`ORBIS_DB_MAX_CONNECTIONS` to a positive integer and size it against the total
+number of replicas and PostgreSQL's connection budget. Leave room for migrations,
+backups, and other applications. Connection and pool acquisition have bounded
+wait times.
+
+### Applying an upgrade
+
+On Linux and macOS, the installer stops an active service before replacing the
+executable and leaves it stopped. On Windows, the installer stops and
+re-registers the service. Apply migrations before restarting the service. To
+roll back, run the installer from the previous package and restore a matching
+database backup if the previous version requires the previous schema. The
+installer preserves the current customer configuration.
 
 To remove the service and executable without deleting customer configuration or license data, run `sudo ./uninstall.sh` on Linux/macOS or `uninstall.ps1` from an elevated PowerShell session on Windows.
 

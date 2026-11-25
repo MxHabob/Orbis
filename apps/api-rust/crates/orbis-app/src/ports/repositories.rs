@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -657,7 +658,11 @@ pub trait ScheduledLessonRepository: Send + Sync {
 #[async_trait]
 pub trait ExamSessionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSession>, DomainError>;
-    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ExamSession>, DomainError>;
+    async fn find_by_period(
+        &self,
+        org_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<ExamSession>, DomainError>;
     async fn save(&self, session: &ExamSession) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -680,7 +685,7 @@ pub trait SeatingNumberRepository: Send + Sync {
         student_id: Uuid,
     ) -> Result<Option<SeatingNumber>, DomainError>;
     async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
-    async fn save_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
+    async fn insert_bulk(&self, seatings: &[SeatingNumber]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_session(&self, session_id: Uuid) -> Result<(), DomainError>;
 }
@@ -695,7 +700,7 @@ pub trait SecretNumberRepository: Send + Sync {
         student_id: Uuid,
     ) -> Result<Option<SecretNumber>, DomainError>;
     async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
-    async fn save_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
+    async fn insert_bulk(&self, secrets: &[SecretNumber]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_schedule(&self, schedule_id: Uuid) -> Result<(), DomainError>;
 }
@@ -722,11 +727,25 @@ pub trait AccountRepository: Send + Sync {
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
+pub type LedgerAccountBalances =
+    std::collections::HashMap<Uuid, std::collections::BTreeMap<String, Decimal>>;
+
 #[async_trait]
 pub trait JournalEntryRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<JournalEntry>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<JournalEntry>, DomainError>;
+    async fn account_balances_at(
+        &self,
+        org_id: Uuid,
+        date: chrono::NaiveDate,
+    ) -> Result<LedgerAccountBalances, DomainError>;
     async fn save(&self, entry: &JournalEntry) -> Result<(), DomainError>;
+    async fn save_reversal(
+        &self,
+        entry: &JournalEntry,
+        original_id: Uuid,
+        reason: &str,
+    ) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
@@ -762,6 +781,23 @@ pub trait StudentFeeRepository: Send + Sync {
         filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<Vec<StudentFeeCurrencySummary>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
+    async fn delete_fee_posting(&self, fee: &StudentFee) -> Result<(), DomainError>;
+    async fn save_fee_installments(
+        &self,
+        original: &StudentFee,
+        installments: &[StudentFee],
+    ) -> Result<(), DomainError>;
+    async fn save_fee_refund(
+        &self,
+        previous: &StudentFee,
+        updated: &StudentFee,
+        entry: &JournalEntry,
+    ) -> Result<(), DomainError>;
+    async fn save_fee_invoice(
+        &self,
+        fee: &StudentFee,
+        entry: &JournalEntry,
+    ) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
@@ -776,6 +812,11 @@ pub trait PaymentRepository: Send + Sync {
         filter: orbis_domain::queries::filters::PaymentFilter,
     ) -> Result<PaginatedList<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
+    async fn delete_payment_posting(
+        &self,
+        payment: &Payment,
+        fee_update: Option<(&StudentFee, &StudentFee)>,
+    ) -> Result<(), DomainError>;
     async fn save_payment_posting(
         &self,
         payment: &Payment,
@@ -817,6 +858,12 @@ pub trait PromotionRepository: Send + Sync {
         &self,
         job_id: Uuid,
     ) -> Result<Vec<ProgressionDetail>, DomainError>;
+    async fn commit_promotion(
+        &self,
+        job: &ProgressionJob,
+        details: &[ProgressionDetail],
+        new_enrollments: &[Enrollment],
+    ) -> Result<(), DomainError>;
     async fn save_job(&self, job: &ProgressionJob) -> Result<(), DomainError>;
     async fn save_detail(&self, detail: &ProgressionDetail) -> Result<(), DomainError>;
     async fn save_details(&self, details: &[ProgressionDetail]) -> Result<(), DomainError>;
@@ -824,6 +871,23 @@ pub trait PromotionRepository: Send + Sync {
 
 #[async_trait]
 pub trait OverrideRequestRepository: Send + Sync {
+    /// Resolve current ownership from persisted resources. Each entry represents
+    /// one affected resource, with None requiring an organization-wide grant.
+    async fn target_units(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+        linked_section_id: Option<Uuid>,
+        period_id: Option<Uuid>,
+    ) -> Result<Vec<Option<Uuid>>, DomainError>;
+
+    /// Compare and set a pending decision so concurrent requests cannot advance it twice.
+    async fn save_decision(
+        &self,
+        request: &AcademicOverrideRequest,
+        expected_updated_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(), DomainError>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicOverrideRequest>, DomainError>;
     async fn find_by_org(
         &self,
@@ -837,11 +901,6 @@ pub trait OverrideRequestRepository: Send + Sync {
         entity_type: &str,
         entity_id: Uuid,
     ) -> Result<Option<AcademicOverrideRequest>, DomainError>;
-    async fn find_pending_for_role(
-        &self,
-        org_id: Uuid,
-        role: &str,
-    ) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
     async fn save(&self, req: &AcademicOverrideRequest) -> Result<(), DomainError>;
 }
 
@@ -984,7 +1043,12 @@ pub struct DashboardCounts {
 
 #[async_trait]
 pub trait DashboardRepository: Send + Sync {
-    async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError>;
+    async fn get_counts(
+        &self,
+        org_id: Uuid,
+        units: Option<&[Uuid]>,
+        include_finance: bool,
+    ) -> Result<DashboardCounts, DomainError>;
 }
 
 // =========================================================================
@@ -1040,7 +1104,10 @@ pub trait AutopilotTaskRepository: Send + Sync {
         id: Uuid,
         org_id: Uuid,
         expected_status: TaskStatus,
+        expected_attempts: i32,
     ) -> Result<bool, DomainError>;
+
+    async fn count_by_status(&self, org_id: Uuid) -> Result<Vec<(TaskStatus, u64)>, DomainError>;
 
     /// Find tasks by org with status/task_type filters and pagination
     async fn find_by_org(
@@ -1052,8 +1119,15 @@ pub trait AutopilotTaskRepository: Send + Sync {
         offset: u64,
     ) -> Result<(Vec<AutopilotTask>, u64), DomainError>;
 
-    /// Save (insert or update) an Autopilot task
-    async fn save_task(&self, task: &AutopilotTask) -> Result<(), DomainError>;
+    /// Create a scheduled occurrence once, returning its existing row on conflict.
+    async fn schedule_task(&self, task: &AutopilotTask) -> Result<AutopilotTask, DomainError>;
+
+    /// Persist an execution outcome or dismissal only from the expected state.
+    async fn update_task_state(
+        &self,
+        task: &AutopilotTask,
+        expected_status: TaskStatus,
+    ) -> Result<(), DomainError>;
 
     /// Delete a task by ID
     async fn delete_task(&self, id: Uuid) -> Result<(), DomainError>;

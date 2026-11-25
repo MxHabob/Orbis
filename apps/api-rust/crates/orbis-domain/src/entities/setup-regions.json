@@ -1,0 +1,122 @@
+[
+  {
+    "code": "SA",
+    "name": "Saudi Arabia",
+    "name_ar": "المملكة العربية السعودية",
+    "language": "ar",
+    "timezone": "Asia/Riyadh",
+    "currency": "SAR",
+    "hijri": true,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "AE",
+    "name": "United Arab Emirates",
+    "name_ar": "الإمارات العربية المتحدة",
+    "language": "ar",
+    "timezone": "Asia/Dubai",
+    "currency": "AED",
+    "hijri": true,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "YE",
+    "name": "Yemen",
+    "name_ar": "الجمهورية اليمنية",
+    "language": "ar",
+    "timezone": "Asia/Aden",
+    "currency": "YER",
+    "hijri": true,
+    "date_format": "YYYY-MM-DD"
+  },
+  {
+    "code": "KW",
+    "name": "Kuwait",
+    "name_ar": "الكويت",
+    "language": "ar",
+    "timezone": "Asia/Kuwait",
+    "currency": "KWD",
+    "hijri": true,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "QA",
+    "name": "Qatar",
+    "name_ar": "قطر",
+    "language": "ar",
+    "timezone": "Asia/Qatar",
+    "currency": "QAR",
+    "hijri": true,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "OM",
+    "name": "Oman",
+    "name_ar": "عُمان",
+    "language": "ar",
+    "timezone": "Asia/Muscat",
+    "currency": "OMR",
+    "hijri": true,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "BH",
+    "name": "Bahrain",
+    "name_ar": "البحرين",
+    "language": "ar",
+    "timezone": "Asia/Bahrain",
+    "currency": "BHD",
+    "hijri": true,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "EG",
+    "name": "Egypt",
+    "name_ar": "مصر",
+    "language": "ar",
+    "timezone": "Africa/Cairo",
+    "currency": "EGP",
+    "hijri": false,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "JO",
+    "name": "Jordan",
+    "name_ar": "الأردن",
+    "language": "ar",
+    "timezone": "Asia/Amman",
+    "currency": "JOD",
+    "hijri": false,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "IQ",
+    "name": "Iraq",
+    "name_ar": "العراق",
+    "language": "ar",
+    "timezone": "Asia/Baghdad",
+    "currency": "IQD",
+    "hijri": false,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "GB",
+    "name": "United Kingdom",
+    "name_ar": "المملكة المتحدة",
+    "language": "en",
+    "timezone": "Europe/London",
+    "currency": "GBP",
+    "hijri": false,
+    "date_format": "DD/MM/YYYY"
+  },
+  {
+    "code": "US",
+    "name": "United States",
+    "name_ar": "الولايات المتحدة",
+    "language": "en",
+    "timezone": "America/New_York",
+    "currency": "USD",
+    "hijri": false,
+    "date_format": "MM/DD/YYYY"
+  }
+]

@@ -9,47 +9,40 @@ import { columnId, getCellValue } from "../types";
 import { normalizeRange } from "./selection";
 import { coerceValue } from "./coerce";
 
-export function parseClipboard(text: string): string[][] {
-  const raw = text
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n");
+export function parseClipboard(text: string, delimiter?: string): string[][] {
+  const raw = text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
   if (!raw.trim()) return [];
-  const delimiter = raw.includes("\t") ? "\t" : ",";
-  return raw
-    .split("\n")
-    .filter((line, i, arr) => line.length > 0 || i < arr.length - 1)
-    .filter((line) => line.trim() !== "")
-    .map((line) => splitDelimited(line, delimiter));
-}
-
-function splitDelimited(line: string, delimiter: string): string[] {
-  const out: string[] = [];
+  const separator = delimiter ?? (raw.includes("\t") ? "\t" : ",");
+  const rows: string[][] = [];
+  let row: string[] = [];
   let cell = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]!;
-    const next = line[i + 1];
-    if (inQuotes) {
-      if (ch === '"' && next === '"') {
+  let quoted = false;
+  for (let index = 0; index < raw.length; index++) {
+    const char = raw[index]!;
+    if (quoted) {
+      if (char === '"' && raw[index + 1] === '"') {
         cell += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
+        index++;
+      } else if (char === '"') {
+        quoted = false;
       } else {
-        cell += ch;
+        cell += char;
       }
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === delimiter) {
-      out.push(cell);
+    } else if (char === '"' && cell === "") {
+      quoted = true;
+    } else if (char === separator || char === "\n") {
+      row.push(cell);
       cell = "";
+      if (char === "\n") {
+        rows.push(row);
+        row = [];
+      }
     } else {
-      cell += ch;
+      cell += char;
     }
   }
-  out.push(cell);
-  return out;
+  if (row.length || cell || !raw.endsWith("\n")) rows.push([...row, cell]);
+  return rows;
 }
 
 export function toTsv(matrix: unknown[][]): string {
@@ -91,14 +84,16 @@ export function applyPaste(args: {
   startCol: number;
   matrix: string[][];
   createEmptyRow?: () => GridRow;
+  fixedRows?: boolean;
 }): { rows: GridRow[]; result: BulkResult } {
-  const { columns, startRow, startCol, matrix, createEmptyRow } = args;
+  const { columns, startRow, startCol, matrix, createEmptyRow, fixedRows } = args;
   const rows = args.rows.slice();
   const accepted: GridRow[] = [];
   const rejected: BulkResult["rejected"] = [];
 
   for (let r = 0; r < matrix.length; r++) {
     const targetIndex = startRow + r;
+    if (fixedRows && targetIndex >= rows.length) break;
     while (targetIndex >= rows.length) {
       rows.push(createEmptyRow ? createEmptyRow() : {});
     }
@@ -119,7 +114,7 @@ export function applyPaste(args: {
           value: raw,
           message: coerced.message ?? "Invalid value",
         });
-        next[id] = raw;
+        if (!fixedRows) next[id] = raw;
         continue;
       }
       next[id] = coerced.value as GridRow[string];
@@ -158,7 +153,8 @@ export function fillDown(
     for (let c = n.startCol; c <= n.endCol && c < columns.length; c++) {
       const col = columns[c]!;
       if (col.readonly) continue;
-      row[columnId(col)] = getCellValue(source, col);
+      const value = coerceValue(getCellValue(source, col), col, row);
+      if (value.ok) row[columnId(col)] = value.value;
     }
     next[r] = row;
   }
@@ -180,7 +176,8 @@ export function fillRight(
     for (let c = n.startCol + 1; c <= n.endCol && c < columns.length; c++) {
       const col = columns[c]!;
       if (col.readonly) continue;
-      row[columnId(col)] = sourceVal;
+      const value = coerceValue(sourceVal, col, row);
+      if (value.ok) row[columnId(col)] = value.value;
     }
     next[r] = row;
   }
@@ -220,7 +217,8 @@ export function clearRange(
     for (let c = n.startCol; c <= n.endCol && c < columns.length; c++) {
       const col = columns[c]!;
       if (col.readonly) continue;
-      row[columnId(col)] = null;
+      const value = coerceValue(null, col, row);
+      if (value.ok) row[columnId(col)] = null;
     }
     next[r] = row;
   }

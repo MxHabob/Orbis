@@ -184,7 +184,7 @@ pub async fn exam_list_sessions(
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
     let items = state
         .scheduling_service
-        .list_exam_sessions(pid)
+        .list_exam_sessions(&make_ctx(&state), pid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(items
@@ -213,10 +213,9 @@ pub async fn exam_get_session(
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let s = state
         .scheduling_service
-        .get_exam_session(uid)
+        .get_exam_session(&make_ctx(&state), uid)
         .await
-        .map_err(|e| e.to_string())?
-        .ok_or("Session not found")?;
+        .map_err(|e| e.to_string())?;
     Ok(ok(ExamSessionDto {
         id: s.id.to_string(),
         org_id: s.org_id.to_string(),
@@ -282,7 +281,7 @@ pub async fn exam_list_schedules(
     let sid = Uuid::parse_str(&session_id).map_err(|_| "Invalid session ID")?;
     let items = state
         .scheduling_service
-        .list_exam_schedules(sid)
+        .list_exam_schedules(&make_ctx(&state), sid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(items
@@ -354,7 +353,7 @@ pub async fn exam_list_seating(
     let sid = Uuid::parse_str(&session_id).map_err(|_| "Invalid session_id")?;
     let list = state
         .scheduling_service
-        .list_seating_numbers(sid)
+        .list_seating_numbers(&make_ctx(&state), sid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(list
@@ -648,7 +647,7 @@ pub async fn exam_list_proctors(
     let sid = Uuid::parse_str(&schedule_id).map_err(|_| "Invalid schedule_id")?;
     let list = state
         .scheduling_service
-        .list_proctors(sid)
+        .list_proctors(&make_ctx(&state), sid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(list

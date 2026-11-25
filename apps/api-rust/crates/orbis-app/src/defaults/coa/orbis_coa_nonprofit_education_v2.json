@@ -93,6 +93,14 @@
                   "type": "ASSET",
                   "nature": "مدين",
                   "level": 4
+                },
+                {
+                  "code": "110107",
+                  "name_ar": "تسوية الدفع الإلكتروني",
+                  "name_en": "Online Payment Clearing",
+                  "type": "ASSET",
+                  "nature": "مدين",
+                  "level": 4
                 }
               ]
             },
@@ -3810,6 +3818,14 @@
                   "code": "590107",
                   "name_ar": "مصروفات أخرى",
                   "name_en": "Other Expenses",
+                  "type": "EXPENSE",
+                  "nature": "مدين",
+                  "level": 4
+                },
+                {
+                  "code": "590108",
+                  "name_ar": "عمولات بوابات الدفع",
+                  "name_en": "Payment Gateway Fees",
                   "type": "EXPENSE",
                   "nature": "مدين",
                   "level": 4

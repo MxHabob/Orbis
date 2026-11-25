@@ -1,4 +1,9 @@
 use crate::state::AppState;
+use orbis_domain::iam::permission::Permission;
+use orbis_infra::adapters::iam::role_administration::{
+    protect_administrator, replace_organization_roles, require_role_administrator,
+    validate_role_change,
+};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -172,7 +177,6 @@ pub async fn auth_login(
         state.set_active_session(crate::state::ActiveSession {
             user_id: res.user.id,
             org_id: res.user.org_id,
-            active_unit_id: None,
             token: token.clone(),
         });
     }
@@ -191,135 +195,64 @@ pub async fn auth_login(
     }))
 }
 
+pub(crate) async fn authenticated_ctx(
+    state: &AppState,
+) -> Result<orbis_app::context::RequestContext, String> {
+    let session = state.get_active_session().ok_or("No user session")?;
+    let user = state
+        .auth_service
+        .authenticated_user(&session.token)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(orbis_app::context::RequestContext {
+        tenant_id: user.org_id,
+        actor: orbis_domain::iam::actor::Actor::User(user.id),
+        request_id: Uuid::new_v4().to_string(),
+        source: orbis_app::context::ActionSource::TauriIpc,
+        org_unit_path: None,
+    })
+}
+
 #[tauri::command]
 pub async fn auth_get_session(
     request: Option<serde_json::Value>,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<SessionResponse>, String> {
-    // 1. Check in-memory active session
-    if let Some(session) = state.get_active_session() {
-        if let Ok(Some(user)) = state.auth_service.get_user(session.user_id).await {
-            let person = state
-                .person_repo
-                .find_by_id(user.person_id)
-                .await
-                .unwrap_or(None);
-            let eff = state
-                .auth_service
-                .build_effective_context(&user, person.as_ref())
-                .await
-                .map_err(|e| e.to_string())?;
-            let roles = get_roles_for_user(&state.db, user.id).await;
-            return Ok(ok(SessionResponse {
-                org_id: session.org_id.to_string(),
-                user: user_to_dto(user, person.as_ref(), roles),
-                effective_context: map_effective_context(eff),
-            }));
-        }
-    }
-
-    // 2. Check token from request
-    let token_opt = request
+    let token = request
         .as_ref()
-        .and_then(|r| r.get("token"))
-        .and_then(|v| v.as_str());
-
-    if let Some(token_str) = token_opt {
-        if !token_str.is_empty() {
-            if let Ok(Some(db_session)) = state.session_repo.find_by_token(token_str).await {
-                if !db_session.is_revoked {
-                    if let Ok(Some(user)) = state.auth_service.get_user(db_session.user_id).await {
-                        state.set_active_session(crate::state::ActiveSession {
-                            user_id: user.id,
-                            org_id: user.org_id,
-                            active_unit_id: None,
-                            token: token_str.to_string(),
-                        });
-                        let person = state
-                            .person_repo
-                            .find_by_id(user.person_id)
-                            .await
-                            .unwrap_or(None);
-                        let eff = state
-                            .auth_service
-                            .build_effective_context(&user, person.as_ref())
-                            .await
-                            .map_err(|e| e.to_string())?;
-                        let roles = get_roles_for_user(&state.db, user.id).await;
-                        return Ok(ok(SessionResponse {
-                            org_id: user.org_id.to_string(),
-                            user: user_to_dto(user, person.as_ref(), roles),
-                            effective_context: map_effective_context(eff),
-                        }));
-                    }
-                }
-            }
-            if let Ok(claims) = state.token_service.validate_token(token_str).await {
-                if let (Ok(uid), Ok(oid)) = (
-                    Uuid::parse_str(&claims.sub),
-                    Uuid::parse_str(&claims.org_id),
-                ) {
-                    if let Ok(Some(user)) = state.auth_service.get_user(uid).await {
-                        state.set_active_session(crate::state::ActiveSession {
-                            user_id: uid,
-                            org_id: oid,
-                            active_unit_id: None,
-                            token: token_str.to_string(),
-                        });
-                        let person = state
-                            .person_repo
-                            .find_by_id(user.person_id)
-                            .await
-                            .unwrap_or(None);
-                        let eff = state
-                            .auth_service
-                            .build_effective_context(&user, person.as_ref())
-                            .await
-                            .map_err(|e| e.to_string())?;
-                        let roles = get_roles_for_user(&state.db, user.id).await;
-                        return Ok(ok(SessionResponse {
-                            org_id: oid.to_string(),
-                            user: user_to_dto(user, person.as_ref(), roles),
-                            effective_context: map_effective_context(eff),
-                        }));
-                    }
-                }
-            }
-        }
-    }
-
-    // 3. Desktop local mode single-tenant fallback
-    if let Ok(Some(org)) = state.org_repo.find_first().await {
-        if let Ok(users) = state.auth_service.list_users(org.id).await {
-            if users.len() == 1 {
-                let u = &users[0];
-                state.set_active_session(crate::state::ActiveSession {
-                    user_id: u.id,
-                    org_id: org.id,
-                    active_unit_id: None,
-                    token: "desktop-local-token".to_string(),
-                });
-                let person = state
-                    .person_repo
-                    .find_by_id(u.person_id)
-                    .await
-                    .unwrap_or(None);
-                let eff = state
-                    .auth_service
-                    .build_effective_context(u, person.as_ref())
-                    .await
-                    .map_err(|e| e.to_string())?;
-                let roles = get_roles_for_user(&state.db, u.id).await;
-                return Ok(ok(SessionResponse {
-                    org_id: org.id.to_string(),
-                    user: user_to_dto(u.clone(), person.as_ref(), roles),
-                    effective_context: map_effective_context(eff),
-                }));
-            }
-        }
-    }
-
-    Err("No user session".to_string())
+        .and_then(|request| request.get("token"))
+        .and_then(serde_json::Value::as_str)
+        .filter(|token| !token.is_empty())
+        .map(str::to_owned)
+        .or_else(|| state.get_active_session().map(|session| session.token))
+        .ok_or_else(|| "No user session".to_string())?;
+    let user = state
+        .auth_service
+        .authenticated_user(&token)
+        .await
+        .map_err(|e| e.to_string())?;
+    let org_id = user.org_id;
+    let person = state
+        .person_repo
+        .find_by_id(user.person_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    let effective_context = state
+        .auth_service
+        .build_effective_context(&user, person.as_ref())
+        .await
+        .map_err(|e| e.to_string())?;
+    let roles = get_roles_for_user(&state.db, user.id).await;
+    state.set_active_session(crate::state::ActiveSession {
+        user_id: user.id,
+        org_id,
+        token,
+    });
+    Ok(ok(SessionResponse {
+        org_id: org_id.to_string(),
+        user: user_to_dto(user, person.as_ref(), roles),
+        effective_context: map_effective_context(effective_context),
+    }))
 }
 
 #[tauri::command]
@@ -336,7 +269,7 @@ pub async fn iam_register_user(
     request: serde_json::Value,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<UserDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let full_name = request["fullName"]
         .as_str()
         .or(request["full_name"].as_str())
@@ -346,6 +279,22 @@ pub async fn iam_register_user(
     let password = request["password"].as_str().map(|s| s.to_string());
     let role = request["role"].as_str().map(|s| s.to_string());
 
+    let roles = role.as_slice();
+    let assigner = if roles.is_empty() {
+        None
+    } else {
+        Some(
+            validate_role_change(
+                &state.db,
+                state.permission_checker.as_ref(),
+                &ctx,
+                None,
+                roles,
+            )
+            .await
+            .map_err(|e| e.to_string())?,
+        )
+    };
     let user = state
         .auth_service
         .register_user(
@@ -358,22 +307,10 @@ pub async fn iam_register_user(
         )
         .await
         .map_err(|e| e.to_string())?;
-
-    // Assign role in user_role_assignments if given
-    if let Some(r) = role {
-        use orbis_infra::models::user_role_assignment;
-        use sea_orm::{ActiveModelTrait, Set};
-        let model = user_role_assignment::ActiveModel {
-            id: Set(Uuid::new_v4()),
-            user_id: Set(user.id),
-            role_id: Set(r),
-            org_id: Set(ctx.tenant_id),
-            scope_type: Set("global".to_string()),
-            scope_id: Set(None),
-            assigned_by: Set(None),
-            created_at: Set(chrono::Utc::now()),
-        };
-        let _ = model.insert(&state.db).await;
+    if let Some(actor) = assigner {
+        replace_organization_roles(&state.db, ctx.tenant_id, user.id, actor, roles)
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     let person = state
@@ -648,16 +585,46 @@ pub async fn iam_update_user(
     request: serde_json::Value,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<UserDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
+    state
+        .permission_checker
+        .check(&ctx, Permission::UserWrite)
+        .await
+        .map_err(|e| e.to_string())?;
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-
-    // 1. Get user
     let mut user = state
         .auth_service
         .get_user(uid)
         .await
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "User not found".to_string())?;
+        .filter(|user| user.org_id == ctx.tenant_id)
+        .ok_or("User not found")?;
+    let actor = ctx.actor.id().ok_or("User identity is required")?;
+    protect_administrator(state.permission_checker.as_ref(), &ctx, actor, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let roles = if let Some(roles) = request.get("roles") {
+        Some(serde_json::from_value::<Vec<String>>(roles.clone()).map_err(|_| "Invalid roles")?)
+    } else {
+        request
+            .get("primary_role")
+            .or_else(|| request.get("role"))
+            .and_then(serde_json::Value::as_str)
+            .filter(|role| !role.is_empty())
+            .map(|role| vec![role.to_owned()])
+    };
+    if let Some(roles) = &roles {
+        validate_role_change(
+            &state.db,
+            state.permission_checker.as_ref(),
+            &ctx,
+            Some(uid),
+            roles,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    }
 
     // 2. Update user name
     let full_name = request
@@ -740,49 +707,10 @@ pub async fn iam_update_user(
         }
     }
 
-    // 4. Update Role assignments
-    use orbis_infra::models::user_role_assignment;
-    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
-
-    let mut new_roles = Vec::new();
-    if let Some(roles_arr) = request.get("roles").and_then(|v| v.as_array()) {
-        for r in roles_arr {
-            if let Some(s) = r.as_str() {
-                if !s.is_empty() && !new_roles.contains(&s.to_string()) {
-                    new_roles.push(s.to_string());
-                }
-            }
-        }
-    } else if let Some(r) = request
-        .get("primary_role")
-        .or(request.get("role"))
-        .and_then(|v| v.as_str())
-    {
-        if !r.is_empty() {
-            new_roles.push(r.to_string());
-        }
-    }
-
-    if !new_roles.is_empty() {
-        let _ = user_role_assignment::Entity::delete_many()
-            .filter(user_role_assignment::Column::UserId.eq(uid))
-            .exec(&state.db)
-            .await;
-
-        let now = chrono::Utc::now();
-        for role_id in &new_roles {
-            let model = user_role_assignment::ActiveModel {
-                id: Set(Uuid::new_v4()),
-                user_id: Set(uid),
-                role_id: Set(role_id.clone()),
-                org_id: Set(ctx.tenant_id),
-                scope_type: Set("global".to_string()),
-                scope_id: Set(None),
-                assigned_by: Set(None),
-                created_at: Set(now),
-            };
-            let _ = model.insert(&state.db).await;
-        }
+    if let Some(roles) = roles {
+        replace_organization_roles(&state.db, ctx.tenant_id, uid, actor, &roles)
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     let person = state
@@ -808,8 +736,19 @@ pub async fn iam_reset_user_password(
     user_id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<UserProvisioningResultDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let uid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
+    state
+        .user_repo
+        .find_by_id(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .filter(|user| user.org_id == ctx.tenant_id)
+        .ok_or("User not found")?;
+    let actor = ctx.actor.id().ok_or("User identity is required")?;
+    protect_administrator(state.permission_checker.as_ref(), &ctx, actor, uid)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let res = state
         .identity_provisioning_service
@@ -925,7 +864,6 @@ pub async fn auth_mfa_challenge(
     state.set_active_session(crate::state::ActiveSession {
         user_id: user.id,
         org_id: user.org_id,
-        active_unit_id: None,
         token: res.token.clone(),
     });
 
@@ -994,7 +932,6 @@ pub async fn auth_login_google(
         state.set_active_session(crate::state::ActiveSession {
             user_id: user.id,
             org_id: user.org_id,
-            active_unit_id: None,
             token: token.clone(),
         });
     }
@@ -1160,7 +1097,10 @@ pub async fn iam_save_role(
     request: SaveRoleRequest,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<RoleDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
+    require_role_administrator(state.permission_checker.as_ref(), &ctx)
+        .await
+        .map_err(|e| e.to_string())?;
     use orbis_infra::models::{role, role_permission};
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
@@ -1175,6 +1115,9 @@ pub async fn iam_save_role(
         .unwrap_or(None);
 
     let is_system = existing.as_ref().map(|e| e.is_system).unwrap_or(false);
+    if is_system {
+        return Err("Cannot modify system roles".into());
+    }
 
     if let Some(existing_model) = existing {
         let mut active: role::ActiveModel = existing_model.into();
@@ -1233,7 +1176,10 @@ pub async fn iam_delete_role(
     role_id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<bool>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
+    require_role_administrator(state.permission_checker.as_ref(), &ctx)
+        .await
+        .map_err(|e| e.to_string())?;
     use orbis_infra::models::{role, role_permission, user_role_assignment};
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
@@ -1313,10 +1259,26 @@ pub async fn iam_save_permissions(
     request: Vec<PermissionRuleDto>,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<bool>, String> {
-    let ctx = make_ctx(&state);
-    use orbis_infra::models::role_permission;
+    let ctx = authenticated_ctx(&state).await?;
+    require_role_administrator(state.permission_checker.as_ref(), &ctx)
+        .await
+        .map_err(|e| e.to_string())?;
+    use orbis_infra::models::{role, role_permission};
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
+    for rule in &request {
+        let editable = role::Entity::find()
+            .filter(role::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role::Column::Id.eq(&rule.role))
+            .filter(role::Column::IsSystem.eq(false))
+            .one(&state.db)
+            .await
+            .map_err(|e| e.to_string())?
+            .is_some();
+        if !editable {
+            return Err("Permissions can only be assigned to editable tenant roles".into());
+        }
+    }
     let now = chrono::Utc::now();
     for rule in request {
         let _ = role_permission::Entity::delete_many()

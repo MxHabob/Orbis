@@ -18,6 +18,7 @@ pub mod rtsp;
 pub mod solver_adapter;
 pub mod storage;
 pub mod surveillance;
+mod tabular_pdf;
 pub mod trial_device_identity;
 pub mod verification;
 pub mod whatsapp;

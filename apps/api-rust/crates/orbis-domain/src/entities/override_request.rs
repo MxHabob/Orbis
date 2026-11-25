@@ -17,6 +17,33 @@ pub enum OverrideType {
     Custom(u8),
 }
 
+impl std::str::FromStr for OverrideType {
+    type Err = &'static str;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "admission_approval" => Ok(Self::AdmissionApproval),
+            "grade_change" | "post_lock_grade_change" | "grade_modification" => {
+                Ok(Self::GradeChange)
+            }
+            "prerequisite_bypass" => Ok(Self::PrerequisiteBypass),
+            "late_enrollment" => Ok(Self::LateEnrollment),
+            "capacity_override" => Ok(Self::CapacityOverride),
+            "age_bypass" => Ok(Self::AgeBypass),
+            "credit_overload" => Ok(Self::CreditOverload),
+            "discount_override" | "fee_waiver" => Ok(Self::DiscountOverride),
+            "standing_override" | "academic_standing_override" => {
+                Ok(Self::AcademicStandingOverride)
+            }
+            _ => value
+                .strip_prefix("custom_")
+                .and_then(|code| code.parse().ok())
+                .map(Self::Custom)
+                .ok_or("Unknown override type"),
+        }
+    }
+}
+
 impl std::fmt::Display for OverrideType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -106,6 +133,8 @@ pub struct AcademicOverrideRequest {
     pub status: OverrideStatus,
     pub current_approver_role: Option<String>,
     pub approval_chain: Vec<ApprovalStep>,
+    #[serde(default)]
+    pub approval_policy_version: Option<i32>,
     pub resolved_by: Option<Uuid>,
     pub resolved_by_name: Option<String>,
     pub resolved_at: Option<DateTime<Utc>>,

@@ -180,7 +180,9 @@ export const ar = {
   visitor_teacher_description:
     "متابعة الفصول والطلاب وإدارة الأعمال الأكاديمية وفق الصلاحيات.",
   visitor_sign_in: "تسجيل الدخول",
-  visitor_register: "إنشاء حساب",
+  visitor_register: "الحصول على حساب",
+  auth_account_access_description:
+    "تواصل مع مسؤول مؤسستك للحصول على حساب أوربس. بعد استلام بيانات الدخول، يمكنك تسجيل الدخول من هنا.",
   visitor_explore: "استكشاف التطبيق كزائر",
   onboarding_title: "رحلتك التعليمية تبدأ من هنا",
   onboarding_description: "تابع يومك الدراسي وكل ما يهمك في تجربة واحدة.",
@@ -545,6 +547,8 @@ export const ar = {
   // Common UI
   common_loading: "جاري التحميل...",
   common_error: "حدث خطأ أثناء تحميل البيانات",
+  common_startup_error: "????? ????? Orbis",
+  common_unexpected_error_hint: "??? ??? ??? ?????. ???? ??? ????.",
   common_retry: "إعادة المحاولة",
   common_save: "حفظ التغييرات",
 

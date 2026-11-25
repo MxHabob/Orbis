@@ -1,0 +1,775 @@
+<!--
+  @component PosTerminal
+  High-speed cashier point-of-sale terminal for educational billing collections.
+  Keyboard-optimized with barcode/ID lookup, outstanding fee checklist,
+  canonical multi-channel payment method handling, and atomic General Ledger posting.
+-->
+<script lang="ts">
+import VoucherMetadata from "./components/voucher-metadata.svelte";
+import { formatDateKey } from "$lib/core/i18n/format";
+import { authStore } from "$lib/stores";
+import { createCashierAssignmentQuery } from "./queries";
+import { eligibleTreasuries, resolveTreasury } from "./treasury-policy";
+import { LoadingIndicator } from "@orbis/ui";
+import { onDestroy, onMount, tick } from "svelte";
+import { slide } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
+import { formatCurrency, formatDate, l } from "$lib/core/i18n";
+import {
+  createCashAccountsQuery,
+  createStudentFeesQuery,
+  createPaymentsQuery,
+  createFeeTemplatesQuery,
+  createProcessPaymentMutation,
+  createAvailablePaymentMethodsQuery,
+  manualPaymentMethods,
+} from "$lib/features/finance";
+import {
+  api,
+  extractErrorMessage,
+  type StudentDto,
+  type StudentFeeDto,
+  type PaymentDto,
+} from "$lib/api";
+import { paymentMethodLabel, receiptPrintContext } from "./record-presentation";
+import { paymentRequestFingerprint } from "./payment-attempt-key";
+import PaymentMethodField from "./components/payment-method-field.svelte";
+import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { toast } from "@orbis/ui";
+import {
+  Banknotes,
+  BuildingLibrary,
+  CheckCircle,
+  CreditCard,
+  DocumentPage,
+  Keyboard,
+  Printer,
+  Search,
+  XMark,
+  ArrowPath,
+} from "@orbis/icons";
+
+let { orgId }: { orgId: string } = $props();
+
+// ── State ─────────────────────────────────────────────────────────────
+
+let searchInputEl = $state<HTMLInputElement | null>(null);
+let searchQuery = $state("");
+let isSearchFocused = $state(false);
+let highlightedIndex = $state(-1);
+let isSearchingStudents = $state(false);
+let searchedStudents = $state<StudentDto[]>([]);
+let selectedStudent = $state<StudentDto | null>(null);
+
+// Payment Form State
+let formAccountId = $state("");
+let formMethod = $state("cash");
+let formFeeId = $state("");
+let formAmount = $state<number | null>(null);
+let referenceNumber = $state("");
+let voucherNumber = $state("");
+let voucherDate = $state(formatDateKey(new Date()));
+let sourceToken = $state("");
+let notes = $state("");
+let shouldPrintReceipt = $state(true);
+let lastReceiptPayment = $state<PaymentDto | null>(null);
+let lastReceiptNotes = $state("");
+let printReceiptOpen = $state(false);
+let printReceiptPayment = $state<PaymentDto | null>(null);
+let printReceiptContext = $state<Record<string, unknown>[]>([]);
+
+// ── Queries & Mutations ───────────────────────────────────────────────
+
+const settingsQuery = createCashierAssignmentQuery(() => orgId);
+const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
+  ? settingsQuery.data[authStore.userId ?? ""] ?? null
+  : undefined);
+const cashAccountsQuery = createCashAccountsQuery(() => orgId);
+
+const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
+const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? manualPaymentMethods());
+const feeTemplatesQuery = createFeeTemplatesQuery(() => orgId);
+const feeTemplates = $derived(feeTemplatesQuery.data ?? []);
+const selectedPaymentMethodObj = $derived(
+  availablePaymentMethods.find((method) => method.id === formMethod),
+);
+
+const studentFeesQuery = createStudentFeesQuery(
+  () => orgId,
+  () => (selectedStudent ? { student_id: selectedStudent.id } : undefined),
+  () => Boolean(selectedStudent?.id),
+);
+const activeStudentFees = $derived(
+  (studentFeesQuery.data ?? []).filter(
+    (f) => f.status !== "paid" && f.status !== "cancelled",
+  ),
+);
+
+const recentPaymentsQuery = createPaymentsQuery(
+  () => orgId,
+  () => (selectedStudent ? { student_id: selectedStudent.id } : undefined),
+  () => Boolean(selectedStudent?.id),
+  5,
+);
+const activeStudentPayments = $derived(recentPaymentsQuery.data ?? []);
+
+const processPaymentMutation = createProcessPaymentMutation(() => orgId);
+let isPreparingPayment = $state(false);
+let paymentError = $state("");
+const isSubmittingPayment = $derived(isPreparingPayment || processPaymentMutation.isPending);
+
+const feeTemplatesById = $derived(new Map(feeTemplates.map((template) => [template.id, template])));
+const linkedFee = $derived(activeStudentFees.find((fee) => fee.id === formFeeId));
+const feeCurrency = $derived(linkedFee ? feeTemplatesById.get(linkedFee.fee_template_id)?.currency : undefined);
+const cashAccounts = $derived(eligibleTreasuries(cashAccountsQuery.data ?? [], formMethod, cashAssignment, feeCurrency));
+const activeAccountId = $derived(resolveTreasury(cashAccounts, formAccountId));
+
+function getFeeTemplateName(feeTemplateId: string): string {
+  const template = feeTemplatesById.get(feeTemplateId);
+  return template
+    ? l(template.name_ar, template.name) || template.name
+    : m.finance_ui_tuition_fees();
+}
+
+// ── Student Search Logic ──────────────────────────────────────────────
+
+let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+let searchRevision = 0;
+
+function cancelStudentSearch() {
+  searchRevision += 1;
+  clearTimeout(searchDebounceTimer);
+}
+
+onDestroy(cancelStudentSearch);
+
+function handleSearchInput(query: string) {
+  cancelStudentSearch();
+  const revision = searchRevision;
+  searchQuery = query;
+  searchedStudents = [];
+  highlightedIndex = -1;
+
+  if (!query.trim()) {
+    isSearchingStudents = false;
+    return;
+  }
+
+  isSearchingStudents = true;
+  searchDebounceTimer = setTimeout(async () => {
+    try {
+      const results = await api.listStudents({
+        search: query.trim(),
+        page_size: 8,
+      });
+      if (revision !== searchRevision) return;
+      searchedStudents = results.items.map((detail) => detail.student);
+      highlightedIndex = searchedStudents.length > 0 ? 0 : -1;
+    } catch {
+      if (revision === searchRevision) searchedStudents = [];
+    } finally {
+      if (revision === searchRevision) isSearchingStudents = false;
+    }
+  }, 150);
+}
+
+function selectStudent(student: StudentDto) {
+  if (isSubmittingPayment) return;
+  selectedStudent = student;
+  handleSearchInput("");
+  formFeeId = "";
+  formAmount = null;
+  lastReceiptPayment = null;
+}
+
+function deselectStudent() {
+  if (isSubmittingPayment) return;
+  selectedStudent = null;
+  formFeeId = "";
+  formAmount = null;
+  searchQuery = "";
+  searchedStudents = [];
+  lastReceiptPayment = null;
+  setTimeout(() => searchInputEl?.focus(), 50);
+}
+
+function getFeeBalance(fee: StudentFeeDto): number | null {
+  const raw = fee.balance_due;
+  if (raw == null || String(raw).trim() === "") return null;
+  const balance = Number(raw);
+  return Number.isFinite(balance) ? balance : null;
+}
+
+function selectFeeItem(fee: StudentFeeDto) {
+  if (isSubmittingPayment) return;
+  formFeeId = fee.id;
+  formAmount = getFeeBalance(fee);
+  void tick().then(() => document.getElementById("pos_amount")?.focus());
+}
+
+// ── Payment Processing ────────────────────────────────────────────────
+
+const paymentAttempts = new Map<string, string>();
+
+async function handlePaymentSubmit(e: SubmitEvent) {
+  e.preventDefault();
+  if (isSubmittingPayment) return;
+  paymentError = "";
+
+  if (!selectedStudent) {
+    paymentError = m.common_fee_toast_error_student();
+    return;
+  }
+  if (!activeAccountId) {
+    paymentError = m.common_payment_toast_error_cash_account();
+    return;
+  }
+  if (formAmount == null || !Number.isFinite(formAmount) || formAmount <= 0) {
+    paymentError = m.common_fee_toast_error_amount();
+    return;
+  }
+
+  if (!selectedPaymentMethodObj || (paymentMethodsQuery.isError && selectedPaymentMethodObj.is_digital_gateway)) {
+    paymentError = m.finance_ui_payment_method_unavailable();
+    return;
+  }
+  if (selectedPaymentMethodObj.requires_source_token && !sourceToken.trim()) {
+    paymentError = m.finance_ui_payment_gateway_token_required();
+    return;
+  }
+
+  isPreparingPayment = true;
+  try {
+    const request = {
+      fee_id: formFeeId || undefined,
+      student_id: selectedStudent.id,
+      account_id: activeAccountId,
+      amount: String(formAmount),
+      method: formMethod,
+      reference: referenceNumber.trim() || undefined,
+      receipt_number: voucherNumber.trim() || undefined,
+      payment_date: voucherDate || undefined,
+      source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
+      payer_name:
+        `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() ||
+        undefined,
+      notes: notes.trim() || undefined,
+    };
+    const fingerprint = await paymentRequestFingerprint(request);
+    const idempotencyKey = paymentAttempts.get(fingerprint) ?? crypto.randomUUID();
+    paymentAttempts.set(fingerprint, idempotencyKey);
+    const payment = await processPaymentMutation.mutateAsync({ ...request, idempotency_key: idempotencyKey });
+    paymentAttempts.delete(fingerprint);
+
+    toast.success(m.common_payment_toast_success());
+    lastReceiptPayment = payment;
+    lastReceiptNotes = notes.trim();
+
+    // Reset payment fields
+    formAmount = null;
+    formFeeId = "";
+    referenceNumber = "";
+    voucherNumber = "";
+    voucherDate = formatDateKey(new Date());
+    sourceToken = "";
+    notes = "";
+
+    if (shouldPrintReceipt) {
+      handlePrintReceipt(payment, lastReceiptNotes || payment.reference || "");
+    }
+  } catch (err) {
+    paymentError = extractErrorMessage(err);
+  } finally {
+    isPreparingPayment = false;
+  }
+}
+
+function handlePrintReceipt(payment: PaymentDto, description = payment.reference || "") {
+  printReceiptPayment = payment;
+  const payer = payment.payer_name ||
+    (selectedStudent?.id === payment.student_id
+      ? [selectedStudent?.first_name, selectedStudent?.last_name].filter(Boolean).join(" ")
+      : "");
+  printReceiptContext = [receiptPrintContext(payment, payer, description)];
+  printReceiptOpen = true;
+}
+
+// ── Keyboard Shortcuts ────────────────────────────────────────────────
+
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (e.defaultPrevented || printReceiptOpen || isSubmittingPayment) return;
+  if (e.key === "Escape" && isSearchFocused) {
+    if (searchQuery) {
+      handleSearchInput("");
+    } else if (selectedStudent) {
+      deselectStudent();
+    }
+  }
+
+  if ((e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "k")) {
+    e.preventDefault();
+    searchInputEl?.focus();
+  }
+
+  if (isSearchFocused && searchedStudents.length > 0) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      highlightedIndex = (highlightedIndex + 1) % searchedStudents.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      highlightedIndex =
+        (highlightedIndex - 1 + searchedStudents.length) %
+        searchedStudents.length;
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      selectStudent(searchedStudents[highlightedIndex]);
+    }
+  }
+}
+
+onMount(() => {
+  searchInputEl?.focus();
+});
+
+const rtl = $derived(getLocale() === "ar");
+</script>
+
+<svelte:window onkeydown={handleGlobalKeyDown} />
+
+<div class="h-full w-full flex flex-col bg-background overflow-hidden text-xs" dir={rtl ? "rtl" : "ltr"}>
+  <!-- Top Bar: Header & Cashier Status -->
+  <header class="h-12 border-b border-border/60 bg-muted/20 px-4 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-2.5">
+      <div class="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold">
+        <CreditCard size={15} />
+      </div>
+
+      <div>
+        <h1 class="text-xs font-bold text-foreground leading-none">
+          {m.finance_pos_quick_pos_payment_register()}
+        </h1>
+        <p class="text-[10px] text-muted-foreground mt-0.5">
+          {m.finance_ui_pos_subtitle()}
+        </p>
+      </div>
+    </div>
+
+    <PrintDialog
+      bind:open={printReceiptOpen}
+      entityType="finance"
+      documentType="RECEIPT"
+      entityIds={printReceiptPayment ? [printReceiptPayment.id] : []}
+      entityLabels={printReceiptPayment ? [printReceiptPayment.receipt_number || printReceiptPayment.id.slice(0, 8)] : []}
+      contexts={printReceiptContext}
+    />
+
+    <!-- Active Cashier & Treasury Dropdown -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 bg-background border border-border/80 rounded-md px-2.5 py-1 text-[11px]">
+        <BuildingLibrary size={13} class="text-muted-foreground" />
+        <span class="text-muted-foreground">{formMethod === "cash" ? m.finance_ui_cash_treasury() : m.finance_ui_account_type_bank()}</span>
+        <AccountSearchInput
+          value={activeAccountId}
+          accounts={cashAccounts}
+          placeholder={cashAccounts.length ? m.finance_ui_receiving_treasury_label() : m.finance_ui_no_matching_treasury()}
+          onchange={(accountId) => (formAccountId = accountId ?? "")}
+          size="sm"
+          class="max-w-44 border-0 bg-transparent font-medium"
+        />
+      </div>
+
+      <div class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded px-2 py-1">
+        <Keyboard size={12} />
+        <span>{m.finance_ui_pos_search_shortcut()}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main POS Workspace Body: Split Grid -->
+  <div class="flex-1 grid min-h-0 grid-cols-1 gap-0 overflow-y-auto lg:grid-cols-12 lg:overflow-hidden">
+    
+    <!-- Left 7 Cols: Student Lookup & Fee Invoices Breakdown -->
+    <div class="col-span-full flex min-h-[60vh] flex-col overflow-hidden border-e border-border/60 bg-background lg:col-span-7 lg:h-full lg:min-h-0">
+      
+      <!-- Student Search Input Box -->
+      <div class="p-3 border-b border-border/50 bg-muted/10 relative shrink-0">
+        <div class="relative">
+          <div class="absolute inset-y-0 inset-s-0 ps-3 flex items-center pointer-events-none text-muted-foreground">
+          </div>
+          <input
+            bind:this={searchInputEl}
+            type="text"
+            dir="auto"
+            value={searchQuery}
+            oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
+            onfocus={() => (isSearchFocused = true)}
+            onblur={() => setTimeout(() => (isSearchFocused = false), 200)}
+            placeholder={m.finance_ui_pos_student_search_placeholder()}
+            class="w-full bg-background border border-border/80 rounded-lg ps-9 pe-9 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
+          />
+          {#if searchQuery}
+            <button
+              type="button"
+              onclick={() => { searchQuery = ""; searchedStudents = []; }}
+              class="absolute inset-y-0 inset-e-0 pe-3 flex items-center text-muted-foreground hover:text-foreground"
+            >
+              <XMark size={14} />
+            </button>
+          {/if}
+        </div>
+
+        <!-- Search Results Dropdown -->
+        {#if isSearchFocused && searchedStudents.length > 0}
+          <div
+            transition:slide={{ duration: 120 }}
+            class="absolute top-full inset-s-3 inset-e-3 mt-1 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg z-50 overflow-hidden"
+          >
+            <div class="max-h-56 overflow-y-auto divide-y divide-border/40">
+              {#each searchedStudents as student, idx (student.id)}
+                <button
+                  type="button"
+                  onmousedown={() => selectStudent(student)}
+                  class="w-full px-3 py-2 text-start flex items-center justify-between hover:bg-muted/80 transition-colors text-xs {idx === highlightedIndex ? 'bg-primary/10 text-primary font-medium' : ''}"
+                >
+                  <div class="flex items-center gap-2">
+                    <div class="h-6 w-6 rounded-full bg-muted flex items-center justify-center font-bold text-[10px] text-foreground shrink-0">
+                      {student.first_name?.[0] || m.finance_ui_student_initial()}
+                    </div>
+                    <div>
+                      <div class="font-medium text-foreground">{student.first_name} {student.last_name}</div>
+                      <div class="text-[10px] text-muted-foreground font-mono">#{student.student_number || student.id.slice(0, 8)}</div>
+                    </div>
+                  </div>
+                  <div class="text-[10px] text-muted-foreground font-mono">
+                    {student.national_id || "—"}
+                  </div>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Student Context & Fee Breakdown Area -->
+      <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        {#if selectedStudent}
+          <!-- Selected Student Profile Banner -->
+          <div class="bg-muted/30 border border-border/80 rounded-lg p-3 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                {selectedStudent.first_name?.[0] || m.finance_ui_student_initial()}
+              </div>
+              <div>
+                <div class="text-sm font-bold text-foreground">
+                  {selectedStudent.first_name} {selectedStudent.last_name}
+                </div>
+                <div class="text-[11px] text-muted-foreground flex items-center gap-3 mt-0.5 font-mono">
+                  <span>{m.finance_ui_student_number_label()} #{selectedStudent.student_number || selectedStudent.id.slice(0, 8)}</span>
+                  <span>{m.finance_ui_national_id_label()} {selectedStudent.national_id || "—"}</span>
+                </div>
+              </div>
+            </div>
+
+            <Button variant="ghost" size="sm" onclick={deselectStudent} class="h-7 text-xs text-muted-foreground hover:text-destructive">
+              <XMark size={13} class="me-1" />
+              {m.finance_ui_change_student_escape()}
+            </Button>
+          </div>
+
+          <!-- Outstanding Fees Checklist -->
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <DocumentPage size={14} class="text-primary" />
+                {m.finance_ui_due_fees_claims({ count: activeStudentFees.length })}
+              </h2>
+              <span class="text-[11px] text-muted-foreground">{m.finance_ui_select_fee_to_collect()}</span>
+            </div>
+
+            {#if studentFeesQuery.isError}
+              <div role="alert" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
+                <p class="text-sm text-destructive">{m.finance_overview_error()}</p>
+                <Button size="sm" variant="outline" disabled={studentFeesQuery.isFetching} onclick={() => studentFeesQuery.refetch()}>{m.common_retry()}</Button>
+              </div>
+            {/if}
+            {#if studentFeesQuery.isLoading}
+              <div class="space-y-2">
+                <Skeleton class="h-12 w-full rounded-md" />
+                <Skeleton class="h-12 w-full rounded-md" />
+              </div>
+            {:else if studentFeesQuery.isSuccess && activeStudentFees.length === 0}
+              <div class="bg-muted/20 border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground">
+                <CheckCircle size={24} class="mx-auto mb-1.5 text-emerald-500 opacity-80" />
+                <p class="font-medium text-foreground">{m.finance_ui_no_fees_due_for_student()}</p>
+                <p class="text-[10px] mt-0.5">{m.finance_ui_all_student_fees_paid()}</p>
+              </div>
+            {:else if activeStudentFees.length > 0}
+              <div class="space-y-1.5">
+                {#each activeStudentFees as fee (fee.id)}
+                  {@const balance = getFeeBalance(fee)}
+                  <button
+                    type="button"
+                    disabled={balance === null}
+                    onclick={() => selectFeeItem(fee)}
+                    class="w-full text-start p-2.5 rounded-lg border transition-all flex items-center justify-between {formFeeId === fee.id ? 'bg-primary/10 border-primary text-foreground shadow-sm' : 'bg-background border-border/70 hover:border-primary/50 text-muted-foreground'}"
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <div class="h-4 w-4 rounded-full border flex items-center justify-center {formFeeId === fee.id ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'}">
+                        {#if formFeeId === fee.id}
+                          <div class="h-1.5 w-1.5 rounded-full bg-background"></div>
+                        {/if}
+                      </div>
+                      <div>
+                        <div class="font-semibold text-foreground text-xs">{getFeeTemplateName(fee.fee_template_id)}</div>
+                        <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          {m.finance_ui_due_date_label()} {formatDate(fee.due_date) || "—"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="text-end">
+                      <div class="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                        {balance === null ? "—" : formatCurrency(balance)}
+                      </div>
+                      <div class="text-[10px] text-muted-foreground font-mono">
+                        {m.finance_ui_paid_amount_label()} {formatCurrency(Number(fee.paid_amount || 0))}
+                      </div>
+                    </div>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <!-- Recent Student Receipts Table -->
+          {#if recentPaymentsQuery.isError}
+            <div role="alert" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <p class="text-sm text-destructive">{m.finance_overview_error()}</p>
+              <Button size="sm" variant="outline" disabled={recentPaymentsQuery.isFetching} onclick={() => recentPaymentsQuery.refetch()}>{m.common_retry()}</Button>
+            </div>
+          {/if}
+          {#if activeStudentPayments.length > 0}
+            <div class="mt-2 border-t border-border/50 pt-3 flex flex-col gap-2">
+              <h2 class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                {m.finance_ui_student_previous_receipts()}
+              </h2>
+              <div class="border border-border/60 rounded-md overflow-hidden bg-background">
+                <table class="w-full text-start text-[11px]">
+                  <thead class="bg-muted/40 border-b border-border/60 text-muted-foreground">
+                    <tr>
+                      <th class="py-1.5 px-3 font-semibold text-start">{m.finance_ui_voucher_number()}</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">{m.finance_ui_payment_method()}</th>
+                      <th class="py-1.5 px-3 font-semibold text-start">{m.finance_ui_date()}</th>
+                      <th class="py-1.5 px-3 font-semibold text-end">{m.finance_ui_amount()}</th>
+                      <th class="py-1.5 px-2 font-semibold text-center w-10">{m.finance_ui_print()}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-border/40">
+                    {#each activeStudentPayments as payment (payment.id)}
+                      <tr class="hover:bg-muted/20">
+                        <td class="py-1.5 px-3 font-mono font-medium text-foreground">
+                          #{payment.receipt_number || payment.id.slice(0, 8)}
+                        </td>
+                        <td class="py-1.5 px-3 text-muted-foreground">{paymentMethodLabel(payment.method)}</td>
+                        <td class="py-1.5 px-3 font-mono text-muted-foreground">{formatDate(payment.paid_at)}</td>
+                        <td class="py-1.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-end">
+                          {formatCurrency(Number(payment.amount), payment.currency_code ?? undefined)}
+                        </td>
+                        <td class="py-1.5 px-2 text-center">
+                          <button
+                            type="button"
+                            onclick={() => handlePrintReceipt(payment)}
+                            class="p-1 text-muted-foreground hover:text-primary transition-colors"
+                            title={m.finance_ui_print_receipt()}
+                          >
+                            <Printer size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {/if}
+
+        {:else}
+          <!-- Empty Search State -->
+          <div class="h-full flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+            <div class="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground/60 mb-3">
+              <Search size={28} />
+            </div>
+            <h3 class="text-sm font-bold text-foreground">{m.finance_ui_select_student_to_collect()}</h3>
+            <p class="text-[11px] text-muted-foreground max-w-sm mt-1">
+              {m.finance_ui_pos_select_student_instructions()}
+            </p>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Right 5 Cols: Payment Collection Keypad & Execution -->
+    <div class="col-span-full flex min-h-[60vh] flex-col overflow-hidden bg-muted/5 lg:col-span-5 lg:h-full lg:min-h-0">
+      <form onsubmit={handlePaymentSubmit} aria-busy={isSubmittingPayment} class="flex min-h-0 flex-1 flex-col">
+      <fieldset disabled={isSubmittingPayment} class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+        
+        <div class="border-b border-border/60 pb-3">
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <h2 class="flex items-center gap-1.5 text-sm font-semibold">
+              <Banknotes size={15} class="text-emerald-600" />
+              {m.finance_ui_receipt_create_heading()}
+            </h2>
+            <VoucherMetadata bind:number={voucherNumber} bind:date={voucherDate} dateLabel={m.template_schema_receipt_date()} />
+          </div>
+          <p class="text-[10px] text-muted-foreground mt-0.5">
+            {m.finance_ui_pos_payment_accounting_note()}
+          </p>
+        </div>
+
+        <!-- Amount Entry Field -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label for="pos_amount" class="text-[11px] font-semibold text-foreground">{m.finance_ui_amount_received_to_collect()}</label>
+            {#if formFeeId}
+              {@const selectedFee = activeStudentFees.find(f => f.id === formFeeId)}
+              {@const balance = selectedFee ? getFeeBalance(selectedFee) : null}
+              {#if balance !== null}
+                <button
+                  type="button"
+                  onclick={() => (formAmount = balance)}
+                  class="text-[10px] text-primary hover:underline font-mono"
+                >
+                  {m.finance_ui_full_balance()} ({formatCurrency(balance)})
+                </button>
+              {/if}
+            {/if}
+          </div>
+          <div class="relative">
+            <Input
+              id="pos_amount"
+              type="number"
+              step="any"
+              min="0.01"
+              required
+              bind:value={formAmount}
+              placeholder="0.00"
+              class="h-11 w-full rounded-lg px-3 text-base font-bold font-mono"
+            />
+          </div>
+        </div>
+
+        <PaymentMethodField
+          methods={availablePaymentMethods}
+          value={formMethod}
+          disabled={isSubmittingPayment}
+          loading={paymentMethodsQuery.isFetching}
+          loadFailed={paymentMethodsQuery.isError}
+          onretry={() => { void paymentMethodsQuery.refetch(); }}
+          onchange={(value) => { formMethod = value; formAccountId = ""; sourceToken = ""; referenceNumber = ""; }}
+        />
+
+        <!-- Electronic Source Token (if Gateway method requires token) -->
+        {#if selectedPaymentMethodObj?.requires_source_token}
+          <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
+            <label for="pos_token" class="text-[11px] font-semibold text-foreground flex items-center justify-between">
+              <span>{m.finance_ui_payment_gateway_token_label()}</span>
+              <span class="text-[9px] text-muted-foreground font-mono">{m.finance_ui_gateway_source_token()}</span>
+            </label>
+            <Input
+              id="pos_token"
+              type="text"
+              dir="auto"
+              autocomplete="off"
+              required
+              bind:value={sourceToken}
+              placeholder={m.finance_ui_pos_payment_token_placeholder()}
+              class="h-9 w-full px-3 text-xs font-mono"
+            />
+          </div>
+        {/if}
+
+        <!-- Reference / Check Number -->
+        {#if formMethod === "check" || formMethod === "bank_transfer"}
+          <div class="flex flex-col gap-1.5" transition:slide={{ duration: 120 }}>
+            <label for="pos_ref" class="text-[11px] font-semibold text-foreground">
+              {formMethod === "check" ? m.finance_ui_check_reference_label() : m.finance_ui_transfer_reference_label()}
+            </label>
+            <Input
+              id="pos_ref"
+              type="text"
+              dir="auto"
+              bind:value={referenceNumber}
+              placeholder={formMethod === "check" ? m.finance_ui_check_reference_placeholder() : m.finance_ui_transfer_reference_placeholder()}
+              class="h-9 w-full px-3 text-xs font-mono"
+            />
+          </div>
+        {/if}
+
+        <!-- Notes -->
+        <div class="flex flex-col gap-1.5">
+          <label for="pos_notes" class="text-[11px] font-semibold text-foreground">{m.finance_ui_receipt_notes_optional()}</label>
+          <Input
+            id="pos_notes"
+            type="text"
+            dir="auto"
+            bind:value={notes}
+            placeholder={m.finance_ui_receipt_notes_placeholder()}
+            class="h-9 w-full px-3 text-xs"
+          />
+        </div>
+
+        <!-- Receipt Print Option -->
+        <div class="flex items-center gap-2 pt-1">
+          <Checkbox
+            id="auto_print"
+            checked={shouldPrintReceipt}
+            onCheckedChange={(checked) => (shouldPrintReceipt = checked === true)}
+          />
+          <label for="auto_print" class="text-[11px] text-muted-foreground cursor-pointer select-none">
+            {m.finance_ui_auto_print_receipt_docforge()}
+          </label>
+        </div>
+
+      </fieldset>
+        <div class="flex shrink-0 flex-col gap-2 border-t border-border bg-background p-4">
+          {#if paymentError}<p class="text-sm text-destructive" role="alert">{paymentError}</p>{/if}
+          <Button
+            type="submit"
+            disabled={!selectedStudent || !activeAccountId || !selectedPaymentMethodObj || !formAmount || formAmount <= 0 || isSubmittingPayment}
+            class="h-10 w-full gap-2"
+          >
+            {#if isSubmittingPayment}
+              <LoadingIndicator   size={14} />
+              <span>{m.finance_ui_posting_entry_and_issuing_receipt()}</span>
+            {:else}
+              <CheckCircle size={15} />
+              <span>{m.finance_ui_post_receipt_now_enter()}</span>
+            {/if}
+          </Button>
+
+          {#if lastReceiptPayment}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onclick={() => { if (lastReceiptPayment) handlePrintReceipt(lastReceiptPayment, lastReceiptNotes || lastReceiptPayment.reference || ""); }}
+              class="w-full h-8 text-xs text-foreground"
+            >
+              <Printer size={13} class="me-1.5 text-primary" />
+              {m.finance_ui_reprint_last_receipt({ number: lastReceiptPayment.receipt_number || lastReceiptPayment.id.slice(0, 8) })}
+            </Button>
+          {/if}
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>

@@ -478,8 +478,8 @@ pub async fn assessment_delete_scheme(
 pub async fn assessment_record_grade(
     request: RecordGradeInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<GradeDto>, String> {
-    let ctx = make_ctx(&state);
+) -> Result<ApiResponse<GradeDto>, serde_json::Value> {
+    let ctx = super::iam_cmds::authenticated_ctx(&state).await?;
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let section_subject_id =
@@ -504,7 +504,7 @@ pub async fn assessment_record_grade(
             false,
         )
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(super::workflow_cmds::period_command_error)?;
 
     Ok(ok(grade_to_dto(g)))
 }
@@ -513,8 +513,8 @@ pub async fn assessment_record_grade(
 pub async fn assessment_batch_record_grades(
     request: BatchRecordGradesInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<BatchRecordGradesResponseDto>, String> {
-    let ctx = make_ctx(&state);
+) -> Result<ApiResponse<BatchRecordGradesResponseDto>, serde_json::Value> {
+    let ctx = super::iam_cmds::authenticated_ctx(&state).await?;
     let mut items = Vec::with_capacity(request.items.len());
 
     for item in request.items {
@@ -548,7 +548,7 @@ pub async fn assessment_batch_record_grades(
         .assessment_service
         .batch_record_grades(&ctx, ctx.tenant_id, items)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(super::workflow_cmds::period_command_error)?;
 
     let dtos: Vec<GradeDto> = grades.into_iter().map(grade_to_dto).collect();
     let count = dtos.len();
@@ -563,14 +563,14 @@ pub async fn assessment_batch_record_grades(
 pub async fn assessment_delete_grade(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<()>, String> {
-    let ctx = make_ctx(&state);
+) -> Result<ApiResponse<()>, serde_json::Value> {
+    let ctx = super::iam_cmds::authenticated_ctx(&state).await?;
     let grade_id = Uuid::parse_str(&id).map_err(|_| "Invalid grade ID")?;
     state
         .assessment_service
         .delete_grade(&ctx, ctx.tenant_id, grade_id)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(super::workflow_cmds::period_command_error)?;
     Ok(ok(()))
 }
 

@@ -9,7 +9,10 @@ use orbis_domain::entities::exam_session::ExamSession as DomainExamSession;
 use orbis_domain::entities::seating_number::SeatingNumber as DomainSeatingNumber;
 use orbis_domain::entities::secret_number::SecretNumber as DomainSecretNumber;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    Set, TransactionTrait,
+};
 use uuid::Uuid;
 
 use crate::models::{
@@ -46,8 +49,13 @@ impl ExamSessionRepository for ExamRepoImpl {
         }))
     }
 
-    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainExamSession>, DomainError> {
+    async fn find_by_period(
+        &self,
+        org_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<DomainExamSession>, DomainError> {
         let models = ExamSessionEntity::find()
+            .filter(exam_session::Column::OrgId.eq(org_id))
             .filter(exam_session::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
@@ -260,40 +268,24 @@ impl SeatingNumberRepository for ExamRepoImpl {
     }
 
     async fn save(&self, seating: &DomainSeatingNumber) -> Result<(), DomainError> {
-        let active = seating_number::ActiveModel {
-            id: Set(seating.id),
-            exam_session_id: Set(seating.exam_session_id),
-            student_id: Set(seating.student_id),
-            seating_number: Set(seating.seating_number.clone()),
-            room_id: Set(seating.room_id),
-            created_at: Set(seating.created_at),
-            updated_at: Set(seating.updated_at),
-        };
-
-        if SeatingNumberEntity::find_by_id(seating.id)
-            .one(&self.db)
-            .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?
-            .is_some()
-        {
-            active
-                .update(&self.db)
-                .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-        } else {
-            active
-                .insert(&self.db)
-                .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-        }
-        Ok(())
+        save_seating(&self.db, seating).await
     }
 
-    async fn save_bulk(&self, seatings: &[DomainSeatingNumber]) -> Result<(), DomainError> {
-        for s in seatings {
-            SeatingNumberRepository::save(self, s).await?;
+    async fn insert_bulk(&self, seatings: &[DomainSeatingNumber]) -> Result<(), DomainError> {
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        for batch in seatings.chunks(100) {
+            SeatingNumberEntity::insert_many(batch.iter().map(seating_model))
+                .exec(&txn)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
         }
-        Ok(())
+        txn.commit()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
@@ -375,39 +367,24 @@ impl SecretNumberRepository for ExamRepoImpl {
     }
 
     async fn save(&self, secret: &DomainSecretNumber) -> Result<(), DomainError> {
-        let active = secret_number::ActiveModel {
-            id: Set(secret.id),
-            exam_schedule_id: Set(secret.exam_schedule_id),
-            student_id: Set(secret.student_id),
-            secret_number: Set(secret.secret_number.clone()),
-            created_at: Set(secret.created_at),
-            updated_at: Set(secret.updated_at),
-        };
-
-        if SecretNumberEntity::find_by_id(secret.id)
-            .one(&self.db)
-            .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?
-            .is_some()
-        {
-            active
-                .update(&self.db)
-                .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-        } else {
-            active
-                .insert(&self.db)
-                .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-        }
-        Ok(())
+        save_secret(&self.db, secret).await
     }
 
-    async fn save_bulk(&self, secrets: &[DomainSecretNumber]) -> Result<(), DomainError> {
-        for s in secrets {
-            SecretNumberRepository::save(self, s).await?;
+    async fn insert_bulk(&self, secrets: &[DomainSecretNumber]) -> Result<(), DomainError> {
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        for batch in secrets.chunks(100) {
+            SecretNumberEntity::insert_many(batch.iter().map(secret_model))
+                .exec(&txn)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
         }
-        Ok(())
+        txn.commit()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
@@ -514,5 +491,120 @@ impl ExamProctorRepository for ExamRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
+    }
+}
+
+async fn save_seating(
+    db: &impl ConnectionTrait,
+    seating: &DomainSeatingNumber,
+) -> Result<(), DomainError> {
+    let active = seating_model(seating);
+
+    if SeatingNumberEntity::find_by_id(seating.id)
+        .one(db)
+        .await
+        .map_err(|e| DomainError::Internal(e.to_string()))?
+        .is_some()
+    {
+        active
+            .update(db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+    } else {
+        active
+            .insert(db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+    }
+    Ok(())
+}
+
+async fn save_secret(
+    db: &impl ConnectionTrait,
+    secret: &DomainSecretNumber,
+) -> Result<(), DomainError> {
+    let active = secret_model(secret);
+
+    if SecretNumberEntity::find_by_id(secret.id)
+        .one(db)
+        .await
+        .map_err(|e| DomainError::Internal(e.to_string()))?
+        .is_some()
+    {
+        active
+            .update(db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+    } else {
+        active
+            .insert(db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+    }
+    Ok(())
+}
+
+fn seating_model(seating: &DomainSeatingNumber) -> seating_number::ActiveModel {
+    seating_number::ActiveModel {
+        id: Set(seating.id),
+        exam_session_id: Set(seating.exam_session_id),
+        student_id: Set(seating.student_id),
+        seating_number: Set(seating.seating_number.clone()),
+        room_id: Set(seating.room_id),
+        created_at: Set(seating.created_at),
+        updated_at: Set(seating.updated_at),
+    }
+}
+
+fn secret_model(secret: &DomainSecretNumber) -> secret_number::ActiveModel {
+    secret_number::ActiveModel {
+        id: Set(secret.id),
+        exam_schedule_id: Set(secret.exam_schedule_id),
+        student_id: Set(secret.student_id),
+        secret_number: Set(secret.secret_number.clone()),
+        created_at: Set(secret.created_at),
+        updated_at: Set(secret.updated_at),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use sea_orm::{Database, PaginatorTrait, Schema};
+
+    #[tokio::test]
+    async fn seating_insert_rolls_back_earlier_batches_when_a_later_batch_fails() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        let backend = db.get_database_backend();
+        let schema = Schema::new(backend);
+        db.execute(backend.build(&schema.create_table_from_entity(SeatingNumberEntity)))
+            .await
+            .unwrap();
+        let repo = ExamRepoImpl { db };
+        let session_id = Uuid::new_v4();
+        let now = Utc::now();
+        let mut records: Vec<_> = (0..100)
+            .map(|number| DomainSeatingNumber {
+                id: Uuid::new_v4(),
+                exam_session_id: session_id,
+                student_id: Uuid::new_v4(),
+                room_id: None,
+                seating_number: number.to_string(),
+                created_at: now,
+                updated_at: now,
+            })
+            .collect();
+        records.push(records[0].clone());
+
+        assert!(
+            SeatingNumberRepository::insert_bulk(&repo, &records)
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            SeatingNumberEntity::find().count(&repo.db).await.unwrap(),
+            0
+        );
     }
 }

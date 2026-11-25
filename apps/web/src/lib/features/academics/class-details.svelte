@@ -1,0 +1,275 @@
+<!--
+  @component ClassDetails
+  Feature component for the Class Dashboard view.
+  Displays class quick actions, real attendance metrics, scheduled lessons,
+  class subject offerings, and pedagogical insights.
+-->
+<script lang="ts">
+import * as m from "$lib/paraglide/messages";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Button } from "@orbis/ui/button";
+import { MetricProgress } from "@orbis/ui";
+import {
+  AcademicCap,
+  AppNotification,
+  BookOpen,
+  Calendar,
+  ChartBar,
+  ChatBubble,
+  CheckCircle,
+  CheckSquare,
+  DocumentPage,
+  GlobeAlt,
+  InfoCircle,
+  Users,
+} from "@orbis/icons";
+import { createOrganizationQuery } from "$lib/features/settings/queries";
+import { formatDateKey } from "$lib/core/i18n/format";
+import { academicContext } from "$lib/stores";
+import { toast } from "@orbis/ui";
+import { extractErrorMessage } from "$lib/api";
+
+import {
+  createClassQuery,
+  createClassStudentsQuery,
+  createClassAttendanceQuery,
+} from "$lib/features/academics";
+
+import RelatedActions, {
+  type ActionGroup,
+  type FooterAction,
+} from "$lib/shared/components/related-actions.svelte";
+import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
+import SectionSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
+import ClassRecommendationsWidget from "$lib/shared/components/class-recommendations-widget.svelte";
+import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
+
+let { orgId, classId }: { orgId: string; classId: string } = $props();
+
+const periodId = $derived(academicContext.effectivePeriodId);
+const organizationQuery = createOrganizationQuery(() => orgId);
+const timezone = $derived(organizationQuery.data?.timezone);
+const today = $derived(timezone ? formatDateKey(new Date(), timezone) : undefined);
+
+// ── Feature Queries ──────────────────────────────────────────────────────────
+const classQuery = createClassQuery(() => classId);
+const studentsQuery = createClassStudentsQuery(() => classId);
+const attendanceQuery = createClassAttendanceQuery(
+  () => classId,
+  () => today,
+);
+
+const classData = $derived(classQuery.data);
+const students = $derived(studentsQuery.data ?? []);
+const attendanceRecords = $derived(attendanceQuery.data ?? []);
+
+const classDisplayName = $derived.by(() => {
+  if (!classData) return "";
+  return classData.name_ar || classData.name;
+});
+
+const isLoading = $derived(classQuery.isLoading);
+const error = $derived(
+  classQuery.error || studentsQuery.error || organizationQuery.error || attendanceQuery.error,
+);
+
+// Attendance Calculations based on real attendance records
+const totalAttendance = $derived(attendanceRecords.length);
+const presentCount = $derived(
+  attendanceRecords.filter((r) => r.status === "present").length,
+);
+const absentCount = $derived(
+  attendanceRecords.filter((r) => r.status === "absent").length,
+);
+const lateCount = $derived(
+  attendanceRecords.filter((r) => r.status === "late").length,
+);
+const excusedCount = $derived(
+  attendanceRecords.filter((r) => r.status === "excused").length,
+);
+
+const attendanceRate = $derived(
+  totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : 0,
+);
+
+const presentPct = $derived(
+  totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0,
+);
+const absentPct = $derived(
+  totalAttendance > 0 ? (absentCount / totalAttendance) * 100 : 0,
+);
+const latePct = $derived(
+  totalAttendance > 0 ? (lateCount / totalAttendance) * 100 : 0,
+);
+const excusedPct = $derived(
+  totalAttendance > 0 ? (excusedCount / totalAttendance) * 100 : 0,
+);
+
+function refetchAll() {
+  classQuery.refetch();
+  studentsQuery.refetch();
+  if (today) attendanceQuery.refetch();
+  if (organizationQuery.isError) organizationQuery.refetch();
+}
+
+function handleNotifications() {
+  toast.success(m.common_notifications_enabled());
+}
+
+const relatedActionGroups = $derived<ActionGroup[]>(
+  classData
+    ? [
+        {
+          id: "academic_operations",
+          title: m.ui_copy_academic_operations_d82a1c76(),
+          icon: AcademicCap,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "class_roster",
+              label: m.ui_copy_class_roster_students_7c634c5e(),
+              href: `/${orgId}/academics/sections/${classId}/students`,
+            },
+            {
+              id: "class_transfer",
+              label: m.common_student_layout_transfer_class(),
+              href: `/${orgId}/academics/sections/${classId}/students`,
+            },
+            {
+              id: "class_curriculum",
+              label: m.ui_copy_curriculum_subjects_70041ea1(),
+              href: `/${orgId}/academics/sections/${classId}/curriculum`,
+            },
+            {
+              id: "class_schedule",
+              label: m.ui_copy_weekly_schedule_e30b8a34(),
+              href: `/${orgId}/academics/schedule?classId=${classId}`,
+            },
+          ],
+        },
+        {
+          id: "classroom_records",
+          title: m.ui_copy_classroom_records_grading_8d9c9224(),
+          icon: CheckSquare,
+          defaultExpanded: true,
+          subLinks: [
+            {
+              id: "daily_attendance",
+              label: m.ui_copy_daily_attendance_cc39a674(),
+              href: `/${orgId}/academics/attendance?classId=${classId}`,
+            },
+            {
+              id: "grades_exams",
+              label: m.ui_copy_grades_assessment_entry_53bbff49(),
+              href: `/${orgId}/academics/exams?classId=${classId}`,
+            },
+          ],
+        },
+      ]
+    : [],
+);
+</script>
+
+<div class="h-full w-full flex flex-col font-sans gap-4 pb-6 text-start">
+  {#if isLoading}
+    <div class="space-y-4" aria-busy="true">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Skeleton class="h-24 rounded-lg" />
+        <Skeleton class="h-24 rounded-lg" />
+        <Skeleton class="h-24 rounded-lg" />
+      </div>
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-10">
+        <Skeleton class="h-80 rounded-lg lg:col-span-7" />
+        <div class="flex flex-col gap-4 lg:col-span-3">
+          <Skeleton class="h-48 rounded-lg" />
+          <Skeleton class="h-48 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  {:else if error && !classData}
+    <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
+      <InfoCircle size={24} />
+      <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed()}</h3>
+      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry()}</Button>
+    </div>
+  {:else}
+    {#if error}
+      <div class="flex items-center justify-between gap-3 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive" role="alert">
+        <span>{m.academics_class_overview_load_failed()}: {extractErrorMessage(error)}</span>
+        <Button variant="outline" size="xs" onclick={refetchAll}>
+          {m.common_retry()}
+        </Button>
+      </div>
+    {/if}
+
+    <div class="flex flex-col text-start gap-4">
+      <!-- Top Metrics Row using official @orbis/ui MetricProgress -->
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <MetricProgress
+          card={true}
+          title={m.common_nav_attendance()}
+          subtitle={attendanceQuery.isPending
+            ? "—"
+            : totalAttendance > 0
+              ? `${attendanceRate}%`
+              : m.common_attendance_empty_title()}
+          displayValue={attendanceQuery.isPending
+            ? "—"
+            : totalAttendance > 0
+              ? `${attendanceRate}%`
+              : "—"}
+          icon={Users}
+          segments={totalAttendance > 0 ? [
+            { label: m.common_attendance_status_present(), value: presentPct, tone: "success" },
+            { label: m.common_attendance_status_absent(), value: absentPct, tone: "destructive" },
+            { label: m.common_attendance_status_late(), value: latePct, tone: "warning" },
+            { label: m.common_attendance_status_excused(), value: excusedPct, tone: "info" },
+          ] : []}
+        />
+
+        <MetricProgress
+          card={true}
+          title={m.common_classes_enrolled_students()}
+          subtitle={studentsQuery.isPending
+            ? "—"
+            : `${students.length} ${m.common_word_student()}`}
+          displayValue={studentsQuery.isPending ? "—" : String(students.length)}
+          icon={Users}
+          segments={[]}
+        />
+
+        <MetricProgress
+          card={true}
+          title={m.academics_class_label_capacity()}
+          subtitle={classData?.capacity ? `${classData.capacity}` : "—"}
+          displayValue={studentsQuery.isPending || !classData?.capacity
+            ? "—"
+            : `${Math.round((students.length / classData.capacity) * 100)}%`}
+          icon={CheckCircle}
+          segments={[]}
+        />
+      </div>
+
+      <!-- Main Operational Workspace (70/30 Split) -->
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-10">
+        <!-- Left Column: Timetable Grid (70%) -->
+        <div class="lg:col-span-7 flex min-w-0 flex-col gap-4">
+          <ClassScheduleWidget {classId} {periodId} />
+        </div>
+
+        <!-- Right Column: Subjects & AI Insights (30%) -->
+        <div class="lg:col-span-3 flex min-w-0 flex-col gap-4">
+          <SectionSubjectsWidget {classId} {periodId} />
+          <ClassRecommendationsWidget {classId} {periodId} />
+        </div>
+      </div>
+
+      <!-- Contextual Related Actions (Full Width Footer) -->
+      <RelatedActions
+        title={m.ui_copy_related_support_bf36e16f()}
+        groups={relatedActionGroups}
+      />
+    </div>
+  {/if}
+</div>

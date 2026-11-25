@@ -43,7 +43,7 @@
 Orbis is designed to run on an institution's own infrastructure, with a native desktop client and local-first workflows. It supports centralized administration alongside branch-level operations and policy overrides.
 
 <div align="center">
-  <img src="apps/desktop/src/lib/assets/orbis-ecosystem.png" alt="Orbis ecosystem brand artwork" width="100%" />
+  <img src="apps/web/src/lib/assets/orbis-ecosystem.png" alt="Orbis ecosystem brand artwork" width="100%" />
   <sub>Orbis ecosystem artwork. Application UI screenshots are not currently included in this repository.</sub>
 </div>
 
@@ -114,7 +114,8 @@ Orbis is organized as a monorepo containing the applications and services that m
 
 | Component | Role |
 | --- | --- |
-| Desktop | Tauri and Svelte desktop client |
+| Web | SvelteKit interface for browsers and the desktop app |
+| Desktop | Tauri desktop host that bundles the web build and provides native integrations |
 | API | Rust server and application services |
 | Mobile | Mobile application |
 | CLI | Command-line utilities |
@@ -144,8 +145,8 @@ configuration and safe analysis steps.
 
 The desktop application's supported locales and base locale are maintained in the project configuration. The message files are the source of truth for translated text:
 
-- [Locale configuration](apps/desktop/project.inlang/settings.json)
-- [Desktop translation messages](apps/desktop/messages/)
+- [Locale configuration](apps/web/project.inlang/settings.json)
+- [Web and desktop translation messages](apps/web/messages/)
 - [Mobile translation dictionaries](apps/mobile/src/lib/i18n/dictionaries/)
 
 To report a translation issue or ask about contributing a translation, [contact Mulverse](mailto:mulverseco@gmail.com).

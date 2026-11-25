@@ -37,7 +37,7 @@ type SupportCategory =
   | "other";
 
 const SUPPORT_EMAIL = "support@mulverse.com";
-const SUPPORT_CATEGORIES: Array<{
+const SUPPORT_CATEGORIES: {
   value: SupportCategory;
   labelKey:
     | "support_category_technical"
@@ -46,7 +46,7 @@ const SUPPORT_CATEGORIES: Array<{
     | "support_category_academics"
     | "support_category_feature_request"
     | "support_category_other";
-}> = [
+}[] = [
   { value: "technical_support", labelKey: "support_category_technical" },
   { value: "onboarding_setup", labelKey: "support_category_onboarding" },
   { value: "finance_accounting", labelKey: "support_category_finance" },

@@ -166,6 +166,7 @@ pub trait DocumentRenderer: Send + Sync {
     async fn render(
         &self,
         dataset: &ReportDataset,
+        locale: &ReportLocale,
         template: Option<&ReportTemplate>,
         master_template: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError>;

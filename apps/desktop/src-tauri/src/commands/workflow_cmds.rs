@@ -1,15 +1,27 @@
 //! Tauri IPC commands — Workflow & Academic Override Requests.
 
-use super::make_ctx;
+use super::iam_cmds::authenticated_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_app::services::SubmitOverrideInput;
 use orbis_domain::entities::override_request::{
-    AcademicOverrideRequest, ApprovalStep, OverrideStatus, OverrideType, RiskLevel,
+    AcademicOverrideRequest, OverrideStatus, OverrideType, RiskLevel,
 };
+use orbis_domain::errors::DomainError;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
+
+pub(crate) fn period_command_error(error: DomainError) -> serde_json::Value {
+    match error.period_override_targets() {
+        Some(targets) => serde_json::json!({
+            "code": "PERIOD_OVERRIDE_REQUIRED",
+            "message": error.to_string(),
+            "details": { "targets": targets }
+        }),
+        None => serde_json::Value::String(error.to_string()),
+    }
+}
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
 }
@@ -55,21 +67,13 @@ pub struct OverrideRequestDto {
 #[derive(Deserialize)]
 pub struct SubmitOverrideRequestInput {
     pub override_type: String,
-    #[serde(default = "default_risk")]
-    pub risk_level: String,
     pub entity_type: String,
     pub entity_id: String,
+    pub period_id: Option<Uuid>,
     pub field_name: Option<String>,
     pub old_value: Option<String>,
     pub new_value: Option<String>,
     pub reason: String,
-    #[serde(default)]
-    pub approval_chain: Vec<ApprovalStepDto>,
-    pub metadata: Option<serde_json::Value>,
-}
-
-fn default_risk() -> String {
-    "medium".into()
 }
 
 #[derive(Deserialize)]
@@ -143,84 +147,30 @@ fn override_to_dto(req: AcademicOverrideRequest) -> OverrideRequestDto {
     }
 }
 
-fn parse_override_type(s: &str) -> OverrideType {
-    match s.to_lowercase().as_str() {
-        "grade_change" | "grade_modification" => OverrideType::GradeChange,
-        "prerequisite_bypass" => OverrideType::PrerequisiteBypass,
-        "late_enrollment" => OverrideType::LateEnrollment,
-        "capacity_override" => OverrideType::CapacityOverride,
-        "credit_overload" => OverrideType::CreditOverload,
-        "discount_override" | "fee_waiver" => OverrideType::DiscountOverride,
-        "standing_override" | "attendance_exemption" => OverrideType::AcademicStandingOverride,
-        _ => OverrideType::Custom(1),
-    }
-}
-
-fn parse_risk_level(s: &str) -> RiskLevel {
-    match s.to_lowercase().as_str() {
-        "low" => RiskLevel::Low,
-        "high" => RiskLevel::High,
-        "critical" => RiskLevel::Critical,
-        _ => RiskLevel::Medium,
-    }
-}
-
 #[tauri::command]
 pub async fn workflow_submit_override(
     request: SubmitOverrideRequestInput,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OverrideRequestDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let entity_id = Uuid::parse_str(&request.entity_id).map_err(|_| "Invalid entityId")?;
-    let requested_by = match ctx.actor {
-        orbis_domain::iam::actor::Actor::User(uid) => uid,
-        _ => ctx.tenant_id,
-    };
-
-    let chain = if request.approval_chain.is_empty() {
-        vec![ApprovalStep {
-            step_order: 1,
-            approver_role: "admin".into(),
-            status: OverrideStatus::Pending,
-            approver_id: None,
-            approver_name: None,
-            decision_at: None,
-            notes: None,
-        }]
-    } else {
-        request
-            .approval_chain
-            .into_iter()
-            .map(|s| ApprovalStep {
-                step_order: s.step_order,
-                approver_role: s.approver_role,
-                status: OverrideStatus::Pending,
-                approver_id: s.approver_id.and_then(|u| Uuid::parse_str(&u).ok()),
-                approver_name: s.approver_name,
-                decision_at: None,
-                notes: s.notes,
-            })
-            .collect()
-    };
-
     let input = SubmitOverrideInput {
-        override_type: parse_override_type(&request.override_type),
-        risk_level: parse_risk_level(&request.risk_level),
+        override_type: request
+            .override_type
+            .parse::<OverrideType>()
+            .map_err(str::to_owned)?,
         entity_type: request.entity_type,
         entity_id,
+        period_id: request.period_id,
         field_name: request.field_name,
         old_value: request.old_value,
         new_value: request.new_value,
         reason: request.reason,
-        requested_by,
-        requested_by_name: None,
-        approval_chain: chain,
-        metadata: request.metadata,
     };
 
     let result = state
         .workflow_service
-        .submit_override(&ctx, ctx.tenant_id, input)
+        .submit_override(&ctx, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -232,16 +182,12 @@ pub async fn workflow_approve_override(
     request: ApproveOverrideInput,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OverrideRequestDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let req_id = Uuid::parse_str(&request.request_id).map_err(|_| "Invalid requestId")?;
-    let approver_id = match ctx.actor {
-        orbis_domain::iam::actor::Actor::User(uid) => uid,
-        _ => ctx.tenant_id,
-    };
 
     let result = state
         .workflow_service
-        .approve_override(&ctx, req_id, approver_id, None, request.notes)
+        .approve_override(&ctx, req_id, request.notes)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -253,16 +199,12 @@ pub async fn workflow_reject_override(
     request: RejectOverrideInput,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OverrideRequestDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let req_id = Uuid::parse_str(&request.request_id).map_err(|_| "Invalid requestId")?;
-    let rejecter_id = match ctx.actor {
-        orbis_domain::iam::actor::Actor::User(uid) => uid,
-        _ => ctx.tenant_id,
-    };
 
     let result = state
         .workflow_service
-        .reject_override(&ctx, req_id, rejecter_id, None, request.reason)
+        .reject_override(&ctx, req_id, request.reason)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -274,10 +216,10 @@ pub async fn workflow_list_overrides(
     status: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<OverrideRequestDto>>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let items = state
         .workflow_service
-        .list_overrides(ctx.tenant_id, status.as_deref())
+        .list_overrides(&ctx, status.as_deref(), None)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -289,11 +231,11 @@ pub async fn workflow_get_override(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<OverrideRequestDto>, String> {
-    let ctx = make_ctx(&state);
+    let ctx = authenticated_ctx(&state).await?;
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let item = state
         .workflow_service
-        .get_override(ctx.tenant_id, uid)
+        .get_override(&ctx, uid)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Override request not found".to_string())?;

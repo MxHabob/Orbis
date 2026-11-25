@@ -7,13 +7,25 @@ pub struct CliConfig {
 }
 
 impl CliConfig {
-    pub fn default() -> Self {
-        let db_url = orbis_infra::config::resolve_database_url();
+    pub fn load() -> anyhow::Result<Self> {
+        let db_url = match std::env::var("DATABASE_URL") {
+            Ok(url) if !url.trim().is_empty() => url,
+            _ => orbis_infra::config::resolve_database_url().map_err(anyhow::Error::msg)?,
+        };
 
-        Self {
+        Ok(Self {
             db_url,
             install_path: "./".to_string(),
-        }
+        })
+    }
+
+    pub fn sqlite_url() -> anyhow::Result<String> {
+        let url = Self::load()?.db_url;
+        anyhow::ensure!(
+            url.starts_with("sqlite:"),
+            "Configured database is not SQLite"
+        );
+        Ok(url)
     }
 
     pub fn get_app_executable_paths() -> Vec<std::path::PathBuf> {

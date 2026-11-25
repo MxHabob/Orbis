@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use chrono::Utc;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect,
+    ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect,
 };
 use uuid::Uuid;
 
@@ -47,6 +47,45 @@ impl PgAutopilotTaskRepo {
 
 #[async_trait]
 impl AutopilotTaskRepository for PgAutopilotTaskRepo {
+    async fn update_task_state(
+        &self,
+        task: &AutopilotTask,
+        expected_status: TaskStatus,
+    ) -> Result<(), DomainError> {
+        let result = autopilot_task::Entity::update_many()
+            .col_expr(
+                autopilot_task::Column::Status,
+                Expr::value(task.status.as_str()),
+            )
+            .col_expr(
+                autopilot_task::Column::Reason,
+                Expr::value(task.reason.clone()),
+            )
+            .col_expr(
+                autopilot_task::Column::ExecutedAt,
+                Expr::value(task.executed_at),
+            )
+            .col_expr(
+                autopilot_task::Column::ErrorLog,
+                Expr::value(task.error_log.clone()),
+            )
+            .col_expr(
+                autopilot_task::Column::UpdatedAt,
+                Expr::value(task.updated_at),
+            )
+            .filter(autopilot_task::Column::Id.eq(task.id))
+            .filter(autopilot_task::Column::OrgId.eq(task.org_id))
+            .filter(autopilot_task::Column::Status.eq(expected_status.as_str()))
+            .exec(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+        if result.rows_affected != 1 {
+            return Err(DomainError::Conflict("Autopilot task state changed".into()));
+        }
+        Ok(())
+    }
+
     async fn find_pending_tasks(
         &self,
         org_id: Option<Uuid>,
@@ -83,6 +122,7 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
         id: Uuid,
         org_id: Uuid,
         expected_status: TaskStatus,
+        expected_attempts: i32,
     ) -> Result<bool, DomainError> {
         if !matches!(
             expected_status,
@@ -108,11 +148,32 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
             .filter(autopilot_task::Column::Id.eq(id))
             .filter(autopilot_task::Column::OrgId.eq(org_id))
             .filter(autopilot_task::Column::Status.eq(expected_status.as_str()))
+            .filter(autopilot_task::Column::Attempts.eq(expected_attempts))
             .exec(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
 
         Ok(result.rows_affected == 1)
+    }
+
+    async fn count_by_status(&self, org_id: Uuid) -> Result<Vec<(TaskStatus, u64)>, DomainError> {
+        let rows = autopilot_task::Entity::find()
+            .select_only()
+            .column(autopilot_task::Column::Status)
+            .column_as(autopilot_task::Column::Id.count(), "task_count")
+            .filter(autopilot_task::Column::OrgId.eq(org_id))
+            .group_by(autopilot_task::Column::Status)
+            .into_tuple::<(String, i64)>()
+            .all(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        rows.into_iter()
+            .map(|(status, count)| {
+                u64::try_from(count)
+                    .map(|count| (TaskStatus::from_str(&status), count))
+                    .map_err(|error| DomainError::Internal(error.to_string()))
+            })
+            .collect()
     }
 
     async fn find_by_org(
@@ -152,68 +213,78 @@ impl AutopilotTaskRepository for PgAutopilotTaskRepo {
         Ok((tasks, total))
     }
 
-    async fn save_task(&self, task: &AutopilotTask) -> Result<(), DomainError> {
-        let existing = autopilot_task::Entity::find_by_id(task.id)
-            .one(&self.db)
-            .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
-
-        let status_str = task.status.as_str().to_string();
-        let type_str = task.task_type.as_str().to_string();
-        let risk_str = task.risk_level.as_str().to_string();
-
-        if let Some(m) = existing {
-            let mut active: autopilot_task::ActiveModel = m.into();
-            active.org_id = ActiveValue::Set(task.org_id);
-            active.task_type = ActiveValue::Set(type_str);
-            active.status = ActiveValue::Set(status_str);
-            active.target_id = ActiveValue::Set(task.target_id);
-            active.target_type = ActiveValue::Set(task.target_type.clone());
-            active.risk_level = ActiveValue::Set(risk_str);
-            active.reason = ActiveValue::Set(task.reason.clone());
-            active.parameters = ActiveValue::Set(task.parameters.clone());
-            active.scheduled_at = ActiveValue::Set(task.scheduled_at);
-            active.executed_at = ActiveValue::Set(task.executed_at);
-            active.attempts = ActiveValue::Set(task.attempts);
-            active.max_retries = ActiveValue::Set(task.max_retries);
-            active.error_log = ActiveValue::Set(task.error_log.clone());
-            active.idempotency_key = ActiveValue::Set(task.idempotency_key.clone());
-            active.triggered_by = ActiveValue::Set(task.triggered_by.clone());
-            active.updated_at = ActiveValue::Set(Utc::now());
-
-            active
-                .update(&self.db)
+    async fn schedule_task(&self, task: &AutopilotTask) -> Result<AutopilotTask, DomainError> {
+        let key = task.idempotency_key.as_deref().ok_or_else(|| {
+            DomainError::Validation("A scheduled Autopilot task requires an idempotency key".into())
+        })?;
+        let scoped_tasks =
+            autopilot_task::Entity::find().filter(autopilot_task::Column::OrgId.eq(task.org_id));
+        // Honor actionable rows written before scheduled tasks had a stable key.
+        if let Some(target_id) = task.target_id {
+            let existing = scoped_tasks
+                .clone()
+                .filter(autopilot_task::Column::TaskType.eq(task.task_type.as_str()))
+                .filter(autopilot_task::Column::TargetId.eq(target_id))
+                .filter(autopilot_task::Column::IdempotencyKey.is_null())
+                .filter(autopilot_task::Column::Status.is_in([
+                    "pending",
+                    "suggested",
+                    "executing",
+                    "failed",
+                ]))
+                .order_by_asc(autopilot_task::Column::CreatedAt)
+                .order_by_asc(autopilot_task::Column::Id)
+                .one(&self.db)
                 .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-        } else {
-            let active = autopilot_task::ActiveModel {
-                id: ActiveValue::Set(task.id),
-                org_id: ActiveValue::Set(task.org_id),
-                task_type: ActiveValue::Set(type_str),
-                status: ActiveValue::Set(status_str),
-                target_id: ActiveValue::Set(task.target_id),
-                target_type: ActiveValue::Set(task.target_type.clone()),
-                risk_level: ActiveValue::Set(risk_str),
-                reason: ActiveValue::Set(task.reason.clone()),
-                parameters: ActiveValue::Set(task.parameters.clone()),
-                scheduled_at: ActiveValue::Set(task.scheduled_at),
-                executed_at: ActiveValue::Set(task.executed_at),
-                attempts: ActiveValue::Set(task.attempts),
-                max_retries: ActiveValue::Set(task.max_retries),
-                error_log: ActiveValue::Set(task.error_log.clone()),
-                idempotency_key: ActiveValue::Set(task.idempotency_key.clone()),
-                triggered_by: ActiveValue::Set(task.triggered_by.clone()),
-                created_at: ActiveValue::Set(task.created_at),
-                updated_at: ActiveValue::Set(task.updated_at),
-            };
-
-            active
-                .insert(&self.db)
-                .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if let Some(existing) = existing {
+                return Ok(Self::model_to_domain(existing));
+            }
         }
 
-        Ok(())
+        let active = autopilot_task::ActiveModel {
+            id: ActiveValue::Set(task.id),
+            org_id: ActiveValue::Set(task.org_id),
+            task_type: ActiveValue::Set(task.task_type.as_str().to_owned()),
+            status: ActiveValue::Set(task.status.as_str().to_owned()),
+            target_id: ActiveValue::Set(task.target_id),
+            target_type: ActiveValue::Set(task.target_type.clone()),
+            risk_level: ActiveValue::Set(task.risk_level.as_str().to_owned()),
+            reason: ActiveValue::Set(task.reason.clone()),
+            parameters: ActiveValue::Set(task.parameters.clone()),
+            scheduled_at: ActiveValue::Set(task.scheduled_at),
+            executed_at: ActiveValue::Set(task.executed_at),
+            attempts: ActiveValue::Set(task.attempts),
+            max_retries: ActiveValue::Set(task.max_retries),
+            error_log: ActiveValue::Set(task.error_log.clone()),
+            idempotency_key: ActiveValue::Set(task.idempotency_key.clone()),
+            triggered_by: ActiveValue::Set(task.triggered_by.clone()),
+            created_at: ActiveValue::Set(task.created_at),
+            updated_at: ActiveValue::Set(task.updated_at),
+        };
+        let inserted = autopilot_task::Entity::insert(active)
+            .on_conflict(
+                sea_orm::sea_query::OnConflict::columns([
+                    autopilot_task::Column::OrgId,
+                    autopilot_task::Column::IdempotencyKey,
+                ])
+                .do_nothing()
+                .to_owned(),
+            )
+            .exec_without_returning(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if inserted == 1 {
+            return Ok(task.clone());
+        }
+
+        scoped_tasks
+            .filter(autopilot_task::Column::IdempotencyKey.eq(key))
+            .one(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
+            .map(Self::model_to_domain)
+            .ok_or_else(|| DomainError::Conflict("Scheduled Autopilot task disappeared".into()))
     }
 
     async fn delete_task(&self, id: Uuid) -> Result<(), DomainError> {
@@ -292,18 +363,18 @@ mod tests {
         let repo = PgAutopilotTaskRepo::new(db.clone());
         assert!(
             !repo
-                .claim_task(task_id, Uuid::new_v4(), TaskStatus::Pending)
+                .claim_task(task_id, Uuid::new_v4(), TaskStatus::Pending, 0)
                 .await
                 .unwrap()
         );
         assert!(
-            repo.claim_task(task_id, org_id, TaskStatus::Pending)
+            repo.claim_task(task_id, org_id, TaskStatus::Pending, 0)
                 .await
                 .unwrap()
         );
         assert!(
             !repo
-                .claim_task(task_id, org_id, TaskStatus::Pending)
+                .claim_task(task_id, org_id, TaskStatus::Pending, 0)
                 .await
                 .unwrap()
         );
@@ -352,7 +423,7 @@ mod tests {
 
         let repo = PgAutopilotTaskRepo::new(db.clone());
         assert!(
-            repo.claim_task(task_id, org_id, TaskStatus::Failed)
+            repo.claim_task(task_id, org_id, TaskStatus::Failed, 4)
                 .await
                 .unwrap()
         );

@@ -16,6 +16,20 @@ jobs:
   validate:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: orbis_ci
+          POSTGRES_USER: orbis_ci
+          POSTGRES_PASSWORD: orbis_ci
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U orbis_ci -d orbis_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Audit desktop translations
+      - name: Audit web translations
         run: bun run i18n:audit
 
       - name: Check package consistency
@@ -44,9 +58,6 @@ jobs:
 
       - name: Typecheck
         run: bun run typecheck
-
-      - name: Compile desktop translations
-        run: bun run --cwd apps/desktop i18n:compile
 
       - name: Run JavaScript tests
         run: bun test
@@ -92,3 +103,10 @@ jobs:
         env:
           CARGO_PROFILE_TEST_DEBUG: "0"
         run: cargo test --workspace
+
+      - name: Test PostgreSQL migrations and repository behavior
+        working-directory: apps/api-rust
+        env:
+          CARGO_PROFILE_TEST_DEBUG: "0"
+          ORBIS_TEST_POSTGRES_URL: postgresql://orbis_ci:orbis_ci@127.0.0.1:${{ job.services.postgres.ports[5432] }}/orbis_ci
+        run: cargo test -p orbis-infra postgres_migrations_dashboard_and_autopilot -- --ignored

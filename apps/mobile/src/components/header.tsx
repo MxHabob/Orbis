@@ -105,8 +105,6 @@ export function Header({
   const useNativeGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
 
   const sideSize = 44;
-  const headerHeight =
-    insets.top + HEADER_CONTENT_OFFSET + (largeTitle && title ? 58 : 0);
 
   const handleBack = () => {
     if (onBack) {

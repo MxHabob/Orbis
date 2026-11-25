@@ -6,11 +6,13 @@ import {
   useBatchMarkAttendanceMutation,
   useClassAttendanceQuery,
   useClassScheduleQuery,
+  useCurrentOrgQuery,
   useTeacherClassDataQuery,
   type StudentScheduleItem,
   type TeacherRosterEntry,
 } from "@/hooks/use-api-queries";
 import { useEffectiveContext } from "@/providers/effective-context";
+import { formatDateKey } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
 import type { AttendanceDto } from "@/lib/api/types";
@@ -30,13 +32,6 @@ const attendanceOptions: {
   { value: "excused", key: "student_attendance_excused" },
 ];
 
-function getLocalDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function isValidDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
@@ -46,10 +41,9 @@ function isValidDate(value: string) {
 }
 
 function shiftDate(value: string, amount: number) {
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + amount);
-  return getLocalDate(date);
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
 }
 
 export default function ClassAttendanceScreen() {
@@ -63,11 +57,11 @@ export default function ClassAttendanceScreen() {
     date?: string;
   }>();
   const classId = typeof id === "string" ? id : undefined;
-  const initialDate =
-    typeof requestedDate === "string" && isValidDate(requestedDate)
-      ? requestedDate
-      : getLocalDate(new Date());
-  const [date, setDate] = useState(initialDate);
+  const organizationQuery = useCurrentOrgQuery();
+  const timeZone = organizationQuery.data?.timezone;
+  const today = timeZone ? formatDateKey(new Date(), timeZone) : undefined;
+  const [dateOverride, setDate] = useState<string>();
+  const date = dateOverride ?? (typeof requestedDate === "string" && isValidDate(requestedDate) ? requestedDate : today);
   const [selectedLessonId, setSelectedLessonId] = useState(
     typeof lessonId === "string" ? lessonId : "",
   );
@@ -86,7 +80,7 @@ export default function ClassAttendanceScreen() {
   const { t, isArabic, formatDate } = useI18n();
   const toast = useToast();
   const canRecord = hasPermission("attendance:write");
-  const weekday = new Date(`${date}T12:00:00`).getDay() + 1;
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay() + 1;
   const lessonsToday = useMemo(
     () =>
       (scheduleQuery.data ?? []).filter(
@@ -121,19 +115,22 @@ export default function ClassAttendanceScreen() {
       ?.status.toLowerCase();
     return status && status !== existingStatus;
   }).length;
-  const isPending =
-    classQuery.isInScope &&
-    (classQuery.isPending ||
-      scheduleQuery.isPending ||
-      attendanceQuery.isPending);
   const isError =
     !classQuery.isInScope ||
+    organizationQuery.isError ||
+    (!organizationQuery.isPending && !date) ||
     classQuery.isError ||
     scheduleQuery.isError ||
     attendanceQuery.isError;
+  const isPending =
+    !isError &&
+    (organizationQuery.isPending ||
+      classQuery.isPending ||
+      scheduleQuery.isPending ||
+      attendanceQuery.isPending);
 
   const saveAttendance = async () => {
-    if (!classId || !canRecord || !selectedLesson) return;
+    if (!classId || !date || !canRecord || !selectedLesson) return;
     const items = roster.flatMap(({ student }: TeacherRosterEntry) => {
       const status = selectedStatuses[student.id];
       const existingStatus = recordedByStudent
@@ -172,7 +169,8 @@ export default function ClassAttendanceScreen() {
       onRetry={() => {
         void classQuery.refetch();
         void scheduleQuery.refetch();
-        void attendanceQuery.refetch();
+        if (date) void attendanceQuery.refetch();
+        if (!organizationQuery.data || organizationQuery.isError) void organizationQuery.refetch();
       }}
     >
       <View className="gap-three">
@@ -181,7 +179,7 @@ export default function ClassAttendanceScreen() {
             accessibilityRole="button"
             accessibilityLabel={t("teacher_previous_day")}
             onPress={() => {
-              setDate((current) => shiftDate(current, -1));
+              if (date) setDate(shiftDate(date, -1));
               setSelectedLessonId("");
               setSelectedStatuses({});
             }}
@@ -191,9 +189,9 @@ export default function ClassAttendanceScreen() {
           </Pressable>
           <View className="items-center gap-one">
             <Text className="text-sm font-semibold text-foreground">
-              {formatDate(new Date(`${date}T12:00:00`))}
+              {formatDate(date)}
             </Text>
-            {date === getLocalDate(new Date()) ? (
+            {date === today ? (
               <Text className="text-xs text-muted-foreground">
                 {t("teacher_today")}
               </Text>
@@ -203,7 +201,7 @@ export default function ClassAttendanceScreen() {
             accessibilityRole="button"
             accessibilityLabel={t("teacher_next_day")}
             onPress={() => {
-              setDate((current) => shiftDate(current, 1));
+              if (date) setDate(shiftDate(date, 1));
               setSelectedLessonId("");
               setSelectedStatuses({});
             }}

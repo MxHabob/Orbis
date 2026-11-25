@@ -39,6 +39,7 @@ export type AcademicContextResponse = {
 };
 
 export type AcademicPeriodDto = {
+  can_enter_grades?: boolean;
   code?: string | null;
   created_at: string;
   end_date: string;
@@ -194,6 +195,7 @@ export type AdmissionPolicyDto = {
   allow_waitlist: boolean;
   auto_assign_fees: boolean;
   max_class_capacity: number;
+  prevent_duplicate_full_name?: boolean;
   requires_approval: boolean;
   sibling_priority_enabled: boolean;
 };
@@ -778,8 +780,16 @@ export type BulkRegisterStudentsResponse = {
   is_atomic: boolean;
   is_dry_run: boolean;
   items: Array<BulkRegisterItemResultDto>;
+  override_targets: Array<PeriodOverrideTargetDto>;
   succeeded: number;
   total: number;
+};
+
+export type PeriodOverrideTargetDto = {
+  entity_id: string;
+  entity_type: string;
+  override_type: string;
+  period_id: string;
 };
 
 export type BulkScheduleLessonsRequest = {
@@ -1329,8 +1339,16 @@ export type DocumentRequirementDto = {
 };
 
 export type DuplicateCheckRequest = {
+  birth_date?: string | null;
   email?: string | null;
   exclude_student_id?: string | null;
+  first_name?: string | null;
+  first_name_ar?: string | null;
+  full_name?: string | null;
+  last_name?: string | null;
+  last_name_ar?: string | null;
+  middle_name?: string | null;
+  middle_name_ar?: string | null;
   national_id?: string | null;
   phone?: string | null;
 };
@@ -1341,9 +1359,11 @@ export type DuplicateCheckResponse = {
 };
 
 export type DuplicateMatchDto = {
+  confidence?: string | null;
   field: string;
   matched_person_id: string;
   matched_person_name: string;
+  reason?: string | null;
   student_id?: string | null;
   student_number?: string | null;
   value: string;
@@ -1508,6 +1528,7 @@ export type FeeTemplateDto = {
 
 export type FinanceSettingsDto = {
   allow_partial_payments: boolean;
+  cashier_cash_accounts?: Record<string, string> | null;
   currency: string;
   invoice_due_days: number;
   invoicing_integration_id?: string | null;
@@ -2153,6 +2174,7 @@ export type PreviewTemplateRequest = {
 };
 
 export type ProcessPaymentRequest = {
+  additional_allocations?: Array<ReceiptAllocationRequest> | null;
   account_id: string;
   amount: string;
   enrollment_id?: string | null;
@@ -2316,7 +2338,14 @@ export type RecordGradeRequest = {
   student_id: string;
 };
 
+export type ReceiptAllocationRequest = {
+  account_id: string;
+  amount: string;
+  notes?: string | null;
+};
+
 export type RefundStudentFeeRequest = {
+  payment_id?: string | null;
   notes?: string | null;
   refund_amount: string;
 };
@@ -2733,15 +2762,14 @@ export type SubjectDto = {
 };
 
 export type SubmitOverrideRequest = {
-  approver_role: string;
   entity_id: string;
   entity_type: string;
   field_name?: string | null;
   new_value?: string | null;
   old_value?: string | null;
   override_type: string;
+  period_id?: string | null;
   reason: string;
-  risk_level?: string | null;
 };
 
 export type TeachingAssignmentInfo = {

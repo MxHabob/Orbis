@@ -9,6 +9,8 @@ services:
       PORT: "3000"
       ORBIS_SERVER_CONFIG_FILE: /etc/orbis/server.json
       ORBIS_LICENSE_DATA_DIR: /var/lib/orbis/license
+      ORBIS_WEB_ORIGINS: "${ORBIS_WEB_ORIGINS:-}"
+      ORBIS_DB_MAX_CONNECTIONS: "${ORBIS_DB_MAX_CONNECTIONS:-10}"
     ports:
       - "${ORBIS_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     volumes:

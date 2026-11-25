@@ -133,7 +133,13 @@ async fn handle_reset_database() {
                                 }
                             }
                         }
-                        Ok("SQLite") => core::config::CliConfig::default().db_url,
+                        Ok("SQLite") => match core::config::CliConfig::sqlite_url() {
+                            Ok(url) => url,
+                            Err(error) => {
+                                ui::output::print_error(&error.to_string());
+                                return;
+                            }
+                        },
                         Ok(_) | Err(_) => {
                             println!("{}", "[-] Reset cancelled.".dimmed());
                             return;
@@ -233,7 +239,7 @@ async fn ensure_authenticated(
         return Ok(None);
     }
 
-    let config = core::config::CliConfig::default();
+    let config = core::config::CliConfig::load()?;
     let db = Database::connect(&config.db_url)
         .await
         .map_err(|e| anyhow!("Failed to connect to database for authentication: {e}"))?;

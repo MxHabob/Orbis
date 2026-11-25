@@ -196,9 +196,52 @@ impl TimeSlotRepository for SchedulingRepoImpl {
     }
 
     async fn save_bulk(&self, slots: &[DomainTimeSlot]) -> Result<(), DomainError> {
-        for slot in slots {
-            TimeSlotRepository::save(self, slot).await?;
+        if slots.is_empty() {
+            return Ok(());
         }
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        for slot in slots {
+            let active = time_slot::ActiveModel {
+                id: Set(slot.id),
+                period_id: Set(slot.period_id),
+                day_of_week: Set(slot.day_of_week),
+                slot_index: Set(slot.slot_index),
+                name: Set(slot.name.clone()),
+                name_ar: Set(slot.name_ar.clone()),
+                start_time: Set(slot.start_time),
+                end_time: Set(slot.end_time),
+                is_break: Set(slot.is_break),
+                break_type: Set(slot.break_type.clone()),
+                created_at: Set(slot.created_at),
+                updated_at: Set(slot.updated_at),
+            };
+
+            if TimeSlotEntity::find_by_id(slot.id)
+                .one(&txn)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?
+                .is_some()
+            {
+                active
+                    .update(&txn)
+                    .await
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+            } else {
+                active
+                    .insert(&txn)
+                    .await
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+            }
+        }
+
+        txn.commit()
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
 

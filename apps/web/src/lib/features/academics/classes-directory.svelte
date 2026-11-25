@@ -1,0 +1,494 @@
+<script lang="ts">
+import * as m from "$lib/paraglide/messages";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type SectionDto,
+  type AcademicPeriodDto,
+  type EnrollmentDto,
+} from "$lib/api";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
+import { BookOpen, Plus, Users, Refresh, Pencil } from "@orbis/icons";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n/locale";
+import { fade } from "svelte/transition";
+import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
+
+let { orgId }: { orgId: string } = $props();
+const queryClient = useQueryClient();
+
+let userSelectedPeriodId = $state<string | null>(null);
+
+const classesQuery = createQuery(() => ({
+  queryKey: queryKeys.academic.classes(orgId),
+  queryFn: () => api.listSections(),
+  enabled: !!orgId,
+  staleTime: 3 * 60 * 1000,
+}));
+
+const periodsQuery = createQuery(() => ({
+  queryKey: ["classes-periods", orgId],
+  queryFn: () => api.listAcademicPeriods(),
+  enabled: !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const periods = $derived(
+  (periodsQuery.data as AcademicPeriodDto[] | undefined) ?? [],
+);
+
+const activePeriodId = $derived(
+  userSelectedPeriodId ||
+    String(
+      periods.find((period) => period.status === "active")?.id ||
+        periods[0]?.id ||
+        "",
+    ),
+);
+
+const activeStudentsQuery = createQuery(() => ({
+  queryKey: [
+    ...queryKeys.student.all,
+    "active-students-in-period",
+    orgId,
+    activePeriodId,
+  ],
+  queryFn: async () => {
+    if (!activePeriodId) return [];
+
+    const students: Awaited<ReturnType<typeof api.listStudents>>["items"] = [];
+    let page = 1;
+    let result: Awaited<ReturnType<typeof api.listStudents>>;
+    do {
+      result = await api.listStudents({
+        period_id: activePeriodId,
+        status: "active",
+        page,
+        page_size: 100,
+      });
+      students.push(...result.items);
+      page += 1;
+    } while (result.page < result.total_pages);
+
+    return students;
+  },
+  enabled: !!orgId && !!activePeriodId,
+  staleTime: 3 * 60 * 1000,
+}));
+
+const enrollmentsQuery = createQuery(() => ({
+  queryKey: [
+    ...queryKeys.student.all,
+    "classes-enrollments",
+    orgId,
+    activePeriodId,
+  ],
+  queryFn: async () => {
+    if (!activePeriodId) return [];
+    const enrollments = [];
+    let page = 1;
+    let pageItems: Awaited<ReturnType<typeof api.listEnrollments>> = [];
+    do {
+      pageItems = await api.listEnrollments({
+        period_id: activePeriodId,
+        page,
+        page_size: 100,
+      });
+      enrollments.push(...pageItems);
+      page += 1;
+    } while (pageItems.length === 100);
+    return enrollments;
+  },
+  enabled: !!orgId,
+  staleTime: 3 * 60 * 1000,
+}));
+
+const classes = $derived((classesQuery.data as SectionDto[] | undefined) ?? []);
+const enrollments = $derived(
+  (enrollmentsQuery.data as EnrollmentDto[] | undefined) ?? [],
+);
+const currentEnrollments = $derived(
+  enrollments.filter(
+    (enrollment) =>
+      enrollment.status === "active" ||
+      enrollment.status === "pending_approval",
+  ),
+);
+const activeStudentIds = $derived(
+  new Set(
+    (activeStudentsQuery.data ?? []).map((detail) => String(detail.student.id)),
+  ),
+);
+const validCurrentEnrollments = $derived(
+  currentEnrollments.filter((enrollment) =>
+    activeStudentIds.has(String(enrollment.student_id)),
+  ),
+);
+const error = $derived(
+  classesQuery.error
+    ? extractErrorMessage(classesQuery.error)
+    : activeStudentsQuery.error
+      ? extractErrorMessage(activeStudentsQuery.error)
+      : null,
+);
+
+// Sheet trigger state
+let isModalOpen = $state(false);
+let editingSection = $state<SectionDto | null>(null);
+
+function refetchAll() {
+  classesQuery.refetch();
+  periodsQuery.refetch();
+  activeStudentsQuery.refetch();
+  enrollmentsQuery.refetch();
+}
+
+function getClassMetric(cls: SectionDto): {
+  active_students: number;
+  capacity: number;
+  utilization_rate: number;
+  attendance_rate: number;
+  subject_count: number;
+} {
+  const count = new Set(
+    validCurrentEnrollments
+      .filter((e) => String(e.section_id) === String(cls.id))
+      .map((e) => String(e.student_id)),
+  ).size;
+  const capacity = Number(cls.capacity ?? 0);
+  return {
+    active_students: count,
+    capacity,
+    utilization_rate: capacity > 0 ? Math.round((count / capacity) * 100) : 0,
+    attendance_rate: 0,
+    subject_count: 0,
+  };
+}
+
+// Compute statistics
+const totalClassesCount = $derived(classes.length);
+const totalStudentsCount = $derived(
+  new Set(validCurrentEnrollments.map((e) => String(e.student_id))).size,
+);
+const averageClassSize = $derived(
+  totalClassesCount > 0
+    ? Math.round(totalStudentsCount / totalClassesCount)
+    : 0,
+);
+const pageLoading = $derived(
+  classesQuery.isLoading ||
+    periodsQuery.isLoading ||
+    activeStudentsQuery.isLoading ||
+    enrollmentsQuery.isLoading,
+);
+const classMenuActions = $derived([
+  {
+    id: "refresh",
+    label: m.operations_ui_refresh(),
+    icon: Refresh,
+    disabled: pageLoading,
+    onSelect: refetchAll,
+  },
+]);
+</script>
+
+<div
+	class="h-full min-h-0 w-full min-w-0 overflow-hidden p-3 @lg/workspace:p-6 flex flex-col gap-6 font-sans"
+>
+	<!-- KPI Metrics Summary Row using standard Cards -->
+	{#if !pageLoading && !error && classes.length > 0}
+		<div
+			class="grid grid-cols-1 gap-4 @min-[36rem]/workspace:grid-cols-3"
+			in:fade={{ duration: 200 }}
+		>
+			<Card class="flex flex-col justify-between">
+				<CardHeader class="py-3 px-4">
+					<CardTitle class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+						{m.common_classes_total_classes()}
+					</CardTitle>
+				</CardHeader>
+				<CardContent class="p-4 pt-1">
+					<div class="text-2xl font-black font-mono text-foreground">
+						{totalClassesCount}
+					</div>
+					<p class="text-[10px] text-muted-foreground mt-1">
+						{m.shared_ui_registered_classes()}
+					</p>
+				</CardContent>
+			</Card>
+
+			<Card class="flex flex-col justify-between">
+				<CardHeader class="py-3 px-4">
+					<CardTitle class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+						{m.common_classes_enrolled_students()}
+					</CardTitle>
+				</CardHeader>
+				<CardContent class="p-4 pt-1">
+					<div class="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+						{totalStudentsCount}
+					</div>
+					<p class="text-[10px] text-muted-foreground mt-1">
+						{m.shared_ui_enrolled_students_total()}
+					</p>
+				</CardContent>
+			</Card>
+
+			<Card class="flex flex-col justify-between">
+				<CardHeader class="py-3 px-4">
+					<CardTitle class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+						{m.common_classes_avg_size()}
+					</CardTitle>
+				</CardHeader>
+				<CardContent class="p-4 pt-1">
+					<div class="text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
+						{averageClassSize}
+					</div>
+					<p class="text-[10px] text-muted-foreground mt-1">
+						{m.shared_ui_average_class_size()}
+					</p>
+				</CardContent>
+			</Card>
+		</div>
+	{/if}
+
+	<!-- Header Area Card -->
+	<Card class="min-h-0 flex-1 flex flex-col overflow-hidden">
+		<CardHeader class="py-3 px-4 flex flex-row items-center justify-between shrink-0">
+			<div class="flex items-center gap-2.5">
+				<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+					<BookOpen class="w-4 h-4" />
+				</div>
+				<div class="flex flex-col text-start">
+					<CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
+						{m.common_card_active_classes()}
+					</CardTitle>
+					<CardDescription class="text-[10px]">
+						{m.shared_ui_classes_directory_description()}
+					</CardDescription>
+				</div>
+			</div>
+
+			<CardAction>
+				<SplitActionMenu
+					label={m.common_classes_new_class()}
+					menuLabel={m.operations_ui_actions()}
+					icon={Plus}
+					actions={classMenuActions}
+					onprimary={() => {
+						editingSection = null;
+						isModalOpen = true;
+					}}
+					disabled={pageLoading}
+				/>
+			</CardAction>
+		</CardHeader>
+
+		<!-- Main Directory Content -->
+		<CardContent class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4 pt-2 [scrollbar-gutter:stable]">
+			{#if pageLoading}
+				<div
+					class="grid grid-cols-1 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4 gap-4"
+				>
+					<Skeleton class="h-40 w-full rounded-xl" />
+					<Skeleton class="h-40 w-full rounded-xl" />
+					<Skeleton class="h-40 w-full rounded-xl" />
+					<Skeleton class="h-40 w-full rounded-xl" />
+				</div>
+			{:else if error}
+				<div
+					class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3"
+				>
+					<p class="text-xs text-destructive font-semibold">
+						{m.common_classes_load_error()}
+					</p>
+					<p class="text-xs text-muted-foreground">{error}</p>
+					<Button variant="outline" class="text-xs" onclick={refetchAll}>
+						{m.common_retry()}
+					</Button>
+				</div>
+			{:else if classes.length === 0}
+				<div
+					class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4"
+				>
+					<BookOpen size={48} class="text-muted-foreground/30" />
+					<div class="flex flex-col gap-1 text-center">
+						<p class="text-xs font-semibold">
+							{m.common_classes_empty_title()}
+						</p>
+						<p class="text-[10px] text-muted-foreground/80">
+							{m.common_classes_empty_desc()}
+						</p>
+					</div>
+					<Button
+						variant="default"
+						class="text-xs mt-2"
+						onclick={() => {
+							editingSection = null;
+							isModalOpen = true;
+						}}
+					>
+						{m.common_classes_add_class()}
+					</Button>
+				</div>
+			{:else}
+				<!-- Classes Grid — each card is a structured Card component linking to class detail -->
+				<div
+					class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4"
+					in:fade={{ duration: 250 }}
+				>
+					{#each classes as cls (cls.id)}
+						{@const metric = getClassMetric(cls)}
+						{@const displayName =
+							l(cls.name_ar, cls.name) ||
+							m.common_classes_value_unavailable()}
+						{@const count = Number(metric?.active_students || 0)}
+						{@const limit = Number(metric?.capacity || cls.capacity || 0)}
+						{@const ratio = Number(metric?.utilization_rate || 0)}
+						<div class="relative group select-none">
+							<a
+								href={localizeHref(
+									`/${orgId}/academics/sections/${cls.id}`,
+								)}
+								class="no-underline block h-full"
+							>
+							<Card class="flex min-h-40 min-w-0 flex-col justify-between hover:border-primary/50 transition-colors h-full">
+								<!-- Class Header -->
+								<CardHeader class="py-2.5 px-3.5 pe-10 flex flex-row items-start justify-between gap-2">
+									<div class="flex flex-col text-start">
+										<CardTitle class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+											{displayName}
+										</CardTitle>
+										{#if cls.name && cls.name_ar}
+											<CardDescription class="text-[9px] font-mono">
+												{cls.name}
+											</CardDescription>
+										{/if}
+									</div>
+									<div
+										class="me-8 px-1.5 py-0.5 rounded text-[9px] font-mono border border-border bg-muted/50 text-muted-foreground shrink-0"
+									>
+										{cls.code || m.common_classes_code_unavailable()}
+									</div>
+								</CardHeader>
+
+								<!-- Class Capacity Bar & Metrics -->
+								<CardContent class="p-3.5 py-2 flex flex-col gap-2">
+									<div class="flex flex-col gap-1.5">
+										<div
+											class="flex items-center justify-between text-[10px]"
+										>
+											<span
+												class="text-muted-foreground flex items-center gap-1"
+											>
+												<Users size={11} />
+												<span>
+													{m.common_insight_students_link({ count })}
+												</span>
+											</span>
+											<span
+												class="font-mono {ratio >= 100
+													? 'text-destructive font-bold'
+													: 'text-muted-foreground'}"
+											>
+												{count}/{limit} ({ratio}%)
+											</span>
+										</div>
+										<div
+											class="h-1.5 w-full bg-muted rounded-full overflow-hidden"
+										>
+											<div
+												class="h-full rounded-full transition-all duration-300 {ratio >=
+												100
+													? 'bg-destructive'
+													: ratio >= 80
+														? 'bg-amber-500'
+														: 'bg-primary'}"
+												style="width: {ratio}%"
+											></div>
+										</div>
+									</div>
+									<div
+										class="flex items-center justify-between text-[9px] text-muted-foreground"
+									>
+										<span>
+											{m.common_classes_attendance({
+												rate: Math.round(
+													Number(metric?.attendance_rate || 0),
+												),
+											})}
+										</span>
+										<span>
+											{m.common_classes_subjects_count({
+												count: Number(metric?.subject_count || 0),
+											})}
+										</span>
+									</div>
+								</CardContent>
+
+								<!-- Class Footer -->
+								<CardFooter
+									class="flex items-center justify-between border-t border-border/60 py-2 px-3.5 text-[9px] text-muted-foreground"
+								>
+									<span>
+										{m.common_classes_grade_level_label({
+											level:
+												cls.level ||
+												m.common_classes_value_unavailable(),
+										})}
+									</span>
+									{#if ratio >= 100}
+										<span
+											class="text-destructive font-bold uppercase text-[8px] tracking-wider px-1 py-0.2 rounded border border-destructive/20 bg-destructive/5"
+										>
+											{m.common_classes_status_full()}
+										</span>
+									{/if}
+								</CardFooter>
+							</Card>
+							</a>
+							<Button
+								variant="outline"
+								size="icon-xs"
+								class="absolute end-2 top-2 z-10 h-7 w-7 rounded-md border-border/70 bg-background/95 shadow-sm backdrop-blur-sm opacity-100 transition-colors hover:border-primary/50 hover:text-primary"
+								onclick={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									editingSection = cls;
+									isModalOpen = true;
+								}}
+								title={m.common_action_edit()}
+								aria-label={m.common_action_edit()}
+							>
+								<Pencil size={12} />
+							</Button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</CardContent>
+	</Card>
+</div>
+
+<!-- Class Creation Side Sheet Component -->
+<ClassCreateSheet
+	bind:open={isModalOpen}
+	{orgId}
+	section={editingSection}
+	onSuccess={() =>
+		queryClient.invalidateQueries({
+			queryKey: queryKeys.academic.classes(orgId),
+		})}
+/>

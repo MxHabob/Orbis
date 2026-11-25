@@ -29,13 +29,13 @@ use uuid::Uuid;
 pub struct ActiveSession {
     pub user_id: Uuid,
     pub org_id: Uuid,
-    pub active_unit_id: Option<Uuid>,
     pub token: String,
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
+    database_target: Arc<str>,
     /// The active session for the current desktop application.
     /// Set during login/session hydration and used by `make_ctx()` to scope all queries.
     pub active_session: Arc<std::sync::RwLock<Option<ActiveSession>>>,
@@ -148,6 +148,10 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub(crate) fn uses_database(&self, database_url: &str) -> bool {
+        self.database_target.as_ref() == database_url
+    }
+
     pub async fn init(
         app_data_dir: &std::path::Path,
         db_url: &str,
@@ -472,6 +476,8 @@ impl AppState {
             org_unit_repo.clone(),
             scheduling_repo.clone(),
             scheduling_repo.clone(),
+            calendar_repo.clone(),
+            academic_repo.clone(),
             exam_repo.clone(),
             exam_repo.clone(),
             exam_repo.clone(),
@@ -515,7 +521,7 @@ impl AppState {
 
         let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
             override_repo.clone(),
-            workflow_repo.clone(),
+            org_unit_repo.clone(),
             event_bus.clone(),
             permission_checker.clone(),
         ));
@@ -550,30 +556,22 @@ impl AppState {
             autopilot_task_repo.clone(),
             calendar_service.clone(),
             progression_service.clone(),
-            finance_service.clone(),
             report_service.clone(),
-            workflow_service.clone(),
         ));
 
         let autopilot_evaluator =
             Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
-                policy_repo.clone(),
                 calendar_repo.clone(),
                 calendar_repo.clone(),
-                student_repo.clone(),
-                finance_repo.clone(),
             ));
 
-        let autopilot_service = Arc::new(
-            orbis_app::services::AutopilotService::new(
-                autopilot_evaluator.clone(),
-                autopilot_engine.clone(),
-                autopilot_task_repo.clone(),
-                policy_repo.clone(),
-                permission_checker.clone(),
-            )
-            .with_notification_port(notification_adapter.clone()),
-        );
+        let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
+            autopilot_evaluator,
+            autopilot_engine,
+            autopilot_task_repo.clone(),
+            policy_repo.clone(),
+            permission_checker.clone(),
+        ));
 
         let ai_service = Arc::new(
             orbis_app::services::AiOrchestrationService::new(
@@ -692,6 +690,7 @@ impl AppState {
 
         let state = Self {
             db,
+            database_target: Arc::from(db_url),
             active_session,
             org_repo: org_repo.clone(),
             org_unit_repo,
@@ -824,14 +823,6 @@ impl AppState {
     pub fn set_active_session(&self, session: ActiveSession) {
         if let Ok(mut guard) = self.active_session.write() {
             *guard = Some(session);
-        }
-    }
-
-    pub fn set_active_unit(&self, unit_id: Option<Uuid>) {
-        if let Ok(mut guard) = self.active_session.write() {
-            if let Some(ref mut session) = *guard {
-                session.active_unit_id = unit_id;
-            }
         }
     }
 

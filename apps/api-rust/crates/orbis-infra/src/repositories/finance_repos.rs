@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
     AccountRepository, CurrencyRepository, DiscountTemplateRepository, FeeTemplateRepository,
-    JournalEntryRepository, PaymentRepository, StudentFeeRepository,
+    JournalEntryRepository, LedgerAccountBalances, PaymentRepository, StudentFeeRepository,
 };
 use orbis_domain::entities::account::{Account as DomainAccount, AccountType};
 use orbis_domain::entities::currency::Currency as DomainCurrency;
@@ -11,7 +11,7 @@ use orbis_domain::entities::discount_template::{
 use orbis_domain::entities::exchange_rate::ExchangeRate as DomainExchangeRate;
 use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate as DomainFeeTemplate};
 use orbis_domain::entities::journal_entry::{
-    JournalEntry as DomainJournalEntry, JournalPostingStatus,
+    JournalEntry as DomainJournalEntry, JournalEntryLine, JournalPostingStatus,
 };
 use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
 use orbis_domain::entities::student_fee::{
@@ -24,6 +24,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, EntityTrait,
     Order, PaginatorTrait, QueryFilter, QueryOrder, Set, Statement, TransactionTrait,
 };
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::models::{
@@ -33,6 +34,7 @@ use crate::models::{
     exchange_rate::{self, Entity as ExchangeRateEntity},
     fee_template::{self, Entity as FeeTemplateEntity},
     journal_entry::{self, Entity as JournalEntryEntity},
+    journal_entry_line::{self, Entity as JournalEntryLineEntity},
     payment::{self, Entity as PaymentEntity},
     student_fee::{self, Entity as StudentFeeEntity},
 };
@@ -158,7 +160,117 @@ fn map_account_model_to_domain(m: account::Model) -> DomainAccount {
     }
 }
 
-fn map_journal_entry_model_to_domain(m: journal_entry::Model) -> DomainJournalEntry {
+async fn insert_journal_lines(
+    db: &impl ConnectionTrait,
+    entry: &DomainJournalEntry,
+) -> Result<(), DomainError> {
+    if entry.lines.is_empty() {
+        return Ok(());
+    }
+    JournalEntryLineEntity::insert_many(entry.lines.iter().map(|line| {
+        journal_entry_line::ActiveModel {
+            id: Set(line.id),
+            journal_entry_id: Set(entry.id),
+            account_id: Set(line.account_id),
+            debit_amount: Set(line.debit_amount),
+            credit_amount: Set(line.credit_amount),
+            description: Set(line.description.clone()),
+            entity_type: Set(line.entity_type.clone()),
+            entity_id: Set(line.entity_id),
+        }
+    }))
+    .exec(db)
+    .await
+    .map_err(|error| DomainError::Internal(error.to_string()))?;
+    Ok(())
+}
+
+async fn load_journal_lines(
+    db: &impl ConnectionTrait,
+    headers: &[journal_entry::Model],
+) -> Result<HashMap<Uuid, Vec<JournalEntryLine>>, DomainError> {
+    let mut by_entry: HashMap<Uuid, Vec<JournalEntryLine>> = HashMap::new();
+    for batch in headers.chunks(500) {
+        let lines = JournalEntryLineEntity::find()
+            .filter(
+                journal_entry_line::Column::JournalEntryId
+                    .is_in(batch.iter().map(|header| header.id)),
+            )
+            .order_by_asc(journal_entry_line::Column::Id)
+            .all(db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        for line in lines {
+            by_entry
+                .entry(line.journal_entry_id)
+                .or_default()
+                .push(JournalEntryLine {
+                    id: line.id,
+                    account_id: line.account_id,
+                    debit_amount: line.debit_amount,
+                    credit_amount: line.credit_amount,
+                    description: line.description,
+                    entity_type: line.entity_type,
+                    entity_id: line.entity_id,
+                });
+        }
+    }
+    Ok(by_entry)
+}
+
+fn journal_header(entry: &DomainJournalEntry) -> journal_entry::ActiveModel {
+    journal_entry::ActiveModel {
+        id: Set(entry.id),
+        org_id: Set(entry.org_id),
+        reference_number: Set(entry.reference_number.clone()),
+        accounting_date: Set(entry.accounting_date),
+        amount: Set(entry.amount),
+        base_amount: Set(entry.base_amount),
+        currency_code: Set(entry.currency_code.clone()),
+        exchange_rate: Set(entry.exchange_rate),
+        debit_account_id: Set(Some(entry.debit_account_id)),
+        credit_account_id: Set(Some(entry.credit_account_id)),
+        description: Set(entry.description.clone()),
+        description_ar: Set(entry.description_ar.clone()),
+        source_type: Set(Some(entry.source_type.clone())),
+        source_id: Set(entry.source_id),
+        status: Set(Some(entry.status.to_string())),
+        is_reversed: Set(Some(entry.is_reversed)),
+        reversed_by: Set(entry.reversed_by),
+        reversal_reason: Set(entry.reversal_reason.clone()),
+        created_by: Set(entry.created_by),
+        updated_by: Set(entry.updated_by),
+        org_unit_id: Set(entry.org_unit_id),
+        version: Set(entry.version),
+        created_at: Set(entry.created_at.into()),
+        updated_at: Set(Some(entry.updated_at.into())),
+    }
+}
+
+fn map_journal_entry_model_to_domain(
+    m: journal_entry::Model,
+    mut lines: Vec<JournalEntryLine>,
+) -> DomainJournalEntry {
+    if lines.is_empty() && m.amount > Decimal::ZERO {
+        if let (Some(debit), Some(credit)) = (m.debit_account_id, m.credit_account_id) {
+            if debit != credit {
+                for (account_id, debit_amount, credit_amount) in [
+                    (debit, m.amount, Decimal::ZERO),
+                    (credit, Decimal::ZERO, m.amount),
+                ] {
+                    lines.push(JournalEntryLine {
+                        id: account_id,
+                        account_id,
+                        debit_amount,
+                        credit_amount,
+                        description: Some(m.description.clone()),
+                        entity_type: None,
+                        entity_id: None,
+                    });
+                }
+            }
+        }
+    }
     DomainJournalEntry {
         id: m.id,
         org_id: m.org_id,
@@ -180,7 +292,7 @@ fn map_journal_entry_model_to_domain(m: journal_entry::Model) -> DomainJournalEn
             "reversed" => JournalPostingStatus::Reversed,
             _ => JournalPostingStatus::Posted,
         },
-        lines: Vec::new(),
+        lines,
         is_reversed: m.is_reversed.unwrap_or(false),
         reversed_by: m.reversed_by,
         reversal_reason: m.reversal_reason,
@@ -203,7 +315,14 @@ impl JournalEntryRepository for FinanceRepoImpl {
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(map_journal_entry_model_to_domain))
+        let Some(model) = model else {
+            return Ok(None);
+        };
+        let mut lines = load_journal_lines(&self.db, std::slice::from_ref(&model)).await?;
+        Ok(Some(map_journal_entry_model_to_domain(
+            model,
+            lines.remove(&id).unwrap_or_default(),
+        )))
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainJournalEntry>, DomainError> {
@@ -212,65 +331,197 @@ impl JournalEntryRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let mut lines = load_journal_lines(&self.db, &models).await?;
         Ok(models
             .into_iter()
-            .map(map_journal_entry_model_to_domain)
+            .map(|model| {
+                let entry_lines = lines.remove(&model.id).unwrap_or_default();
+                map_journal_entry_model_to_domain(model, entry_lines)
+            })
             .collect())
     }
 
-    async fn save(&self, entry: &DomainJournalEntry) -> Result<(), DomainError> {
-        let active = journal_entry::ActiveModel {
-            id: Set(entry.id),
-            org_id: Set(entry.org_id),
-            reference_number: Set(entry.reference_number.clone()),
-            accounting_date: Set(entry.accounting_date),
-            amount: Set(entry.amount),
-            base_amount: Set(entry.base_amount),
-            currency_code: Set(entry.currency_code.clone()),
-            exchange_rate: Set(entry.exchange_rate),
-            debit_account_id: Set(Some(entry.debit_account_id)),
-            credit_account_id: Set(Some(entry.credit_account_id)),
-            description: Set(entry.description.clone()),
-            description_ar: Set(entry.description_ar.clone()),
-            source_type: Set(Some(entry.source_type.clone())),
-            source_id: Set(entry.source_id),
-            status: Set(Some(entry.status.to_string())),
-            is_reversed: Set(Some(entry.is_reversed)),
-            reversed_by: Set(entry.reversed_by),
-            reversal_reason: Set(entry.reversal_reason.clone()),
-            created_by: Set(entry.created_by),
-            updated_by: Set(entry.updated_by),
-            org_unit_id: Set(entry.org_unit_id),
-            version: Set(entry.version),
-            created_at: Set(entry.created_at.into()),
-            updated_at: Set(Some(entry.updated_at.into())),
+    async fn account_balances_at(
+        &self,
+        org_id: Uuid,
+        date: chrono::NaiveDate,
+    ) -> Result<LedgerAccountBalances, DomainError> {
+        let backend = self.db.get_database_backend();
+        let postgres = backend == sea_orm::DatabaseBackend::Postgres;
+        let (org_param, date_param) = if postgres { ("$1", "$2") } else { ("?", "?") };
+        let (debit, credit, group) = if postgres {
+            (
+                "SUM(debit)",
+                "SUM(credit)",
+                "GROUP BY account_id, currency_code",
+            )
+        } else {
+            ("debit", "credit", "")
         };
-
-        if JournalEntryEntity::find_by_id(entry.id)
-            .one(&self.db)
+        // SQLite sums NUMERIC values using floating point, so sum its decimal rows in Rust.
+        let sql = format!(
+            "WITH posted AS (
+                SELECT id, currency_code, amount, debit_account_id, credit_account_id
+                FROM journal_entries
+                WHERE org_id = {org_param} AND accounting_date <= {date_param}
+                    AND COALESCE(status, 'posted') <> 'draft'
+             ), movements AS (
+                SELECT line.account_id, p.currency_code, line.debit_amount AS debit, line.credit_amount AS credit
+                FROM posted p JOIN journal_entry_lines line ON line.journal_entry_id = p.id
+                UNION ALL
+                SELECT p.debit_account_id, p.currency_code, p.amount, 0 FROM posted p
+                WHERE p.debit_account_id <> p.credit_account_id AND p.amount > 0
+                    AND NOT EXISTS (SELECT 1 FROM journal_entry_lines l WHERE l.journal_entry_id = p.id)
+                UNION ALL
+                SELECT p.credit_account_id, p.currency_code, 0, p.amount FROM posted p
+                WHERE p.debit_account_id <> p.credit_account_id AND p.amount > 0
+                    AND NOT EXISTS (SELECT 1 FROM journal_entry_lines l WHERE l.journal_entry_id = p.id)
+             )
+             SELECT account_id, currency_code, CAST({debit} AS TEXT) AS debit,
+                CAST({credit} AS TEXT) AS credit FROM movements {group}"
+        );
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                backend,
+                sql,
+                [org_id.into(), date.into()],
+            ))
             .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let mut balances = LedgerAccountBalances::new();
+        for row in rows {
+            let account_id = row
+                .try_get::<Uuid>("", "account_id")
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            let currency = row
+                .try_get::<String>("", "currency_code")
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            let amount = |column| -> Result<Decimal, DomainError> {
+                let text = row
+                    .try_get::<String>("", column)
+                    .map_err(|error| DomainError::Internal(error.to_string()))?;
+                text.parse()
+                    .or_else(|_| Decimal::from_scientific(&text))
+                    .map_err(|error| DomainError::Internal(error.to_string()))
+            };
+            *balances
+                .entry(account_id)
+                .or_default()
+                .entry(currency)
+                .or_default() += amount("debit")? - amount("credit")?;
+        }
+        Ok(balances)
+    }
+
+    async fn save(&self, entry: &DomainJournalEntry) -> Result<(), DomainError> {
+        entry.validate_balance().map_err(DomainError::Validation)?;
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let active = journal_header(entry);
+        if JournalEntryEntity::find_by_id(entry.id)
+            .one(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
             .is_some()
         {
             active
-                .update(&self.db)
+                .update(&txn)
                 .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            JournalEntryLineEntity::delete_many()
+                .filter(journal_entry_line::Column::JournalEntryId.eq(entry.id))
+                .exec(&txn)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
         } else {
             active
-                .insert(&self.db)
+                .insert(&txn)
                 .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
         }
-        Ok(())
+        insert_journal_lines(&txn, entry).await?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
+    async fn save_reversal(
+        &self,
+        entry: &DomainJournalEntry,
+        original_id: Uuid,
+        reason: &str,
+    ) -> Result<(), DomainError> {
+        entry.validate_balance().map_err(DomainError::Validation)?;
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let update = JournalEntryEntity::update_many()
+            .col_expr(journal_entry::Column::IsReversed, Expr::value(true))
+            .col_expr(
+                journal_entry::Column::ReversedBy,
+                Expr::value(entry.created_by),
+            )
+            .col_expr(
+                journal_entry::Column::ReversalReason,
+                Expr::value(reason.to_owned()),
+            )
+            .col_expr(
+                journal_entry::Column::UpdatedAt,
+                Expr::value(entry.updated_at),
+            )
+            .col_expr(
+                journal_entry::Column::Version,
+                Expr::col(journal_entry::Column::Version).add(1),
+            )
+            .filter(journal_entry::Column::Id.eq(original_id))
+            .filter(journal_entry::Column::OrgId.eq(entry.org_id))
+            .filter(
+                Condition::any()
+                    .add(journal_entry::Column::IsReversed.eq(false))
+                    .add(journal_entry::Column::IsReversed.is_null()),
+            )
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if update.rows_affected != 1 {
+            return Err(DomainError::ConcurrencyConflict(
+                "Journal entry was already reversed".into(),
+            ));
+        }
+        journal_header(entry)
+            .insert(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        insert_journal_lines(&txn, entry).await?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
-        JournalEntryEntity::delete_by_id(id)
-            .exec(&self.db)
+        let txn = self
+            .db
+            .begin()
             .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(())
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        JournalEntryLineEntity::delete_many()
+            .filter(journal_entry_line::Column::JournalEntryId.eq(id))
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        JournalEntryEntity::delete_by_id(id)
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
     }
 }
 
@@ -531,27 +782,12 @@ fn build_student_fee_list_query(
     if let Some(status) = filter.status.as_deref() {
         query = query.filter(student_fee::Column::Status.eq(status));
     }
-    if filter.only_unpaid == Some(true) {
+    if filter.only_unpaid == Some(true) || filter.is_overdue == Some(true) {
         query = query
-            .filter(Expr::cust_with_values(
-                format!(
-                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > {}",
-                    placeholder(1)
-                ),
-                [Decimal::ZERO],
+            .filter(Expr::cust(
+                "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > 0",
             ))
             .filter(student_fee::Column::Status.is_in(["pending", "partially_paid", "overdue"]));
-    }
-    if filter.is_overdue == Some(true) {
-        query = query
-            .filter(student_fee::Column::DueDate.lt(chrono::Utc::now().date_naive()))
-            .filter(Expr::cust_with_values(
-                format!(
-                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > {}",
-                    placeholder(1)
-                ),
-                [Decimal::ZERO],
-            ));
     }
     if let Some(search) = filter
         .search
@@ -617,7 +853,13 @@ fn build_payment_list_query(
         query = query.filter(payment::Column::StudentId.eq(student_id));
     }
     if let Some(org_unit_id) = filter.org_unit_id {
-        query = query.filter(payment::Column::OrgUnitId.eq(Some(org_unit_id)));
+        query = query.filter(Expr::cust_with_values(
+            format!(
+                "COALESCE(payments.org_unit_id, (SELECT s.org_unit_id FROM students s +                 WHERE s.id = payments.student_id AND s.org_id = payments.org_id)) = {}",
+                placeholder(1),
+            ),
+            [org_unit_id],
+        ));
     }
     if let Some(currency_code) = filter
         .currency_code
@@ -626,6 +868,9 @@ fn build_payment_list_query(
         .filter(|currency| !currency.is_empty())
     {
         query = query.filter(payment::Column::CurrencyCode.eq(currency_code));
+    }
+    if let Some(enrollment_id) = filter.enrollment_id {
+        query = query.filter(payment::Column::EnrollmentId.eq(enrollment_id));
     }
     if let Some(fee_id) = filter.fee_id {
         query = query.filter(payment::Column::FeeId.eq(fee_id));
@@ -636,8 +881,8 @@ fn build_payment_list_query(
     if let Some(from_date) = filter.from_date {
         query = query.filter(payment::Column::PaidAt.gte(from_date));
     }
-    if let Some(to_date) = filter.to_date {
-        query = query.filter(payment::Column::PaidAt.lte(to_date));
+    if let Some(to_date) = filter.to_date_exclusive {
+        query = query.filter(payment::Column::PaidAt.lt(to_date));
     }
     if let Some(search) = filter
         .search
@@ -691,6 +936,30 @@ fn build_payment_list_query(
         ));
     }
     query
+}
+
+fn fee_model(fee: &DomainStudentFee) -> student_fee::ActiveModel {
+    student_fee::ActiveModel {
+        id: Set(fee.id),
+        org_id: Set(fee.org_id),
+        period_id: Set(Some(fee.period_id)),
+        student_id: Set(fee.student_id),
+        enrollment_id: Set(fee.enrollment_id),
+        fee_template_id: Set(fee.fee_template_id),
+        original_amount: Set(fee.original_amount),
+        discount_amount: Set(fee.discount_amount),
+        net_amount: Set(fee.net_amount),
+        paid_amount: Set(Some(fee.paid_amount)),
+        balance_due: Set(Some(fee.balance_due)),
+        status: Set(fee.status.to_string()),
+        due_date: Set(fee.due_date),
+        discount_details: Set(fee.discount_details.clone()),
+        installment_number: Set(fee.installment_number.map(|n| n as i32)),
+        notes: Set(fee.notes.clone()),
+        created_by: Set(fee.created_by),
+        created_at: Set(fee.created_at.into()),
+        updated_at: Set(fee.updated_at.into()),
+    }
 }
 
 #[async_trait]
@@ -921,27 +1190,7 @@ impl StudentFeeRepository for FinanceRepoImpl {
     }
 
     async fn save(&self, fee: &DomainStudentFee) -> Result<(), DomainError> {
-        let active = student_fee::ActiveModel {
-            id: Set(fee.id),
-            org_id: Set(fee.org_id),
-            period_id: Set(Some(fee.period_id)),
-            student_id: Set(fee.student_id),
-            enrollment_id: Set(fee.enrollment_id),
-            fee_template_id: Set(fee.fee_template_id),
-            original_amount: Set(fee.original_amount),
-            discount_amount: Set(fee.discount_amount),
-            net_amount: Set(fee.net_amount),
-            paid_amount: Set(Some(fee.paid_amount)),
-            balance_due: Set(Some(fee.balance_due)),
-            status: Set(fee.status.to_string()),
-            due_date: Set(fee.due_date),
-            discount_details: Set(fee.discount_details.clone()),
-            installment_number: Set(fee.installment_number.map(|n| n as i32)),
-            notes: Set(fee.notes.clone()),
-            created_by: Set(fee.created_by),
-            created_at: Set(fee.created_at.into()),
-            updated_at: Set(fee.updated_at.into()),
-        };
+        let active = fee_model(fee);
 
         if StudentFeeEntity::find_by_id(fee.id)
             .one(&self.db)
@@ -962,6 +1211,153 @@ impl StudentFeeRepository for FinanceRepoImpl {
         Ok(())
     }
 
+    async fn delete_fee_posting(&self, fee: &DomainStudentFee) -> Result<(), DomainError> {
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let deleted = StudentFeeEntity::delete_many()
+            .filter(student_fee::Column::Id.eq(fee.id))
+            .filter(student_fee::Column::OrgId.eq(fee.org_id))
+            .filter(student_fee::Column::InstallmentNumber.is_null())
+            .filter(
+                Condition::any()
+                    .add(student_fee::Column::PaidAmount.eq(Decimal::ZERO))
+                    .add(student_fee::Column::PaidAmount.is_null()),
+            )
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if deleted.rows_affected != 1 {
+            return Err(DomainError::ConcurrencyConflict(
+                "Fee has changed or is part of an installment schedule".into(),
+            ));
+        }
+        if PaymentEntity::find()
+            .filter(payment::Column::OrgId.eq(fee.org_id))
+            .filter(payment::Column::FeeId.eq(fee.id))
+            .one(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
+            .is_some()
+        {
+            return Err(DomainError::Validation(
+                "A fee with payment history cannot be deleted".into(),
+            ));
+        }
+        let invoices = JournalEntryEntity::find()
+            .filter(journal_entry::Column::OrgId.eq(fee.org_id))
+            .filter(journal_entry::Column::SourceType.eq("student_fee_invoice"))
+            .filter(journal_entry::Column::SourceId.eq(fee.id))
+            .all(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        for invoice in invoices {
+            delete_unreconciled_journal(&txn, invoice.id, fee.org_id).await?;
+        }
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
+    async fn save_fee_installments(
+        &self,
+        original: &DomainStudentFee,
+        installments: &[DomainStudentFee],
+    ) -> Result<(), DomainError> {
+        let Some((first, rest)) = installments.split_first() else {
+            return Err(DomainError::Validation("Missing installments".into()));
+        };
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let reserved = StudentFeeEntity::update_many()
+            .col_expr(
+                student_fee::Column::InstallmentNumber,
+                Expr::value(first.installment_number.map(|number| number as i32)),
+            )
+            .filter(student_fee::Column::Id.eq(original.id))
+            .filter(student_fee::Column::OrgId.eq(original.org_id))
+            .filter(student_fee::Column::NetAmount.eq(original.net_amount))
+            .filter(student_fee::Column::Status.eq(original.status.to_string()))
+            .filter(student_fee::Column::InstallmentNumber.is_null())
+            .filter(
+                Condition::any()
+                    .add(student_fee::Column::PaidAmount.eq(Decimal::ZERO))
+                    .add(student_fee::Column::PaidAmount.is_null()),
+            )
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if reserved.rows_affected != 1 {
+            return Err(DomainError::ConcurrencyConflict(
+                "Fee has changed or is already split".into(),
+            ));
+        }
+        fee_model(first)
+            .update(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        StudentFeeEntity::insert_many(rest.iter().map(fee_model))
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
+    async fn save_fee_refund(
+        &self,
+        previous: &DomainStudentFee,
+        updated: &DomainStudentFee,
+        entry: &DomainJournalEntry,
+    ) -> Result<(), DomainError> {
+        entry.validate_balance().map_err(DomainError::Validation)?;
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        update_fee_balance(&txn, previous, updated).await?;
+        journal_header(entry)
+            .insert(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        insert_journal_lines(&txn, entry).await?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
+    async fn save_fee_invoice(
+        &self,
+        fee: &DomainStudentFee,
+        entry: &DomainJournalEntry,
+    ) -> Result<(), DomainError> {
+        entry.validate_balance().map_err(DomainError::Validation)?;
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        fee_model(fee)
+            .insert(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        journal_header(entry)
+            .insert(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        insert_journal_lines(&txn, entry).await?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
         StudentFeeEntity::delete_by_id(id)
             .exec(&self.db)
@@ -969,6 +1365,96 @@ impl StudentFeeRepository for FinanceRepoImpl {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
+}
+
+async fn delete_unreconciled_journal(
+    db: &impl ConnectionTrait,
+    journal_id: Uuid,
+    org_id: Uuid,
+) -> Result<(), DomainError> {
+    JournalEntryLineEntity::delete_many()
+        .filter(journal_entry_line::Column::JournalEntryId.eq(journal_id))
+        .exec(db)
+        .await
+        .map_err(|error| DomainError::Internal(error.to_string()))?;
+    let deleted = JournalEntryEntity::delete_many()
+        .filter(journal_entry::Column::Id.eq(journal_id))
+        .filter(journal_entry::Column::OrgId.eq(org_id))
+        .filter(
+            Condition::any()
+                .add(journal_entry::Column::IsReversed.eq(false))
+                .add(journal_entry::Column::IsReversed.is_null()),
+        )
+        .filter(
+            Condition::any()
+                .add(journal_entry::Column::Status.ne("reconciled"))
+                .add(journal_entry::Column::Status.is_null()),
+        )
+        .exec(db)
+        .await
+        .map_err(|error| DomainError::Internal(error.to_string()))?;
+    if deleted.rows_affected != 1 {
+        return Err(DomainError::ConcurrencyConflict(
+            "Journal is missing, reversed or reconciled".into(),
+        ));
+    }
+    Ok(())
+}
+
+async fn update_fee_balance(
+    db: &impl ConnectionTrait,
+    previous: &DomainStudentFee,
+    updated: &DomainStudentFee,
+) -> Result<(), DomainError> {
+    let paid_amount_filter = if previous.paid_amount == Decimal::ZERO {
+        Condition::any()
+            .add(student_fee::Column::PaidAmount.eq(Some(Decimal::ZERO)))
+            .add(student_fee::Column::PaidAmount.is_null())
+    } else {
+        Condition::all().add(student_fee::Column::PaidAmount.eq(Some(previous.paid_amount)))
+    };
+    let balance_due_filter = if previous.balance_due == previous.net_amount {
+        Condition::any()
+            .add(student_fee::Column::BalanceDue.eq(Some(previous.balance_due)))
+            .add(student_fee::Column::BalanceDue.is_null())
+    } else {
+        Condition::all().add(student_fee::Column::BalanceDue.eq(Some(previous.balance_due)))
+    };
+    let update = StudentFeeEntity::update_many()
+        .col_expr(
+            student_fee::Column::PaidAmount,
+            Expr::value(Some(updated.paid_amount)),
+        )
+        .col_expr(
+            student_fee::Column::BalanceDue,
+            Expr::value(Some(updated.balance_due)),
+        )
+        .col_expr(
+            student_fee::Column::Status,
+            Expr::value(updated.status.to_string()),
+        )
+        .col_expr(
+            student_fee::Column::Notes,
+            Expr::value(updated.notes.clone()),
+        )
+        .col_expr(
+            student_fee::Column::UpdatedAt,
+            Expr::value(Some(updated.updated_at)),
+        )
+        .filter(student_fee::Column::Id.eq(previous.id))
+        .filter(student_fee::Column::OrgId.eq(previous.org_id))
+        .filter(paid_amount_filter)
+        .filter(balance_due_filter)
+        .exec(db)
+        .await
+        .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+    if update.rows_affected != 1 {
+        return Err(DomainError::ConcurrencyConflict(
+            "Student fee changed while the payment was being processed".into(),
+        ));
+    }
+    Ok(())
 }
 
 #[async_trait]
@@ -1028,8 +1514,10 @@ impl PaymentRepository for FinanceRepoImpl {
             Some("receipt_number") => query.order_by(payment::Column::ReceiptNumber, order),
             Some("currency_code") => query.order_by(payment::Column::CurrencyCode, order),
             Some("created_at") => query.order_by(payment::Column::CreatedAt, order),
-            _ => query,
-        };
+            _ => query.order_by_desc(payment::Column::PaidAt),
+        }
+        .order_by_desc(payment::Column::CreatedAt)
+        .order_by_asc(payment::Column::Id);
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
@@ -1095,12 +1583,58 @@ impl PaymentRepository for FinanceRepoImpl {
         Ok(())
     }
 
+    async fn delete_payment_posting(
+        &self,
+        payment: &DomainPayment,
+        fee_update: Option<(&DomainStudentFee, &DomainStudentFee)>,
+    ) -> Result<(), DomainError> {
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let deleted = PaymentEntity::delete_many()
+            .filter(payment::Column::Id.eq(payment.id))
+            .filter(payment::Column::OrgId.eq(payment.org_id))
+            .exec(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if deleted.rows_affected != 1 {
+            return Err(DomainError::ConcurrencyConflict(
+                "Payment was already removed".into(),
+            ));
+        }
+        if let Some((previous, updated)) = fee_update {
+            update_fee_balance(&txn, previous, updated).await?;
+        }
+        if JournalEntryEntity::find()
+            .filter(journal_entry::Column::OrgId.eq(payment.org_id))
+            .filter(journal_entry::Column::SourceId.eq(payment.id))
+            .filter(journal_entry::Column::SourceType.eq("student_fee_refund"))
+            .one(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?
+            .is_some()
+        {
+            return Err(DomainError::Validation(
+                "A payment with refunds cannot be deleted".into(),
+            ));
+        }
+        if let Some(journal_id) = payment.journal_entry_id {
+            delete_unreconciled_journal(&txn, journal_id, payment.org_id).await?;
+        }
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
     async fn save_payment_posting(
         &self,
         payment_record: &DomainPayment,
         entry: &DomainJournalEntry,
         fee_update: Option<(&DomainStudentFee, &DomainStudentFee)>,
     ) -> Result<(), DomainError> {
+        entry.validate_balance().map_err(DomainError::Validation)?;
         let txn = self
             .db
             .begin()
@@ -1109,84 +1643,15 @@ impl PaymentRepository for FinanceRepoImpl {
 
         let result = async {
             if let Some((previous, updated)) = fee_update {
-                let paid_amount_filter = if previous.paid_amount == Decimal::ZERO {
-                    Condition::any()
-                        .add(student_fee::Column::PaidAmount.eq(Some(Decimal::ZERO)))
-                        .add(student_fee::Column::PaidAmount.is_null())
-                } else {
-                    Condition::all()
-                        .add(student_fee::Column::PaidAmount.eq(Some(previous.paid_amount)))
-                };
-                let balance_due_filter = if previous.balance_due == previous.net_amount {
-                    Condition::any()
-                        .add(student_fee::Column::BalanceDue.eq(Some(previous.balance_due)))
-                        .add(student_fee::Column::BalanceDue.is_null())
-                } else {
-                    Condition::all()
-                        .add(student_fee::Column::BalanceDue.eq(Some(previous.balance_due)))
-                };
-                let update = StudentFeeEntity::update_many()
-                    .col_expr(
-                        student_fee::Column::PaidAmount,
-                        Expr::value(Some(updated.paid_amount)),
-                    )
-                    .col_expr(
-                        student_fee::Column::BalanceDue,
-                        Expr::value(Some(updated.balance_due)),
-                    )
-                    .col_expr(
-                        student_fee::Column::Status,
-                        Expr::value(updated.status.to_string()),
-                    )
-                    .col_expr(
-                        student_fee::Column::UpdatedAt,
-                        Expr::value(Some(updated.updated_at)),
-                    )
-                    .filter(student_fee::Column::Id.eq(previous.id))
-                    .filter(student_fee::Column::OrgId.eq(previous.org_id))
-                    .filter(paid_amount_filter)
-                    .filter(balance_due_filter)
-                    .exec(&txn)
-                    .await
-                    .map_err(|error| DomainError::Internal(error.to_string()))?;
-
-                if update.rows_affected != 1 {
-                    return Err(DomainError::ConcurrencyConflict(
-                        "Student fee changed while the payment was being processed".into(),
-                    ));
-                }
+                update_fee_balance(&txn, previous, updated).await?;
             }
 
-            let journal_active = journal_entry::ActiveModel {
-                id: Set(entry.id),
-                org_id: Set(entry.org_id),
-                reference_number: Set(entry.reference_number.clone()),
-                accounting_date: Set(entry.accounting_date),
-                amount: Set(entry.amount),
-                base_amount: Set(entry.base_amount),
-                currency_code: Set(entry.currency_code.clone()),
-                exchange_rate: Set(entry.exchange_rate),
-                debit_account_id: Set(Some(entry.debit_account_id)),
-                credit_account_id: Set(Some(entry.credit_account_id)),
-                description: Set(entry.description.clone()),
-                description_ar: Set(entry.description_ar.clone()),
-                source_type: Set(Some(entry.source_type.clone())),
-                source_id: Set(entry.source_id),
-                status: Set(Some(entry.status.to_string())),
-                is_reversed: Set(Some(entry.is_reversed)),
-                reversed_by: Set(entry.reversed_by),
-                reversal_reason: Set(entry.reversal_reason.clone()),
-                created_by: Set(entry.created_by),
-                updated_by: Set(entry.updated_by),
-                org_unit_id: Set(entry.org_unit_id),
-                version: Set(entry.version),
-                created_at: Set(entry.created_at.into()),
-                updated_at: Set(Some(entry.updated_at.into())),
-            };
-            journal_active
+            journal_header(entry)
                 .insert(&txn)
                 .await
                 .map_err(|error| DomainError::Internal(error.to_string()))?;
+
+            insert_journal_lines(&txn, entry).await?;
 
             let payment_active = payment::ActiveModel {
                 id: Set(payment_record.id),
@@ -1603,6 +2068,10 @@ mod tests {
                 .if_not_exists()
                 .to_owned(),
             schema
+                .create_table_from_entity(JournalEntryLineEntity)
+                .if_not_exists()
+                .to_owned(),
+            schema
                 .create_table_from_entity(PaymentEntity)
                 .if_not_exists()
                 .to_owned(),
@@ -1700,6 +2169,54 @@ mod tests {
             assert!(values.contains("SAR"));
             assert!(values.contains(&org_id.to_string()));
         }
+    }
+
+    #[tokio::test]
+    async fn payment_day_filter_includes_local_midnight_and_fractional_last_second() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        create_payment_tables(&db).await;
+        let repo = FinanceRepoImpl { db };
+        let org_id = Uuid::new_v4();
+        let start = "2026-11-24T21:00:00Z"
+            .parse::<chrono::DateTime<Utc>>()
+            .unwrap();
+        let end = start + chrono::Duration::days(1);
+        let entries = [
+            (start - chrono::Duration::seconds(1), false),
+            (start, true),
+            (end - chrono::Duration::milliseconds(100), true),
+            (end, false),
+        ];
+        let mut expected = Vec::new();
+        for (paid_at, included) in entries {
+            let id = Uuid::new_v4();
+            let mut payment = test_payment(org_id, Uuid::new_v4(), id, Uuid::new_v4(), paid_at);
+            payment.fee_id = None;
+            payment.journal_entry_id = None;
+            PaymentRepository::save(&repo, &payment).await.unwrap();
+            if included {
+                expected.push(id);
+            }
+        }
+        expected.reverse();
+        let page = PaymentRepository::list(
+            &repo,
+            org_id,
+            orbis_domain::queries::filters::PaymentFilter {
+                from_date: Some(start),
+                to_date_exclusive: Some(end),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            page.items
+                .into_iter()
+                .map(|payment| payment.id)
+                .collect::<Vec<_>>(),
+            expected
+        );
     }
 
     #[tokio::test]
@@ -1861,6 +2378,186 @@ mod tests {
         assert_eq!(branch_summary[0].due, Decimal::from(100));
         assert_eq!(branch_summary[0].paid, Decimal::from(25));
         assert_eq!(branch_summary[0].balance, Decimal::from(75));
+    }
+
+    #[tokio::test]
+    async fn journal_lines_and_reversal_are_committed_together() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        create_payment_tables(&db).await;
+        let repo = FinanceRepoImpl { db };
+        let now = Utc::now();
+        let org_id = Uuid::new_v4();
+        let mut original = test_entry(org_id, Uuid::new_v4(), now);
+        let debit_a = original.debit_account_id;
+        let debit_b = Uuid::new_v4();
+        let credit = original.credit_account_id;
+        let line = |account_id, debit_amount, credit_amount| JournalEntryLine {
+            id: Uuid::new_v4(),
+            account_id,
+            debit_amount,
+            credit_amount,
+            description: None,
+            entity_type: None,
+            entity_id: None,
+        };
+        original.lines = vec![
+            line(debit_a, Decimal::ONE, Decimal::ZERO),
+            line(debit_b, original.amount - Decimal::ONE, Decimal::ZERO),
+            line(credit, Decimal::ZERO, original.amount),
+        ];
+        JournalEntryRepository::save(&repo, &original)
+            .await
+            .unwrap();
+        let stored = JournalEntryRepository::find_by_id(&repo, original.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.lines.len(), 3);
+        let balances = repo
+            .account_balances_at(org_id, now.date_naive())
+            .await
+            .unwrap();
+        assert_eq!(balances[&debit_a]["SAR"], Decimal::ONE);
+        assert_eq!(balances[&credit]["SAR"], -original.amount);
+
+        let mut reversal = original.clone();
+        reversal.lines = original
+            .lines
+            .iter()
+            .map(|item| line(item.account_id, item.credit_amount, item.debit_amount))
+            .collect();
+        assert!(
+            repo.save_reversal(&reversal, original.id, "duplicate ID")
+                .await
+                .is_err()
+        );
+        let stored = JournalEntryRepository::find_by_id(&repo, original.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(!stored.is_reversed);
+
+        reversal.id = Uuid::new_v4();
+        repo.save_reversal(&reversal, original.id, "test")
+            .await
+            .unwrap();
+        assert!(
+            repo.save_reversal(&reversal, original.id, "second reversal")
+                .await
+                .is_err()
+        );
+        let entries = JournalEntryRepository::find_by_org(&repo, org_id)
+            .await
+            .unwrap();
+        assert_eq!(entries.len(), 2);
+        let balances = repo
+            .account_balances_at(org_id, now.date_naive())
+            .await
+            .unwrap();
+        assert!(
+            balances
+                .values()
+                .flatten()
+                .all(|(_, amount)| amount.is_zero())
+        );
+        assert!(
+            entries
+                .iter()
+                .any(|entry| entry.id == original.id && entry.is_reversed)
+        );
+        assert!(
+            entries
+                .iter()
+                .any(|entry| entry.id == reversal.id && entry.lines.len() == 3)
+        );
+    }
+
+    #[tokio::test]
+    async fn fee_invoice_and_installments_reject_partial_writes() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        create_payment_tables(&db).await;
+        let repo = FinanceRepoImpl { db };
+        let now = Utc::now();
+        let org_id = Uuid::new_v4();
+        let mut invoice = test_entry(org_id, Uuid::new_v4(), now);
+        let fee = test_fee(org_id, now);
+        invoice.source_type = "student_fee_invoice".into();
+        invoice.source_id = Some(fee.id);
+        repo.save_fee_invoice(&fee, &invoice).await.unwrap();
+
+        let duplicate = test_fee(org_id, now);
+        assert!(repo.save_fee_invoice(&duplicate, &invoice).await.is_err());
+        assert!(
+            StudentFeeRepository::find_by_id(&repo, duplicate.id)
+                .await
+                .unwrap()
+                .is_none()
+        );
+
+        let mut first = fee.clone();
+        first.installment_number = Some(1);
+        first.net_amount = fee.net_amount / Decimal::from(2);
+        first.balance_due = first.net_amount;
+        let mut second = first.clone();
+        second.installment_number = Some(2);
+        assert!(
+            repo.save_fee_installments(&fee, &[first.clone(), second.clone()])
+                .await
+                .is_err()
+        );
+        let stored = StudentFeeRepository::find_by_id(&repo, fee.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.net_amount, fee.net_amount);
+        assert_eq!(stored.installment_number, None);
+        second.id = Uuid::new_v4();
+        repo.save_fee_installments(&fee, &[first, second])
+            .await
+            .unwrap();
+        assert_eq!(
+            StudentFeeRepository::find_by_org(&repo, org_id)
+                .await
+                .unwrap()
+                .len(),
+            2
+        );
+    }
+
+    #[tokio::test]
+    async fn fee_refund_rolls_back_when_the_journal_cannot_be_written() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        create_payment_tables(&db).await;
+        let repo = FinanceRepoImpl { db };
+        let now = Utc::now();
+        let org_id = Uuid::new_v4();
+        let mut paid_fee = test_fee(org_id, now);
+        paid_fee.apply_payment(Decimal::from(40));
+        StudentFeeRepository::save(&repo, &paid_fee).await.unwrap();
+        let mut refund = test_entry(org_id, Uuid::new_v4(), now);
+        JournalEntryRepository::save(&repo, &refund).await.unwrap();
+        let mut updated = paid_fee.clone();
+        updated.paid_amount = Decimal::from(20);
+        updated.balance_due = updated.net_amount - updated.paid_amount;
+        assert!(
+            repo.save_fee_refund(&paid_fee, &updated, &refund)
+                .await
+                .is_err()
+        );
+        let stored = StudentFeeRepository::find_by_id(&repo, paid_fee.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.paid_amount, paid_fee.paid_amount);
+        refund.id = Uuid::new_v4();
+        repo.save_fee_refund(&paid_fee, &updated, &refund)
+            .await
+            .unwrap();
+        let stored = StudentFeeRepository::find_by_id(&repo, paid_fee.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.paid_amount, updated.paid_amount);
     }
 
     #[tokio::test]

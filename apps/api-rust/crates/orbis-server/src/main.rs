@@ -9,7 +9,7 @@ use orbis_infra::repositories::{
 use orbis_infra::security::{bcrypt::BcryptHasher, jwt::JwtTokenService};
 use orbis_server::app_router;
 use orbis_server::state::AppState;
-use sea_orm::Database;
+use sea_orm::{ConnectOptions, Database};
 use std::net::IpAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -108,6 +108,13 @@ fn start_lan_discovery(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    let migrate = match args.as_slice() {
+        [] => false,
+        [command] if command == "migrate" => true,
+        _ => return Err(std::io::Error::other("Usage: orbis-server [migrate]").into()),
+    };
+
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     tracing_subscriber::fmt()
         .with_env_filter(filter)
@@ -117,31 +124,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // The API server owns its database configuration. Never discover a Desktop
     // user's local database or log credentials embedded in a database URL.
     let db_url = orbis_infra::config::resolve_database_url()?;
-    let server_secrets = orbis_infra::config::resolve_server_secrets()?;
-    let jwt_secret = validate_jwt_secret(Some(server_secrets.jwt_secret))?;
-    let mfa_encryption_key = server_secrets.mfa_encryption_key;
     tracing::info!("Connecting to configured server database");
 
     // Connect to database
-    let db = Database::connect(&db_url).await?;
+    let max_connections = match std::env::var("ORBIS_DB_MAX_CONNECTIONS") {
+        Ok(value) => value
+            .parse::<u32>()
+            .ok()
+            .filter(|count| *count > 0)
+            .ok_or("ORBIS_DB_MAX_CONNECTIONS must be a positive integer")?,
+        Err(std::env::VarError::NotPresent) => 10,
+        Err(error) => return Err(error.into()),
+    };
+    let mut database_options = ConnectOptions::new(db_url);
+    database_options
+        .max_connections(max_connections)
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .acquire_timeout(std::time::Duration::from_secs(3))
+        .sqlx_logging(false);
+    let db = Database::connect(database_options).await?;
 
     use orbis_infra::migration::Migrator;
     use sea_orm_migration::{MigratorTrait, SchemaManager};
+    if migrate {
+        Migrator::up(&db, None).await?;
+        tracing::info!("Orbis database schema is up to date");
+        return Ok(());
+    }
+
     let schema_manager = SchemaManager::new(&db);
     if !schema_manager.has_table("seaql_migrations").await? {
         return Err(std::io::Error::other(
-            "Orbis database schema is not initialized. Connect the Desktop to this database and apply migrations before starting the API server.",
+            "Orbis database schema is not initialized. Run orbis-server migrate before starting the API server.",
         )
         .into());
     }
     let pending = Migrator::get_pending_migrations(&db).await?;
     if !pending.is_empty() {
         return Err(std::io::Error::other(format!(
-            "The Orbis database has {} pending migration(s). Apply them from the Desktop before starting the API server.",
+            "The Orbis database has {} pending migration(s). Run orbis-server migrate before starting the API server.",
             pending.len()
         ))
         .into());
     }
+
+    let server_secrets = orbis_infra::config::resolve_server_secrets()?;
+    let jwt_secret = validate_jwt_secret(Some(server_secrets.jwt_secret))?;
+    let mfa_encryption_key = server_secrets.mfa_encryption_key;
 
     let license_data_dir = std::env::var_os("ORBIS_LICENSE_DATA_DIR")
         .map(std::path::PathBuf::from)
@@ -440,6 +469,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         org_unit_repo.clone(),
         scheduling_repo.clone(),
         scheduling_repo.clone(),
+        calendar_repo.clone(),
+        academic_repo.clone(),
         exam_repo.clone(),
         exam_repo.clone(),
         exam_repo.clone(),
@@ -494,7 +525,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
         override_repo.clone(),
-        workflow_repo.clone(),
+        org_unit_repo.clone(),
         event_bus.clone(),
         permission_checker.clone(),
     ));
@@ -514,30 +545,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         autopilot_task_repo.clone(),
         calendar_service.clone(),
         progression_service.clone(),
-        finance_service.clone(),
         report_service.clone(),
-        workflow_service.clone(),
     ));
-    event_bus.set_workflow_engine(autopilot_engine.clone());
 
     let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
-        policy_repo.clone(),
         calendar_repo.clone(),
         calendar_repo.clone(),
-        student_repo.clone(),
-        finance_repo.clone(),
     ));
 
-    let autopilot_service = Arc::new(
-        orbis_app::services::AutopilotService::new(
-            autopilot_evaluator.clone(),
-            autopilot_engine.clone(),
-            autopilot_task_repo.clone(),
-            policy_repo.clone(),
-            permission_checker.clone(),
-        )
-        .with_notification_port(notification_adapter.clone()),
-    );
+    let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
+        autopilot_evaluator,
+        autopilot_engine,
+        autopilot_task_repo.clone(),
+        policy_repo.clone(),
+        permission_checker.clone(),
+    ));
 
     let ai_service = Arc::new(
         orbis_app::services::AiOrchestrationService::new(

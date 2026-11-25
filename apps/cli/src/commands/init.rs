@@ -50,10 +50,9 @@ pub async fn execute() -> Result<()> {
     ];
     let db_choice = prompts::prompt_select("Select database provider:", db_options)?;
 
-    let config = CliConfig::default();
     let db_url = if db_choice.contains("SQLite") {
         output::print_progress_ok("SQLite selected — local storage");
-        config.db_url.clone()
+        CliConfig::sqlite_url()?
     } else {
         prompts::prompt_text(
             "Enter PostgreSQL Connection String (e.g. postgres://user:pass@localhost/orbis):",

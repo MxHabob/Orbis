@@ -91,6 +91,7 @@ use api::{
         api::org_routes::get_settings,
         api::org_routes::update_settings,
         api::org_routes::get_dashboard,
+        api::org_routes::get_dashboard_access,
         api::org_routes::create_org_unit,
         api::org_routes::list_org_units,
         api::org_routes::get_org_unit,
@@ -433,6 +434,8 @@ use api::{
             api::org_routes::NotificationSettingsDto,
             api::org_routes::AutopilotSettingsDto,
             api::org_routes::DashboardCountsDto,
+            api::org_routes::DashboardAccessDto,
+            api::org_routes::DashboardBranchDto,
             // Calendar
             api::calendar_routes::AcademicCalendarDto,
             api::calendar_routes::AcademicPeriodDto,
@@ -485,6 +488,7 @@ use api::{
             api::student_routes::BulkRegisterStudentsRequest,
             api::student_routes::BulkRegisterItemResultDto,
             api::student_routes::BulkRegisterStudentsResponse,
+            api::student_routes::PeriodOverrideTargetDto,
             api::student_routes::BulkTransferClassItem,
             api::student_routes::BulkTransferClassesRequest,
             api::student_routes::BulkTransferClassItemResult,
@@ -563,6 +567,7 @@ use api::{
             api::finance_routes::GenerateFeeRequest,
             api::finance_routes::PaymentDto,
             api::finance_routes::ProcessPaymentRequest,
+            api::finance_routes::ReceiptAllocationRequest,
             api::finance_routes::CurrencyDto,
             api::finance_routes::CurrencyInput,
             api::finance_routes::JournalEntryDto,
@@ -705,9 +710,105 @@ pub struct ApiDoc;
 
 // ── App Router ──────────────────────────────────────────────────
 
+fn browser_cors() -> tower_http::cors::CorsLayer {
+    use axum::http::{HeaderValue, Method, Uri, header};
+    use tower_http::cors::{AllowOrigin, CorsLayer};
+
+    let mut origins = vec![
+        HeaderValue::from_static("tauri://localhost"),
+        HeaderValue::from_static("http://tauri.localhost"),
+        HeaderValue::from_static("https://tauri.localhost"),
+        HeaderValue::from_static("http://127.0.0.1:4173"),
+        HeaderValue::from_static("http://localhost:4173"),
+    ];
+    for origin in std::env::var("ORBIS_WEB_ORIGINS")
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|origin| !origin.is_empty())
+    {
+        let valid = origin.parse::<Uri>().is_ok_and(|uri| {
+            matches!(uri.scheme_str(), Some("https" | "http"))
+                && uri
+                    .authority()
+                    .is_some_and(|authority| !authority.as_str().contains('@'))
+                && uri.query().is_none()
+                && uri.path() == "/"
+                && !origin.ends_with('/')
+        });
+        if valid {
+            if let Ok(value) = HeaderValue::from_str(origin) {
+                origins.push(value);
+            }
+        } else {
+            tracing::warn!("Ignoring an invalid ORBIS_WEB_ORIGINS entry");
+        }
+    }
+    CorsLayer::new()
+        .allow_origin(AllowOrigin::list(origins))
+        .allow_methods([
+            Method::GET,
+            Method::HEAD,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+        ])
+        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE, header::ACCEPT])
+        .max_age(Duration::from_secs(600))
+}
+
+#[cfg(test)]
+mod cors_tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[tokio::test]
+    async fn cors_preflight_allows_tauri_origin_without_authentication() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = Router::new()
+            .route(
+                "/protected",
+                get(|| async { axum::http::StatusCode::UNAUTHORIZED }),
+            )
+            .layer(browser_cors());
+        let server = tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
+
+        async fn preflight(address: std::net::SocketAddr, origin: &str) -> String {
+            tokio::time::timeout(Duration::from_secs(3), async {
+                let mut stream = tokio::net::TcpStream::connect(address).await.unwrap();
+                stream
+                    .write_all(format!(
+                        "OPTIONS /protected HTTP/1.1\r\nHost: {address}\r\nOrigin: {origin}\r\nAccess-Control-Request-Method: GET\r\nAccess-Control-Request-Headers: authorization\r\nConnection: close\r\n\r\n"
+                    ).as_bytes())
+                    .await
+                    .unwrap();
+                let mut response = String::new();
+                stream.read_to_string(&mut response).await.unwrap();
+                response.to_ascii_lowercase()
+            }).await.unwrap()
+        }
+
+        let allowed = preflight(address, "http://tauri.localhost").await;
+        assert!(allowed.starts_with("http/1.1 200"));
+        assert!(allowed.contains("access-control-allow-origin: http://tauri.localhost"));
+        assert!(
+            !preflight(address, "null")
+                .await
+                .contains("access-control-allow-origin:")
+        );
+        server.abort();
+    }
+}
+
 pub fn app_router(state: state::AppState) -> Router {
     Router::new()
         .route("/api/v1/health", get(api_health))
+        .route(
+            "/api/v1/live",
+            get(|| async { axum::http::StatusCode::NO_CONTENT }),
+        )
         .merge(iam_routes::routes())
         .merge(org_routes::routes())
         .merge(calendar_routes::routes())
@@ -734,11 +835,11 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(notification_routes::routes())
         .merge(onboarding_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .layer(tower_http::cors::CorsLayer::permissive())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             enforce_api_license,
         ))
+        .layer(browser_cors())
         .layer(middleware::from_fn(log_request_performance))
         .with_state(state)
 }
@@ -804,7 +905,14 @@ async fn log_request_performance(request: Request<Body>, next: Next) -> Response
 }
 
 async fn api_health(State(state): State<state::AppState>) -> Response {
-    let database_connected = state.db.execute_unprepared("SELECT 1").await.is_ok();
+    let database_connected = matches!(
+        tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            state.db.execute_unprepared("SELECT 1"),
+        )
+        .await,
+        Ok(Ok(_))
+    );
     let status = if database_connected {
         axum::http::StatusCode::OK
     } else {
@@ -833,6 +941,7 @@ async fn enforce_api_license(
         || path == "/api/v1/system/readiness"
         || path == "/api/v1/system/has-organization"
         || path == "/api/v1/health"
+        || path == "/api/v1/live"
         || path.starts_with("/swagger-ui")
         || path.starts_with("/api-docs")
     {

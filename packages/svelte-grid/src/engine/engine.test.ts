@@ -18,11 +18,12 @@ import {
   duplicateRows,
 } from "./clipboard";
 import { interpretKey, clampIndex } from "./keyboard";
-import { visibleVariableWindow, visibleWindow } from "./virtual";
+import { countFrozenColumns, scrollForColumn, visibleVariableWindow, visibleWindow } from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
 import { queryClient } from "./query";
 import { autoscrollDelta, colFromOffset, rowFromOffset } from "./pointer";
 import { coerceValue } from "./coerce";
+import { headerLayout } from "./headers";
 import type { GridRow, OrbisColumnDef } from "../types";
 
 const cols: OrbisColumnDef[] = [
@@ -200,6 +201,27 @@ describe("keyboard + rtl", () => {
 });
 
 describe("virtualization", () => {
+  test("keeps a valid row window when the source shrinks at a deep scroll offset", () => {
+    const window = visibleWindow(10000, 160, 40, 5, 0);
+    expect([window.start, window.end, window.offset]).toEqual([1, 5, 40]);
+    expect(visibleWindow(-80, 160, 40, 5, 0).start).toBe(0);
+  });
+
+  test("keeps the checkbox pinned when the viewport cannot fit every pinned column", () => {
+    const widths = [40, 200, 120];
+    expect(countFrozenColumns(widths, 260)).toBe(1);
+    expect(countFrozenColumns(widths, 350)).toBe(2);
+    const cells = headerLayout(widths.map((width, index) => ({
+      id: String(index), width, group: "Students", pin: "colPinStart",
+    })), 1).cells.filter((cell) => cell.kind === "group");
+    expect(cells.map(({ colStart, colSpan }) => [colStart, colSpan])).toEqual([[0, 1], [1, 2]]);
+  });
+  test("reveals focused columns outside the pinned area in both directions", () => {
+    const viewport = { viewportWidth: 400, frozenWidth: 150 };
+    expect(scrollForColumn({ ...viewport, columnStart: 300, columnWidth: 90, scrollLeft: -250, rtl: true })).toBe(-150);
+    expect(scrollForColumn({ ...viewport, columnStart: 500, columnWidth: 80, scrollLeft: 50, rtl: false })).toBe(180);
+    expect(scrollForColumn({ ...viewport, columnStart: 200, columnWidth: 300, scrollLeft: 0, rtl: false })).toBe(50);
+  });
   test("window for 1e6 rows only visits overscan band", () => {
     const w = visibleWindow(40_000 * 32, 640, 32, 1_000_000, 8);
     expect(w.count).toBeLessThan(50);
@@ -348,5 +370,54 @@ describe("performance", () => {
     expect(searchMs).toBeLessThan(250);
     expect(searchResults).toHaveLength(1);
     expect(filtered.length).toBeGreaterThan(0);
+  });
+});
+
+
+describe("worksheet layout", () => {
+  test("Excel paste keeps empty student rows and decimal commas", () => {
+    expect(parseClipboard('10,5\r\n\r\n12\r\n', "\t")).toEqual([["10,5"], [""], ["12"]]);
+    expect(parseClipboard(toTsv([["two\nlines", "5"]]))).toEqual([["two\nlines", "5"]]);
+  });
+
+  test("merges subject and term headers while spanning pinned identity columns", () => {
+    const { rowCount, cells } = headerLayout([
+      { id: "student", pin: "colPinStart" },
+      { id: "oral", groupPath: ["Math", "Term 1"], subHeader: "20" },
+      { id: "written", groupPath: ["Math", "Term 1"], subHeader: "30" },
+      { id: "term2", groupPath: ["Math", "Term 2"], subHeader: "50" },
+      { id: "total", emphasis: true },
+    ]);
+    expect(rowCount).toBe(4);
+    expect(cells.find((cell) => cell.colStart === 0)?.rowSpan).toBe(4);
+    expect(cells.filter((cell) => cell.kind === "group").map((cell) => [cell.label, cell.colSpan]))
+      .toEqual([["Math", 3], ["Term 1", 2], ["Term 2", 1]]);
+    expect(cells.filter((cell) => cell.kind === "sub").map((cell) => cell.label)).toEqual(["20", "30", "50"]);
+  });
+
+  test("grouped headers do not span the boundary between pinned and scrolling columns", () => {
+    const { cells } = headerLayout([
+      { id: "name", group: "Record", pin: "colPinStart" },
+      { id: "status", group: "Record", pin: "colPinStart" },
+      { id: "score", group: "Record" },
+      { id: "notes", group: "Record" },
+    ]);
+    expect(cells.filter((cell) => cell.kind === "group").map(({ colStart, colSpan }) => [colStart, colSpan]))
+      .toEqual([[0, 2], [2, 2]]);
+  });
+
+  test("fixed rosters retain invalid target values and never append students", () => {
+    const roster = [{ score: 7 }];
+    const { rows: pasted, result } = applyPaste({
+      rows: roster,
+      columns: [{ id: "score", validate: (value) => Number(value) < 11 }],
+      startRow: 0,
+      startCol: 0,
+      matrix: [["20"], ["8"]],
+      fixedRows: true,
+    });
+    expect(pasted).toHaveLength(1);
+    expect(pasted[0]?.score).toBe(7);
+    expect(result.rejectedCount).toBe(1);
   });
 });

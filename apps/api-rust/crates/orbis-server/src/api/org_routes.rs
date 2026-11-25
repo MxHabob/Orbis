@@ -2,7 +2,7 @@
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -506,6 +506,7 @@ pub struct FinanceSettingsDto {
     pub late_fee_type: String,
     pub late_fee_value: f64,
     pub allow_partial_payments: bool,
+    pub cashier_cash_accounts: Option<std::collections::BTreeMap<Uuid, Uuid>>,
     pub primary_payment_gateway_id: Option<Uuid>,
     pub invoicing_integration_id: Option<Uuid>,
 }
@@ -650,6 +651,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 late_fee_type: s.finance.late_fee_type,
                 late_fee_value: s.finance.late_fee_value,
                 allow_partial_payments: s.finance.allow_partial_payments,
+                cashier_cash_accounts: s.finance.cashier_cash_accounts,
                 primary_payment_gateway_id: s.finance.primary_payment_gateway_id,
                 invoicing_integration_id: s.finance.invoicing_integration_id,
             },
@@ -779,6 +781,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 late_fee_type: s.finance.late_fee_type,
                 late_fee_value: s.finance.late_fee_value,
                 allow_partial_payments: s.finance.allow_partial_payments,
+                cashier_cash_accounts: s.finance.cashier_cash_accounts,
                 primary_payment_gateway_id: s.finance.primary_payment_gateway_id,
                 invoicing_integration_id: s.finance.invoicing_integration_id,
             },
@@ -852,16 +855,61 @@ async fn update_settings(
 
 // ── Dashboard ───────────────────────────────────────────────────
 
+#[derive(Deserialize)]
+struct DashboardQuery {
+    org_unit_id: Option<Uuid>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct DashboardAccessDto {
+    organization_wide: bool,
+    units: Vec<DashboardBranchDto>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct DashboardBranchDto {
+    id: Uuid,
+    name: String,
+    name_ar: Option<String>,
+}
+
+#[utoipa::path(get, path = "/api/v1/organizations/current/dashboard/access",
+    responses((status = 200, description = "Dashboard branch options", body = DashboardAccessDto)),
+    security(("bearer" = [])), tag = "Organization")]
+async fn get_dashboard_access(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<DashboardAccessDto>>, ApiError> {
+    let access = state
+        .organization_service
+        .get_dashboard_access(&ctx)
+        .await?;
+    Ok(ApiResponse::ok(DashboardAccessDto {
+        organization_wide: access.organization_wide,
+        units: access
+            .units
+            .into_iter()
+            .map(|unit| DashboardBranchDto {
+                id: unit.id,
+                name: unit.name,
+                name_ar: unit.name_ar,
+            })
+            .collect(),
+    }))
+}
+
 #[utoipa::path(get, path = "/api/v1/organizations/current/dashboard",
+    params(("org_unit_id" = Option<Uuid>, Query, description = "Restrict metrics to an authorized unit and its descendants")),
     responses((status = 200, description = "Dashboard statistics", body = DashboardCountsDto)),
     security(("bearer" = [])), tag = "Organization")]
 async fn get_dashboard(
     ctx: AuthContext,
     State(state): State<AppState>,
+    Query(query): Query<DashboardQuery>,
 ) -> Result<Json<ApiResponse<DashboardCountsDto>>, ApiError> {
     let counts = state
         .organization_service
-        .get_dashboard_counts(ctx.tenant_id)
+        .get_dashboard_counts(&ctx, query.org_unit_id)
         .await?;
     Ok(ApiResponse::ok(DashboardCountsDto {
         total_students: counts.total_students,
@@ -924,10 +972,7 @@ async fn list_org_units(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<OrgUnitDto>>>, ApiError> {
-    let units = state
-        .organization_service
-        .list_org_units(ctx.tenant_id)
-        .await?;
+    let units = state.organization_service.list_org_units(&ctx).await?;
     let dtos: Vec<OrgUnitDto> = units.into_iter().map(unit_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -937,13 +982,13 @@ async fn list_org_units(
     responses((status = 200, description = "OrgUnit details", body = OrgUnitDto)),
     security(("bearer" = [])), tag = "OrgUnits")]
 async fn get_org_unit(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
     let u = state
         .organization_service
-        .get_org_unit(id)
+        .get_org_unit(&ctx, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("OrgUnit {} not found", id)))?;
 
@@ -1025,6 +1070,10 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/organizations/current/dashboard",
             get(get_dashboard),
+        )
+        .route(
+            "/api/v1/organizations/current/dashboard/access",
+            get(get_dashboard_access),
         )
         .route(
             "/api/v1/org-units",

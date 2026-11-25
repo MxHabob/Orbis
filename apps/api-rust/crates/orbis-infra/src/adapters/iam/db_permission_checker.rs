@@ -3,13 +3,174 @@ use crate::models::{
 };
 use async_trait::async_trait;
 use orbis_app::context::RequestContext;
-use orbis_app::ports::iam::PermissionCheckerPort;
+use orbis_app::ports::iam::{PermissionCheckerPort, PermissionScope};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 pub struct DbPermissionChecker {
     pub db: DatabaseConnection,
+}
+
+fn assignment_scope(
+    assignments: impl IntoIterator<Item = user_role_assignment::Model>,
+) -> PermissionScope {
+    let mut units = Vec::new();
+    for assignment in assignments {
+        match assignment.scope_type.to_ascii_lowercase().as_str() {
+            "global" | "organization" if assignment.scope_id.is_none() => {
+                return PermissionScope::Organization;
+            }
+            "org_unit" | "unit" => units.extend(assignment.scope_id),
+            _ => {}
+        }
+    }
+    units.sort_unstable();
+    units.dedup();
+    PermissionScope::Units(units)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::{ActiveModelTrait, ConnectionTrait, Database, Schema, Set};
+    use uuid::Uuid;
+
+    #[tokio::test]
+    async fn organization_wide_grants_only_apply_to_the_matching_operation() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        let schema = Schema::new(db.get_database_backend());
+        db.execute(
+            db.get_database_backend()
+                .build(&schema.create_table_from_entity(user_role_assignment::Entity)),
+        )
+        .await
+        .unwrap();
+        db.execute(
+            db.get_database_backend()
+                .build(&schema.create_table_from_entity(role_permission::Entity)),
+        )
+        .await
+        .unwrap();
+        db.execute(
+            db.get_database_backend()
+                .build(&schema.create_table_from_entity(user_group_membership::Entity)),
+        )
+        .await
+        .unwrap();
+        let now = chrono::Utc::now();
+        let (user_id, org_id, branch_id) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        for (role, scope, unit, resource, action) in [
+            (
+                "dashboard_viewer",
+                "organization",
+                None,
+                "dashboard",
+                "read",
+            ),
+            (
+                "branch_editor",
+                "org_unit",
+                Some(branch_id),
+                "org_unit",
+                "write",
+            ),
+            (
+                "principal",
+                "org_unit",
+                Some(branch_id),
+                "workflow",
+                "approve",
+            ),
+        ] {
+            user_role_assignment::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                user_id: Set(user_id),
+                org_id: Set(org_id),
+                role_id: Set(role.into()),
+                scope_type: Set(scope.into()),
+                scope_id: Set(unit),
+                assigned_by: Set(None),
+                created_at: Set(now),
+            }
+            .insert(&db)
+            .await
+            .unwrap();
+            role_permission::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                org_id: Set(org_id),
+                role_id: Set(role.into()),
+                resource: Set(resource.into()),
+                action: Set(action.into()),
+                condition: Set(None),
+                created_at: Set(now),
+            }
+            .insert(&db)
+            .await
+            .unwrap();
+        }
+        let checker = DbPermissionChecker::new(db);
+        assert_eq!(
+            checker
+                .role_scope(user_id, org_id, "principal")
+                .await
+                .unwrap(),
+            PermissionScope::Units(vec![branch_id])
+        );
+        assert_eq!(
+            checker
+                .permission_scope(user_id, org_id, "workflow:approve")
+                .await
+                .unwrap(),
+            PermissionScope::Units(vec![branch_id])
+        );
+        assert!(
+            !checker
+                .role_scope(user_id, org_id, "org_admin")
+                .await
+                .unwrap()
+                .has_access()
+        );
+        assert_eq!(
+            checker
+                .permission_scope(user_id, org_id, "dashboard:read")
+                .await
+                .unwrap(),
+            PermissionScope::Organization
+        );
+        assert_eq!(
+            checker
+                .permission_scope(user_id, org_id, "org_unit:write")
+                .await
+                .unwrap(),
+            PermissionScope::Units(vec![branch_id])
+        );
+        assert_eq!(
+            checker
+                .permission_scope(user_id, Uuid::new_v4(), "dashboard:read")
+                .await
+                .unwrap(),
+            PermissionScope::Units(vec![])
+        );
+    }
+}
+
+fn matches_permission(resource: &str, action: &str, permission: &str) -> bool {
+    let resource = resource.to_ascii_lowercase();
+    let action = action.to_ascii_lowercase();
+    let Some((target_resource, target_action)) = permission.split_once(':') else {
+        return resource == permission && action.is_empty();
+    };
+    resource == permission
+        || ((resource == target_resource
+            || resource == "*"
+            || matches!(
+                (resource.as_str(), target_resource),
+                ("class", "section") | ("section", "class")
+            ))
+            && (action == target_action
+                || matches!(action.as_str(), "*" | "admin")
+                || (action == "write" && target_action == "read")))
 }
 
 impl DbPermissionChecker {
@@ -20,6 +181,22 @@ impl DbPermissionChecker {
 
 #[async_trait]
 impl PermissionCheckerPort for DbPermissionChecker {
+    async fn role_scope(
+        &self,
+        user_id: uuid::Uuid,
+        org_id: uuid::Uuid,
+        role: &str,
+    ) -> Result<PermissionScope, DomainError> {
+        let assignments = user_role_assignment::Entity::find()
+            .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .filter(user_role_assignment::Column::OrgId.eq(org_id))
+            .filter(user_role_assignment::Column::RoleId.eq(role))
+            .all(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        Ok(assignment_scope(assignments))
+    }
+
     async fn check(&self, ctx: &RequestContext, permission: Permission) -> Result<(), DomainError> {
         // System and Autopilot actors may bypass transport IAM only for explicitly
         // internal execution sources. API, Tauri, and integration requests must
@@ -59,97 +236,99 @@ impl PermissionCheckerPort for DbPermissionChecker {
         org_id: uuid::Uuid,
         permission: &str,
     ) -> Result<bool, DomainError> {
-        // 1. Check direct role permissions
-        let user_roles = user_role_assignment::Entity::find()
+        Ok(self
+            .permission_scope(user_id, org_id, permission)
+            .await?
+            .has_access())
+    }
+
+    async fn permission_scope(
+        &self,
+        user_id: uuid::Uuid,
+        org_id: uuid::Uuid,
+        permission: &str,
+    ) -> Result<PermissionScope, DomainError> {
+        let assignments = user_role_assignment::Entity::find()
             .filter(user_role_assignment::Column::UserId.eq(user_id))
             .filter(user_role_assignment::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let mut units = Vec::new();
 
-        let role_ids: Vec<String> = user_roles.into_iter().map(|ur| ur.role_id).collect();
-
-        let mut parts = permission.split(':');
-        let target_resource = parts.next().unwrap_or("").to_lowercase();
-        let target_action = parts.next().unwrap_or("").to_lowercase();
-
-        if !role_ids.is_empty() {
-            let role_permissions = role_permission::Entity::find()
+        if !assignments.is_empty() {
+            let role_ids: Vec<_> = assignments
+                .iter()
+                .map(|assignment| assignment.role_id.clone())
+                .collect();
+            let grants = role_permission::Entity::find()
                 .filter(role_permission::Column::RoleId.is_in(role_ids))
                 .filter(role_permission::Column::OrgId.eq(org_id))
                 .all(&self.db)
                 .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            let allowed_roles: std::collections::HashSet<_> = grants
+                .iter()
+                .filter(|grant| {
+                    grant.condition.is_none()
+                        && matches_permission(&grant.resource, &grant.action, permission)
+                })
+                .map(|grant| grant.role_id.as_str())
+                .collect();
 
-            let is_granted = role_permissions.iter().any(|rp| {
-                let r_res = rp.resource.to_lowercase();
-                let r_act = rp.action.to_lowercase();
-
-                if r_res == "*" {
-                    return true;
+            for assignment in assignments
+                .iter()
+                .filter(|assignment| allowed_roles.contains(assignment.role_id.as_str()))
+            {
+                match assignment.scope_type.to_ascii_lowercase().as_str() {
+                    "global" | "organization" if assignment.scope_id.is_none() => {
+                        return Ok(PermissionScope::Organization);
+                    }
+                    "org_unit" | "unit" => units.extend(assignment.scope_id),
+                    _ => {}
                 }
-                if r_res == permission {
-                    return true;
-                }
-                let res_ok = r_res == target_resource
-                    || r_res == "*"
-                    || (r_res == "class" && target_resource == "section")
-                    || (r_res == "section" && target_resource == "class");
-                let act_ok = r_act == target_action
-                    || r_act == "*"
-                    || r_act == "admin"
-                    || (r_act == "write" && target_action == "read");
-                res_ok && act_ok
-            });
-
-            if is_granted {
-                return Ok(true);
             }
         }
 
-        // 2. Check group permissions
-        let user_groups = user_group_membership::Entity::find()
+        // Workflow authority must have an explicit role scope. Group membership has no branch scope.
+        if permission.starts_with("workflow:") {
+            units.sort_unstable();
+            units.dedup();
+            return Ok(PermissionScope::Units(units));
+        }
+
+        let groups = user_group_membership::Entity::find()
             .filter(user_group_membership::Column::UserId.eq(user_id))
             .filter(user_group_membership::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?;
-
-        let group_ids: Vec<uuid::Uuid> = user_groups.into_iter().map(|ug| ug.group_id).collect();
-        if !group_ids.is_empty() {
-            let group_perms = group_permission::Entity::find()
-                .filter(group_permission::Column::GroupId.is_in(group_ids))
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if !groups.is_empty() {
+            let grants = group_permission::Entity::find()
+                .filter(
+                    group_permission::Column::GroupId
+                        .is_in(groups.into_iter().map(|group| group.group_id)),
+                )
                 .filter(group_permission::Column::OrgId.eq(org_id))
                 .all(&self.db)
                 .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-
-            let is_granted = group_perms.iter().any(|gp| {
-                let p = gp.permission.to_lowercase();
-                if p == "*" || p == permission {
-                    return true;
-                }
-                let mut gp_parts = p.split(':');
-                let g_res = gp_parts.next().unwrap_or("");
-                let g_act = gp_parts.next().unwrap_or("");
-
-                let res_ok = g_res == target_resource
-                    || g_res == "*"
-                    || (g_res == "class" && target_resource == "section")
-                    || (g_res == "section" && target_resource == "class");
-                let act_ok = g_act == target_action
-                    || g_act == "*"
-                    || g_act == "admin"
-                    || (g_act == "write" && target_action == "read");
-                res_ok && act_ok
-            });
-
-            if is_granted {
-                return Ok(true);
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if grants.iter().any(|grant| {
+                grant.permission == "*"
+                    || grant
+                        .permission
+                        .split_once(':')
+                        .is_some_and(|(resource, action)| {
+                            matches_permission(resource, action, permission)
+                        })
+            }) {
+                return Ok(PermissionScope::Organization);
             }
         }
 
-        Ok(false)
+        units.sort_unstable();
+        units.dedup();
+        Ok(PermissionScope::Units(units))
     }
 
     async fn get_user_permissions(

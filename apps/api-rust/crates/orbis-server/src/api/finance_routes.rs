@@ -215,7 +215,15 @@ pub struct PaymentDto {
 }
 
 #[derive(Deserialize, ToSchema)]
+pub struct ReceiptAllocationRequest {
+    pub account_id: Uuid,
+    pub amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
 pub struct ProcessPaymentRequest {
+    pub additional_allocations: Option<Vec<ReceiptAllocationRequest>>,
     /// Reuse this UUID unchanged when retrying the same payment request.
     pub idempotency_key: Option<Uuid>,
     pub fee_id: Option<Uuid>,
@@ -330,6 +338,7 @@ pub struct ReverseJournalRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct RefundStudentFeeRequest {
+    pub payment_id: Option<Uuid>,
     pub refund_amount: Decimal,
     pub notes: Option<String>,
 }
@@ -341,7 +350,15 @@ pub struct SplitFeeRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
+pub struct DisbursementLineRequest {
+    pub beneficiary_account_id: Uuid,
+    pub amount: Decimal,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
 pub struct ProcessDisbursementRequest {
+    pub additional_lines: Option<Vec<DisbursementLineRequest>>,
     pub treasury_account_id: Uuid,
     pub beneficiary_account_id: Uuid,
     pub amount: Decimal,
@@ -988,6 +1005,17 @@ pub async fn process_payment(
             p.account_id,
             p.receivable_account_id,
             p.amount,
+            p.additional_allocations
+                .unwrap_or_default()
+                .into_iter()
+                .map(
+                    |line| orbis_app::services::finance_service::ReceiptAllocationInput {
+                        account_id: line.account_id,
+                        amount: line.amount,
+                        notes: line.notes,
+                    },
+                )
+                .collect(),
             method,
             p.payer_name,
             p.payer_phone,
@@ -1053,12 +1081,6 @@ pub async fn list_payments(
         org_unit_id: q.org_unit_id,
         currency_code: q.currency_code,
         method,
-        from_date: q
-            .from_date
-            .map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-        to_date: q
-            .to_date
-            .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc()),
         search: q.search,
         pagination: Some(orbis_domain::queries::filters::PaginationParams {
             page: Some(page),
@@ -1066,8 +1088,12 @@ pub async fn list_payments(
             sort_by: q.sort_by,
             sort_dir: q.sort_dir,
         }),
+        ..Default::default()
     };
-    let payments = state.payment_repo.list(ctx.tenant_id, filter).await?;
+    let payments = state
+        .finance_service
+        .list_payments(ctx.tenant_id, filter, q.from_date, q.to_date)
+        .await?;
     let result = PaginatedList::new(
         payments
             .items
@@ -1458,7 +1484,14 @@ pub async fn refund_fee(
 ) -> Result<Json<ApiResponse<StudentFeeDto>>, ApiError> {
     let f = state
         .finance_service
-        .refund_student_fee(&ctx, ctx.tenant_id, id, p.refund_amount, p.notes)
+        .refund_student_fee(
+            &ctx,
+            ctx.tenant_id,
+            id,
+            p.refund_amount,
+            p.payment_id,
+            p.notes,
+        )
         .await?;
 
     Ok(ApiResponse::ok(StudentFeeDto {
@@ -1824,6 +1857,18 @@ pub async fn process_disbursement(
     };
 
     let input = DisbursementInput {
+        additional_lines: p
+            .additional_lines
+            .unwrap_or_default()
+            .into_iter()
+            .map(
+                |line| orbis_app::services::finance_service::DisbursementLineInput {
+                    beneficiary_account_id: line.beneficiary_account_id,
+                    amount: line.amount,
+                    notes: line.notes,
+                },
+            )
+            .collect(),
         treasury_account_id: p.treasury_account_id,
         beneficiary_account_id: p.beneficiary_account_id,
         amount: p.amount,

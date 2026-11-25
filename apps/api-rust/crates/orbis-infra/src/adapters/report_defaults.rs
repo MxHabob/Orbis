@@ -1,93 +1,93 @@
-//! Default Built-in Templates for Orbis Reporting Engine.
-//! These templates are seeded into the database on organization creation
-//! and are rendered using Tera.
+//! Default built-in templates for the HTML report renderer.
 
 pub const MASTER_TEMPLATE_HTML: &str = r##"
-<!DOCTYPE html>
-<html dir="{% if is_rtl %}rtl{% else %}ltr{% endif %}" lang="{% if is_rtl %}ar{% else %}en{% endif %}">
+<!doctype html>
+<html lang="{% if is_rtl %}ar{% else %}en{% endif %}" dir="{% if is_rtl %}rtl{% else %}ltr{% endif %}">
 <head>
-<meta charset="UTF-8">
-<title>{{ report_name }}</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if is_rtl and report_name_ar %}{{ report_name_ar }}{% else %}{{ report_name }}{% endif %}</title>
 <style>
-@page { size: A4; margin: 15mm; }
-body { font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif; margin: 0; direction: {% if is_rtl %}rtl{% else %}ltr{% endif %}; }
-.master-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid {{ primary_color | default(value="#6366f1") }}; padding-bottom: 10px; margin-bottom: 20px; }
-.master-header .org-info h1 { margin: 0; font-size: 18px; color: {{ primary_color | default(value="#6366f1") }}; }
-.master-header .org-info h2 { margin: 5px 0 0 0; font-size: 14px; color: #555; }
-.master-header .report-title { text-align: center; font-size: 20px; font-weight: bold; }
-.master-header .meta { font-size: 10px; color: #888; text-align: end; }
-.master-footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 10px; color: #888; text-align: center; display: flex; justify-content: space-between; }
-.content-area { min-height: 500px; }
-/* Common Table Styles */
-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
-th { background: {{ primary_color | default(value="#6366f1") }}; color: white; padding: 8px; text-align: start; font-weight: 600; border: 1px solid #ddd; }
-td { padding: 6px 8px; border: 1px solid #e0e0e0; }
-tr:nth-child(even) { background: #f9fafb; }
-.params-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f3f4f6; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 11px; }
-.param-item strong { color: #4b5563; }
+@page { size: A4 {{ paper_orientation }}; margin: 14mm; }
+* { box-sizing: border-box; }
+body { margin: 0; color: #0f172a; background: #f4f6f8; font: 10.5pt/1.55 "Noto Sans Arabic", Tahoma, "Segoe UI", sans-serif; }
+.report { max-width: 235mm; margin: 24px auto; padding: 24px; background: #fff; }
+.master-header { padding-block-end: 14px; margin-block-end: 18px; border-block-end: 2px solid {{ brand_color | default(value="#334155") }}; }
+.org-name { color: #475569; margin: 0 0 5px; }
+h1 { margin: 0; font-size: 18pt; line-height: 1.25; overflow-wrap: anywhere; }
+.meta, .master-footer { color: #475569; font-size: 9pt; }
+.meta { margin: 7px 0 0; }
+.parameters { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 0; margin: 0 0 12px; border-block-end: 1px solid #d8e0e7; }
+.parameters div { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.parameters dt { font-weight: 600; }
+.parameters dd { margin: 0; color: #475569; }
+.content-area { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+thead { display: table-header-group; }
+th, td { padding: 6px 7px; text-align: start; overflow-wrap: anywhere; vertical-align: top; border-block-end: 1px solid #d8e0e7; }
+th { background: #eaf0f5; color: #0f172a; font-weight: 700; }
+tbody tr:nth-child(even) { background: #f8fafc; }
+tr { break-inside: avoid; }
+.empty { text-align: center; color: #475569; padding: 16px; }
+.master-footer { margin-block-start: 18px; border-block-start: 1px solid #d8e0e7; padding-block-start: 8px; overflow-wrap: anywhere; }
+@media print {
+  body, .report { background: #fff; }
+  .report { margin: 0; max-width: none; padding: 0; }
+  .content-area { overflow: visible; }
+  .master-header, .parameters { break-inside: avoid; }
+}
 </style>
 </head>
 <body>
-    <div class="master-header">
-        <div class="org-info">
-            <h1>{% if is_rtl %}{{ org_name_ar }}{% else %}{{ org_name }}{% endif %}</h1>
-            <h2>{% if is_rtl %}{{ org_type_ar }}{% else %}{{ org_type }}{% endif %}</h2>
-        </div>
-        <div class="report-title">
-            {% if is_rtl %}{{ report_name_ar }}{% else %}{{ report_name }}{% endif %}
-        </div>
-        <div class="meta">
-            <div>{{ generated_at }}</div>
-            <div>{{ printed_by }}</div>
-        </div>
-    </div>
-    
+  <article class="report">
+    <header class="master-header">
+      <p class="org-name">{% if is_rtl and org_name_ar %}{{ org_name_ar }}{% else %}{{ org_name }}{% endif %}</p>
+      <h1>{% if is_rtl and report_name_ar %}{{ report_name_ar }}{% else %}{{ report_name }}{% endif %}</h1>
+      <p class="meta"><bdi>{{ generated_at }}</bdi></p>
+    </header>
     {% if has_parameters %}
-    <div class="params-grid">
-        {% for key, val in parameters %}
-        <div class="param-item"><strong>{{ key }}:</strong> {{ val }}</div>
-        {% endfor %}
-    </div>
+    <dl class="parameters">
+      {% for parameter in parameter_items %}
+      <div><dt>{{ parameter.label }}</dt><dd>{{ parameter.value }}</dd></div>
+      {% endfor %}
+    </dl>
     {% endif %}
-
-    <div class="content-area">
-        {{ inner_content | safe }}
-    </div>
-
-    <div class="master-footer">
-        <div>{{ org_website | default(value="www.orbis.system") }}</div>
-        <div>{% if is_rtl %}نظام أوربس التعليمي{% else %}Orbis Educational System{% endif %}</div>
-        <div>{{ current_page | default(value="1") }} / {{ total_pages | default(value="1") }}</div>
-    </div>
+    <div class="content-area">{{ inner_content | safe }}</div>
+    {% if org_website %}
+    <footer class="master-footer"><bdi>{{ org_website }}</bdi></footer>
+    {% endif %}
+  </article>
 </body>
 </html>
 "##;
 
 pub const TABULAR_REPORT_HTML: &str = r##"
+{% if column_count > 0 and rows | length > 0 %}
 <table>
-    <thead>
-        <tr>
-            {% for col in columns %}
-                {% if col.visible %}
-                    <th>{% if is_rtl %}{{ col.headerAr }}{% else %}{{ col.header }}{% endif %}</th>
-                {% endif %}
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows %}
-        <tr>
-            {% for col in columns %}
-                {% if col.visible %}
-                    <td>
-                        {{ row[col.key] | default(value="") }}
-                    </td>
-                {% endif %}
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </tbody>
+  <thead>
+    <tr>
+      {% for col in columns %}
+        {% if col.visible %}
+        <th scope="col">{% if is_rtl and col.headerAr %}{{ col.headerAr }}{% else %}{{ col.header }}{% endif %}</th>
+        {% endif %}
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      {% for col in columns %}
+        {% if col.visible %}
+        <td><bdi>{{ row[col.key] | default(value="—") }}</bdi></td>
+        {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
+{% else %}
+<p class="empty">{% if is_rtl %}لا توجد بيانات لعرضها{% else %}No data to display{% endif %}</p>
+{% endif %}
 "##;
 
 pub const PAYMENT_RECEIPT_HTML: &str = r##"
@@ -338,7 +338,7 @@ pub const STUDENT_INVOICE_HTML: &str = r##"
                 <th>{% if is_rtl %}البند / الرسم{% else %}Item / Fee Description{% endif %}</th>
                 <th>{% if is_rtl %}المبلغ الأساسي{% else %}Base Amount{% endif %}</th>
                 <th>{% if is_rtl %}الخصم{% else %}Discount{% endif %}</th>
-                <th>{% if is_rtl %}الضريبة (15%){% else %}VAT (15%){% endif %}</th>
+                <th>{% if is_rtl %}الضريبة{% else %}Tax{% endif %}</th>
                 <th>{% if is_rtl %}الصافي المستحق{% else %}Net Total{% endif %}</th>
             </tr>
         </thead>
@@ -366,7 +366,7 @@ pub const STUDENT_INVOICE_HTML: &str = r##"
             <td style="text-align: end; color: #dc2626;">-{{ total_discounts | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
         <tr>
-            <td>{% if is_rtl %}ضريبة القيمة المضافة (15%):{% else %}VAT (15%):{% endif %}</td>
+            <td>{% if is_rtl %}إجمالي الضريبة{% else %}Total tax{% endif %}</td>
             <td style="text-align: end;">{{ total_vat | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
         <tr>
@@ -479,6 +479,8 @@ mod tests {
         ctx.insert("generated_at", &"2023-01-01 10:00");
         ctx.insert("printed_by", &"System");
         ctx.insert("has_parameters", &false);
+        ctx.insert("paper_orientation", &"portrait");
+        ctx.insert("org_website", &"");
         ctx.insert("inner_content", &"<p>Inner</p>");
 
         let result = tera
@@ -505,6 +507,7 @@ mod tests {
             }]),
         );
         ctx.insert("rows", &serde_json::json!([{"student_name": "أحمد"}]));
+        ctx.insert("column_count", &1);
 
         let result = tera
             .render("tabular", &ctx)

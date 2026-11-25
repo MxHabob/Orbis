@@ -23,12 +23,6 @@ import {
   ChartBar,
   ClipboardDocumentCheck,
   CreditCard,
-  DocumentText,
-  User,
-  Phone,
-  Envelope,
-  ChevronLeft,
-  ChevronRight,
 } from "@orbis/icons/native";
 import { Text } from "@/components/ui/text";
 
@@ -57,8 +51,6 @@ export default function StudentIndexScreen() {
 
   const studentQuery = useStudentQuery(studentId);
   const student = studentQuery.data;
-
-  const DirectionChevron = isArabic ? ChevronLeft : ChevronRight;
 
   const fullName = student
     ? isArabic

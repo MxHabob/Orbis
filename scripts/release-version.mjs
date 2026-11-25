@@ -14,6 +14,7 @@ const paths = {
   apiServerCargo: "apps/api-rust/crates/orbis-server/Cargo.toml",
   apiCargoLock: "apps/api-rust/Cargo.lock",
   desktopPackage: "apps/desktop/package.json",
+  webPackage: "apps/web/package.json",
   mobilePackage: "apps/mobile/package.json",
   mobileConfig: "apps/mobile/app.json",
   cargo: "apps/desktop/src-tauri/Cargo.toml",
@@ -75,16 +76,18 @@ function replaceCargoLockPackageVersion(source, packageName, version) {
   );
 }
 
-function versionFromLockfile(source) {
-  const match =
-    /"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/.exec(
-      source,
-    );
-  if (!match)
-    throw new Error(
-      "Could not find the @orbis/desktop workspace version in bun.lock.",
-    );
-  return match[1];
+function workspaceLockVersionPattern(workspace) {
+  return new RegExp(
+    String.raw`("apps/${workspace}":\s*\{\s*"name":\s*"@orbis/${workspace}",\s*"version":\s*")([^"]+)(")`,
+  );
+}
+
+function versionFromLockfile(source, workspace) {
+  const match = workspaceLockVersionPattern(workspace).exec(source);
+  if (!match) {
+    throw new Error(`Could not find @orbis/${workspace} in bun.lock.`);
+  }
+  return match[2];
 }
 
 function androidVersionCodeFromConfig(config) {
@@ -182,6 +185,7 @@ function main() {
     apiServerCargo: read(paths.apiServerCargo),
     apiCargoLock: read(paths.apiCargoLock),
     package: read(paths.desktopPackage),
+    webPackage: read(paths.webPackage),
     mobilePackage: read(paths.mobilePackage),
     mobileConfig: read(paths.mobileConfig),
     cargo: read(paths.cargo),
@@ -191,6 +195,7 @@ function main() {
     lockfile: read(paths.lockfile),
   };
   const mobilePackage = JSON.parse(original.mobilePackage);
+  const webPackage = JSON.parse(original.webPackage);
   const mobileConfig = JSON.parse(original.mobileConfig);
   parseSemver(apiPkg.version);
   const currentAndroidVersionCode = androidVersionCodeFromConfig(mobileConfig);
@@ -205,16 +210,16 @@ function main() {
   }
   const versions = {
     package: pkg.version,
+    webPackage: webPackage.version,
+    webLockfile: versionFromLockfile(original.lockfile, "web"),
     mobilePackage: mobilePackage.version,
     mobileConfig: mobileConfig.expo?.version,
     cargo: versionFromCargo(original.cargo),
     cargoLock: versionFromCargoLock(original.cargoLock, "orbis-desktop"),
     tauri: JSON.parse(original.tauri).version,
     staging: JSON.parse(original.staging).version,
-    lockfile: versionFromLockfile(original.lockfile),
-    mobileLockfile: original.lockfile.match(
-      /"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/,
-    )?.[1],
+    lockfile: versionFromLockfile(original.lockfile, "desktop"),
+    mobileLockfile: versionFromLockfile(original.lockfile, "mobile"),
   };
   if (Object.values(versions).some((version) => version !== currentVersion)) {
     throw new Error(
@@ -246,6 +251,7 @@ function main() {
       nextVersion,
     ),
     desktopPackage: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
+    webPackage: `${JSON.stringify({ ...webPackage, version: nextVersion }, null, 2)}\n`,
     mobilePackage: `${JSON.stringify({ ...mobilePackage, version: nextVersion }, null, 2)}\n`,
     mobileConfig: `${JSON.stringify(
       {
@@ -279,21 +285,15 @@ function main() {
     ),
     tauri: `${JSON.stringify({ ...JSON.parse(original.tauri), version: nextVersion }, null, 2)}\n`,
     staging: `${JSON.stringify({ ...JSON.parse(original.staging), version: nextVersion }, null, 2)}\n`,
-    lockfile: replaceVersion(
-      replaceVersion(
+    lockfile: ["api-rust", "desktop", "mobile", "web"].reduce(
+      (source, workspace) =>
         replaceVersion(
-          original.lockfile,
-          /("apps\/api-rust":\s*\{\s*"name":\s*"@orbis\/api-rust",\s*"version":\s*")([^"]+)(")/,
+          source,
+          workspaceLockVersionPattern(workspace),
           nextVersion,
-          "Bun lockfile API workspace",
+          `Bun lockfile ${workspace} workspace`,
         ),
-        /("apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*")([^"]+)(")/,
-        nextVersion,
-        "Bun lockfile mobile workspace",
-      ),
-      /("apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*")([^"]+)(")/,
-      nextVersion,
-      "Bun lockfile workspace",
+      original.lockfile,
     ),
   };
 

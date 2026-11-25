@@ -12,6 +12,12 @@ mod m20261105_000001_unique_student_root;
 mod m20261124_000001_grade_unique_and_bulk_rollback;
 mod m20261124_000002_grade_component_code;
 
+mod m20261125_000001_exam_proctor_uniqueness;
+mod m20261125_000002_autopilot_idempotency;
+mod m20261125_000003_override_approval_policy;
+mod m20261125_000004_refresh_stock_templates;
+mod m20261125_000005_finance_ledger_indexes;
+
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -29,6 +35,11 @@ impl MigratorTrait for Migrator {
             Box::new(m20261105_000001_unique_student_root::Migration),
             Box::new(m20261124_000001_grade_unique_and_bulk_rollback::Migration),
             Box::new(m20261124_000002_grade_component_code::Migration),
+            Box::new(m20261125_000001_exam_proctor_uniqueness::Migration),
+            Box::new(m20261125_000002_autopilot_idempotency::Migration),
+            Box::new(m20261125_000003_override_approval_policy::Migration),
+            Box::new(m20261125_000004_refresh_stock_templates::Migration),
+            Box::new(m20261125_000005_finance_ledger_indexes::Migration),
         ]
     }
 }

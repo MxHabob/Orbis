@@ -5165,6 +5165,19 @@
       "get": {
         "tags": ["Organization"],
         "operationId": "get_dashboard",
+    "parameters": [
+      {
+        "name": "org_unit_id",
+        "in": "query",
+        "description": "Restrict metrics to an authorized unit and its descendants",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "nullable": true
+        }
+      }
+    ],
         "responses": {
           "200": {
             "description": "Dashboard statistics",
@@ -5176,6 +5189,31 @@
           }
         },
         "security": [{ "bearer": [] }]
+      }
+    },
+    "/api/v1/organizations/current/dashboard/access": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "get_dashboard_access",
+        "responses": {
+          "200": {
+            "description": "Dashboard branch options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardAccessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/api/v1/organizations/current/settings": {
@@ -8365,14 +8403,34 @@
           "sibling_priority_enabled"
         ],
         "properties": {
-          "allow_duplicate_national_id": { "type": "boolean" },
-          "allow_late_enrollment": { "type": "boolean" },
-          "allow_no_guardian": { "type": "boolean" },
-          "allow_waitlist": { "type": "boolean" },
-          "auto_assign_fees": { "type": "boolean" },
-          "max_class_capacity": { "type": "integer", "format": "int32" },
-          "requires_approval": { "type": "boolean" },
-          "sibling_priority_enabled": { "type": "boolean" }
+          "allow_duplicate_national_id": {
+            "type": "boolean"
+          },
+          "allow_late_enrollment": {
+            "type": "boolean"
+          },
+          "allow_no_guardian": {
+            "type": "boolean"
+          },
+          "allow_waitlist": {
+            "type": "boolean"
+          },
+          "auto_assign_fees": {
+            "type": "boolean"
+          },
+          "max_class_capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "prevent_duplicate_full_name": {
+            "type": "boolean"
+          },
+          "requires_approval": {
+            "type": "boolean"
+          },
+          "sibling_priority_enabled": {
+            "type": "boolean"
+          }
         }
       },
       "AiChatRequest": {
@@ -9445,7 +9503,8 @@
           "failed",
           "is_atomic",
           "is_dry_run",
-          "items"
+          "items",
+          "override_targets"
         ],
         "properties": {
           "failed": { "type": "integer", "minimum": 0 },
@@ -9457,8 +9516,22 @@
               "$ref": "#/components/schemas/BulkRegisterItemResultDto"
             }
           },
+          "override_targets": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PeriodOverrideTargetDto" }
+          },
           "succeeded": { "type": "integer", "minimum": 0 },
           "total": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "PeriodOverrideTargetDto": {
+        "type": "object",
+        "required": ["entity_id", "entity_type", "override_type", "period_id"],
+        "properties": {
+          "entity_id": { "type": "string", "format": "uuid" },
+          "entity_type": { "type": "string" },
+          "override_type": { "type": "string" },
+          "period_id": { "type": "string", "format": "uuid" }
         }
       },
       "BulkScheduleLessonsRequest": {
@@ -10297,6 +10370,44 @@
           "symbol_position": { "type": "string" }
         }
       },
+    "DashboardAccessDto": {
+      "type": "object",
+      "required": [
+        "organization_wide",
+        "units"
+      ],
+      "properties": {
+        "organization_wide": {
+          "type": "boolean"
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/DashboardBranchDto"
+          }
+        }
+      }
+    },
+    "DashboardBranchDto": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_ar": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
       "DashboardCountsDto": {
         "type": "object",
         "required": [
@@ -10533,14 +10644,56 @@
       "DuplicateCheckRequest": {
         "type": "object",
         "properties": {
-          "email": { "type": "string", "nullable": true },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
           "exclude_student_id": {
             "type": "string",
             "format": "uuid",
             "nullable": true
           },
-          "national_id": { "type": "string", "nullable": true },
-          "phone": { "type": "string", "nullable": true }
+          "first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "first_name_ar": {
+            "type": "string",
+            "nullable": true
+          },
+          "full_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name_ar": {
+            "type": "string",
+            "nullable": true
+          },
+          "middle_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "middle_name_ar": {
+            "type": "string",
+            "nullable": true
+          },
+          "national_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "DuplicateCheckResponse": {
@@ -10563,16 +10716,36 @@
           "matched_person_name"
         ],
         "properties": {
-          "field": { "type": "string" },
-          "matched_person_id": { "type": "string", "format": "uuid" },
-          "matched_person_name": { "type": "string" },
+          "confidence": {
+            "type": "string",
+            "nullable": true
+          },
+          "field": {
+            "type": "string"
+          },
+          "matched_person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matched_person_name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
           "student_id": {
             "type": "string",
             "format": "uuid",
             "nullable": true
           },
-          "student_number": { "type": "string", "nullable": true },
-          "value": { "type": "string" }
+          "student_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "type": "string"
+          }
         }
       },
       "EffectiveContextDto": {
@@ -10921,6 +11094,11 @@
         ],
         "properties": {
           "allow_partial_payments": { "type": "boolean" },
+          "cashier_cash_accounts": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "format": "uuid" },
+            "nullable": true
+          },
           "currency": { "type": "string" },
           "invoice_due_days": { "type": "integer", "format": "int32" },
           "invoicing_integration_id": {
@@ -12184,6 +12362,11 @@
         "type": "object",
         "required": ["account_id", "amount", "method"],
         "properties": {
+          "additional_allocations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReceiptAllocationRequest" },
+            "nullable": true
+          },
           "account_id": { "type": "string", "format": "uuid" },
           "amount": { "type": "string" },
           "enrollment_id": {
@@ -12545,10 +12728,20 @@
           "student_id": { "type": "string", "format": "uuid" }
         }
       },
+      "ReceiptAllocationRequest": {
+        "type": "object",
+        "required": ["account_id", "amount"],
+        "properties": {
+          "account_id": { "type": "string", "format": "uuid" },
+          "amount": { "type": "string" },
+          "notes": { "type": "string", "nullable": true }
+        }
+      },
       "RefundStudentFeeRequest": {
         "type": "object",
         "required": ["refund_amount"],
         "properties": {
+          "payment_id": { "type": "string", "format": "uuid", "nullable": true },
           "notes": { "type": "string", "nullable": true },
           "refund_amount": { "type": "string" }
         }
@@ -13376,19 +13569,17 @@
           "override_type",
           "entity_type",
           "entity_id",
-          "reason",
-          "approver_role"
+          "reason"
         ],
         "properties": {
-          "approver_role": { "type": "string" },
           "entity_id": { "type": "string", "format": "uuid" },
           "entity_type": { "type": "string" },
           "field_name": { "type": "string", "nullable": true },
           "new_value": { "type": "string", "nullable": true },
           "old_value": { "type": "string", "nullable": true },
           "override_type": { "type": "string" },
-          "reason": { "type": "string" },
-          "risk_level": { "type": "string", "nullable": true }
+          "period_id": { "type": "string", "format": "uuid", "nullable": true },
+          "reason": { "type": "string" }
         }
       },
       "TeachingAssignmentInfo": {

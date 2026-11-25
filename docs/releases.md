@@ -58,7 +58,7 @@ Run release commands from an up-to-date `main` checkout with a clean working tre
 bun run release:prepare patch
 ```
 
-`release:prepare` updates the synchronized desktop, mobile, and Rust API versions plus Cargo/Bun lockfiles, increments the Android `versionCode`, then generates editable notes in `releases/`. Solver versions are independent and are not changed by desktop releases. Review the notes before continuing; installers, updater metadata, signatures, and release artifacts are built and attached by CI.
+`release:prepare` updates the synchronized web, desktop, mobile, and Rust API versions plus Cargo/Bun lockfiles, increments the Android `versionCode`, then generates editable notes in `releases/`. Solver versions are independent. CI builds the signed desktop installer using the web workspace build.
 
 ```sh
 bun run release:commit

@@ -178,6 +178,15 @@ impl From<DomainError> for ApiError {
             DomainError::Validation(_) => Self::bad_request(err.to_string()),
             DomainError::Conflict(_) => Self::conflict(err.to_string()),
             DomainError::BusinessRule(_) => Self::bad_request(err.to_string()),
+            DomainError::PeriodOverrideRequired(targets) => Self {
+                status: StatusCode::CONFLICT,
+                body: OrbisErrorBody {
+                    code: "PERIOD_OVERRIDE_REQUIRED".into(),
+                    message: err.to_string(),
+                    details: Some(serde_json::json!({ "targets": targets })),
+                    request_id: None,
+                },
+            },
             DomainError::AuthenticationFailed => Self::unauthorized("Authentication failed"),
             DomainError::Unauthorized(_) => Self::unauthorized(err.to_string()),
             DomainError::Forbidden(_) => Self::forbidden(err.to_string()),

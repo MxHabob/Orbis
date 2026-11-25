@@ -66,7 +66,7 @@ bun run --cwd packages/icons gallery
 bun run --cwd packages/icons test
 bunx tsc --noEmit -p packages/icons/tsconfig.json
 bun run --cwd apps/mobile typecheck
-bun run --cwd apps/desktop build
+bun run build:web
 ```
 
 The desktop build completed successfully. Baseline screenshots and bundle-size

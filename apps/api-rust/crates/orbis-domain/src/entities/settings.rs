@@ -290,6 +290,7 @@ pub struct FinanceSettings {
     pub late_fee_type: String, // "fixed" or "percentage"
     pub late_fee_value: f64,
     pub allow_partial_payments: bool,
+    pub cashier_cash_accounts: Option<std::collections::BTreeMap<Uuid, Uuid>>,
     /// Integration UUID for the primary payment gateway (e.g. Mada, Stripe, Moyasar)
     pub primary_payment_gateway_id: Option<Uuid>,
     /// Integration UUID for B2B/B2C invoicing (e.g. Orbis Finance, Xero)
@@ -305,6 +306,7 @@ impl Default for FinanceSettings {
             late_fee_type: "fixed".to_string(),
             late_fee_value: 0.0,
             allow_partial_payments: false,
+            cashier_cash_accounts: None,
             primary_payment_gateway_id: None,
             invoicing_integration_id: None,
         }

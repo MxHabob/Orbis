@@ -63,13 +63,14 @@ function StartupErrorFallback({
   error,
   resetErrorBoundary,
 }: ErrorFallbackProps) {
+  const { t } = useI18n();
   return (
     <View className="flex-1 items-center justify-center bg-background px-six">
       <Text className="text-center text-xl font-semibold text-foreground">
-        Orbis could not start
+        {t("common_startup_error")}
       </Text>
       <Text className="mt-three text-center text-muted-foreground">
-        Please try again. If the problem continues, reinstall the app.
+        {t("common_unexpected_error_hint")}
       </Text>
       {__DEV__ && (
         <Text className="mt-three text-center text-muted-foreground">
@@ -81,7 +82,7 @@ function StartupErrorFallback({
         onPress={resetErrorBoundary}
         className="mt-six rounded-md bg-primary px-five py-three"
       >
-        <Text className="font-semibold text-primary-foreground">Try again</Text>
+        <Text className="font-semibold text-primary-foreground">{t("common_retry")}</Text>
       </Pressable>
     </View>
   );

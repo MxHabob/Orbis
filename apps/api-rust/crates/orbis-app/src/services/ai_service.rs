@@ -1808,12 +1808,8 @@ impl AiOrchestrationService {
             "inspect_report_source" => self.inspect_report_source(ctx, arguments).await,
             "get_org_overview" => {
                 let org = self.org_service.get_organization(ctx.tenant_id).await?;
-                let units = self.org_service.list_org_units(ctx.tenant_id).await?;
-                let counts = self
-                    .org_service
-                    .get_dashboard_counts(ctx.tenant_id)
-                    .await
-                    .ok();
+                let units = self.org_service.list_org_units(ctx).await?;
+                let counts = self.org_service.get_dashboard_counts(ctx, None).await.ok();
 
                 Ok(json!({
                     "organization": org.map(|o| json!({"name": o.name, "slug": o.slug, "timezone": o.timezone})),

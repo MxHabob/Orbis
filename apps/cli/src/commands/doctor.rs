@@ -18,7 +18,7 @@ pub async fn execute() -> Result<()> {
     let mut checks: Vec<(&str, String, bool)> = Vec::new();
 
     // 1. Check for DB connection
-    let config = crate::core::config::CliConfig::default();
+    let config = crate::core::config::CliConfig::load()?;
     let db_path_str = config
         .db_url
         .replace("sqlite://", "")

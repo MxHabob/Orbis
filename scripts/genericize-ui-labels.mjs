@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const root = process.cwd();
-const messagesDir = join(root, "apps", "desktop", "messages");
+const messagesDir = join(root, "apps", "web", "messages");
 const mobileDictDir = join(
   root,
   "apps",

@@ -27,10 +27,13 @@ impl SystemStatus {
 
 /// Returns system status by inspecting the database and workspace readiness.
 pub async fn get_full_status() -> SystemStatus {
-    let config = crate::core::config::CliConfig::default();
-    let db_url = config.db_url.replace("mode=rwc", "mode=ro");
-
-    let Ok(db) = Database::connect(&db_url).await else {
+    let connection = match crate::core::config::CliConfig::load() {
+        Ok(config) => Database::connect(config.db_url.replace("mode=rwc", "mode=ro"))
+            .await
+            .ok(),
+        Err(_) => None,
+    };
+    let Some(db) = connection else {
         return SystemStatus {
             db_exists: false,
             has_organization: false,

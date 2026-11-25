@@ -133,7 +133,14 @@ impl Color {
 
     /// Parse CSS hex color (e.g., "#ff0000", "#f00", "#ff000080")
     pub fn from_hex(hex: &str) -> Option<Color> {
-        let hex = hex.trim_start_matches('#');
+        let hex = hex.trim();
+        if hex.eq_ignore_ascii_case("transparent") {
+            return Some(Color::TRANSPARENT);
+        }
+        let hex = hex.strip_prefix('#').unwrap_or(hex);
+        if !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return None;
+        }
         match hex.len() {
             3 => {
                 let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
@@ -162,6 +169,18 @@ impl Color {
 impl Default for Color {
     fn default() -> Self {
         Color::BLACK
+    }
+}
+
+#[cfg(test)]
+mod color_tests {
+    use super::Color;
+
+    #[test]
+    fn transparent_color_does_not_fall_back_to_an_opaque_color() {
+        assert_eq!(Color::from_hex("transparent").unwrap().a, 0);
+        assert_eq!(Color::from_hex("#4633bb").unwrap().a, 255);
+        assert!(Color::from_hex("😀aa").is_none());
     }
 }
 

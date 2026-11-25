@@ -99,10 +99,12 @@ export default function HomeTabScreen() {
     },
     [effectiveContext?.effective_role, effectiveContext?.roles, setContextRole],
   );
+  const studentId = effectiveContext?.student_id;
   const studentQuery = useMyStudentQuery(
-    activeRole === "student" && Boolean(effectiveContext?.student_id),
-    effectiveContext?.student_id,
+    activeRole === "student" && Boolean(studentId),
+    studentId,
   );
+  const { refetch: refetchStudent } = studentQuery;
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dependents = effectiveContext?.dependents ?? [];
   const permissions = effectiveContext?.permissions ?? [];
@@ -112,8 +114,8 @@ export default function HomeTabScreen() {
     setIsRefreshing(true);
     try {
       const refreshTasks: Promise<unknown>[] = [refreshSessionData()];
-      if (activeRole === "student" && effectiveContext?.student_id) {
-        refreshTasks.push(studentQuery.refetch({ throwOnError: true }));
+      if (activeRole === "student" && studentId) {
+        refreshTasks.push(refetchStudent({ throwOnError: true }));
       }
       const results = await Promise.allSettled(refreshTasks);
       const failedRefresh = results.find(
@@ -129,10 +131,10 @@ export default function HomeTabScreen() {
     }
   }, [
     activeRole,
-    effectiveContext?.student_id,
+    studentId,
     isRefreshing,
     refreshSessionData,
-    studentQuery.refetch,
+    refetchStudent,
     t,
     toast,
   ]);

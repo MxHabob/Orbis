@@ -61,6 +61,7 @@ pub struct AcademicPeriodDto {
     pub is_locked: bool,
     pub is_enrollment_open: bool,
     pub is_grade_entry_open: bool,
+    pub can_enter_grades: bool,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -135,6 +136,7 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
             }
         }
     };
+    let can_enter_grades = p.can_enter_grades();
     AcademicPeriodDto {
         id: p.id.to_string(),
         year_id: p.year_id.to_string(),
@@ -150,6 +152,7 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
         is_locked: p.is_locked,
         is_enrollment_open: p.is_enrollment_open,
         is_grade_entry_open: p.is_grade_entry_open,
+        can_enter_grades,
         created_at: p.created_at.to_rfc3339(),
         updated_at: p.updated_at.to_rfc3339(),
     }

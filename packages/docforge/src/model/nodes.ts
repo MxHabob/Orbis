@@ -213,6 +213,8 @@ export interface TableNode extends BaseNode {
 export interface TableColumn {
   /** Column header label */
   header: string;
+  headerAr?: string;
+  isVisible?: boolean;
   /** Data source field path for this column */
   field?: string;
   /** Static content or expression */

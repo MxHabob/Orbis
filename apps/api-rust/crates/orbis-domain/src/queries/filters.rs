@@ -151,7 +151,7 @@ pub struct PaymentFilter {
     pub currency_code: Option<String>,
     pub method: Option<PaymentMethod>,
     pub from_date: Option<chrono::DateTime<chrono::Utc>>,
-    pub to_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub to_date_exclusive: Option<chrono::DateTime<chrono::Utc>>,
     pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
 }

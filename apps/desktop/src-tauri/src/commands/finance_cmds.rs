@@ -47,6 +47,7 @@ fn parse_account_type(value: &str) -> Result<AccountType, String> {
 
 #[derive(Deserialize, Debug)]
 pub struct ProcessDisbursementInput {
+    pub additional_lines: Option<Vec<orbis_app::services::finance_service::DisbursementLineInput>>,
     pub treasury_account_id: String,
     pub beneficiary_account_id: String,
     pub amount: Decimal,
@@ -283,6 +284,7 @@ pub struct PaymentDto {
     pub enrollment_id: Option<String>,
     pub account_id: String,
     pub amount: Decimal,
+    pub currency_code: String,
     pub currency: String,
     pub exchange_rate: Decimal,
     pub base_amount: Decimal,
@@ -296,6 +298,7 @@ pub struct PaymentDto {
     pub paid_at: String,
     pub created_by: Option<String>,
     pub created_at: String,
+    pub updated_at: String,
 }
 
 pub fn payment_to_dto(p: Payment) -> PaymentDto {
@@ -307,6 +310,7 @@ pub fn payment_to_dto(p: Payment) -> PaymentDto {
         enrollment_id: p.enrollment_id.map(|e| e.to_string()),
         account_id: p.account_id.to_string(),
         amount: p.amount,
+        currency_code: p.currency_code.clone(),
         currency: p.currency_code,
         exchange_rate: p.exchange_rate,
         base_amount: p.base_amount,
@@ -320,6 +324,7 @@ pub fn payment_to_dto(p: Payment) -> PaymentDto {
         paid_at: p.paid_at.to_rfc3339(),
         created_by: p.created_by.map(|c| c.to_string()),
         created_at: p.created_at.to_rfc3339(),
+        updated_at: p.updated_at.to_rfc3339(),
     }
 }
 
@@ -551,6 +556,8 @@ pub struct FeeFilterInput {
 
 #[derive(Deserialize, Debug)]
 pub struct ProcessPaymentInput {
+    pub additional_allocations:
+        Option<Vec<orbis_app::services::finance_service::ReceiptAllocationInput>>,
     pub idempotency_key: Option<String>,
     pub fee_id: Option<String>,
     pub student_id: Option<String>,
@@ -1164,6 +1171,7 @@ pub async fn finance_process_payment(
             account_id,
             receivable_account_id,
             request.amount,
+            request.additional_allocations.unwrap_or_default(),
             method,
             request.payer_name,
             request.payer_phone,
@@ -1192,17 +1200,13 @@ pub async fn finance_list_payments(
         .as_deref()
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
-        .map_err(|_| "Invalid from_date; expected YYYY-MM-DD")?
-        .and_then(|date| date.and_hms_opt(0, 0, 0))
-        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+        .map_err(|_| "Invalid from_date; expected YYYY-MM-DD")?;
     let to_date = f
         .to_date
         .as_deref()
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
-        .map_err(|_| "Invalid to_date; expected YYYY-MM-DD")?
-        .and_then(|date| date.and_hms_opt(23, 59, 59))
-        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+        .map_err(|_| "Invalid to_date; expected YYYY-MM-DD")?;
     let method = match f.method.as_deref() {
         None => None,
         Some("cash") => Some(PaymentMethod::Cash),
@@ -1210,7 +1214,8 @@ pub async fn finance_list_payments(
         Some("check") | Some("cheque") => Some(PaymentMethod::Check),
         Some("credit_card") | Some("card") => Some(PaymentMethod::CreditCard),
         Some("mada") => Some(PaymentMethod::Mada),
-        Some("apple_pay") => Some(PaymentMethod::ApplePay),
+        Some("apple_pay") | Some("applepay") => Some(PaymentMethod::ApplePay),
+        Some("other") => Some(PaymentMethod::Other),
         Some(value) => return Err(format!("Invalid payment method filter: {value}")),
     };
 
@@ -1221,8 +1226,6 @@ pub async fn finance_list_payments(
         org_unit_id: parse_optional_uuid(f.org_unit_id, "org_unit_id")?,
         currency_code: f.currency_code,
         method,
-        from_date,
-        to_date,
         search: f.search,
         pagination: Some(PaginationParams {
             page: f.page.or(Some(1)),
@@ -1230,11 +1233,12 @@ pub async fn finance_list_payments(
             sort_by: f.sort_by,
             sort_dir: f.sort_dir,
         }),
+        ..Default::default()
     };
 
     let paginated = state
         .finance_service
-        .list_payments(ctx.tenant_id, query_filter)
+        .list_payments(ctx.tenant_id, query_filter, from_date, to_date)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1257,17 +1261,13 @@ pub async fn finance_list_payments_paginated(
         .as_deref()
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
-        .map_err(|_| "Invalid from_date; expected YYYY-MM-DD")?
-        .and_then(|date| date.and_hms_opt(0, 0, 0))
-        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+        .map_err(|_| "Invalid from_date; expected YYYY-MM-DD")?;
     let to_date = f
         .to_date
         .as_deref()
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
-        .map_err(|_| "Invalid to_date; expected YYYY-MM-DD")?
-        .and_then(|date| date.and_hms_opt(23, 59, 59))
-        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+        .map_err(|_| "Invalid to_date; expected YYYY-MM-DD")?;
     let method = match f.method.as_deref() {
         None => None,
         Some("cash") => Some(PaymentMethod::Cash),
@@ -1275,7 +1275,8 @@ pub async fn finance_list_payments_paginated(
         Some("check") | Some("cheque") => Some(PaymentMethod::Check),
         Some("credit_card") | Some("card") => Some(PaymentMethod::CreditCard),
         Some("mada") => Some(PaymentMethod::Mada),
-        Some("apple_pay") => Some(PaymentMethod::ApplePay),
+        Some("apple_pay") | Some("applepay") => Some(PaymentMethod::ApplePay),
+        Some("other") => Some(PaymentMethod::Other),
         Some(value) => return Err(format!("Invalid payment method filter: {value}")),
     };
     let query_filter = PaymentFilter {
@@ -1285,8 +1286,6 @@ pub async fn finance_list_payments_paginated(
         org_unit_id: parse_optional_uuid(f.org_unit_id, "org_unit_id")?,
         currency_code: f.currency_code,
         method,
-        from_date,
-        to_date,
         search: f.search,
         pagination: Some(PaginationParams {
             page: Some(f.page.unwrap_or(1).max(1)),
@@ -1294,10 +1293,11 @@ pub async fn finance_list_payments_paginated(
             sort_by: f.sort_by,
             sort_dir: f.sort_dir,
         }),
+        ..Default::default()
     };
     let page = state
         .finance_service
-        .list_payments(ctx.tenant_id, query_filter)
+        .list_payments(ctx.tenant_id, query_filter, from_date, to_date)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(PaginatedList::new(
@@ -1798,6 +1798,7 @@ pub struct SplitFeeInput {
 
 #[derive(Deserialize, Debug)]
 pub struct RefundStudentFeeInput {
+    pub payment_id: Option<Uuid>,
     pub refund_amount: Decimal,
     pub notes: Option<String>,
 }
@@ -1848,6 +1849,7 @@ pub async fn finance_refund_student_fee(
             ctx.tenant_id,
             fee_id,
             request.refund_amount,
+            request.payment_id,
             request.notes,
         )
         .await
@@ -2011,6 +2013,7 @@ pub async fn finance_process_disbursement(
     };
 
     let input = DisbursementInput {
+        additional_lines: request.additional_lines.unwrap_or_default(),
         treasury_account_id,
         beneficiary_account_id,
         amount: request.amount,
