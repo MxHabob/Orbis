@@ -11,10 +11,54 @@ import {
   api,
   queryKeys,
   type EmployeeFilterInput,
+  type PaginatedEmployeesDto,
   type RegisterEmployeeRequest,
   type UpdateEmployeeRequest,
   type ProvisionEmployeeAccountRequest,
 } from "$lib/api";
+
+const EMPLOYEE_SELECTOR_PAGE_SIZE = 100;
+
+/** Fetch all pages of employees matching the given filter. */
+export async function listAllEmployees(
+  filter?: Omit<EmployeeFilterInput, "page" | "page_size">,
+): Promise<PaginatedEmployeesDto> {
+  const firstPage = await api.listEmployees({
+    ...filter,
+    page: 1,
+    page_size: EMPLOYEE_SELECTOR_PAGE_SIZE,
+  });
+
+  if ((firstPage.total_pages ?? 1) <= 1) {
+    return firstPage;
+  }
+
+  const pageSize = firstPage.page_size || EMPLOYEE_SELECTOR_PAGE_SIZE;
+  const remainingPages = await Promise.all(
+    Array.from(
+      { length: Math.max(0, firstPage.total_pages - 1) },
+      (_, index) =>
+        api.listEmployees({
+          ...filter,
+          page: index + 2,
+          page_size: pageSize,
+        }),
+    ),
+  );
+
+  const items = [
+    ...firstPage.items,
+    ...remainingPages.flatMap((page) => page.items),
+  ];
+
+  return {
+    ...firstPage,
+    items,
+    page: 1,
+    page_size: items.length,
+    total_pages: 1,
+  };
+}
 
 /** Paginated and filtered employees directory query. */
 export function createEmployeesQuery(
@@ -27,6 +71,22 @@ export function createEmployeesQuery(
       filter?.() as Record<string, unknown>,
     ),
     queryFn: () => api.listEmployees(filter?.()),
+    enabled: !!orgId(),
+    staleTime: 60 * 1000,
+  }));
+}
+
+/** Query all employees matching a filter (for searchable selector dropdowns). */
+export function createAllEmployeesQuery(
+  orgId: () => string,
+  filter?: () => Omit<EmployeeFilterInput, "page" | "page_size"> | undefined,
+) {
+  return createQuery(() => ({
+    queryKey: queryKeys.employee.list(orgId(), {
+      ...(filter?.() as Record<string, unknown> | undefined),
+      allPages: true,
+    }),
+    queryFn: () => listAllEmployees(filter?.()),
     enabled: !!orgId(),
     staleTime: 60 * 1000,
   }));

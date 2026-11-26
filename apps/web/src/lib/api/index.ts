@@ -68,17 +68,11 @@ import type { OrbisApiClient } from "./types";
 import { LocalClient } from "./local-client";
 import { RemoteClient } from "./remote-client";
 import { queryClient } from "./query-client";
+import { isDesktopApp } from "./runtime";
 
 let _instance: OrbisApiClient | null = null;
 let _configuredMode: "local" | "api" | null = null;
 let _configuredBaseUrl: string | null = null;
-
-/**
- * Detect whether we are running inside a Tauri webview.
- */
-function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
 
 /**
  * Returns a singleton OrbisApiClient instance.
@@ -89,7 +83,7 @@ function isTauri(): boolean {
 export function getApiClient(): OrbisApiClient {
   if (_instance) return _instance;
 
-  if (isTauri()) {
+  if (isDesktopApp) {
     return configureApiClient("local");
   } else {
     const baseUrl = import.meta.env?.VITE_API_URL ?? "http://localhost:3000";

@@ -25,7 +25,7 @@ let {
 
 <Sheet bind:open>
   <SheetContent
-    contentClass="data-[side=end]:sm:max-w-lg"
+    contentClass="data-[side=end]:sm:!max-w-lg"
     class="flex flex-col h-full overflow-hidden p-0 gap-0"
   >
     <YearForm

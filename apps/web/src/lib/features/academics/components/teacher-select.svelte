@@ -6,7 +6,7 @@
 <script lang="ts">
 import { page } from "$app/state";
 import { l } from "$lib/core/i18n";
-import { createEmployeesQuery } from "$lib/features/employees/queries";
+import { createAllEmployeesQuery } from "$lib/features/employees/queries";
 import * as m from "$lib/paraglide/messages";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { authStore } from "$lib/stores";
@@ -46,9 +46,9 @@ const resolvedOrgId = $derived(
 );
 
 // Self-contained TanStack Query
-const teachersQuery = createEmployeesQuery(
+const teachersQuery = createAllEmployeesQuery(
   () => resolvedOrgId,
-  () => ({ employee_type: "teacher", status: "active", limit: 300 }),
+  () => ({ employee_type: "teacher", status: "active" }),
 );
 
 const teachers = $derived(teachersQuery.data?.items ?? []);
