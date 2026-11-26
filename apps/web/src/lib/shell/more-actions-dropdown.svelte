@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { MULVERSE_URLS } from "@orbis/utils";
 
 import { Button } from "@orbis/ui/button";
 import {
@@ -100,7 +101,7 @@ const iconClass = "text-muted-foreground shrink-0";
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent align="end" sideOffset={4} class="w-48 text-start">
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl(MULVERSE_URLS.website)}>
             <GlobeAlt size={13} class={iconClass} />
             <span>{m.ui_copy_welcome_page_e980d673()}</span>
           </DropdownMenuItem>
@@ -116,7 +117,7 @@ const iconClass = "text-muted-foreground shrink-0";
             <QuestionMarkCircle size={13} class={iconClass} />
             <span>{m.ui_copy_help_center_5494ae10()}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/support')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl(MULVERSE_URLS.orbisSupport)}>
             <Headphone size={13} class={iconClass} />
             <span>{m.ui_copy_contact_support_834f3ed7()}</span>
           </DropdownMenuItem>
@@ -136,13 +137,13 @@ const iconClass = "text-muted-foreground shrink-0";
             <ChatBubbles size={13} class={iconClass} />
             <span>Discord</span>
           </DropdownMenuItem>
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://x.com/mulverseco')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl(MULVERSE_URLS.xAccount)}>
             <svg class="h-3.5 w-3.5 {iconClass}" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
             <span>Twitter / X</span>
           </DropdownMenuItem>
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://github.com/mulverseco')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl(MULVERSE_URLS.github)}>
             <Github size={13} class={iconClass} />
             <span>GitHub</span>
           </DropdownMenuItem>
@@ -158,11 +159,11 @@ const iconClass = "text-muted-foreground shrink-0";
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent align="end" sideOffset={4} class="w-48 text-start">
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/terms')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl(MULVERSE_URLS.orbisTerms)}>
             <DocumentPage size={13} class={iconClass} />
             <span>{m.common_sidebar_help_terms()}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/privacy')}>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl(MULVERSE_URLS.orbisPrivacy)}>
             <Lock size={13} class={iconClass} />
             <span>{m.common_login_privacy_policy()}</span>
           </DropdownMenuItem>

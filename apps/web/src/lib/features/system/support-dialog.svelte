@@ -4,10 +4,12 @@
 -->
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
+import { MULVERSE_URLS } from "@orbis/utils";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api/client";
 import { isDesktopApp } from "$lib/api";
 import type { AppInfo } from "$lib/api/types";
+import { authStore, orgContext } from "$lib/stores";
 import {
   Dialog,
   DialogContent,
@@ -77,6 +79,9 @@ const categories = $derived([
   { value: "other", label: m.ui_system_support_category_general() },
 ]);
 
+const userEmail = $derived(authStore.user?.email?.trim() || "");
+const userName = $derived(authStore.user?.full_name || "");
+const effectiveEmail = $derived(userEmail || email.trim());
 const selectedCat = $derived(categories.find((c) => c.value === category));
 
 const diagnosticPayload = $derived({
@@ -85,6 +90,10 @@ const diagnosticPayload = $derived({
   build_profile: info?.build_profile,
   target_os: info?.target_os,
   target_arch: info?.target_arch,
+  org_id: orgContext.orgId || authStore.orgId || undefined,
+  org_name: orgContext.displayName || undefined,
+  user_id: authStore.userId || undefined,
+  user_name: userName || undefined,
   platform: typeof navigator !== "undefined" ? navigator.platform : undefined,
   locale: typeof navigator !== "undefined" ? navigator.language : undefined,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -96,7 +105,7 @@ function createSupportReport() {
   return `${m.ui_system_support_report_title()}
 ${m.ui_system_support_category()}: ${selectedCat?.label ?? category}
 ${m.ui_system_support_subject_title()}: ${subject.trim()}
-${m.ui_system_support_contact_email_optional()}: ${email.trim() || "-"}
+${m.ui_system_support_contact_email_optional()}: ${effectiveEmail || "-"}
 
 ${m.ui_system_support_description_details()}:
 ${message.trim()}
@@ -128,7 +137,7 @@ async function handleSubmit(e: Event) {
   isComposeOpened = false;
 
   try {
-    const mailto = new URL("mailto:support@mulverse.com");
+    const mailto = new URL(`mailto:${MULVERSE_URLS.supportEmail}`);
     mailto.searchParams.set("subject", `[Orbis] ${subject.trim()}`);
     mailto.searchParams.set("body", createSupportReport());
     composeUrl = mailto.toString();
@@ -239,8 +248,8 @@ $effect(() => {
     {:else}
       <!-- Form Body -->
       <form onsubmit={handleSubmit} class="flex-1 overflow-y-auto p-6 space-y-4">
-        <!-- Category & Email -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Category (and Email only if not available from user profile) -->
+        <div class="grid grid-cols-1 {!userEmail ? 'sm:grid-cols-2' : ''} gap-4">
           <div class="space-y-1.5">
             <Label class="text-xs font-medium text-foreground">
               {m.ui_system_support_category()}
@@ -263,18 +272,20 @@ $effect(() => {
             </Select>
           </div>
 
-          <div class="space-y-1.5">
-            <Label for="support-email" class="text-xs font-medium text-foreground">
-              {m.ui_system_support_contact_email_optional()}
-            </Label>
-            <Input
-              id="support-email"
-              type="email"
-              placeholder="admin@institution.edu"
-              bind:value={email}
-              class="h-9 text-xs"
-            />
-          </div>
+          {#if !userEmail}
+            <div class="space-y-1.5">
+              <Label for="support-email" class="text-xs font-medium text-foreground">
+                {m.ui_system_support_contact_email_optional()}
+              </Label>
+              <Input
+                id="support-email"
+                type="email"
+                placeholder="admin@institution.edu"
+                bind:value={email}
+                class="h-9 text-xs"
+              />
+            </div>
+          {/if}
         </div>
 
         <!-- Subject -->

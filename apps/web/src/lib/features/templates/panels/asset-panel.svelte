@@ -1,4 +1,5 @@
 <script lang="ts">
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 import { LoadingIndicator, toast } from "@orbis/ui";
@@ -243,11 +244,11 @@ function triggerUpload() {
               {#await resolveDocumentUrl(getDocumentSource(doc), doc.id)}
                 <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
               {:then srcUrl}
-                <img
+                <SmoothImage
                   src={srcUrl}
                   alt={doc.name}
+                  containerClass="w-full h-full"
                   class="w-full h-full object-cover"
-                  loading="lazy"
                 />
               {:catch}
                 <Photo size={20} class="text-muted-foreground/30" />

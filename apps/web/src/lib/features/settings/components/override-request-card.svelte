@@ -1,16 +1,16 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { formatDate } from "$lib/core/i18n";
-import { Card, CardContent } from "@orbis/ui/card";
+import { Card } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Textarea } from "@orbis/ui/textarea";
-import { Separator } from "@orbis/ui/separator";
+import { LoadingIndicator } from "@orbis/ui";
 import {
   AdjustmentsHorizontal,
-  ArrowPath,
   CheckCircle,
   CheckSquare,
+  ChevronRight,
   ClockRotateRight,
   Lock,
   Tag,
@@ -25,7 +25,7 @@ let {
   showRequester,
   canReview,
   processing,
-  actionNotes = $bindable(""),
+  actionNotes = $bindable(),
   onapprove,
   onreject,
 }: {
@@ -127,50 +127,48 @@ const typeInfo = $derived(getOverrideTypeInfo(request.override_type));
 const TypeIcon = $derived(typeInfo.icon);
 </script>
 
-<Card class="border-border/60 bg-card shadow-xs">
-  <CardContent class="flex flex-col gap-3 p-4 sm:p-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="flex flex-wrap items-center gap-2">
+<Card class="overflow-hidden rounded-md border-border/60 bg-card shadow-2xs transition-colors hover:border-border">
+  <div class="flex flex-col gap-3 p-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-1.5">
         <Badge
           variant={typeInfo.variant}
-          class="gap-1.5 text-xs font-semibold"
+          class="h-5 gap-1 rounded-full px-2 text-[11px] font-semibold"
         >
-          <TypeIcon size={14} />
+          <TypeIcon size={12} />
           {typeInfo.label}
         </Badge>
         <Badge
           variant={statusBadgeVariant(request.status)}
-          class="text-[10px] font-semibold"
+          class="h-5 rounded-full px-2 text-[10px] font-semibold"
         >
           {statusLabel(request.status)}
         </Badge>
       </div>
-      <time
-        datetime={request.created_at}
-        class="text-[11px] text-muted-foreground"
-      >
-        {formatDate(request.created_at)}
-      </time>
+
+      <div class="flex items-center gap-3 text-[11px] text-muted-foreground">
+        {#if showRequester}
+          <span class="inline-flex items-center gap-1">
+            <User size={12} class="shrink-0" />
+            <span class="font-medium text-foreground">
+              {request.requested_by_name || request.requested_by}
+            </span>
+          </span>
+        {/if}
+        <time datetime={request.created_at} class="font-mono">
+          {formatDate(request.created_at)}
+        </time>
+      </div>
     </div>
 
-    <div class="space-y-2">
-      <p class="text-sm font-medium leading-relaxed text-foreground">
-        {request.reason}
-      </p>
-      {#if showRequester}
-        <p class="text-xs text-muted-foreground">
-          {m.ui_copy_requested_by_a2679cef()}
-          <span class="ms-1 font-medium text-foreground">
-            {request.requested_by_name || request.requested_by}
-          </span>
-        </p>
-      {/if}
-    </div>
+    <p class="text-xs font-medium leading-relaxed text-foreground sm:text-sm">
+      {request.reason}
+    </p>
 
     {#if request.field_name || request.old_value || request.new_value}
-      <div class="flex flex-wrap items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+      <div class="flex flex-wrap items-center gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 font-mono text-xs">
         {#if request.field_name}
-          <span class="font-medium text-muted-foreground">
+          <span class="font-sans font-medium text-muted-foreground">
             {request.field_name}
           </span>
         {/if}
@@ -195,65 +193,64 @@ const TypeIcon = $derived(typeInfo.icon);
         {#each request.approval_chain as step, index (step.step_order)}
           <Badge
             variant={statusBadgeVariant(step.status)}
-            class="text-[10px] font-medium"
+            class="h-5 rounded-full px-2 text-[10px] font-medium"
           >
             {step.approver_name || step.approver_role}
           </Badge>
           {#if index < request.approval_chain.length - 1}
-            <span aria-hidden="true" class="text-xs text-muted-foreground">›</span>
+            <ChevronRight size={12} class="text-muted-foreground rtl:rotate-180" />
           {/if}
         {/each}
       </div>
     {/if}
 
     {#if request.resolution_notes}
-      <div class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+      <div class="rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs">
         <span class="font-semibold text-foreground">
           {m.ui_copy_resolution_371c8da4()}
         </span>
-        <span class="text-muted-foreground">
+        <span class="ms-1 text-muted-foreground">
           {request.resolution_notes}
         </span>
       </div>
     {/if}
+  </div>
 
-    {#if canReview}
-      <Separator />
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <Textarea
-          bind:value={actionNotes}
-          placeholder={m.ui_copy_approval_notes_or_decision_reason_optional_a41d972b()}
-          rows={2}
+  {#if canReview}
+    <div class="flex flex-col gap-2.5 border-t border-border/50 bg-muted/20 px-4 py-3 sm:flex-row sm:items-end">
+      <Textarea
+        bind:value={() => actionNotes ?? "", (v) => (actionNotes = v)}
+        placeholder={m.ui_copy_approval_notes_or_decision_reason_optional_a41d972b()}
+        rows={1}
+        disabled={processing}
+        class="min-h-9 flex-1 bg-background text-xs"
+      />
+      <div class="flex shrink-0 items-center gap-2">
+        <Button
+          variant="lime"
+          size="sm"
+          class="h-8 gap-1.5 px-3 text-xs font-semibold"
           disabled={processing}
-          class="min-h-16 flex-1 text-xs"
-        />
-        <div class="flex shrink-0 gap-2">
-          <Button
-            variant="lime"
-            size="sm"
-            class="gap-1.5"
-            disabled={processing}
-            onclick={onapprove}
-          >
-            {#if processing}
-              <ArrowPath size={14} class="animate-spin" />
-            {:else}
-              <CheckCircle size={14} />
-            {/if}
-            {m.ui_copy_approve_7da54ae0()}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            class="gap-1.5"
-            disabled={processing}
-            onclick={onreject}
-          >
-            <XMark size={14} />
-            {m.common_approval_reject()}
-          </Button>
-        </div>
+          onclick={onapprove}
+        >
+          {#if processing}
+            <LoadingIndicator size={13} />
+          {:else}
+            <CheckCircle size={13} />
+          {/if}
+          {m.ui_copy_approve_7da54ae0()}
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          class="h-8 gap-1.5 px-3 text-xs font-semibold"
+          disabled={processing}
+          onclick={onreject}
+        >
+          <XMark size={13} />
+          {m.common_approval_reject()}
+        </Button>
       </div>
-    {/if}
-  </CardContent>
+    </div>
+  {/if}
 </Card>

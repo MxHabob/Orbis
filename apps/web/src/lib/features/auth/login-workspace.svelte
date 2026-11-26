@@ -6,6 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui/card";
 import { Logo } from "@orbis/icons";
+import { MULVERSE_URLS } from "@orbis/utils";
 
 import AnnouncementBanner from "./components/announcement-banner.svelte";
 import BackgroundPattern from "./components/background-pattern.svelte";
@@ -70,7 +71,7 @@ import EnvironmentSelect from "./components/environment-select.svelte";
 					<p class="font-sans text-[10px] text-muted-foreground/80 leading-normal">
 						{m.auth_login_terms_prefix()}{' '}
 						<a
-							href="https://mulverse.com/?route=terms"
+							href={MULVERSE_URLS.orbisTerms}
 							class="text-muted-foreground hover:text-primary transition-colors underline font-medium"
 							target="_blank"
 							rel="noreferrer"
@@ -79,7 +80,7 @@ import EnvironmentSelect from "./components/environment-select.svelte";
 						</a>{' '}
 						{m.auth_login_and()}{' '}
 						<a
-							href="https://mulverse.com/?route=policy"
+							href={MULVERSE_URLS.orbisPrivacy}
 							class="text-muted-foreground hover:text-primary transition-colors underline font-medium"
 							target="_blank"
 							rel="noreferrer"

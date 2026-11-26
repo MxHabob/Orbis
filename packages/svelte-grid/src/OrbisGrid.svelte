@@ -2130,21 +2130,25 @@ const headerPanes = $derived.by(() => {
                       {@const src = getAvatarSrc(row)}
                       <div class="orbis-avatar-cell">
                         <div class="orbis-avatar-circle">
+                          <span class="orbis-avatar-fallback">{getInitials(val)}</span>
                           {#if src}
                             <img
                               src={src}
                               alt={val}
+                              loading="lazy"
+                              decoding="async"
                               class="orbis-avatar-img"
+                              onload={(event) => {
+                                const image = event.currentTarget;
+                                if (image instanceof HTMLImageElement) {
+                                  image.style.opacity = "1";
+                                }
+                              }}
                               onerror={(event) => {
                                 const image = event.currentTarget;
                                 if (image instanceof HTMLImageElement) image.hidden = true;
-                                const fallback = image.nextElementSibling;
-                                if (fallback instanceof HTMLElement) fallback.hidden = false;
                               }}
                             />
-                            <span class="orbis-avatar-fallback" hidden>{getInitials(val)}</span>
-                          {:else}
-                            <span class="orbis-avatar-fallback">{getInitials(val)}</span>
                           {/if}
                         </div>
                         <span class="orbis-avatar-text">{val}</span>
@@ -2726,6 +2730,7 @@ const headerPanes = $derived.by(() => {
     min-width: 0;
   }
   .orbis-avatar-circle {
+    position: relative;
     width: 1.375rem;
     height: 1.375rem;
     border-radius: 9999px;
@@ -2741,9 +2746,13 @@ const headerPanes = $derived.by(() => {
     border: 1px solid var(--border);
   }
   .orbis-avatar-img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    opacity: 0;
+    transition: opacity 180ms ease-out;
   }
   .orbis-avatar-fallback {
     text-transform: uppercase;

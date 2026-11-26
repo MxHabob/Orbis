@@ -8,6 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui";
 import { Check, XMark } from "@orbis/icons";
+import { MULVERSE_URLS } from "@orbis/utils";
 import { licenseStore, uiStore } from "$lib/stores";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
@@ -180,7 +181,7 @@ const currentPlanDisplay = $derived.by(() => {
           {currentPlanDisplay}
         </span>
         <a
-          href="https://www.mulverse.com"
+          href={MULVERSE_URLS.website}
           target="_blank"
           rel="noopener noreferrer"
           class="text-[11px] font-semibold text-primary hover:underline mt-1.5 transition-colors"

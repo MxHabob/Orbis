@@ -5,10 +5,11 @@ import { api } from "$lib/api/client";
 import type { ReleaseChangelogItem } from "$lib/api/types";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
+import { MULVERSE_URLS } from "@orbis/utils";
 
 let latestRelease = $state<ReleaseChangelogItem | null>(null);
 
-const MULVERSE_WEBSITE = "https://www.mulverse.com/";
+const MULVERSE_WEBSITE = MULVERSE_URLS.website;
 
 onMount(async () => {
 	try {

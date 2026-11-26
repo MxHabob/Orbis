@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@orbis/ui/card";
 import { Bolt, ArrowPath, Check, Trash } from "@orbis/icons";
+import { MULVERSE_URLS } from "@orbis/utils";
 import { formatLicensePlan } from "$lib/utils/license";
 import { formatDate } from "$lib/core/i18n";
 import LicensePlanCard from "./components/license-plan-card.svelte";
@@ -285,7 +286,7 @@ const statusBadge = $derived.by(() => {
           </div>
           <div class="flex shrink-0 items-center gap-2">
             <a
-              href="http://mulverse.com/p/orbis/pricing"
+              href={MULVERSE_URLS.orbisPricing}
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"

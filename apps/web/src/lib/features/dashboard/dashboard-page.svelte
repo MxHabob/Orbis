@@ -10,6 +10,7 @@ import WelcomeSection from "./components/welcome-section.svelte";
 import QuickActions from "./components/quick-actions.svelte";
 import WidgetCards from "./components/widget-cards.svelte";
 import DesktopBanner from "./components/desktop-banner.svelte";
+import MulverseIntroDialog from "./components/mulverse-intro-dialog.svelte";
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 import { authStore, effectiveContext } from "$lib/stores";
@@ -49,4 +50,13 @@ const error = $derived(
 </div>
 {#if !isLoading && !error}
 	<DesktopBanner />
+	<MulverseIntroDialog
+		{orgId}
+		hasOperationalActivity={Boolean(
+			stats &&
+				(stats.active_sections > 0 ||
+					stats.total_students > 0 ||
+					stats.total_employees > 0),
+		)}
+	/>
 {/if}

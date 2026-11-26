@@ -1,4 +1,5 @@
 <script lang="ts">
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -98,7 +99,14 @@ function formatSize(bytes?: number | null) {
     <!-- Media Rendering -->
     {#if isNearViewport && isImage}
       {#await resolveDocumentUrl(source, document.id) then mediaUrl}
-        <img src={mediaUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]" />
+        <SmoothImage
+          src={mediaUrl}
+          alt={document.name}
+          width="320"
+          height="240"
+          containerClass="h-full w-full"
+          class="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+        />
       {:catch}
         <DocumentPage class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
@@ -206,7 +214,7 @@ function formatSize(bytes?: number | null) {
       transition: none;
     }
 
-    .archive-media img {
+    .archive-media :global(img) {
       transform: none;
     }
 

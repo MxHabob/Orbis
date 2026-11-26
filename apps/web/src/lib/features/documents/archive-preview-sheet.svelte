@@ -1,4 +1,5 @@
 <script lang="ts">
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Sheet, SheetContent, SheetFooter } from "@orbis/ui/sheet";
@@ -168,9 +169,11 @@ function endPan() {
             onpointerdown={startPan}
           >
             {#if url}
-              <img
+              <SmoothImage
                 src={url}
                 alt={document.name}
+                loading="eager"
+                containerClass="flex h-full w-full items-center justify-center"
                 class="max-h-full max-w-full object-contain transition-transform duration-75"
                 style="transform: translate({imagePanX}px, {imagePanY}px) scale({imageZoom}); cursor: {isPanning ? 'grabbing' : 'grab'};"
                 onload={(event) => {
