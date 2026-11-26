@@ -71,6 +71,8 @@
   "academics_behavior_type_positive": "Positive (Merit)",
   "bilingual_entry_failure": "Couldn't create a suggestion. You can continue entering the information manually.",
   "bilingual_entry_loading": "Preparing a local suggestion...",
+  "academics_class_delete_confirm": "Delete section “{name}”?",
+  "academics_class_delete_success": "Section deleted successfully",
   "academics_class_detail_tab_students": "Students",
   "academics_class_evaluation_ai_ask_orbis_query": "Provide an analysis of the performance of section {name}, its attendance and behavior, and recommendations to improve its performance",
   "academics_class_label_capacity": "Max Capacity (Student Limit)",

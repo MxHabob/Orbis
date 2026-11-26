@@ -3562,6 +3562,78 @@ export type ClosePeriodResponses = {
 
 export type ClosePeriodResponse = ClosePeriodResponses[keyof ClosePeriodResponses];
 
+export type CloseEnrollmentWindowData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/enrollment/close';
+};
+
+export type CloseEnrollmentWindowResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type CloseEnrollmentWindowResponse = CloseEnrollmentWindowResponses[keyof CloseEnrollmentWindowResponses];
+
+export type OpenEnrollmentWindowData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/enrollment/open';
+};
+
+export type OpenEnrollmentWindowResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type OpenEnrollmentWindowResponse = OpenEnrollmentWindowResponses[keyof OpenEnrollmentWindowResponses];
+
+export type CloseGradeEntryWindowData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/grade-entry/close';
+};
+
+export type CloseGradeEntryWindowResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type CloseGradeEntryWindowResponse = CloseGradeEntryWindowResponses[keyof CloseGradeEntryWindowResponses];
+
+export type OpenGradeEntryWindowData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/grade-entry/open';
+};
+
+export type OpenGradeEntryWindowResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type OpenGradeEntryWindowResponse = OpenGradeEntryWindowResponses[keyof OpenGradeEntryWindowResponses];
+
 export type LockPeriodData = {
     body?: never;
     path: {
@@ -3579,6 +3651,24 @@ export type LockPeriodResponses = {
 };
 
 export type LockPeriodResponse = LockPeriodResponses[keyof LockPeriodResponses];
+
+export type TransitionPeriodStateData = {
+    body: unknown;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}/transition';
+};
+
+export type TransitionPeriodStateResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type TransitionPeriodStateResponse = TransitionPeriodStateResponses[keyof TransitionPeriodStateResponses];
 
 export type UnlockPeriodData = {
     body?: never;
@@ -7462,6 +7552,24 @@ export type CreateSectionResponses = {
 };
 
 export type CreateSectionResponse = CreateSectionResponses[keyof CreateSectionResponses];
+
+export type DeleteSectionData = {
+    body?: never;
+    path: {
+        /**
+         * Section ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/sections/{id}';
+};
+
+export type DeleteSectionResponses = {
+    200: boolean;
+};
+
+export type DeleteSectionResponse = DeleteSectionResponses[keyof DeleteSectionResponses];
 
 export type GetSectionData = {
     body?: never;

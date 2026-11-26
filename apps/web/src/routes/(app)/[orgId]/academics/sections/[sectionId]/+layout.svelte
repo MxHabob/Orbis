@@ -7,13 +7,16 @@
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
+import { useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Pencil, Share, Sparkles, Users } from "@orbis/icons";
+import { Pencil, Share, Sparkles, Trash, Users } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n/locale";
 import * as m from "$lib/paraglide/messages";
-import { extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import { confirmStore } from "$lib/stores";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import type { SplitActionItem } from "$lib/shared/components/split-action-menu.svelte";
@@ -27,6 +30,7 @@ import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
+const queryClient = useQueryClient();
 
 const sectionId = $derived(
   data.sectionId || String(page.params.sectionId || ""),
@@ -104,6 +108,31 @@ function handleAskOrbis() {
   });
 }
 
+async function handleDeleteSection() {
+  if (!classData) return;
+  const displayName = l(classData.name_ar, classData.name) || classData.code || sectionId;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete(),
+    description: m.academics_class_delete_confirm({ name: displayName }),
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.deleteSection(sectionId);
+    toast.success(m.academics_class_delete_success());
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.academic.classes(orgId),
+    });
+    await goto(localizeHref(`/${orgId}/academics/sections`), {
+      replaceState: true,
+    });
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
+}
+
 const classHeaderActions = $derived<SplitActionItem[]>([
   {
     id: "edit-section",
@@ -116,6 +145,14 @@ const classHeaderActions = $derived<SplitActionItem[]>([
     label: m.academics_student_evaluation_ask_orbis_btn_short(),
     icon: Sparkles,
     onSelect: handleAskOrbis,
+  },
+  {
+    id: "delete-section",
+    label: m.common_action_delete(),
+    icon: Trash,
+    separatorBefore: true,
+    destructive: true,
+    onSelect: handleDeleteSection,
   },
 ]);
 </script>

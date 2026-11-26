@@ -517,6 +517,63 @@ impl AcademicService {
         self.section_repo.find_by_id(id).await
     }
 
+    /// Soft-delete Section (Class)
+    pub async fn delete_section(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::SectionDelete)
+            .await?;
+
+        let mut section = self
+            .section_repo
+            .find_by_id(id)
+            .await?
+            .filter(|s| s.org_id == ctx.tenant_id && !s.is_deleted)
+            .ok_or_else(|| DomainError::NotFound(format!("Section {} not found", id)))?;
+
+        if !(ctx.actor.is_system()
+            && matches!(
+                &ctx.source,
+                crate::context::ActionSource::System | crate::context::ActionSource::Autopilot
+            ))
+        {
+            if let Some(actor_id) = ctx.actor.id() {
+                if let crate::ports::iam::PermissionScope::Units(roots) = self
+                    .permission_checker
+                    .permission_scope(actor_id, ctx.tenant_id, Permission::SectionDelete.as_str())
+                    .await?
+                {
+                    if !section.org_unit_id.is_some_and(|uid| roots.contains(&uid)) {
+                        return Err(DomainError::Unauthorized(
+                            "Section is outside your authorized unit scope".into(),
+                        ));
+                    }
+                }
+            }
+        }
+
+        let now = Utc::now();
+        section.is_deleted = true;
+        section.is_active = false;
+        section.deleted_at = Some(now);
+        section.updated_at = now;
+
+        self.section_repo.save(&section).await?;
+
+        let _ = self
+            .event_bus
+            .publish(
+                ctx,
+                &DomainEvent::SectionDeleted {
+                    section_id: id,
+                    org_id: section.org_id,
+                    timestamp: now,
+                },
+            )
+            .await;
+
+        Ok(())
+    }
+
     /// Assign teaching of a subject to a Section (SectionSubject)
     pub async fn assign_section_subject(
         &self,

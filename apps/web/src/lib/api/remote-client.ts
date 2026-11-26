@@ -772,6 +772,10 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
+  async deleteSection(id: string): Promise<void> {
+    await this.call(sdk.deleteSection({ client: this.client, path: { id } }));
+  }
+
   async listSubjects(): Promise<SubjectDto[]> {
     return this.call(sdk.listSubjects({ client: this.client })) ?? [];
   }

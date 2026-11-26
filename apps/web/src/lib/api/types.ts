@@ -1975,6 +1975,7 @@ export interface OrbisApiClient {
   updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
   listSections(): Promise<SectionDto[]>;
   getSection(id: string): Promise<SectionDto>;
+  deleteSection(id: string): Promise<void>;
   assignSectionSubject(
     req: AssignSectionSubjectRequest,
   ): Promise<SectionSubjectDto>;

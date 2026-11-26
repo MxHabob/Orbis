@@ -412,15 +412,16 @@ impl AutopilotEngine {
             }
             TaskType::LateFeeReminder => {
                 let fee_id = target()?;
-                let (Some(notif), Some(fee_repo), Some(student_repo)) =
-                    (&self.notification_service, &self.fee_repo, &self.student_repo)
-                else {
+                let (Some(notif), Some(fee_repo), Some(student_repo)) = (
+                    &self.notification_service,
+                    &self.fee_repo,
+                    &self.student_repo,
+                ) else {
                     return Ok(());
                 };
-                let fee = fee_repo
-                    .find_by_id(fee_id)
-                    .await?
-                    .ok_or_else(|| DomainError::NotFound(format!("Student fee {} not found", fee_id)))?;
+                let fee = fee_repo.find_by_id(fee_id).await?.ok_or_else(|| {
+                    DomainError::NotFound(format!("Student fee {} not found", fee_id))
+                })?;
                 if let Some(student) = student_repo.find_by_id(fee.student_id).await? {
                     if let Some(user_id) = student.user_id {
                         let _ = notif

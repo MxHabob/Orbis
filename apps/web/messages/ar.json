@@ -71,6 +71,8 @@
   "academics_behavior_type_positive": "إيجابي (استحقاق)",
   "bilingual_entry_failure": "تعذر إنشاء الاقتراح، يمكنك متابعة الإدخال يدويًا.",
   "bilingual_entry_loading": "جارٍ إعداد اقتراح محلي...",
+  "academics_class_delete_confirm": "هل تريد حذف الشعبة «{name}»؟",
+  "academics_class_delete_success": "تم حذف الشعبة بنجاح",
   "academics_class_detail_tab_students": "الطلاب",
   "academics_class_evaluation_ai_ask_orbis_query": "حلّل أداء طلاب الشعبة {name}، ونسب حضورهم وسلوكهم، وما هو المقترح لتحسين أداء هذا الفترة الأكاديمية",
   "academics_class_label_capacity": "السعة القصوى للطلاب",

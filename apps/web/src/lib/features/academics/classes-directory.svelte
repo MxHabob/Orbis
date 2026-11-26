@@ -20,12 +20,14 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import { BookOpen, Plus, Users, Refresh, Pencil } from "@orbis/icons";
+import { BookOpen, Plus, Users, Refresh, Pencil, Trash } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n/locale";
 import { fade } from "svelte/transition";
+import { toast } from "@orbis/ui";
 import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
+import { confirmStore } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -148,6 +150,28 @@ const error = $derived(
 // Sheet trigger state
 let isModalOpen = $state(false);
 let editingSection = $state<SectionDto | null>(null);
+
+async function handleDeleteSection(cls: SectionDto) {
+  const displayName =
+    l(cls.name_ar, cls.name) || cls.code || m.common_classes_value_unavailable();
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete(),
+    description: m.academics_class_delete_confirm({ name: displayName }),
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.deleteSection(cls.id);
+    toast.success(m.academics_class_delete_success());
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.academic.classes(orgId),
+    });
+  } catch (e) {
+    toast.error(extractErrorMessage(e));
+  }
+}
 
 function refetchAll() {
   classesQuery.refetch();
@@ -378,7 +402,7 @@ const classMenuActions = $derived([
 										{/if}
 									</div>
 									<div
-										class="me-8 px-1.5 py-0.5 rounded text-[9px] font-mono border border-border bg-muted/50 text-muted-foreground shrink-0"
+										class="me-16 px-1.5 py-0.5 rounded text-[9px] font-mono border border-border bg-muted/50 text-muted-foreground shrink-0"
 									>
 										{cls.code || m.common_classes_code_unavailable()}
 									</div>
@@ -459,21 +483,37 @@ const classMenuActions = $derived([
 								</CardFooter>
 							</Card>
 							</a>
-							<Button
-								variant="outline"
-								size="icon-xs"
-								class="absolute end-2 top-2 z-10 h-7 w-7 rounded-md border-border/70 bg-background/95 shadow-sm backdrop-blur-sm opacity-100 transition-colors hover:border-primary/50 hover:text-primary"
-								onclick={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									editingSection = cls;
-									isModalOpen = true;
-								}}
-								title={m.common_action_edit()}
-								aria-label={m.common_action_edit()}
-							>
-								<Pencil size={12} />
-							</Button>
+							<div class="absolute end-2 top-2 z-10 flex items-center gap-1">
+								<Button
+									variant="outline"
+									size="icon-xs"
+									class="h-7 w-7 rounded-md border-border/70 bg-background/95 shadow-sm backdrop-blur-sm opacity-100 transition-colors hover:border-primary/50 hover:text-primary"
+									onclick={(event) => {
+										event.preventDefault();
+										event.stopPropagation();
+										editingSection = cls;
+										isModalOpen = true;
+									}}
+									title={m.common_action_edit()}
+									aria-label={m.common_action_edit()}
+								>
+									<Pencil size={12} />
+								</Button>
+								<Button
+									variant="outline"
+									size="icon-xs"
+									class="h-7 w-7 rounded-md border-border/70 bg-background/95 shadow-sm backdrop-blur-sm opacity-100 transition-colors hover:border-destructive/50 hover:text-destructive"
+									onclick={(event) => {
+										event.preventDefault();
+										event.stopPropagation();
+										void handleDeleteSection(cls);
+									}}
+									title={m.common_action_delete()}
+									aria-label={m.common_action_delete()}
+								>
+									<Trash size={12} />
+								</Button>
+							</div>
 						</div>
 					{/each}
 				</div>

@@ -143,6 +143,7 @@ use api::{
         api::academic_routes::update_section,
         api::academic_routes::list_sections,
         api::academic_routes::get_section,
+        api::academic_routes::delete_section,
         api::academic_routes::assign_section_subject,
         api::academic_routes::get_section_subject,
         api::academic_routes::update_section_subject,

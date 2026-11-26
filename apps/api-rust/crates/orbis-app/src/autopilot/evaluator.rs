@@ -271,10 +271,8 @@ impl AutopilotEvaluator {
             if matches!(
                 period.period_kind,
                 PeriodKind::Teaching | PeriodKind::Examination
-            ) && matches!(
-                period_state_str.as_str(),
-                "active_teaching" | "final_exams"
-            ) && period.end_date < now
+            ) && matches!(period_state_str.as_str(), "active_teaching" | "final_exams")
+                && period.end_date < now
                 && period.is_grade_entry_open
             {
                 let mut task = AutopilotTask::new(

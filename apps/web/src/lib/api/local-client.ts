@@ -530,6 +530,10 @@ export class LocalClient implements OrbisApiClient {
     );
   }
 
+  async deleteSection(id: string): Promise<void> {
+    await unwrap(await invoke("academic_delete_section", { id }));
+  }
+
   async listSubjects(): Promise<SubjectDto[]> {
     return unwrap(await invoke("academic_list_subjects"));
   }
