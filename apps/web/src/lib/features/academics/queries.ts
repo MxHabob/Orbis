@@ -6,6 +6,7 @@ import {
   type RankingItemDto,
   type ClassDto,
   type SectionDto,
+  type SectionsSummaryDto,
   type SubjectDto,
   type AcademicPeriodDto,
   type AcademicCalendarDto,
@@ -49,6 +50,22 @@ export function createClassesQuery(orgId: () => string) {
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
+}
+
+/** Sections directory with server-aggregated student and subject counts. */
+export function createSectionsSummaryQuery(
+  orgId: () => string,
+  periodId?: () => string | undefined,
+) {
+  return createQuery<SectionsSummaryDto>(() => {
+    const resolvedPeriodId = periodId?.() || undefined;
+    return {
+      queryKey: queryKeys.academic.sectionsSummary(orgId(), resolvedPeriodId),
+      queryFn: () => api.getSectionsSummary(resolvedPeriodId),
+      enabled: !!orgId(),
+      staleTime: 3 * 60 * 1000,
+    };
+  });
 }
 
 /** Single class by ID. */

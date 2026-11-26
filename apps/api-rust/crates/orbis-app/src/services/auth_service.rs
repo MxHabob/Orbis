@@ -332,14 +332,31 @@ impl AuthService {
     pub async fn login(
         &self,
         ctx: &RequestContext,
-        email: &str,
+        identifier: &str,
         password: &str,
     ) -> Result<LoginResponse, DomainError> {
-        let user = self
-            .user_repo
-            .find_by_email(email)
-            .await?
-            .ok_or_else(|| DomainError::Unauthorized("Invalid email or password".into()))?;
+        let normalized = identifier.trim().to_lowercase();
+        let user = if normalized.contains('@') {
+            self.user_repo.find_by_email(&normalized).await?
+        } else {
+            None
+        };
+
+        let user = match user {
+            Some(u) => Some(u),
+            None => {
+                if let Some(identity) = self
+                    .user_identity_repo
+                    .find_by_provider("password", &normalized)
+                    .await?
+                {
+                    self.user_repo.find_by_id(identity.user_id).await?
+                } else {
+                    self.user_repo.find_by_email(&normalized).await?
+                }
+            }
+        }
+        .ok_or_else(|| DomainError::Unauthorized("Invalid credentials".into()))?;
 
         let hash = user.password_hash.as_ref().ok_or_else(|| {
             DomainError::Unauthorized("Password authentication not supported for this user".into())

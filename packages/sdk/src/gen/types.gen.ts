@@ -2589,6 +2589,20 @@ export type SectionSubjectDto = {
     weekly_hours?: number | null;
 };
 
+export type SectionSummaryItemDto = {
+    active_students: number;
+    section: SectionDto;
+    subject_count: number;
+};
+
+export type SectionsSummaryDto = {
+    average_section_size: number;
+    items: Array<SectionSummaryItemDto>;
+    period_id?: string | null;
+    total_enrolled_students: number;
+    total_sections: number;
+};
+
 export type SessionResponse = {
     effective_context: EffectiveContextDto;
     org_id: string;
@@ -7552,6 +7566,21 @@ export type CreateSectionResponses = {
 };
 
 export type CreateSectionResponse = CreateSectionResponses[keyof CreateSectionResponses];
+
+export type GetSectionsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        period_id?: string | null;
+    };
+    url: '/api/v1/sections/summary';
+};
+
+export type GetSectionsSummaryResponses = {
+    200: SectionsSummaryDto;
+};
+
+export type GetSectionsSummaryResponse = GetSectionsSummaryResponses[keyof GetSectionsSummaryResponses];
 
 export type DeleteSectionData = {
     body?: never;

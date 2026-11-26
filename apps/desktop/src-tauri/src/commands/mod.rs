@@ -236,6 +236,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         academic_cmds::academic_create_section,
         academic_cmds::academic_update_section,
         academic_cmds::academic_list_sections,
+        academic_cmds::academic_get_sections_summary,
         academic_cmds::academic_get_section,
         academic_cmds::academic_delete_section,
         academic_cmds::academic_assign_section_subject,

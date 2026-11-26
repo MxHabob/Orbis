@@ -53,6 +53,7 @@ import type {
   CreateSubjectRequest,
   UpdateSubjectRequest,
   SectionDto,
+  SectionsSummaryDto,
   CreateSectionRequest,
   UpdateSectionRequest,
   AssignSectionSubjectRequest,
@@ -750,6 +751,24 @@ export class RemoteClient implements OrbisApiClient {
   async listSections(orgId?: string): Promise<SectionDto[]> {
     const res = await this.call(sdk.listSections({ client: this.client }));
     return res ?? [];
+  }
+
+  async getSectionsSummary(periodId?: string): Promise<SectionsSummaryDto> {
+    const res = await this.call(
+      sdk.getSectionsSummary({
+        client: this.client,
+        query: periodId ? { period_id: periodId } : undefined,
+      }),
+    );
+    return (
+      res ?? {
+        period_id: periodId ?? null,
+        total_sections: 0,
+        total_enrolled_students: 0,
+        average_section_size: 0,
+        items: [],
+      }
+    );
   }
 
   async getSection(id: string): Promise<SectionDto> {

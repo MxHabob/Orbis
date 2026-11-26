@@ -49,6 +49,7 @@ import type {
   UpdatePeriodRequest,
   SubjectDto,
   SectionDto,
+  SectionsSummaryDto,
   SectionSubjectDto,
   CreateSectionRequest,
   UpdateSectionRequest,
@@ -1974,6 +1975,7 @@ export interface OrbisApiClient {
   createSection(req: CreateSectionRequest): Promise<SectionDto>;
   updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
   listSections(): Promise<SectionDto[]>;
+  getSectionsSummary(periodId?: string): Promise<SectionsSummaryDto>;
   getSection(id: string): Promise<SectionDto>;
   deleteSection(id: string): Promise<void>;
   assignSectionSubject(

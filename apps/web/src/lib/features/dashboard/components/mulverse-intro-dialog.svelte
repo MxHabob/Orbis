@@ -14,8 +14,9 @@ import { Input } from "@orbis/ui/input";
 import { FormField, toast } from "@orbis/ui";
 import { GlobeAlt } from "@orbis/icons";
 import { MULVERSE_URLS } from "@orbis/utils";
+import { l } from "$lib/core/i18n";
 import { IAM_DOMAINS, Permissions } from "$lib/core/iam/permissions";
-import { effectiveContext } from "$lib/stores";
+import { authStore, effectiveContext } from "$lib/stores";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import mulverseBanner from "$lib/assets/image.png";
@@ -50,6 +51,14 @@ const canProvisionSafeAdmin = $derived(
     (effectiveContext.hasPermission(Permissions.UserWrite) &&
       effectiveContext.hasPermission(Permissions.UserRoleWrite)),
 );
+
+const userFirstName = $derived.by(() => {
+  const full =
+    l(authStore.user?.full_name_ar, authStore.user?.full_name) ||
+    authStore.user?.full_name ||
+    "";
+  return full.trim().split(/\s+/)[0] || "Admin";
+});
 
 function storageKey(): string {
   return `${STORAGE_KEY_PREFIX}${orgId}`;
@@ -155,7 +164,7 @@ function handleOpenChange(nextOpen: boolean) {
     showCloseButton={false}
     class="w-full max-w-lg sm:max-w-[500px] gap-0 overflow-hidden font-sans text-start"
   >
-    <DialogTitle class="sr-only">{m.mulverse_intro_title()}</DialogTitle>
+    <DialogTitle class="sr-only">{m.mulverse_intro_title({ name: userFirstName })}</DialogTitle>
     <DialogDescription class="sr-only">{m.mulverse_intro_description()}</DialogDescription>
 
     <SmoothImage
@@ -170,7 +179,7 @@ function handleOpenChange(nextOpen: boolean) {
     {#if step === "intro"}
       <div class="pt-4 px-1 pb-1 flex flex-col gap-1.5 text-start">
         <h2 class="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-          {m.mulverse_intro_title()}
+          {m.mulverse_intro_title({ name: userFirstName })}
         </h2>
         <p class="text-xs sm:text-[13px] leading-relaxed text-muted-foreground">
           {m.mulverse_intro_description()}
@@ -208,9 +217,14 @@ function handleOpenChange(nextOpen: boolean) {
       </div>
     {:else}
       <form onsubmit={handleCreateSafeAccount} class="pt-4 px-1 pb-1 flex flex-col gap-3">
-        <h2 class="text-base font-bold tracking-tight text-foreground">
-          {m.mulverse_intro_form_title()}
-        </h2>
+        <div>
+          <h2 class="text-base font-bold tracking-tight text-foreground">
+            {m.mulverse_intro_form_title()}
+          </h2>
+          <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {m.mulverse_intro_form_subtitle()}
+          </p>
+        </div>
 
         <FormField
           id="safe_admin_name"

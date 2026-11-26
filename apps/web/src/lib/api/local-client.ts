@@ -41,6 +41,7 @@ import type {
   CreateSubjectRequest,
   UpdateSubjectRequest,
   SectionDto,
+  SectionsSummaryDto,
   CreateSectionRequest,
   UpdateSectionRequest,
   AssignSectionSubjectRequest,
@@ -513,6 +514,14 @@ export class LocalClient implements OrbisApiClient {
   }
   async listSections(): Promise<SectionDto[]> {
     return unwrap(await invoke("academic_list_sections"));
+  }
+
+  async getSectionsSummary(periodId?: string): Promise<SectionsSummaryDto> {
+    return unwrap(
+      await invoke("academic_get_sections_summary", {
+        periodId: periodId ?? null,
+      }),
+    );
   }
 
   async getSection(id: string): Promise<SectionDto> {

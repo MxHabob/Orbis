@@ -61,6 +61,12 @@ export const queryKeys = {
       [...queryKeys.academic.all, "subject", id] as const,
     classes: (orgId?: string) =>
       [...queryKeys.academic.all, "classes", orgId ?? "current"] as const,
+    sectionsSummary: (orgId?: string, periodId?: string) =>
+      [
+        ...queryKeys.academic.classes(orgId),
+        "summary",
+        periodId ?? "active",
+      ] as const,
     class: (id: string) => [...queryKeys.academic.all, "class", id] as const,
     SectionSubjects: (classId: string, periodId: string) =>
       [
