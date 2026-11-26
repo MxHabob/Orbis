@@ -5,6 +5,7 @@ import { page } from "$app/state";
 import { Dialog, DialogContent, DialogTitle } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { uiStore, authStore, operationStore } from "$lib/stores";
+import { getRouteTitle } from "./route-titles";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
 import {
@@ -507,7 +508,7 @@ const knownSystemPages = $derived<PageEntry[]>([
   },
   {
     title: m.common_control_label(),
-    path: `/${currentOrgId}/academics/exams/control`,
+    path: `/${currentOrgId}/academics/grades`,
     icon: AdjustmentsHorizontal,
   },
   {
@@ -687,9 +688,14 @@ const systemPages = $derived.by((): PageEntry[] => {
     const segment = routePath.split("/").filter(Boolean).at(-1);
     if (!segment) continue;
 
-    const title = segment
+    const fallbackTitle = segment
       .replace(/[-_]/g, " ")
       .replace(/\b\w/g, (character) => character.toUpperCase());
+    const title = getRouteTitle({
+      pathname: path,
+      orgId: currentOrgId,
+      fallback: fallbackTitle,
+    });
     const keywords = routePath
       .split("/")
       .filter(Boolean)

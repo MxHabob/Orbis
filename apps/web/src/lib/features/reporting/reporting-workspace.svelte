@@ -7,6 +7,7 @@ import { l } from "$lib/core/i18n";
 import type { ReportDefinitionDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Card } from "@orbis/ui/card";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import {
   Select,
@@ -313,9 +314,24 @@ function handleDownloadCurrent() {
     {:else}
       <div class="space-y-4" in:fade={{ duration: 150 }}>
         {#if isLoading}
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
             {#each Array(6) as _, i (i)}
-              <div class="h-44 animate-pulse rounded-md border border-border/50 bg-card/50"></div>
+              <Card class="flex h-44 flex-col justify-between p-5">
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-start justify-between">
+                    <Skeleton class="size-9" />
+                    <Skeleton class="h-3 w-16" />
+                  </div>
+                  <div class="flex flex-col gap-1.5">
+                    <Skeleton class="h-4 w-2/3" />
+                    <Skeleton class="h-3 w-full" />
+                  </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-border/50 pt-3">
+                  <Skeleton class="h-7 w-16" />
+                  <Skeleton class="h-7 w-24" />
+                </div>
+              </Card>
             {/each}
           </div>
         {:else if filteredDefinitions.length === 0}

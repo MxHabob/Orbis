@@ -32,7 +32,6 @@ import {
   getTemplateAiEditorContext,
 } from "$lib/features/templates/template-ai-bridge";
 import { onMount } from "svelte";
-import { fly } from "svelte/transition";
 import AgentCockpit from "../components/agent-cockpit.svelte";
 import AgentEmptyState from "../components/agent-empty-state.svelte";
 import AgentHeader from "../components/agent-header.svelte";
@@ -54,6 +53,7 @@ const currentOrgId = $derived(
 // File-based Sessions & Active State
 let sessions = $state<AiChatSession[]>([]);
 let activeSessionId = $state<string | null>(null);
+let isLoadingSessions = $state(true);
 let viewMode = $state<"chat" | "cockpit">("chat");
 let isThinking = $state(false);
 let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
@@ -115,17 +115,23 @@ onMount(() => {
   let isMounted = true;
 
   async function initStorage() {
-    const loaded = await loadFileSessions(currentOrgId);
-    if (!isMounted) return;
+    try {
+      const loaded = await loadFileSessions(currentOrgId);
+      if (!isMounted) return;
 
-    if (loaded.length > 0) {
-      sessions = loaded;
-      activeSessionId = loaded[0].id;
-    } else {
-      const initial = createNewLocalSession(currentOrgId);
-      sessions = [initial];
-      activeSessionId = initial.id;
-      await saveFileSession(initial);
+      if (loaded.length > 0) {
+        sessions = loaded;
+        activeSessionId = loaded[0].id;
+      } else {
+        const initial = createNewLocalSession(currentOrgId);
+        sessions = [initial];
+        activeSessionId = initial.id;
+        await saveFileSession(initial);
+      }
+    } finally {
+      if (isMounted) {
+        isLoadingSessions = false;
+      }
     }
   }
 
@@ -641,9 +647,6 @@ function handleLinkClick(href: string) {
   style:width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:min-width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:max-width={isStandalone ? "100%" : `${preferredWidth}rem`}
-  transition:fly={isStandalone
-    ? undefined
-    : { y: 12, opacity: 0, duration: 200 }}
 >
   <!-- Resize Handle on the start edge -->
   {#if !isStandalone}
@@ -695,7 +698,11 @@ function handleLinkClick(href: string) {
   {:else}
     <!-- Chat View -->
     {#if messages.length === 0}
-      <AgentEmptyState onselectSuggestion={(sug) => submitMessage(sug)} />
+      {#if isLoadingSessions}
+        <div class="flex-1" aria-busy="true"></div>
+      {:else}
+        <AgentEmptyState onselectSuggestion={(sug) => submitMessage(sug)} />
+      {/if}
     {:else}
       <ChatMessageList
         {messages}

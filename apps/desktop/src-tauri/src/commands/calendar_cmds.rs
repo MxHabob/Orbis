@@ -66,6 +66,10 @@ pub struct AcademicPeriodDto {
     pub code: Option<String>,
     pub start_date: String,
     pub end_date: String,
+    pub enrollment_starts_at: Option<String>,
+    pub enrollment_ends_at: Option<String>,
+    pub grade_entry_starts_at: Option<String>,
+    pub grade_entry_ends_at: Option<String>,
     pub period_type: String,
     pub period_kind: String,
     pub status: String,
@@ -140,17 +144,6 @@ fn year_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> A
 }
 
 fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> AcademicPeriodDto {
-    let status_str = match p.state {
-        orbis_domain::entities::academic_period::AcademicPeriodState::Closed => "closed",
-        orbis_domain::entities::academic_period::AcademicPeriodState::Archived => "archived",
-        _ => {
-            if p.is_locked {
-                "locked"
-            } else {
-                "active"
-            }
-        }
-    };
     let can_enter_grades = p.can_enter_grades();
     AcademicPeriodDto {
         id: p.id.to_string(),
@@ -161,9 +154,13 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
         code: p.code,
         start_date: p.start_date.to_rfc3339(),
         end_date: p.end_date.to_rfc3339(),
+        enrollment_starts_at: p.enrollment_starts_at.map(|d| d.to_rfc3339()),
+        enrollment_ends_at: p.enrollment_ends_at.map(|d| d.to_rfc3339()),
+        grade_entry_starts_at: p.grade_entry_starts_at.map(|d| d.to_rfc3339()),
+        grade_entry_ends_at: p.grade_entry_ends_at.map(|d| d.to_rfc3339()),
         period_type: p.period_type.to_string(),
         period_kind: p.period_kind.to_string(),
-        status: status_str.to_string(),
+        status: p.state.to_string(),
         is_locked: p.is_locked,
         is_enrollment_open: p.is_enrollment_open,
         is_grade_entry_open: p.is_grade_entry_open,
@@ -527,6 +524,98 @@ pub async fn calendar_close_period(
     let period = state
         .calendar_service
         .close_period(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_open_grade_entry_window(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state
+        .calendar_service
+        .open_grade_entry_window(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_close_grade_entry_window(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state
+        .calendar_service
+        .close_grade_entry_window(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_open_enrollment_window(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state
+        .calendar_service
+        .open_enrollment_window(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_close_enrollment_window(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let period = state
+        .calendar_service
+        .close_enrollment_window(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(period_dto(period)))
+}
+
+#[tauri::command]
+pub async fn calendar_transition_period_state(
+    id: String,
+    target_state: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let next_state = match target_state.to_lowercase().as_str() {
+        "planning" => orbis_domain::entities::academic_period::AcademicPeriodState::Planning,
+        "enrollment_open" => {
+            orbis_domain::entities::academic_period::AcademicPeriodState::EnrollmentOpen
+        }
+        "active_teaching" => {
+            orbis_domain::entities::academic_period::AcademicPeriodState::ActiveTeaching
+        }
+        "final_exams" => orbis_domain::entities::academic_period::AcademicPeriodState::FinalExams,
+        "grade_submission" => {
+            orbis_domain::entities::academic_period::AcademicPeriodState::GradeSubmission
+        }
+        "closed" => orbis_domain::entities::academic_period::AcademicPeriodState::Closed,
+        "archived" => orbis_domain::entities::academic_period::AcademicPeriodState::Archived,
+        other => return Err(format!("Invalid academic period state: {}", other)),
+    };
+    let period = state
+        .calendar_service
+        .transition_period_state(&ctx, uid, next_state)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(period_dto(period)))

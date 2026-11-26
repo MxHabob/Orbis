@@ -16,6 +16,7 @@ export function gradePeriodOverride(periodId: string, sectionSubjectId: string):
 }
 
 export const ACTIVE_PERIOD_STATES = new Set([
+  "active",
   "active_teaching",
   "final_exams",
   "grade_submission",

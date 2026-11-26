@@ -96,7 +96,7 @@ const shortcuts = $derived([
     icon: Calendar,
   },
   {
-    href: `/${orgId}/academics/exams/control`,
+    href: `/${orgId}/academics/grades`,
     title: m.academics_exams_center_control_title(),
     icon: ChartBar,
   },

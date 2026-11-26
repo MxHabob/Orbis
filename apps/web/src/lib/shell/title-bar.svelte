@@ -5,28 +5,32 @@ import { page } from "$app/state";
 import * as m from "$lib/paraglide/messages";
 import { authStore, themeStore, uiStore } from "$lib/stores";
 import {
+  AiCenter,
   ArrowsPointingOut,
-  Eye,
+  ChevronLeft,
+  ChevronRight,
   Maximize,
   Minus,
   Moon,
   Restore,
   Search,
+  Sidebar,
   Sun,
   XMark,
 } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import { Kbd } from "@orbis/ui/kbd";
-import { Logo } from "@orbis/icons";
 import { onMount } from "svelte";
-import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
+import TitleBarMenu from "./title-bar-menu.svelte";
+import TitleBarTabs from "./title-bar-tabs.svelte";
 import NotificationPopover from "./notification-popover.svelte";
 import WhatsNewPopover from "./whats-new-popover.svelte";
 import { isStandaloneWindow, STANDALONE_WINDOW_PARAM } from "./window-mode";
 
 const standaloneWindow = $derived(isStandaloneWindow(page.url));
-// Window states
+const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
+
 let appWindow = $state<any>(null);
 let isMaximized = $state(false);
 let isMac = $state(false);
@@ -62,12 +66,17 @@ onMount(() => {
   isMac = navigator.userAgent.toLowerCase().includes("mac");
 
   let unlistenResize: any;
+  let unlistenTraySearch: any;
+  let unlistenTrayAi: any;
   let isMounted = true;
 
   if (isDesktopApp) {
     (async () => {
       try {
-        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const [{ getCurrentWindow }, { listen }] = await Promise.all([
+          import("@tauri-apps/api/window"),
+          import("@tauri-apps/api/event"),
+        ]);
         const win = getCurrentWindow();
         appWindow = win;
 
@@ -76,14 +85,26 @@ onMount(() => {
         };
         await checkMaximized();
 
-        const unlisten = await win.onResized(() => {
-          checkMaximized();
-        });
+        const [unlistenRes, unlistenSearch, unlistenAi] = await Promise.all([
+          win.onResized(() => {
+            checkMaximized();
+          }),
+          listen("tray-open-search", () => {
+            uiStore.setSearch(true);
+          }),
+          listen("tray-toggle-ai", () => {
+            uiStore.toggleAskOrbis();
+          }),
+        ]);
 
         if (!isMounted) {
-          unlisten();
+          unlistenRes();
+          unlistenSearch();
+          unlistenAi();
         } else {
-          unlistenResize = unlisten;
+          unlistenResize = unlistenRes;
+          unlistenTraySearch = unlistenSearch;
+          unlistenTrayAi = unlistenAi;
         }
       } catch (e) {
         console.error("Failed to initialize Tauri window in TitleBar:", e);
@@ -95,159 +116,176 @@ onMount(() => {
     isMounted = false;
     window.removeEventListener("online", setOnline);
     window.removeEventListener("offline", setOffline);
-    if (unlistenResize) {
-      unlistenResize();
-    }
+    if (unlistenResize) unlistenResize();
+    if (unlistenTraySearch) unlistenTraySearch();
+    if (unlistenTrayAi) unlistenTrayAi();
   };
 });
-
-// No $effect for loading periods — academicContext is populated by bootstrap.
-// Periods are reactive via $derived above.
-// No selectPeriod function — the title bar is now a read-only display.
-// Period switching is done via the sidebar YearSwitcher for year-level,
-// and inside academic pages (e.g. Control) for period-level.
 </script>
 
+<!-- Single-Row Title & Tab Bar -->
 <div
-  class="h-13 w-full bg-card border-b border-border/60 select-none flex items-center justify-between gap-1 px-2 sm:px-3.5 text-xs z-50 shrink-0 @container/titlebar"
+  class="h-10 w-full bg-muted/70 dark:bg-card select-none flex items-center justify-between gap-1 ps-2 text-xs z-50 shrink-0 @container/titlebar"
+  class:pe-2={isMac || !appWindow}
   data-tauri-drag-region
 >
-  <!-- Start Side: Spacing for Mac traffic lights OR Logo + Period Switcher + Breadcrumb -->
+  <!-- Leading Controls: App Logo Menu + Sidebar Toggle + History Nav -->
   <div
-    class="flex items-center gap-1.5 sm:gap-2.5 min-w-0 max-w-[55%] overflow-hidden"
+    class="flex items-center gap-0.5 shrink-0"
     class:ps-[76px]={isMac}
     data-tauri-drag-region
   >
-    {#if !isMac}
-      <!-- App Logo -->
-      <Logo class="w-6 h-6 text-foreground shrink-0" data-tauri-drag-region />
-    {/if}
+    <TitleBarMenu
+      orgId={currentOrgId}
+      onOpenNewWindow={openCurrentPageInWindow}
+      onCloseApp={appWindow ? () => appWindow.close() : undefined}
+    />
 
-    <!-- Breadcrumb -->
-    {#if authStore.isAuthenticated}
-      <div
-        class="w-px h-4 bg-border/60 mx-1 shrink-0"
-        data-tauri-drag-region
-      ></div>
-      <TitleBreadcrumbs />
-    {/if}
-  </div>
-
-  <div class="flex-1 h-full min-w-0" data-tauri-drag-region></div>
-
-  <!-- End Side: Header Buttons, Sync Indicator, Theme, Focus Mode, Window Controls -->
-  <div class="flex items-center gap-0.5 sm:gap-1.5 shrink-0" data-tauri-drag-region>
     {#if authStore.isAuthenticated && !standaloneWindow}
       <Button
-        variant="outline"
-        size="default"
-        onclick={() => uiStore.setSearch(true)}
-        class="shrink-0"
-        title={m.common_header_search_title()}
-        aria-label={m.shared_ui_search()}
-      >
-        <Search size={14} class="text-muted-foreground" />
-        <span class="hidden @min-[64rem]/titlebar:inline">{m.common_header_search()}</span>
-        <Kbd class="hidden @min-[76rem]/titlebar:inline-flex">{m.common_header_search_shortcut()}</Kbd>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="default"
-        class="shrink-0"
-        title={m.shared_ui_ask_orbis()}
-        aria-label={m.shared_ui_ask_orbis()}
-        onclick={() => uiStore.toggleAskOrbis()}
-        aria-pressed={uiStore.showAskOrbis}
-      >
-        <svg
-          width="14"
-          height="14"
-          class="text-muted-foreground shrink-0"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M12 3l8.5 14.7a1 1 0 0 1-.9 1.3H4.4a1 1 0 0 1-.9-1.3L12 3z"
-          />
-          <path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
-        </svg>
-        <span class="hidden whitespace-nowrap @min-[64rem]/titlebar:inline">{m.shared_ui_ask_orbis()}</span>
-        <Kbd class="hidden @min-[76rem]/titlebar:inline-flex">Ctrl /</Kbd>
-      </Button>
-
-      <NotificationPopover orgId={authStore.orgId ?? ""} />
-
-      <!-- What's New AppNotification (Original Header Design) -->
-      <WhatsNewPopover />
-
-      {#if isDesktopApp}
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onclick={openCurrentPageInWindow}
-          title={m.common_titlebar_standalone_window()}
-          aria-label={m.common_titlebar_standalone_window()}
-        >
-          <ArrowsPointingOut size={14} class="text-muted-foreground" />
-        </Button>
-      {/if}
-    {/if}
-
-    <!-- Theme Toggle -->
-    <Button
-      variant="outline"
-      size="icon-sm"
-      onclick={() => themeStore.toggle()}
-      title={m.common_titlebar_theme_toggle()}
-      aria-label={m.common_titlebar_theme_toggle()}
-    >
-      {#if themeStore.resolved === "dark"}
-        <Sun size={14} class="text-muted-foreground" />
-      {:else}
-        <Moon size={14} class="text-muted-foreground" />
-      {/if}
-    </Button>
-
-    <!-- Focus Mode Toggle -->
-    {#if authStore.isAuthenticated && !standaloneWindow}
-      <Button
-        variant={uiStore.focusMode ? "default" : "outline"}
-        size="default"
+        variant={uiStore.focusMode ? "secondary" : "ghost"}
+        size="icon-sm"
+        class="size-7 text-muted-foreground hover:text-foreground shrink-0"
         onclick={() => uiStore.toggleFocusMode()}
         title={m.common_titlebar_focus_mode_tooltip()}
         aria-label={m.common_titlebar_focus_mode_tooltip()}
-        aria-pressed={uiStore.focusMode}
+        aria-pressed={!uiStore.focusMode}
       >
-        <Eye size={14} class="@min-[64rem]/titlebar:hidden" />
-        <span class="hidden @min-[64rem]/titlebar:inline">{m.common_titlebar_focus_mode()}</span>
+        <Sidebar size={15} />
       </Button>
-    {/if}
 
-    <!-- Windows Window Controls (Min, Max, Close) -->
-    {#if !isMac && appWindow}
-      <div
-        class="flex items-center border-s border-border/40 ms-1.5 ps-1.5 h-6 gap-0.5"
+      <div class="hidden sm:flex items-center gap-0.5 shrink-0 ms-0.5">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="size-7 text-muted-foreground hover:text-foreground"
+          onclick={() => window.history.back()}
+          title={m.titlebar_menu_back()}
+          aria-label={m.titlebar_menu_back()}
+        >
+          <ChevronLeft size={14} class="rtl:rotate-180" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="size-7 text-muted-foreground hover:text-foreground"
+          onclick={() => window.history.forward()}
+          title={m.titlebar_menu_forward()}
+          aria-label={m.titlebar_menu_forward()}
+        >
+          <ChevronRight size={14} class="rtl:rotate-180" />
+        </Button>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Open Tabs Strip + Drag Spacer -->
+  {#if authStore.isAuthenticated && !standaloneWindow && currentOrgId}
+    <TitleBarTabs orgId={currentOrgId} />
+  {:else}
+    <div class="flex-1 h-full min-w-0" data-tauri-drag-region></div>
+  {/if}
+
+  <!-- Trailing: Global Utility Actions + Flush Windows Caption Controls -->
+  <div class="flex items-center h-full shrink-0" data-tauri-drag-region>
+    <div class="flex items-center gap-1 px-1.5" data-tauri-drag-region>
+      {#if !isOnline}
+        <span
+          class="px-2 py-0.5 rounded-full bg-warning/15 text-warning text-[11px] font-medium"
+        >
+          Offline
+        </span>
+      {/if}
+
+      {#if authStore.isAuthenticated && !standaloneWindow}
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => uiStore.setSearch(true)}
+          class="h-7 px-2 gap-1.5 bg-background/80 border-border/60 text-muted-foreground hover:text-foreground hover:bg-background shrink-0"
+          title={m.common_header_search_title()}
+          aria-label={m.shared_ui_search()}
+        >
+          <Search size={13} />
+          <span class="hidden @min-[64rem]/titlebar:inline text-xs">
+            {m.common_header_search()}
+          </span>
+          <Kbd class="hidden @min-[76rem]/titlebar:inline-flex">
+            {m.common_header_search_shortcut()}
+          </Kbd>
+        </Button>
+
+        <Button
+          variant={uiStore.showAskOrbis ? "secondary" : "outline"}
+          size="sm"
+          class="h-7 px-2 gap-1.5 border-border/60 shrink-0 {uiStore.showAskOrbis
+            ? 'text-foreground'
+            : 'bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background'}"
+          title={m.shared_ui_ask_orbis()}
+          aria-label={m.shared_ui_ask_orbis()}
+          onclick={() => uiStore.toggleAskOrbis()}
+          aria-pressed={uiStore.showAskOrbis}
+        >
+          <AiCenter size={14} class="text-primary shrink-0" />
+          <span class="hidden whitespace-nowrap @min-[64rem]/titlebar:inline text-xs">
+            {m.shared_ui_ask_orbis()}
+          </span>
+          <Kbd class="hidden @min-[60rem]/titlebar:inline-flex">Ctrl /</Kbd>
+        </Button>
+
+        <NotificationPopover orgId={authStore.orgId ?? ""} />
+
+        <WhatsNewPopover />
+
+        {#if isDesktopApp}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class="size-7 text-muted-foreground hover:text-foreground"
+            onclick={openCurrentPageInWindow}
+            title={m.common_titlebar_standalone_window()}
+            aria-label={m.common_titlebar_standalone_window()}
+          >
+            <ArrowsPointingOut size={14} />
+          </Button>
+        {/if}
+      {/if}
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="size-7 text-muted-foreground hover:text-foreground"
+        onclick={() => themeStore.toggle()}
+        title={m.common_titlebar_theme_toggle()}
+        aria-label={m.common_titlebar_theme_toggle()}
       >
-        <!-- Minimize -->
+        {#if themeStore.resolved === "dark"}
+          <Sun size={14} />
+        {:else}
+          <Moon size={14} />
+        {/if}
+      </Button>
+    </div>
+
+    <!-- Flush Windows/Linux Caption Controls (Min, Max, Close) -->
+    {#if !isMac && appWindow}
+      <div class="flex items-center h-full border-s border-border/40">
         <Button
           variant="ghost"
           size="icon-sm"
           onclick={() => appWindow.minimize()}
+          class="h-full w-11 rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
           title={m.common_titlebar_minimize()}
           aria-label={m.shared_ui_minimize()}
         >
-          <Minus size={13} class="stroke-[2px]" />
+          <Minus size={13} class="stroke-[1.75]" />
         </Button>
 
-        <!-- Expand / Restore -->
         <Button
           variant="ghost"
           size="icon-sm"
           onclick={() => appWindow.toggleMaximize()}
+          class="h-full w-11 rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
           title={isMaximized
             ? m.common_titlebar_restore()
             : m.common_titlebar_maximize()}
@@ -260,16 +298,15 @@ onMount(() => {
           {/if}
         </Button>
 
-        <!-- Close -->
         <Button
           variant="ghost"
           size="icon-sm"
           onclick={() => appWindow.close()}
-          class="hover:bg-destructive hover:text-destructive-foreground"
+          class="h-full w-11 rounded-none text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
           title={m.common_titlebar_close()}
           aria-label={m.shared_ui_close_window()}
         >
-          <XMark size={13} class="stroke-[2px]" />
+          <XMark size={13} class="stroke-[1.75]" />
         </Button>
       </div>
     {/if}

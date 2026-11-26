@@ -473,7 +473,9 @@ export class LocalClient implements OrbisApiClient {
     id: string,
     state: string,
   ): Promise<AcademicPeriodDto> {
-    return unwrap(await invoke("calendar_transition_period_state", { id, state }));
+    return unwrap(
+      await invoke("calendar_transition_period_state", { id, targetState: state }),
+    );
   }
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
     return unwrap(await invoke("calendar_list_period_types"));

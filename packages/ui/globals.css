@@ -363,7 +363,8 @@
 .btn-tactile-ghost {
   @apply btn-tactile bg-transparent text-foreground hover:bg-accent;
   box-shadow: none;
-  &:hover {
+  &:hover,
+  &:active {
     transform: none;
     box-shadow: none;
   }
@@ -653,13 +654,9 @@
 }
 
 @utility nav-item {
-  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-150 ease-out;
+  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150 ease-out;
   &:hover {
     @apply bg-accent text-accent-foreground;
-    transform: scale(1.02);
-  }
-  &:active {
-    transform: scale(0.98);
   }
 }
 

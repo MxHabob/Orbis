@@ -1027,6 +1027,18 @@
   "common_autopilot_task_report_generation": "إنشاء كشوفات وتقارير درجات الطلاب",
   "common_banner_description": "بيئة سطح المكتب المتقدمة. اختصارات لوحة المفاتيح (⌘K) واستعلامات قاعدة البيانات المحلية تعمل بالكامل.",
   "common_banner_title": "بيئة Orbis المحلية مفعّلة",
+  "titlebar_menu_back": "رجوع",
+  "titlebar_menu_check_updates": "التحقق من التحديثات...",
+  "titlebar_menu_exit": "إنهاء",
+  "titlebar_menu_file": "ملف",
+  "titlebar_menu_forward": "تقدم",
+  "titlebar_menu_go_to": "انتقال سريع",
+  "titlebar_menu_help": "مساعدة",
+  "titlebar_menu_history": "السجل",
+  "titlebar_menu_new_window": "نافذة جديدة",
+  "titlebar_menu_print": "طباعة...",
+  "titlebar_menu_reload": "إعادة تحميل",
+  "titlebar_menu_view": "عرض",
   "mulverse_intro_back": "رجوع",
   "mulverse_intro_create_safe_admin": "إنشاء حساب آمن",
   "mulverse_intro_create_submit": "إنشاء الحساب",
@@ -5907,5 +5919,8 @@
   "finance_ui_refund_payment_source": "الدفعة الأصلية",
   "finance_ui_refund_no_manual_payments": "لا توجد دفعة يدوية متاحة للاسترداد",
   "finance_ui_account_type_gateway_clearing": "تسوية الدفع الإلكتروني",
-  "finance_ui_account_type_gateway_fee": "عمولات بوابات الدفع"
+  "finance_ui_account_type_gateway_fee": "عمولات بوابات الدفع",
+  "titlebar_menu_new_tab": "تبويب جديد",
+  "titlebar_menu_close_tab": "إغلاق التبويب",
+  "titlebar_menu_reopen_tab": "إعادة فتح آخر تبويب مغلق"
 }

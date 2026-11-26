@@ -233,7 +233,17 @@ const classMenuActions = $derived([
 	class="h-full min-h-0 w-full min-w-0 overflow-hidden p-3 @lg/workspace:p-6 flex flex-col gap-6 font-sans"
 >
 	<!-- KPI Metrics Summary Row using standard Cards -->
-	{#if !pageLoading && !error && classes.length > 0}
+	{#if pageLoading}
+		<div class="grid grid-cols-1 gap-4 @min-[36rem]/workspace:grid-cols-3" aria-busy="true">
+			{#each Array(3) as _, i (i)}
+				<Card class="flex flex-col justify-between p-4 gap-3">
+					<Skeleton class="h-3 w-24" />
+					<Skeleton class="h-7 w-16" />
+					<Skeleton class="h-2.5 w-32" />
+				</Card>
+			{/each}
+		</div>
+	{:else if !error && classes.length > 0}
 		<div
 			class="grid grid-cols-1 gap-4 @min-[36rem]/workspace:grid-cols-3"
 			in:fade={{ duration: 200 }}
@@ -325,11 +335,30 @@ const classMenuActions = $derived([
 			{#if pageLoading}
 				<div
 					class="grid grid-cols-1 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4 gap-4"
+					aria-busy="true"
 				>
-					<Skeleton class="h-40 w-full rounded-xl" />
-					<Skeleton class="h-40 w-full rounded-xl" />
-					<Skeleton class="h-40 w-full rounded-xl" />
-					<Skeleton class="h-40 w-full rounded-xl" />
+					{#each Array(8) as _, i (i)}
+						<Card class="flex min-h-40 flex-col justify-between p-3.5 gap-3">
+							<div class="flex items-start justify-between gap-2">
+								<div class="flex flex-col gap-1.5 flex-1">
+									<Skeleton class="h-3.5 w-2/3" />
+									<Skeleton class="h-2.5 w-1/2" />
+								</div>
+								<Skeleton class="h-5 w-12" />
+							</div>
+							<div class="flex flex-col gap-2">
+								<div class="flex justify-between">
+									<Skeleton class="h-2.5 w-16" />
+									<Skeleton class="h-2.5 w-12" />
+								</div>
+								<Skeleton class="h-1.5 w-full rounded-full" />
+							</div>
+							<div class="flex justify-between border-t border-border/50 pt-2">
+								<Skeleton class="h-2.5 w-20" />
+								<Skeleton class="h-2.5 w-12" />
+							</div>
+						</Card>
+					{/each}
 				</div>
 			{:else if error}
 				<div

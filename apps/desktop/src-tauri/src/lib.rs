@@ -2,9 +2,9 @@ use image;
 #[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
 use tauri::image::Image;
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog;
 use tauri_plugin_process;
@@ -232,6 +232,24 @@ pub fn run() {
             } else {
                 "Check for Updates..."
             };
+
+            let open_item = MenuItem::with_id(app, "show_main", "Open Orbis", true, None::<&str>)?;
+            let search_item = MenuItem::with_id(
+                app,
+                "tray_search",
+                "Toggle Quick Search",
+                true,
+                Some("CmdOrCtrl+K"),
+            )?;
+            let ai_item = MenuItem::with_id(
+                app,
+                "tray_ai",
+                "Toggle Orbis AI",
+                true,
+                Some("CmdOrCtrl+/"),
+            )?;
+
+            let reload_item = MenuItem::with_id(app, "tray_reload", "Reload Window", true, None::<&str>)?;
             let check_updates_item = MenuItem::with_id(
                 app,
                 "check_updates",
@@ -239,26 +257,75 @@ pub fn run() {
                 !staging_build,
                 None::<&str>,
             )?;
-            let exit_item = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app, &[&check_updates_item, &exit_item])?;
+            let troubleshooting_menu = Submenu::with_items(
+                app,
+                "Troubleshooting",
+                true,
+                &[&reload_item, &check_updates_item],
+            )?;
+
+            let exit_item = MenuItem::with_id(app, "exit", "Quit Orbis", true, None::<&str>)?;
+            let sep1 = PredefinedMenuItem::separator(app)?;
+            let sep2 = PredefinedMenuItem::separator(app)?;
+            let sep3 = PredefinedMenuItem::separator(app)?;
+
+            let tray_menu = Menu::with_items(
+                app,
+                &[
+                    &open_item,
+                    &sep1,
+                    &search_item,
+                    &ai_item,
+                    &sep2,
+                    &troubleshooting_menu,
+                    &sep3,
+                    &exit_item,
+                ],
+            )?;
+
             let _tray = TrayIconBuilder::new()
                 .icon(tray_icon)
                 .menu(&tray_menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {
-                    if event.id == "check_updates" {
-                        let app_handle = app.clone();
-                        tauri::async_runtime::spawn(async move {
-                            let _ = commands::window_cmds::check_for_updates(app_handle).await;
-                        });
-                    } else if event.id == "exit" {
-                        if let Some(state) = app.try_state::<AppState>() {
-                            let sidecar = state.solver_sidecar.clone();
-                            tauri::async_runtime::block_on(async move {
-                                sidecar.stop().await;
+                    let focus_main = || {
+                        if let Some(main_window) = app.get_webview_window("main") {
+                            let _ = main_window.show();
+                            let _ = main_window.set_focus();
+                        }
+                    };
+
+                    match event.id.as_ref() {
+                        "show_main" => focus_main(),
+                        "tray_search" => {
+                            focus_main();
+                            let _ = app.emit("tray-open-search", ());
+                        }
+                        "tray_ai" => {
+                            focus_main();
+                            let _ = app.emit("tray-toggle-ai", ());
+                        }
+                        "tray_reload" => {
+                            if let Some(main_window) = app.get_webview_window("main") {
+                                let _ = main_window.eval("window.location.reload()");
+                            }
+                        }
+                        "check_updates" => {
+                            let app_handle = app.clone();
+                            tauri::async_runtime::spawn(async move {
+                                let _ = commands::window_cmds::check_for_updates(app_handle).await;
                             });
                         }
-                        app.exit(0);
+                        "exit" => {
+                            if let Some(state) = app.try_state::<AppState>() {
+                                let sidecar = state.solver_sidecar.clone();
+                                tauri::async_runtime::block_on(async move {
+                                    sidecar.stop().await;
+                                });
+                            }
+                            app.exit(0);
+                        }
+                        _ => {}
                     }
                 })
                 .on_tray_icon_event(move |tray, event| {
