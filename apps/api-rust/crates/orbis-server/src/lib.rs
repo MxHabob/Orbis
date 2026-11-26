@@ -495,6 +495,7 @@ use api::{
             api::student_routes::BulkTransferClassesResponse,
             // Override & Workflow
             api::override_routes::OverrideRequestDto,
+            api::override_routes::PaginatedOverrideRequestsDto,
             api::override_routes::SubmitOverrideRequest,
             api::override_routes::ResolveOverrideRequest,
             api::override_routes::ApprovalStepDto,

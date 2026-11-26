@@ -2,6 +2,7 @@
  * Workflow & Approval queries.
  */
 import {
+  createInfiniteQuery,
   createQuery,
   createMutation,
   useQueryClient,
@@ -13,6 +14,7 @@ import {
   type SubmitOverrideRequestInput,
   type ApproveOverrideInput,
   type RejectOverrideInput,
+  type OverrideRequestListParams,
 } from "$lib/api";
 
 /** Query for listing pending approvals by role or general overrides */
@@ -20,21 +22,21 @@ export function createPendingApprovalsQuery(
   orgId: () => string,
   approverRole?: () => string,
 ) {
+  const getFilter = () => ({
+    status: "pending",
+    role:
+      approverRole?.() && approverRole?.() !== "all"
+        ? approverRole()
+        : undefined,
+    page: 1,
+    page_size: 50,
+  });
   return createQuery<OverrideRequestDto[]>(() => ({
     queryKey: queryKeys.workflow.overrides(
       orgId(),
-      approverRole?.() || "pending",
+      getFilter(),
     ),
-    queryFn: async () => {
-      const overrides = await api.listOverrides("pending");
-      const role = approverRole?.();
-      if (role && role !== "all") {
-        return overrides.filter(
-          (o) => o.current_approver_role === role || !o.current_approver_role,
-        );
-      }
-      return overrides;
-    },
+    queryFn: async () => (await api.listOverrides(getFilter())).items,
     enabled: !!orgId(),
     staleTime: 30 * 1000,
   }));
@@ -43,14 +45,26 @@ export function createPendingApprovalsQuery(
 /** Query for listing all override requests */
 export function createOverrideRequestsQuery(
   orgId: () => string,
-  status?: () => string | undefined,
+  filter?: () => OverrideRequestListParams,
 ) {
-  return createQuery<OverrideRequestDto[]>(() => ({
-    queryKey: queryKeys.workflow.overrides(orgId(), status?.() || "all"),
-    queryFn: () => api.listOverrides(status?.()),
-    enabled: !!orgId(),
-    staleTime: 30 * 1000,
-  }));
+  const getFilter = () => filter?.() ?? {};
+  return createInfiniteQuery(() => {
+    const params = getFilter();
+    return {
+      queryKey: queryKeys.workflow.overrides(orgId(), params),
+      queryFn: ({ pageParam }) =>
+        api.listOverrides({
+          ...params,
+          page: pageParam,
+          page_size: 30,
+        }),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) =>
+        lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+      enabled: !!orgId(),
+      staleTime: 30 * 1000,
+    };
+  });
 }
 
 /** Query for getting a single override request detail */

@@ -26,6 +26,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@orbis/ui/dialog";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   open = $bindable(false),
@@ -81,16 +83,27 @@ function submit() {
       </DialogTitle>
     </DialogHeader>
     <div class="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
-      <FormField label={m.settings_ui_assessment_scheme_name()} required>
-        {#snippet children()}
-          <Input bind:value={form.values.name} placeholder={m.settings_ui_assessment_scheme_example()} class="text-xs" onblur={() => form.markTouched("name")} />
-        {/snippet}
-      </FormField>
-      <FormField label={m.common_form_full_name_ar()}>
-        {#snippet children()}
-          <Input bind:value={form.values.name_ar} class="text-xs" />
-        {/snippet}
-      </FormField>
+      <div class="sm:col-span-2">
+        <BilingualNameFields
+          arId="assessment-scheme-name-ar"
+          enId="assessment-scheme-name-en"
+          arLabel={m.settings_ui_assessment_scheme_name_ar()}
+          enLabel={m.settings_ui_assessment_scheme_name_en()}
+          bind:arValue={form.values.name_ar}
+          bind:enValue={form.values.name}
+          arPlaceholder={m.settings_ui_assessment_scheme_example()}
+          enPlaceholder={m.settings_ui_assessment_scheme_example()}
+          arError={form.errors.name_ar?.[0]}
+          enError={form.errors.name?.[0]}
+          onArBlur={() => form.markTouched("name_ar")}
+          onEnBlur={() => form.markTouched("name")}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          disabled={isCreating || form.isSubmitting}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
+      </div>
       <div class="sm:col-span-2">
         <FormField label={m.settings_ui_assessment_scheme_description_optional()}>
           {#snippet children()}

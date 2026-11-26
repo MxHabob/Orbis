@@ -202,13 +202,13 @@ fn validate_assessment_components(
         total_max_score += component.max_score;
     }
 
-    let weighted_sum_valid = (total_weight - Decimal::ONE).abs() <= Decimal::new(1, 3);
-    let raw_score_sum_valid = (total_max_score - scheme_max_score).abs() <= Decimal::new(1, 3);
+    let tolerance = Decimal::new(1, 3);
+    let weighted_sum_within_limit = total_weight <= Decimal::ONE + tolerance;
+    let raw_score_sum_within_limit = total_max_score <= scheme_max_score + tolerance;
 
-    if !weighted_sum_valid && !raw_score_sum_valid {
+    if !weighted_sum_within_limit && !raw_score_sum_within_limit {
         return Err(DomainError::Validation(
-            "Assessment components must use a normalized weight sum of 1.0 or a maximum-score sum matching the scheme"
-                .into(),
+            "Assessment component weights or maximum scores cannot exceed the scheme total".into(),
         ));
     }
     Ok(())
@@ -2771,6 +2771,45 @@ mod assessment_service_tests {
             source: crate::context::ActionSource::Api,
             org_unit_path: None,
         }
+    }
+
+    fn assessment_component(
+        code: &str,
+        weight: Decimal,
+        max_score: Decimal,
+        sort_order: i32,
+    ) -> AssessmentComponent {
+        AssessmentComponent {
+            code: code.into(),
+            name: code.into(),
+            name_ar: None,
+            max_score,
+            weight,
+            sort_order,
+            is_required: true,
+            component_type: None,
+            min_score: None,
+        }
+    }
+
+    #[test]
+    fn assessment_components_can_be_saved_incrementally_but_not_over_total() {
+        let partial = [assessment_component(
+            "coursework",
+            Decimal::new(1, 1),
+            Decimal::new(10, 0),
+            1,
+        )];
+        assert!(validate_assessment_components(Decimal::new(100, 0), &partial).is_ok());
+
+        let over_limit = [
+            assessment_component("coursework", Decimal::new(6, 1), Decimal::new(60, 0), 1),
+            assessment_component("exam", Decimal::new(5, 1), Decimal::new(50, 0), 2),
+        ];
+        assert!(matches!(
+            validate_assessment_components(Decimal::new(100, 0), &over_limit),
+            Err(DomainError::Validation(_))
+        ));
     }
 
     #[tokio::test]

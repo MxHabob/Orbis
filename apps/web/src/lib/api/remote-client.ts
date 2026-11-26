@@ -171,6 +171,7 @@ import type {
   StudentFilterParams,
   EnrollmentFilterParams,
   PaginatedList,
+  OverrideRequestListParams,
   EmployeeFilterInput,
   EmployeeDetailDto,
   PaginatedEmployeesDto,
@@ -1882,11 +1883,11 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
-  async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
-    return (
-      this.call(
-        sdk.listOverrides({ client: this.client, query: { status } as any }),
-      ) ?? []
+  async listOverrides(
+    params: OverrideRequestListParams = {},
+  ): Promise<PaginatedList<OverrideRequestDto>> {
+    return this.call(
+      sdk.listOverrides({ client: this.client, query: params }),
     );
   }
 

@@ -11,6 +11,7 @@ import { extractErrorMessage, getConnectionScope, setRemoteSessionToken } from "
 import { ApiRequestError } from "$lib/api/remote-client";
 import { effectiveContext } from "./effective-context.svelte";
 import { systemStore } from "./system.svelte";
+import { workflowInbox } from "./workflow-inbox.svelte";
 
 class AuthStore {
   user = $state<UserDto | null>(null);
@@ -86,6 +87,7 @@ class AuthStore {
     this.restorePromise = null;
     effectiveContext.reset();
     systemStore.reset();
+    workflowInbox.reset();
     localStorage.removeItem("orbis_token");
     localStorage.removeItem("orbis_user");
     localStorage.removeItem("orbis_connection_scope");

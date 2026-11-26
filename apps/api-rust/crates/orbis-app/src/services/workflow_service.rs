@@ -7,6 +7,7 @@ use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::actor::Actor;
 use orbis_domain::iam::permission::Permission;
+use orbis_domain::queries::filters::{PaginatedList, PaginationParams};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -14,7 +15,9 @@ use uuid::Uuid;
 use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::{PermissionCheckerPort, PermissionScope};
-use crate::ports::repositories::{OrgUnitRepository, OverrideRequestRepository};
+use crate::ports::repositories::{
+    OrgUnitRepository, OverrideRequestFilter, OverrideRequestRepository,
+};
 
 const POLICY_VERSION: i32 = 1;
 const BRANCH_REVIEW_HOURS: i64 = 48;
@@ -83,6 +86,34 @@ fn human(ctx: &RequestContext) -> Result<Uuid, DomainError> {
 
 fn missing_request() -> DomainError {
     DomainError::NotFound("Override request not found".into())
+}
+
+fn matches_override_search(request: &AcademicOverrideRequest, search: &str) -> bool {
+    let terms = search
+        .split_whitespace()
+        .map(str::to_lowercase)
+        .collect::<Vec<_>>();
+    if terms.is_empty() {
+        return true;
+    }
+
+    let override_type = request.override_type.to_string();
+    let status = request.status.to_string();
+    let searchable = [
+        request.reason.as_str(),
+        request.requested_by_name.as_deref().unwrap_or_default(),
+        override_type.as_str(),
+        request.entity_type.as_str(),
+        request.field_name.as_deref().unwrap_or_default(),
+        request.old_value.as_deref().unwrap_or_default(),
+        request.new_value.as_deref().unwrap_or_default(),
+        status.as_str(),
+        request.resolved_by_name.as_deref().unwrap_or_default(),
+        request.resolution_notes.as_deref().unwrap_or_default(),
+    ]
+    .join(" ")
+    .to_lowercase();
+    terms.iter().all(|term| searchable.contains(term))
 }
 
 fn policy(kind: OverrideType, assigned_to_unit: bool) -> (RiskLevel, &'static [&'static str]) {
@@ -543,24 +574,36 @@ impl WorkflowService {
         Ok(Some(request))
     }
 
-    pub async fn list_overrides(
+    async fn filter_visible_override_requests(
         &self,
-        ctx: &RequestContext,
+        requester: Uuid,
+        access: Option<&Access>,
+        requests: Vec<AcademicOverrideRequest>,
+        now: DateTime<Utc>,
         status: Option<&str>,
         role: Option<&str>,
     ) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
-        let access = self.access(ctx, Permission::WorkflowRead).await?;
-        let now = Utc::now();
         let mut visible = Vec::new();
-        // Pending records may be effectively expired under the server policy.
-        let stored_status = status.filter(|status| *status != "expired");
-        for request in self
-            .override_repo
-            .find_by_org(ctx.tenant_id, stored_status)
-            .await?
-        {
-            if let Some(request) = self.visible(&access, request, now).await? {
-                if status.is_none_or(|status| request.status.to_string() == status)
+        for mut request in requests {
+            let request = if request.requested_by == requester {
+                match self.targets(&request).await {
+                    Ok(targets) => prepare_pending(&mut request, &targets, now),
+                    Err(DomainError::NotFound(_) | DomainError::Validation(_)) => {}
+                    Err(error) => return Err(error),
+                }
+                Some(request)
+            } else if let Some(access) = access {
+                self.visible(access, request, now).await?
+            } else {
+                None
+            };
+            if let Some(request) = request {
+                let matches_status = match status {
+                    None | Some("all") => true,
+                    Some("history") => request.status != OverrideStatus::Pending,
+                    Some(status) => request.status.to_string() == status,
+                };
+                if matches_status
                     && role
                         .is_none_or(|role| request.current_approver_role.as_deref() == Some(role))
                 {
@@ -569,6 +612,120 @@ impl WorkflowService {
             }
         }
         Ok(visible)
+    }
+
+    pub async fn list_overrides(
+        &self,
+        ctx: &RequestContext,
+        status: Option<&str>,
+        role: Option<&str>,
+    ) -> Result<Vec<AcademicOverrideRequest>, DomainError> {
+        let requester = human(ctx)?;
+        let access = match self.access(ctx, Permission::WorkflowRead).await {
+            Ok(access) => Some(access),
+            Err(DomainError::Forbidden(_)) => {
+                self.access(ctx, Permission::WorkflowWrite).await?;
+                None
+            }
+            Err(error) => return Err(error),
+        };
+        let now = Utc::now();
+        // Pending records may be effectively expired under the server policy.
+        let stored_status =
+            status.filter(|status| !matches!(*status, "expired" | "all" | "history"));
+        let requests = self
+            .override_repo
+            .find_by_org(ctx.tenant_id, stored_status)
+            .await?;
+        self.filter_visible_override_requests(
+            requester,
+            access.as_ref(),
+            requests,
+            now,
+            status,
+            role,
+        )
+        .await
+    }
+
+    pub async fn list_overrides_paginated(
+        &self,
+        ctx: &RequestContext,
+        status: Option<&str>,
+        role: Option<&str>,
+        search: Option<&str>,
+        mine: bool,
+        pagination: PaginationParams,
+    ) -> Result<PaginatedList<AcademicOverrideRequest>, DomainError> {
+        let requester = human(ctx)?;
+        let access = match self.access(ctx, Permission::WorkflowRead).await {
+            Ok(access) => Some(access),
+            Err(DomainError::Forbidden(_)) => {
+                self.access(ctx, Permission::WorkflowWrite).await?;
+                None
+            }
+            Err(error) => return Err(error),
+        };
+        let page = pagination.page();
+        let page_size = pagination.page_size();
+
+        if !mine
+            && (role.is_some()
+                || access
+                    .as_ref()
+                    .is_some_and(|access| matches!(&access.scope, PermissionScope::Units(_))))
+        {
+            let mut requests = self
+                .list_overrides(ctx, status, role)
+                .await?
+                .into_iter()
+                .filter(|request| {
+                    search.is_none_or(|search| matches_override_search(request, search))
+                })
+                .collect::<Vec<_>>();
+            requests.sort_by(|left, right| {
+                right
+                    .created_at
+                    .cmp(&left.created_at)
+                    .then_with(|| right.id.cmp(&left.id))
+            });
+            let total_count = requests.len() as u64;
+            let items = requests
+                .into_iter()
+                .skip(pagination.offset() as usize)
+                .take(page_size as usize)
+                .collect();
+            return Ok(PaginatedList::new(items, total_count, page, page_size));
+        }
+
+        let requests = self
+            .override_repo
+            .list(
+                ctx.tenant_id,
+                OverrideRequestFilter {
+                    status: status.map(str::to_owned),
+                    search: search.map(str::to_owned),
+                    requested_by: (mine || access.is_none()).then_some(requester),
+                    pagination: Some(pagination),
+                },
+            )
+            .await?;
+        let visible = self
+            .filter_visible_override_requests(
+                requester,
+                access.as_ref(),
+                requests.items,
+                Utc::now(),
+                status,
+                role,
+            )
+            .await?;
+        Ok(PaginatedList::new(
+            visible,
+            requests.total_count,
+            requests.page,
+            requests.page_size,
+        ))
     }
 
     pub async fn get_override(

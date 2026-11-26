@@ -1,10 +1,14 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::OverrideRequestRepository;
+use chrono::{Duration, Utc};
+use orbis_app::ports::repositories::{OverrideRequestFilter, OverrideRequestRepository};
 use orbis_domain::entities::override_request::{
     AcademicOverrideRequest, ApprovalStep, OverrideStatus, OverrideType, RiskLevel,
 };
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, Set,
+};
 use uuid::Uuid;
 
 use crate::models::override_request::{self, Entity as OverrideEntity};
@@ -208,6 +212,104 @@ impl OverrideRequestRepository for OverrideRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(map_model_to_domain).collect())
+    }
+
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: OverrideRequestFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<AcademicOverrideRequest>, DomainError>
+    {
+        let mut query = OverrideEntity::find().filter(override_request::Column::OrgId.eq(org_id));
+
+        if let Some(status) = filter
+            .status
+            .as_deref()
+            .map(str::trim)
+            .filter(|status| !status.is_empty() && *status != "all")
+        {
+            let now = Utc::now();
+            let default_expiry = now - Duration::days(14);
+            let expired_pending = Condition::all()
+                .add(override_request::Column::Status.eq("pending"))
+                .add(
+                    Condition::any()
+                        .add(override_request::Column::ExpiresAt.lte(now))
+                        .add(
+                            Condition::all()
+                                .add(override_request::Column::ExpiresAt.is_null())
+                                .add(override_request::Column::CreatedAt.lte(default_expiry)),
+                        ),
+                );
+            let status_filter = match status {
+                "expired" => Condition::any()
+                    .add(override_request::Column::Status.eq("expired"))
+                    .add(expired_pending),
+                "history" => Condition::any()
+                    .add(override_request::Column::Status.ne("pending"))
+                    .add(expired_pending),
+                "pending" => Condition::all()
+                    .add(override_request::Column::Status.eq("pending"))
+                    .add(
+                        Condition::any()
+                            .add(override_request::Column::ExpiresAt.gt(now))
+                            .add(
+                                Condition::all()
+                                    .add(override_request::Column::ExpiresAt.is_null())
+                                    .add(override_request::Column::CreatedAt.gt(default_expiry)),
+                            ),
+                    ),
+                status => Condition::all().add(override_request::Column::Status.eq(status)),
+            };
+            query = query.filter(status_filter);
+        }
+        if let Some(requested_by) = filter.requested_by {
+            query = query.filter(override_request::Column::RequestedBy.eq(requested_by));
+        }
+        if let Some(search) = filter.search.as_deref() {
+            let terms = search
+                .split_whitespace()
+                .filter(|term| !term.is_empty())
+                .collect::<Vec<_>>();
+            if !terms.is_empty() {
+                let mut all_terms = Condition::all();
+                for term in terms {
+                    let search_pattern = format!("%{term}%");
+                    all_terms = all_terms.add(
+                        Condition::any()
+                            .add(override_request::Column::Reason.like(&search_pattern))
+                            .add(override_request::Column::RequestedByName.like(&search_pattern))
+                            .add(override_request::Column::OverrideType.like(&search_pattern))
+                            .add(override_request::Column::EntityType.like(&search_pattern))
+                            .add(override_request::Column::FieldName.like(&search_pattern))
+                            .add(override_request::Column::Status.like(&search_pattern))
+                            .add(override_request::Column::ResolvedByName.like(&search_pattern))
+                            .add(override_request::Column::ResolutionNotes.like(&search_pattern)),
+                    );
+                }
+                query = query.filter(all_terms);
+            }
+        }
+
+        let pagination = filter.pagination.unwrap_or_default();
+        let page = pagination.page();
+        let page_size = pagination.page_size();
+        let paginator = query
+            .order_by_desc(override_request::Column::CreatedAt)
+            .order_by_desc(override_request::Column::Id)
+            .paginate(&self.db, page_size);
+        let total_count = paginator.num_items().await.map_err(database_error)?;
+        let models = paginator
+            .fetch_page(page - 1)
+            .await
+            .map_err(database_error)?;
+
+        Ok(orbis_domain::queries::filters::PaginatedList::new(
+            models.into_iter().map(map_model_to_domain).collect(),
+            total_count,
+            page,
+            page_size,
+        ))
     }
 
     async fn find_active_override(

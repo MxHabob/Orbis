@@ -220,6 +220,15 @@ export interface PaginatedList<T> {
   total_pages: number;
 }
 
+export interface OverrideRequestListParams {
+  status?: string;
+  role?: string;
+  search?: string;
+  mine?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
 export type TimetableSolveMode = "full" | "incremental";
 export type TimetableSolveStatus =
   | "pending"
@@ -2166,7 +2175,9 @@ export interface OrbisApiClient {
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;
   approveOverride(req: ApproveOverrideInput): Promise<OverrideRequestDto>;
   rejectOverride(req: RejectOverrideInput): Promise<OverrideRequestDto>;
-  listOverrides(status?: string): Promise<OverrideRequestDto[]>;
+  listOverrides(
+    params?: OverrideRequestListParams,
+  ): Promise<PaginatedList<OverrideRequestDto>>;
   getOverride(id: string): Promise<OverrideRequestDto>;
 
   // ── Exam ────────────────────────────────────────────────────

@@ -2,10 +2,13 @@
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { notificationStore } from "$lib/stores";
+import { authStore, notificationStore, workflowInbox } from "$lib/stores";
 import { toast, LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import {
   AcademicCap,
@@ -15,6 +18,7 @@ import {
   BookOpen,
   Calendar,
   CheckCircle,
+  ClipboardCheck,
   Cog6,
   CreditCard,
   Settings,
@@ -29,7 +33,7 @@ let { orgId = "" }: { orgId?: string } = $props();
 const isArabic = $derived(getLocale().startsWith("ar"));
 
 let open = $state(false);
-type NotificationView = "inbox" | "archive" | "comments";
+type NotificationView = "inbox" | "archive" | "comments" | "requests";
 let activeView = $state<NotificationView>("inbox");
 
 onMount(() => {
@@ -49,6 +53,8 @@ function loadActiveView() {
     void notificationStore.loadNotifications({ is_dismissed: true });
   } else if (activeView === "comments") {
     void notificationStore.loadNotifications({ category: "comment" });
+  } else if (activeView === "requests") {
+    void workflowInbox.loadMyOverrideRequests(authStore.userId);
   } else {
     void notificationStore.loadNotifications({ is_dismissed: false });
   }
@@ -138,13 +144,16 @@ function getNotificationHref(item: NotificationDto): string | null {
   return null;
 }
 
-async function navigateTo(href: string) {
+async function navigateTo(
+  href: string,
+  failureMessage = m.notifications_popover_navigation_failed(),
+) {
   open = false;
   try {
-    await goto(href);
+    await goto(resolve(href as Pathname));
   } catch (error) {
-    console.error("Failed to navigate from a notification:", error);
-    toast.error(m.notifications_popover_navigation_failed());
+    console.error("Failed to navigate from the popover:", error);
+    toast.error(failureMessage);
   }
 }
 
@@ -160,6 +169,10 @@ function handleViewSelect(view: NotificationView) {
 }
 
 function handleRetry() {
+  if (activeView === "requests") {
+    void workflowInbox.loadMyOverrideRequests(authStore.userId);
+    return;
+  }
   loadActiveView();
   void notificationStore.loadUnreadCount();
 }
@@ -169,6 +182,54 @@ function openNotificationSettings() {
   void navigateTo(
     localizeHref(`/${encodeURIComponent(orgId)}/settings/notifications`),
   );
+}
+
+function openMyRequests() {
+  if (!orgId) return;
+  void navigateTo(
+    localizeHref(`/${encodeURIComponent(orgId)}/approvals?tab=mine`),
+    m.notifications_popover_requests_navigation_failed(),
+  );
+}
+
+function getOverrideTypeLabel(type: string): string {
+  switch (type) {
+    case "admission_approval":
+      return m.settings_ui_approval_admission();
+    case "capacity_override":
+      return m.settings_ui_approval_capacity_override();
+    case "grade_change":
+      return m.settings_ui_approval_locked_grade_change();
+    case "prerequisite_bypass":
+      return m.settings_ui_approval_prerequisite_bypass();
+    case "late_enrollment":
+      return m.settings_ui_approval_late_enrollment();
+    case "discount_override":
+      return m.settings_ui_approval_discount_override();
+    default:
+      return m.settings_ui_approval_unknown_type({
+        type: type.replace(/_/g, " "),
+      });
+  }
+}
+
+function getOverrideStatusLabel(status: string): string {
+  switch (status) {
+    case "pending":
+      return m.notifications_popover_request_status_pending();
+    case "approved":
+      return m.notifications_popover_request_status_approved();
+    case "rejected":
+      return m.notifications_popover_request_status_rejected();
+    case "expired":
+      return m.notifications_popover_request_status_expired();
+    case "executed":
+      return m.notifications_popover_request_status_executed();
+    case "cancelled":
+      return m.notifications_popover_request_status_cancelled();
+    default:
+      return status;
+  }
 }
 </script>
 
@@ -248,6 +309,17 @@ function openNotificationSettings() {
       >
         {m.notifications_popover_tab_comments()}
       </button>
+      <button
+        type="button"
+        aria-pressed={activeView === "requests"}
+        class="border-b-2 px-3 text-xs transition-colors {activeView ===
+        'requests'
+          ? 'border-foreground text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground'}"
+        onclick={() => handleViewSelect("requests")}
+      >
+        {m.notifications_popover_tab_requests()}
+      </button>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -262,7 +334,70 @@ function openNotificationSettings() {
     </nav>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      {#if notificationStore.isLoading}
+      {#if activeView === "requests"}
+        {#if workflowInbox.myOverrideRequestsLoading}
+          <div
+            class="flex min-h-40 flex-col items-center justify-center gap-2.5 text-muted-foreground"
+            role="status"
+            aria-live="polite"
+          >
+            <LoadingIndicator size={18} />
+            <span class="text-xs">{m.common_loading()}</span>
+          </div>
+        {:else if workflowInbox.myOverrideRequestsError}
+          <EmptyState
+            icon={ClipboardCheck}
+            title={m.notifications_popover_requests_load_error_title()}
+            description={m.notifications_popover_requests_load_error_description()}
+            actionLabel={m.common_retry()}
+            onaction={handleRetry}
+            class="py-6"
+          />
+        {:else if workflowInbox.myOverrideRequests.length === 0}
+          <EmptyState
+            icon={ClipboardCheck}
+            title={m.ui_copy_you_have_not_submitted_any_approval_reques_005f0b0e()}
+            description={m.notifications_popover_requests_empty_description()}
+            class="py-6"
+          />
+        {:else}
+          <ul class="divide-y divide-border/60">
+            {#each workflowInbox.myOverrideRequests.slice(0, 5) as request (request.id)}
+              <li class="flex flex-col gap-1.5 px-4 py-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="min-w-0 truncate text-xs font-semibold text-foreground">
+                    {getOverrideTypeLabel(request.override_type)}
+                  </span>
+                  <Badge
+                    variant={
+                      request.status === "pending"
+                        ? "warning"
+                        : request.status === "approved" ||
+                            request.status === "executed"
+                          ? "lime"
+                          : request.status === "rejected"
+                            ? "destructive"
+                            : "secondary"
+                    }
+                    class="shrink-0 text-[10px]"
+                  >
+                    {getOverrideStatusLabel(request.status)}
+                  </Badge>
+                </div>
+                <p class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                  {request.reason}
+                </p>
+                <time
+                  datetime={request.created_at}
+                  class="text-[11px] text-muted-foreground"
+                >
+                  {formatTime(request.created_at)}
+                </time>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      {:else if notificationStore.isLoading}
         <div
           class="flex min-h-40 flex-col items-center justify-center gap-2.5 text-muted-foreground"
           role="status"
@@ -342,7 +477,22 @@ function openNotificationSettings() {
       {/if}
     </div>
 
-    {#if activeView === "inbox" && notificationStore.items.length > 0}
+    {#if activeView === "requests"}
+      <footer
+        class="flex shrink-0 justify-center border-t border-border px-3 py-2"
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          class="gap-2 text-xs text-muted-foreground hover:text-foreground"
+          disabled={!orgId || !authStore.userId}
+          onclick={openMyRequests}
+        >
+          <ClipboardCheck size={14} />
+          <span>{m.notifications_popover_view_all_requests()}</span>
+        </Button>
+      </footer>
+    {:else if activeView === "inbox" && notificationStore.items.length > 0}
       <footer
         class="flex shrink-0 justify-center border-t border-border px-3 py-2"
       >

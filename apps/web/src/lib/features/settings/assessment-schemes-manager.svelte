@@ -157,11 +157,7 @@ function toAssessmentComponents(
   components: SchemeComponent[],
 ): AssessmentComponent[] {
   return components.map((component, index) => {
-    const weight =
-      component.stored_weight !== null &&
-      component.weight === component.displayed_weight
-        ? component.stored_weight
-        : component.weight / 100;
+    const weight = component.weight / 100;
     const componentType =
       component.component_type === "homework"
         ? "assignment"
@@ -206,8 +202,8 @@ async function saveSchemeComponents(components: SchemeComponent[]) {
       (sum, component) => sum + (Number(component.weight) || 0),
       0,
     );
-    if (Math.abs(totalWeight - 100) > 0.001) {
-      throw new Error(m.settings_assessment_component_weight_total_error());
+    if (totalWeight > 100.001) {
+      throw new Error(m.settings_assessment_component_weight_limit_error());
     }
     const invalidPassingScore = components.find(
       (component) =>
@@ -218,11 +214,12 @@ async function saveSchemeComponents(components: SchemeComponent[]) {
     }
   }
 
+  const assessmentComponents = toAssessmentComponents(components);
   const request: {
     components: AssessmentComponent[];
     formula?: unknown;
   } = {
-    components: toAssessmentComponents(components),
+    components: assessmentComponents,
   };
   const formula = selectedScheme.formula;
   if (
@@ -233,10 +230,10 @@ async function saveSchemeComponents(components: SchemeComponent[]) {
   ) {
     request.formula = {
       ...formula,
-      components,
+      components: assessmentComponents,
     };
   } else if (Array.isArray(formula)) {
-    request.formula = components;
+    request.formula = assessmentComponents;
   }
 
   await api.updateAssessmentScheme(selectedScheme.id, request);
@@ -569,6 +566,13 @@ const componentTypes = [
                   >
                     {m.settings_ui_assessment_total_weight({ weight: totalWeight })}
                   </Badge>
+                  {#if totalWeight < 100}
+                    <span class="text-[10px] text-muted-foreground">
+                      {m.settings_ui_assessment_weight_remaining({
+                        weight: Math.round((100 - totalWeight) * 100) / 100,
+                      })}
+                    </span>
+                  {/if}
                   <Button
                     size="sm"
                     variant="outline"

@@ -154,6 +154,7 @@ import type {
   ChangeStudyModeInput,
   TransferClassInput,
   PaginatedList,
+  OverrideRequestListParams,
   ReportJobStatusDto,
   BatchPrintParams,
   JournalEntryDto,
@@ -1139,8 +1140,10 @@ export class LocalClient implements OrbisApiClient {
   async rejectOverride(req: RejectOverrideInput): Promise<OverrideRequestDto> {
     return unwrap(await invoke("workflow_reject_override", { request: req }));
   }
-  async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
-    return unwrap(await invoke("workflow_list_overrides", { status }));
+  async listOverrides(
+    params: OverrideRequestListParams = {},
+  ): Promise<PaginatedList<OverrideRequestDto>> {
+    return unwrap(await invoke("workflow_list_overrides", { query: params }));
   }
   async getOverride(id: string): Promise<OverrideRequestDto> {
     return unwrap(await invoke("workflow_get_override", { id }));
