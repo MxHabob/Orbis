@@ -10,7 +10,6 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import { fade } from "svelte/transition";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { GlobeAlt, Grid } from "@orbis/icons";
 
@@ -52,7 +51,7 @@ function handleSave() {
 }
 </script>
 
-<div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+<div class="flex flex-col gap-6 text-start">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <!-- Theme -->
     <div class="flex flex-col gap-2 text-start">

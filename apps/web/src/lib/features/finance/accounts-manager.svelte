@@ -39,7 +39,6 @@ import {
 } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, isAr, l } from "$lib/core/i18n";
-import { fade, slide } from "svelte/transition";
 import { OrbisGrid, type GridActionEvent, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { financeRecordColumn } from "./record-presentation";
 import AccountTree, {
@@ -488,7 +487,7 @@ function exportAccountsCsv() {
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans bg-background/50 text-start">
-  <div class="flex min-h-0 w-full flex-1 flex-col gap-4" in:fade={{ duration: 150 }}>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
     
     <!-- Top Action Toolbar & View Mode Switcher -->
     <header class="flex shrink-0 items-center justify-between gap-4">

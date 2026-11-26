@@ -48,7 +48,6 @@ import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatDateKey } from "$lib/core/i18n/format";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
-import { fade, slide } from "svelte/transition";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { accountQueryOptions, isCashOrBankAccount } from "./queries";
 
@@ -578,7 +577,7 @@ function exportCsv() {
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans bg-background/50">
-  <div class="flex min-h-0 w-full flex-1 flex-col gap-4" in:fade={{ duration: 150 }}>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
     
     <!-- Top Action Bar -->
     <header class="flex shrink-0 items-center justify-between gap-4">
@@ -634,7 +633,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }}>
+      <div>
         <FinanceInlineFormCard
           title={m.finance_ui_disbursement_create_heading()}
           accent="rose"

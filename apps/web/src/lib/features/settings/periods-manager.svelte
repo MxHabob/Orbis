@@ -45,7 +45,6 @@ import SearchableMultiFilter, {
 import RelatedActions, {
   type ActionGroup,
 } from "$lib/shared/components/related-actions.svelte";
-import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -540,7 +539,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
       </Button>
     </div>
   {:else}
-    <div class="flex flex-col divide-y divide-border/40 rounded-xl border border-border/60 bg-card/50 p-3 sm:p-4" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col divide-y divide-border/40 rounded-xl border border-border/60 bg-card/50 p-3 sm:p-4">
       {#each rootPeriods as root (root.id)}
         {@render periodNode(root, 0)}
       {/each}

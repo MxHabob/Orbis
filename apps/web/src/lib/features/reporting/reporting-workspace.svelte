@@ -31,7 +31,6 @@ import {
   Download,
 } from "@orbis/icons";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { fade } from "svelte/transition";
 import ReportDefinitionCard from "./components/report-definition-card.svelte";
 import ReportParameterSheet from "./components/report-parameter-sheet.svelte";
 import ReportTemplateBindingDialog from "./components/report-template-binding-dialog.svelte";
@@ -247,7 +246,6 @@ function handleDownloadCurrent() {
     <!-- Top Controls Toolbar -->
     <div
       class="flex flex-wrap items-center justify-between gap-4"
-      in:fade={{ delay: 50, duration: 200 }}
     >
       <div class="flex flex-wrap items-center gap-3 shrink-0">
         <div class="w-full sm:w-72">
@@ -308,11 +306,11 @@ function handleDownloadCurrent() {
     </div>
 
     {#if activeMainTab === "analytics"}
-      <div class="w-full" in:fade={{ duration: 150 }}>
+      <div class="w-full">
         <MetricsView {orgId} />
       </div>
     {:else}
-      <div class="space-y-4" in:fade={{ duration: 150 }}>
+      <div class="space-y-4">
         {#if isLoading}
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
             {#each Array(6) as _, i (i)}

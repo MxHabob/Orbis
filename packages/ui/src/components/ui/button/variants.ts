@@ -6,7 +6,7 @@ import type {
 import { type VariantProps, tv } from "tailwind-variants";
 
 export const buttonVariants = tv({
-  base: "focus-visible:border-ring aria-invalid:border-destructive rounded-md border border-transparent bg-clip-padding text-sm font-medium active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-']):not([width])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap outline-none select-none transition-[background-color,border-color,box-shadow,color,transform] duration-180 ease-out disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  base: "focus-visible:border-ring aria-invalid:border-destructive rounded-md border border-transparent bg-clip-padding text-sm font-medium active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-']):not([width])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap outline-none select-none transition-[background-color,border-color,box-shadow,color,transform] duration-100 ease-out disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   variants: {
     variant: {
       default: "btn-tactile-primary",

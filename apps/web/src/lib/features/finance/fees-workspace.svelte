@@ -57,7 +57,6 @@ import FinanceRecordDialog from "./components/finance-record-dialog.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
 import { createDefaultDateRange } from "$lib/shared/components/date-range";
-import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -640,7 +639,7 @@ async function exportCsv() {
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans bg-background/50">
-  <div class="flex min-h-0 w-full flex-1 flex-col gap-4" in:fade={{ duration: 150 }}>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
     
     <!-- Top KPI Metric Cards (Matching FinanceOverview Aesthetic) -->
     <div class="grid grid-cols-1 @min-[30rem]/workspace:grid-cols-2 @min-[60rem]/workspace:grid-cols-4 gap-4 shrink-0">
@@ -795,7 +794,7 @@ async function exportCsv() {
 
     <!-- In-Page Creation Form Card -->
     {#if activeForm === "create"}
-      <div transition:slide={{ duration: 200 }}>
+      <div>
         <FinanceInlineFormCard
           title={m.finance_ui_assign_fee_heading()}
           busy={isSubmitting}
@@ -888,7 +887,7 @@ async function exportCsv() {
 
     <!-- In-Page Installment Split Form Card -->
     {#if activeForm === "split"}
-      <div transition:slide={{ duration: 200 }}>
+      <div>
         <FinanceInlineFormCard
           title={m.finance_ui_installment_heading()}
           accent="indigo"
@@ -982,7 +981,7 @@ async function exportCsv() {
 
     <!-- In-Page Refund Form Card -->
     {#if activeForm === "refund"}
-      <div transition:slide={{ duration: 200 }}>
+      <div>
         <FinanceInlineFormCard
           title={m.finance_ui_refund_heading()}
           accent="rose"

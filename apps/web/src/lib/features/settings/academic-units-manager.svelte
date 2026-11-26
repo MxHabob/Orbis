@@ -18,7 +18,6 @@ import {
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
-import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import {
   BookOpen,
@@ -535,7 +534,7 @@ function escapeHtml(text: string): string {
       </div>
     </div>
   {:else}
-    <div class="overflow-hidden" in:fade={{ duration: 150 }}>
+    <div class="overflow-hidden">
       <div class="overflow-x-auto">
         <Grid>
           <TableHeader>

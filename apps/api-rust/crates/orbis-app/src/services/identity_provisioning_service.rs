@@ -104,7 +104,7 @@ impl IdentityProvisioningService {
             .collect()
     }
 
-    /// Generate a normalized, deterministic, unique username based on person details
+    /// Generate a normalized, deterministic, unique ASCII username based on person details
     pub async fn generate_unique_username(
         &self,
         org_id: Uuid,
@@ -112,15 +112,20 @@ impl IdentityProvisioningService {
         person: &Person,
     ) -> Result<String, DomainError> {
         let base_name = if let Some(pref) = preferred {
-            let clean = pref.trim().to_lowercase().replace(' ', ".");
-            if !clean.is_empty() {
+            let clean = Self::sanitize_ascii_username(pref);
+            if clean.len() >= 3 {
                 clean
             } else {
                 Self::fallback_username(person)
             }
         } else if let Some(ref email) = person.email {
             if let Some(user_part) = email.split('@').next() {
-                user_part.to_lowercase().trim().to_string()
+                let clean = Self::sanitize_ascii_username(user_part);
+                if clean.len() >= 3 {
+                    clean
+                } else {
+                    Self::fallback_username(person)
+                }
             } else {
                 Self::fallback_username(person)
             }
@@ -159,20 +164,29 @@ impl IdentityProvisioningService {
         Ok(candidate)
     }
 
+    fn sanitize_ascii_username(raw: &str) -> String {
+        let replaced = raw.trim().to_lowercase().replace(' ', ".");
+        let filtered: String = replaced
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '.' || *c == '_' || *c == '-')
+            .collect();
+        filtered.trim_matches('.').to_string()
+    }
+
     fn fallback_username(person: &Person) -> String {
         let first = person
             .first_name
             .trim()
             .to_lowercase()
             .chars()
-            .filter(|c| c.is_alphanumeric())
+            .filter(|c| c.is_ascii_alphanumeric())
             .collect::<String>();
         let last = person
             .last_name
             .trim()
             .to_lowercase()
             .chars()
-            .filter(|c| c.is_alphanumeric())
+            .filter(|c| c.is_ascii_alphanumeric())
             .collect::<String>();
         if !first.is_empty() && !last.is_empty() {
             format!("{}.{}", first, last)

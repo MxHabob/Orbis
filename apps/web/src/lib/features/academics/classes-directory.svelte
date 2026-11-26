@@ -23,7 +23,6 @@ import {
 import { BookOpen, Plus, Users, Refresh, Pencil, Trash } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n/locale";
-import { fade } from "svelte/transition";
 import { toast } from "@orbis/ui";
 import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
@@ -246,7 +245,6 @@ const classMenuActions = $derived([
 	{:else if !error && classes.length > 0}
 		<div
 			class="grid grid-cols-1 gap-4 @min-[36rem]/workspace:grid-cols-3"
-			in:fade={{ duration: 200 }}
 		>
 			<Card class="flex flex-col justify-between">
 				<CardHeader class="py-3 px-4">
@@ -400,7 +398,6 @@ const classMenuActions = $derived([
 				<!-- Classes Grid — each card is a structured Card component linking to class detail -->
 				<div
 					class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4"
-					in:fade={{ duration: 250 }}
 				>
 					{#each classes as cls (cls.id)}
 						{@const metric = getClassMetric(cls)}

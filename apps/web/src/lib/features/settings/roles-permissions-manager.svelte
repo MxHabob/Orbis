@@ -16,7 +16,6 @@ import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import { useQueryClient } from "@tanstack/svelte-query";
 import type { RoleDto } from "$lib/api/types";
@@ -359,7 +358,7 @@ async function handleRoleSaved() {
         </p>
       </div>
     {:else}
-      <div in:fade={{ duration: 150 }} class="h-full w-full">
+      <div class="h-full w-full">
         <OrbisGrid
           {columns}
           source={gridSource}

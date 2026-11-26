@@ -45,7 +45,6 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
-import { fade } from "svelte/transition";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { formatDateKey } from "$lib/core/i18n/format";
 
@@ -410,7 +409,7 @@ const visibleTreasuries = $derived(
       onRetry={refetchAll} 
     />
   {:else}
-    <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col gap-6">
       <div class="flex flex-wrap items-center gap-2">
         <Select type="single" bind:value={selectedBranchId}>
           <SelectTrigger

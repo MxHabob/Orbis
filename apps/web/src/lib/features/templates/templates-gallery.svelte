@@ -17,7 +17,6 @@ import { l, isAr } from "$lib/core/i18n";
 import { tabsStore } from "$lib/stores";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { GlobeAlt, Plus } from "@orbis/icons";
-import { fade } from "svelte/transition";
 
 import TemplateGrid from "./components/template-grid.svelte";
 import CreateTemplateDialog from "./components/create-template-dialog.svelte";
@@ -256,7 +255,7 @@ async function setDefaultTemplate(id: string) {
 
 <div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
   <div class="w-full p-6 md:p-8 flex flex-col gap-8">
-    <div class="flex flex-wrap items-center justify-between gap-4" in:fade={{ delay: 50, duration: 200 }}>
+    <div class="flex flex-wrap items-center justify-between gap-4">
       
       <div class="flex flex-wrap items-center gap-3 shrink-0">
         <div class="w-full sm:w-72">

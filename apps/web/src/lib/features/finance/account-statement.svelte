@@ -29,7 +29,6 @@ import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
 import { createDefaultDateRange } from "$lib/shared/components/date-range";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import { openPrintDialog } from "$lib/stores/print.svelte";
-import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -468,7 +467,7 @@ function handlePrintStatement() {
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans bg-background/50">
-  <div class="flex min-h-0 w-full flex-1 flex-col gap-4" in:fade={{ duration: 150 }}>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
     
     <!-- Top Filter Bar -->
     <header class="flex shrink-0 flex-wrap items-center justify-between gap-4">

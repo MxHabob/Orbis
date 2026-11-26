@@ -15,7 +15,6 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import { Pencil, UserGroup } from "@orbis/icons";
 import { createUserQuery } from "$lib/features/settings/queries";
@@ -234,7 +233,7 @@ async function saveProfile() {
     </div>
   </div>
 {:else}
-  <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+  <div class="flex flex-col gap-6 text-start">
     <!-- Status Switch -->
     <div class="flex items-center gap-3">
       <Checkbox

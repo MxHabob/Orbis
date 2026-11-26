@@ -14,7 +14,6 @@ import {
 } from "./types";
 import FilterBuilder from "./FilterBuilder.svelte";
 import FilterRow from "./FilterRow.svelte";
-import { slide } from "svelte/transition";
 
 let {
   filter = $bindable(),
@@ -101,7 +100,7 @@ function removeGroup(index: number) {
         <div class="flex min-w-0 flex-col gap-2">
             {#if filter.conditions}
                 {#each filter.conditions as condition, i (i)}
-                    <div transition:slide={{duration: 200}}>
+                    <div>
                         <FilterRow
                             bind:condition={filter.conditions[i]}
                             fields={fields}
@@ -113,7 +112,7 @@ function removeGroup(index: number) {
             {/if}
             {#if filter.groups}
                 {#each filter.groups as group, i (i)}
-                    <div transition:slide={{duration: 200}}>
+                    <div>
                         <FilterBuilder
                             bind:filter={filter.groups[i]}
                             fields={fields}

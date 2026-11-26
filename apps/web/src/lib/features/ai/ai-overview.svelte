@@ -3,7 +3,6 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import { fade } from "svelte/transition";
 import {
   ArrowRight,
   Bolt,
@@ -114,7 +113,7 @@ const healthInfo = $derived(healthConfig[healthStatus]);
       </div>
     </div>
   {:else}
-    <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col gap-6">
       
       <!-- 1. Full-Width SVG AI Chart Trend Chart at top -->
       <AiPerformanceTrendCard {orgId} {isLoading} />

@@ -18,7 +18,6 @@ import {
 import { ArrowLeft } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { fade } from "svelte/transition";
 import { Card } from "@orbis/ui/card";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
@@ -1180,7 +1179,7 @@ async function handleToggleHall(room: any) {
 	{:else}
 		<div class="sticky top-0 z-30 -mx-6 -mt-6 flex min-w-0 flex-col gap-2 bg-background/95 px-6 pt-6 backdrop-blur">
 		<!-- Back + Header -->
-		<div class="flex min-w-0 items-start gap-2" in:fade={{ duration: 150 }}>
+		<div class="flex min-w-0 items-start gap-2">
 			<Button
 				href={localizeHref(`/${orgId}/academics/exams/sessions`)}
 				variant="ghost"
@@ -1224,7 +1223,7 @@ async function handleToggleHall(room: any) {
 		</div>
 
 		<!-- Tabs -->
-		<div class="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto border-b border-border/60 pb-0 scrollbar-hide" in:fade={{ delay: 50, duration: 200 }}>
+		<div class="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto border-b border-border/60 pb-0 scrollbar-hide">
 			{#each tabs as tab (tab.id)}
 				<button
 					class="flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3 py-3 text-xs font-medium transition-colors
@@ -1243,7 +1242,7 @@ async function handleToggleHall(room: any) {
 		</div>
 
 		<!-- Tab Content -->
-		<div class="min-w-0 max-w-full flex-1" in:fade={{ delay: 100, duration: 200 }}>
+		<div class="min-w-0 max-w-full flex-1">
 
 			<!-- ═══ Subjects Tab ═══ -->
 			{#if activeTab === "subjects"}

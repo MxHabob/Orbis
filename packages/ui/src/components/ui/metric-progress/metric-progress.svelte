@@ -138,7 +138,7 @@ function toneClass(segmentTone?: MetricTone, customColor?: string): string {
         <div class="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-muted/40" aria-label="Metric breakdown">
           {#each segments as segment (segment.label)}
             <div
-              class={cn("h-full min-w-0 transition-[width] duration-300", toneClass(segment.tone, segment.colorClass))}
+              class={cn("h-full min-w-0 transition-[width] duration-150", toneClass(segment.tone, segment.colorClass))}
               style={`width: ${(Math.max(0, segment.value) / segmentTotal) * 100}%`}
               title={`${segment.label}: ${segment.displayValue ?? segment.value}`}
             ></div>
@@ -170,7 +170,7 @@ function toneClass(segmentTone?: MetricTone, customColor?: string): string {
         {/if}
         <div class="h-2 w-full overflow-hidden rounded-full bg-muted/40">
           <div 
-            class={cn("h-full rounded-full transition-[width] duration-300", toneClass(tone))} 
+            class={cn("h-full rounded-full transition-[width] duration-150", toneClass(tone))} 
             style={`width: ${percentage}%`}
           ></div>
         </div>
