@@ -8,6 +8,8 @@ import { Button } from "@orbis/ui/button";
 
 let latestRelease = $state<ReleaseChangelogItem | null>(null);
 
+const MULVERSE_WEBSITE = "https://www.mulverse.com/";
+
 onMount(async () => {
 	try {
 		const releases = await api.systemGetChangelog();
@@ -18,9 +20,8 @@ onMount(async () => {
 	}
 });
 
-function openLatestRelease() {
-	if (!latestRelease?.html_url) return;
-	window.open(latestRelease.html_url, "_blank", "noopener,noreferrer");
+function openMulverseWebsite() {
+	window.open(MULVERSE_WEBSITE, "_blank", "noopener,noreferrer");
 }
 </script>
 
@@ -32,18 +33,16 @@ function openLatestRelease() {
 		<Badge variant="secondary" class="shrink-0 font-mono text-[10px]">
 			v{latestRelease.version}
 		</Badge>
-		{#if latestRelease.html_url}
-			<Button
-				variant="ghost"
-				size="sm"
-				onclick={openLatestRelease}
-				class="h-auto min-h-0 px-1 py-0 text-[11px] font-semibold text-primary-foreground underline hover:bg-transparent hover:text-primary-foreground"
-			>
-				{m.ui_changelog_github_release()}
-				<span class="rtl:rotate-180 inline-block font-sans">→</span>
-			</Button>
-		{/if}
 	{:else}
 		<span>{m.auth_login_banner_text()}</span>
 	{/if}
+	<Button
+		variant="ghost"
+		size="sm"
+		onclick={openMulverseWebsite}
+		class="h-auto min-h-0 px-1 py-0 text-[11px] font-semibold text-primary-foreground underline hover:bg-transparent hover:text-primary-foreground"
+	>
+		{m.ui_system_about_website()}
+		<span class="rtl:rotate-180 inline-block font-sans">→</span>
+	</Button>
 </div>

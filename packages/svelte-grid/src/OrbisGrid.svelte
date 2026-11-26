@@ -41,6 +41,7 @@ import {
   coerceValue,
   contextMenuItems,
   defaultAlign,
+  detectEntryAxis,
   duplicateRows,
   emptySelection,
   extendRange,
@@ -54,7 +55,9 @@ import {
   parseClipboard,
   queryClient,
   rangeContains,
+  resolveCellStep,
   selectedCount,
+  type EntryAxis,
   toggleId,
   toggleSort,
   toTsv,
@@ -192,6 +195,9 @@ let editing = $state<{
   error?: string;
 } | null>(null);
 let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
+let tabAnchorCol: number | null = null;
+let lastEditCell: { row: number; col: number } | null = null;
+let entryAxis: EntryAxis | null = null;
 let filterPanelOpen = $state(false);
 let filterDraft = $state<UniversalFilter>({
   logic: "AND",
@@ -665,48 +671,49 @@ function moveActiveAfterEdit(
   col: number,
   rowDelta: number,
   colDelta: number,
+  allowAppend = true,
 ) {
-  let nextRow = row + rowDelta;
-  let nextCol = col;
-  const editableCols = editableColumnIndices();
-  if (colDelta > 0) {
-    const nextEditable = editableCols.find((index) => index > col);
-    if (nextEditable !== undefined) nextCol = nextEditable;
-    else {
-      nextRow++;
-      nextCol = firstEditableColumnIndex();
-    }
-  } else if (colDelta < 0) {
-    let previousEditable: number | undefined;
-    for (let index = editableCols.length - 1; index >= 0; index--) {
-      if (editableCols[index]! < col) {
-        previousEditable = editableCols[index]!;
-        break;
-      }
-    }
-    if (previousEditable !== undefined) nextCol = previousEditable;
-    else {
-      nextRow--;
-      nextCol = lastEditableColumnIndex();
-    }
+  const editableCols = readonly ? [] : editableColumnIndices();
+  const step = resolveCellStep(row, col, rowDelta, colDelta, {
+    rowCount: displayRows.length,
+    colCount: visibleCols.length,
+    editableCols,
+    range: selection.range,
+    tabAnchorCol,
+    entryAxis,
+  });
+
+  if (step.withinRange) {
+    tabAnchorCol = null;
+    selection = {
+      ...selection,
+      active: { row: step.row, col: step.col },
+    };
+    onselection?.(selection);
+    scrollActiveCellIntoView(step.row, step.col);
+    return;
   }
-  if (nextRow >= displayRows.length) {
-    if (
-      !readonly &&
-      showAddRow && !fixedRows &&
-      displayRows.length === safeSource.length &&
-      (rowDelta > 0 || colDelta > 0)
-    ) {
-      const newRow = appendEmptyRow();
-      requestAnimationFrame(() => {
-        const index = displayRows.indexOf(newRow);
-        if (index >= 0) setActive(index, nextCol);
-      });
-      return;
-    }
-    nextRow = displayRows.length - 1;
+
+  if (
+    allowAppend &&
+    step.pastEnd &&
+    !readonly &&
+    showAddRow &&
+    !fixedRows &&
+    displayRows.length === safeSource.length
+  ) {
+    const targetCol = step.col;
+    tabAnchorCol = null;
+    const newRow = appendEmptyRow();
+    requestAnimationFrame(() => {
+      const index = displayRows.indexOf(newRow);
+      if (index >= 0) setActive(index, targetCol);
+    });
+    return;
   }
-  setActive(nextRow, nextCol);
+
+  setActive(step.row, step.col);
+  tabAnchorCol = step.tabAnchorCol;
 }
 
 function isGridRowSelected(row: GridRow, index: number) {
@@ -798,6 +805,7 @@ function requestMoreIfNeeded(force = false) {
 }
 
 function setActive(row: number, col: number, extend = false, reveal = true) {
+  tabAnchorCol = null;
   const r = clampIndex(row, Math.max(0, displayRows.length - 1));
   const c = clampIndex(col, Math.max(0, visibleCols.length - 1));
   if (extend && origin) {
@@ -995,6 +1003,8 @@ function commitEdit(moveRow = 0, moveCol = 0) {
   if (column && !commitOverlay(editing.row, column, editing.draft)) return;
   const r = editing.row;
   const c = editing.col;
+  entryAxis = detectEntryAxis(lastEditCell, r, c, entryAxis);
+  lastEditCell = { row: r, col: c };
   editing = null;
   root?.focus({ preventScroll: true });
   if (moveRow || moveCol) moveActiveAfterEdit(r, c, moveRow, moveCol);
@@ -1002,6 +1012,7 @@ function commitEdit(moveRow = 0, moveCol = 0) {
 
 function cancelEdit() {
   skipBlur = true;
+  tabAnchorCol = null;
   editing = null;
 }
 
@@ -1178,7 +1189,7 @@ function handleKeydown(e: KeyboardEvent) {
       break;
     case "tab":
       if (editing) commitEdit(0, cmd.colDelta);
-      else setActive(active.row, active.col + cmd.colDelta);
+      else moveActiveAfterEdit(active.row, active.col, 0, cmd.colDelta, false);
       break;
     case "edit":
       startEdit(active.row, active.col, e.key.length === 1 ? e.key : undefined);
@@ -2050,7 +2061,13 @@ const headerPanes = $derived.by(() => {
                             commitEdit();
                           }}
                           onkeydown={(e) => {
-                            if (e.key === "Escape") {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              commitEdit(e.shiftKey ? -1 : 1, 0);
+                            } else if (e.key === "Tab") {
+                              e.preventDefault();
+                              commitEdit(0, e.shiftKey ? -1 : 1);
+                            } else if (e.key === "Escape") {
                               e.preventDefault();
                               cancelEdit();
                             }

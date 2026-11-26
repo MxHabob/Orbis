@@ -17,7 +17,12 @@ import {
   fillDown,
   duplicateRows,
 } from "./clipboard";
-import { interpretKey, clampIndex } from "./keyboard";
+import {
+  interpretKey,
+  clampIndex,
+  resolveCellStep,
+  detectEntryAxis,
+} from "./keyboard";
 import { countFrozenColumns, scrollForColumn, visibleVariableWindow, visibleWindow } from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
 import { queryClient } from "./query";
@@ -197,6 +202,170 @@ describe("keyboard + rtl", () => {
   test("clamp infinities", () => {
     expect(clampIndex(-Infinity, 9)).toBe(0);
     expect(clampIndex(Infinity, 9)).toBe(9);
+  });
+
+  test("Tab + Enter returns to the Tab start column on the next row", () => {
+    const base = {
+      rowCount: 5,
+      colCount: 5,
+      editableCols: [1, 2, 3, 4],
+      range: null,
+    };
+
+    // Start at col 1, Tab to col 2 -> anchor stays 1
+    const s1 = resolveCellStep(0, 1, 0, 1, { ...base, tabAnchorCol: null });
+    expect(s1).toEqual({
+      row: 0,
+      col: 2,
+      tabAnchorCol: 1,
+      pastEnd: false,
+      withinRange: false,
+    });
+
+    // Tab to col 3 -> anchor stays 1
+    const s2 = resolveCellStep(s1.row, s1.col, 0, 1, {
+      ...base,
+      tabAnchorCol: s1.tabAnchorCol,
+    });
+    expect(s2).toEqual({
+      row: 0,
+      col: 3,
+      tabAnchorCol: 1,
+      pastEnd: false,
+      withinRange: false,
+    });
+
+    // Enter -> drops to row 1, col 1 and clears anchor
+    const s3 = resolveCellStep(s2.row, s2.col, 1, 0, {
+      ...base,
+      tabAnchorCol: s2.tabAnchorCol,
+    });
+    expect(s3).toEqual({
+      row: 1,
+      col: 1,
+      tabAnchorCol: null,
+      pastEnd: false,
+      withinRange: false,
+    });
+  });
+
+  test("Enter without prior Tab stays in the same column", () => {
+    const step = resolveCellStep(1, 3, 1, 0, {
+      rowCount: 5,
+      colCount: 5,
+      editableCols: [1, 2, 3, 4],
+      range: null,
+      tabAnchorCol: null,
+    });
+    expect(step).toEqual({
+      row: 2,
+      col: 3,
+      tabAnchorCol: null,
+      pastEnd: false,
+      withinRange: false,
+    });
+  });
+
+  test("adapts Enter to horizontal movement after horizontal row entry", () => {
+    // User edits (0,1) then (0,2) -> detected as horizontal entry
+    let axis = detectEntryAxis(null, 0, 1, null);
+    expect(axis).toBeNull();
+    axis = detectEntryAxis({ row: 0, col: 1 }, 0, 2, axis);
+    expect(axis).toBe("horizontal");
+
+    // User moves to row 1 (col 1), edits it, and presses Enter -> moves horizontally to (1,2)
+    const next = resolveCellStep(1, 1, 1, 0, {
+      rowCount: 5,
+      colCount: 5,
+      editableCols: [1, 2, 3],
+      range: null,
+      tabAnchorCol: null,
+      entryAxis: axis,
+    });
+    expect(next).toEqual({
+      row: 1,
+      col: 2,
+      tabAnchorCol: null,
+      pastEnd: false,
+      withinRange: false,
+    });
+
+    // At end of row 1 (col 3), Enter wraps to (2, 1)
+    const wrap = resolveCellStep(1, 3, 1, 0, {
+      rowCount: 5,
+      colCount: 5,
+      editableCols: [1, 2, 3],
+      range: null,
+      tabAnchorCol: null,
+      entryAxis: axis,
+    });
+    expect(wrap).toEqual({
+      row: 2,
+      col: 1,
+      tabAnchorCol: null,
+      pastEnd: false,
+      withinRange: false,
+    });
+
+    // If user edits vertically in the same column, axis switches back to vertical
+    axis = detectEntryAxis({ row: 2, col: 1 }, 3, 1, axis);
+    expect(axis).toBe("vertical");
+    const down = resolveCellStep(3, 1, 1, 0, {
+      rowCount: 5,
+      colCount: 5,
+      editableCols: [1, 2, 3],
+      range: null,
+      tabAnchorCol: null,
+      entryAxis: axis,
+    });
+    expect(down).toEqual({
+      row: 4,
+      col: 1,
+      tabAnchorCol: null,
+      pastEnd: false,
+      withinRange: false,
+    });
+  });
+
+  test("Enter and Tab cycle inside a multi-cell selection range", () => {
+    const opts = {
+      rowCount: 10,
+      colCount: 10,
+      editableCols: [1, 2, 3],
+      range: { startRow: 1, startCol: 1, endRow: 2, endCol: 2 },
+      tabAnchorCol: null,
+    };
+
+    // Enter moves down inside range, wrapping to top of next column
+    expect(resolveCellStep(1, 1, 1, 0, opts)).toMatchObject({
+      row: 2,
+      col: 1,
+      withinRange: true,
+    });
+    expect(resolveCellStep(2, 1, 1, 0, opts)).toMatchObject({
+      row: 1,
+      col: 2,
+      withinRange: true,
+    });
+    expect(resolveCellStep(2, 2, 1, 0, opts)).toMatchObject({
+      row: 1,
+      col: 1,
+      withinRange: true,
+    });
+
+    // Shift+Enter moves backward inside range
+    expect(resolveCellStep(1, 1, -1, 0, opts)).toMatchObject({
+      row: 2,
+      col: 2,
+      withinRange: true,
+    });
+
+    // Tab moves horizontally inside range
+    expect(resolveCellStep(1, 2, 0, 1, opts)).toMatchObject({
+      row: 2,
+      col: 1,
+      withinRange: true,
+    });
   });
 });
 
