@@ -8,6 +8,7 @@ import { Badge } from "@orbis/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
+import { tabsStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import {
   createTemplateFromCatalog,
@@ -99,6 +100,7 @@ async function useTemplate(template: ReadyTemplate) {
     await onimported();
     toast.success(m.settings_template_marketplace_import_success());
     open = false;
+    tabsStore.markNextNavigationAsNewTab();
     await goto(`/${orgId}/templates/${created.id}`);
   } catch (error) {
     if (isNetworkUnavailable(error)) {

@@ -14,7 +14,8 @@ import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
 import StudentTransferDialog from "$lib/features/students/student-transfer-dialog.svelte";
 import { toast } from "@orbis/ui";
-import { confirmStore } from "$lib/stores";
+import { confirmStore, tabsStore } from "$lib/stores";
+import { getRouteTitle } from "$lib/shell/route-titles";
 import { extractErrorMessage } from "$lib/api";
 import { goto } from "$app/navigation";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
@@ -215,13 +216,19 @@ async function deleteSelectedStudents() {
                       onSelect: () => directory.exportStudents(selectedStudentIds),
                     },
                   ]}
-                  onprimary={() => goto(localizeHref(`/${orgId}/students/new`))}
+                  onprimary={() => {
+                    const path = `/${orgId}/students/new`;
+                    tabsStore.openNewTab(orgId, path, getRouteTitle({ pathname: path, orgId }), true);
+                  }}
                 >
                   {#snippet primary()}
                     <Button
                       size="sm"
                       class="rounded-e-none gap-1.5"
-                      onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
+                      onclick={() => {
+                        const path = `/${orgId}/students/new`;
+                        tabsStore.openNewTab(orgId, path, getRouteTitle({ pathname: path, orgId }), true);
+                      }}
                     >
                       <Plus class="size-4" />
                       <span>{m.common_new()}</span>

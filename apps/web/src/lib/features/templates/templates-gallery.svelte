@@ -14,6 +14,7 @@ import { createDocument, createNode } from "@docforge/core";
 import type { PageSetup, TextNode } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";
+import { tabsStore } from "$lib/stores";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { GlobeAlt, Plus } from "@orbis/icons";
 import { fade } from "svelte/transition";
@@ -175,7 +176,8 @@ async function handleCreateTemplate() {
     toast.success(m.shared_ui_template_created());
     isCreateDialogOpen = false;
 
-    // Redirect to editor page
+    // Redirect to editor page in a new tab
+    tabsStore.markNextNavigationAsNewTab();
     goto(`/${orgId}/templates/${response.id}`);
   } catch (e: unknown) {
     console.error("Failed to create template:", e);

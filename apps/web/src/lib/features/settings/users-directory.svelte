@@ -1,7 +1,7 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import { confirmStore } from "$lib/stores";
+import { confirmStore, tabsStore } from "$lib/stores";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -260,6 +260,7 @@ const columns: OrbisColumnDef[] = [
 async function handleAction(event: GridActionEvent) {
   const user = event.row as User;
   if (event.actionId === "edit" || event.actionId === "dblclick") {
+    tabsStore.markNextNavigationAsNewTab();
     goto(localizeHref(`/${orgId}/settings/users/${user.id}`));
   } else if (event.actionId === "reset_password") {
     const confirmed = await confirmStore.prompt({

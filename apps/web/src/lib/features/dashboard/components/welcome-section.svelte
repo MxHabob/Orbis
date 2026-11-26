@@ -155,8 +155,8 @@ function handleMouseLeave() {
         {@const current = insights[index % insights.length]}
         {#key index}
           <div
-            in:fly={{ y: 8, opacity: 0, duration: 300, easing: quadOut }}
-            out:fly={{ y: -8, opacity: 0, duration: 300, easing: quadOut }}
+            in:fly={{ y: 4, opacity: 0, duration: 150, easing: quadOut }}
+            out:fly={{ y: -4, opacity: 0, duration: 150, easing: quadOut }}
             class="absolute inset-0 flex items-center justify-center text-center px-4"
           >
             <span

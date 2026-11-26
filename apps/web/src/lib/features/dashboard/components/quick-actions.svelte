@@ -12,7 +12,7 @@ import {
 } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { academicContext, workflowInbox, effectiveContext } from "$lib/stores";
+import { academicContext, workflowInbox, effectiveContext, tabsStore } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -86,6 +86,7 @@ const ACTIONS = $derived.by(() => {
 		{@const Icon = action.icon}
 		<Button
 			href={localizeHref(action.href)}
+			onclick={() => tabsStore.markNextNavigationAsNewTab()}
 		>
 			<Icon size={13} />
 			<span>{action.label}</span>

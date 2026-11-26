@@ -842,7 +842,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             <Progress value={batchProgress} class="h-2 w-full" />
           </div>
           {#if batchProgress === 100}
-            <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
+            <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold mt-2">
               <CheckCircle size={16} />
               <span>{m.common_print_multi_up_complete()}</span>
             </div>

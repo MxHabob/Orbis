@@ -4,7 +4,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Dialog, DialogContent, DialogTitle } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
-import { uiStore, authStore, operationStore } from "$lib/stores";
+import { uiStore, authStore, operationStore, tabsStore } from "$lib/stores";
 import { getRouteTitle } from "./route-titles";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
@@ -434,7 +434,15 @@ const shortcuts = $derived([
     id: "sc-create-student",
     title: m.students_create(),
     icon: Plus,
-    action: () => goto(`/${currentOrgId}/students/new`),
+    action: () => {
+      const path = `/${currentOrgId}/students/new`;
+      tabsStore.openNewTab(
+        currentOrgId,
+        path,
+        getRouteTitle({ pathname: path, orgId: currentOrgId }),
+        true,
+      );
+    },
     group: m.common_search_group_shortcuts(),
   },
   {

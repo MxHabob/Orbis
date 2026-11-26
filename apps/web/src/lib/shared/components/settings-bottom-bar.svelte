@@ -6,8 +6,6 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import { fly } from "svelte/transition";
-import { quintOut } from "svelte/easing";
 import { Button, type ButtonVariant } from "@orbis/ui/button";
 import { AdjustmentsHorizontal, ArrowPath, InfoCircle } from "@orbis/icons";
 
@@ -61,7 +59,6 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
 {#if visible && isDirty}
   <div
     class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] {maxWidthClass} pointer-events-auto select-none"
-    transition:fly={{ y: 35, duration: 250, easing: quintOut }}
   >
     <div class="bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3">
       <!-- Status Indicator & Message -->

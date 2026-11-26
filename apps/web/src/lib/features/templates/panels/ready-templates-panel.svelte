@@ -8,6 +8,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
 import { toast } from "@orbis/ui";
+import { tabsStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import {
   createTemplateFromCatalog,
@@ -82,6 +83,7 @@ async function useTemplate(template: ReadyTemplate) {
       await createTemplateFromCatalog(template),
     );
     toast.success(m.settings_template_marketplace_import_success());
+    tabsStore.markNextNavigationAsNewTab();
     await goto(`/${orgId}/templates/${created.id}`);
   } catch (error) {
     if (isNetworkUnavailable(error)) {
