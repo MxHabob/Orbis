@@ -1,7 +1,9 @@
 <!--
 @component LicenseBillingManager
-Settings view for license status, plan details, features, plan limits,
-product key activation, and device seat deactivation.
+Refined billing & license management view following Orbis design tokens:
+1. Hero plan overview with status, key dates, and primary actions.
+2. Unified limits & enabled features summary.
+3. Financial shortcuts, installation ID, and seat deactivation.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -16,6 +18,7 @@ import {
   CardTitle,
 } from "@orbis/ui/card";
 import { Bolt, ArrowPath, Check, Trash } from "@orbis/icons";
+import { MULVERSE_URLS } from "@orbis/utils";
 import { formatLicensePlan } from "$lib/utils/license";
 import { formatDate } from "$lib/core/i18n";
 import LicensePlanCard from "./components/license-plan-card.svelte";
@@ -26,6 +29,7 @@ let { orgId }: { orgId: string } = $props();
 let isRefreshing = $state(false);
 let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
+
 const planDisplay = $derived(
   formatLicensePlan(licenseStore.planName) ??
     formatLicensePlan(licenseStore.plan) ??
@@ -153,42 +157,34 @@ const statusBadge = $derived.by(() => {
     case "active":
       return {
         label: m.license_status_active(),
-        class:
-          "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+        class: "bg-success/10 text-success border-success/20",
       };
     case "trial":
       return {
         label: m.license_status_trial(),
-        class:
-          "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+        class: "bg-info/10 text-info border-info/20",
       };
     case "expiring":
-      return {
-        label: m.license_status_expiring(),
-        class:
-          "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-      };
-    case "expired":
-      return {
-        label: m.license_status_expired(),
-        class: "bg-destructive/10 text-destructive border-destructive/20",
-      };
-    case "suspended":
-    case "deactivation_pending":
-      return {
-        label: m.license_status_suspended(),
-        class: "bg-destructive/10 text-destructive border-destructive/20",
-      };
-    case "revoked":
-      return {
-        label: m.license_status_revoked(),
-        class: "bg-destructive/10 text-destructive border-destructive/20",
-      };
     case "offline_grace":
       return {
-        label: m.license_status_offline_grace(),
-        class:
-          "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+        label:
+          state === "expiring"
+            ? m.license_status_expiring()
+            : m.license_status_offline_grace(),
+        class: "bg-warning/10 text-warning border-warning/20",
+      };
+    case "expired":
+    case "suspended":
+    case "deactivation_pending":
+    case "revoked":
+      return {
+        label:
+          state === "expired"
+            ? m.license_status_expired()
+            : state === "revoked"
+              ? m.license_status_revoked()
+              : m.license_status_suspended(),
+        class: "bg-destructive/10 text-destructive border-destructive/20",
       };
     case "pending":
       return {
@@ -202,17 +198,35 @@ const statusBadge = $derived.by(() => {
       };
   }
 });
+
+const hasLimits = $derived(
+  Boolean(licenseStore.limits && licenseStore.limits.length > 0),
+);
+const hasFeatures = $derived(
+  Boolean(licenseStore.enabledFeatures && licenseStore.enabledFeatures.length > 0),
+);
 </script>
 
-<div class="h-full w-full overflow-y-auto px-5 py-8 md:px-8 scrollbar-hide font-sans text-start">
-  <div class="mx-auto flex w-full max-w-5xl flex-col gap-7 pb-8">
-    <header class="flex flex-wrap items-end justify-between gap-4">
-      <div class="flex flex-col gap-1.5">
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">{m.license_nav_title()}</h1>
+<div class="h-full w-full overflow-y-auto px-5 py-7 md:px-8 scrollbar-hide font-sans text-start">
+  <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 pb-10">
+    <!-- Page Header -->
+    <header class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            {m.license_nav_title()}
+          </h1>
+          <span
+            class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium {statusBadge.class}"
+          >
+            {statusBadge.label}
+          </span>
+        </div>
         {#if !licenseStore.hasLoaded && licenseStore.error}
-          <p class="text-sm text-destructive" role="alert">{licenseStore.error}</p>
+          <p class="text-xs text-destructive" role="alert">{licenseStore.error}</p>
         {/if}
       </div>
+
       <div class="flex flex-wrap items-center gap-2">
         {#if !licenseStore.hasLoaded && licenseStore.error}
           <Button
@@ -228,6 +242,7 @@ const statusBadge = $derived.by(() => {
             {m.common_retry()}
           </Button>
         {/if}
+
         {#if licenseStore.hasLoaded && licenseStore.state === "unavailable"}
           <Button
             variant="outline"
@@ -242,6 +257,7 @@ const statusBadge = $derived.by(() => {
             {m.license_start_trial_btn()}
           </Button>
         {/if}
+
         <Button
           variant="outline"
           size="sm"
@@ -260,224 +276,179 @@ const statusBadge = $derived.by(() => {
       </div>
     </header>
 
-    <section aria-labelledby="current-plan-heading" class="flex flex-col gap-2">
-      <h2 id="current-plan-heading" class="px-1 text-sm font-medium text-muted-foreground">{m.license_current_plan()}</h2>
-      <Card>
-        <CardContent class="flex flex-row flex-wrap items-center justify-between gap-4 p-4 text-start">
-          <div class="flex min-w-0 flex-col gap-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="text-base font-semibold text-foreground">
-                {planDisplay}
-              </span>
-              <span class="text-sm text-muted-foreground">{statusBadge.label}</span>
-            </div>
+    <!-- 1. Plan & License Overview -->
+    <Card>
+      <CardContent class="grid gap-6 p-5 md:grid-cols-[14rem_minmax(0,1fr)] md:items-center">
+        <LicensePlanCard
+          planCode={licenseStore.isTrial
+            ? "trial"
+            : licenseStore.plan ?? licenseStore.planName ?? licenseStore.edition ?? ""}
+          planLabel={planDisplay}
+          validUntil={licenseStore.validUntil}
+        />
+
+        <div class="flex min-w-0 flex-col justify-between gap-5">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-muted-foreground">
+              {m.license_current_plan()}
+            </span>
+            <h2 class="text-xl font-bold tracking-tight text-foreground">
+              {planDisplay}
+            </h2>
             {#if licenseStore.isTrial}
-              <p class="text-sm text-muted-foreground">
+              <p class="text-xs text-muted-foreground">
                 {m.license_trial_days_remaining({ count: String(licenseStore.trialDaysRemaining) })}
               </p>
             {:else if licenseStore.daysUntilExpiry !== null}
-              <p class="text-sm text-muted-foreground">
+              <p class="text-xs text-muted-foreground">
                 {m.license_days_remaining({ count: String(licenseStore.daysUntilExpiry) })}
               </p>
             {:else if licenseStore.edition && licenseStore.edition !== licenseStore.plan}
-              <p class="text-sm text-muted-foreground">{licenseStore.edition}</p>
+              <p class="text-xs text-muted-foreground">{licenseStore.edition}</p>
             {/if}
           </div>
-          <div class="flex shrink-0 items-center gap-2">
-            <a
-              href="http://mulverse.com/p/orbis/pricing"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              {m.license_billing_view_plans()}
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5">
-                <path d="M14 3h7v7M10 14 21 3" />
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              </svg>
-            </a>
-            <Button variant="lime" size="sm" onclick={handleOpenActivation} class="font-semibold">
-              {m.license_manage_btn()}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
 
-    <section aria-labelledby="license-details-heading" class="flex flex-col gap-2">
-      <Card>
-        <CardHeader class="flex flex-wrap items-center justify-between gap-3 normal-case tracking-normal">
-          <div class="flex min-w-0 flex-col">
-            <CardTitle id="license-details-heading" class="text-sm font-semibold text-foreground normal-case tracking-normal">
-              {m.license_billing_details()}
-            </CardTitle>
-          </div>
-          {#if !licenseStore.isOperational}
-            <Button variant="outline" size="sm" onclick={handleOpenActivation} class="shrink-0 text-xs">
-              <Bolt size={14} class="me-1.5" />
-              {m.license_activate_btn()}
-            </Button>
-          {/if}
-        </CardHeader>
-        <CardContent class="grid gap-5 p-5 md:grid-cols-[15rem_minmax(0,1fr)] md:items-center">
-          <LicensePlanCard
-            planCode={licenseStore.isTrial ? "trial" : licenseStore.plan ?? licenseStore.planName ?? licenseStore.edition ?? ""}
-            planLabel={planDisplay}
-
-            validUntil={licenseStore.validUntil}
-          />
-          <dl class="flex min-w-0 flex-col">
-            <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
-              <dt class="text-sm text-muted-foreground">{m.license_status_title()}</dt>
-              <dd class="text-sm font-medium text-foreground">{statusBadge.label}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
-              <dt class="text-sm text-muted-foreground">{m.license_valid_until()}</dt>
+          <dl class="grid grid-cols-1 gap-3 border-y border-border/60 py-3.5 sm:grid-cols-2">
+            <div class="flex flex-col gap-0.5">
+              <dt class="text-[11px] text-muted-foreground">{m.license_valid_until()}</dt>
               <dd class="text-sm font-medium tabular-nums text-foreground">
                 {formatDate(licenseStore.validUntil, "datetime") || "—"}
               </dd>
             </div>
-            <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
-              <dt class="text-sm text-muted-foreground">{m.license_last_sync()}</dt>
+            <div class="flex flex-col gap-0.5">
+              <dt class="text-[11px] text-muted-foreground">{m.license_last_sync()}</dt>
               <dd class="text-sm font-medium tabular-nums text-foreground">
                 {formatDate(licenseStore.lastSyncAt, "datetime") || m.license_never_synced()}
               </dd>
             </div>
           </dl>
-        </CardContent>
-      </Card>
-    </section>
 
-    <section aria-labelledby="license-schedule-heading" class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <Button variant="default" size="sm" onclick={handleOpenActivation}>
+              {#if !licenseStore.isOperational}
+                <Bolt size={14} class="me-1.5" />
+                {m.license_activate_btn()}
+              {:else}
+                {m.license_manage_btn()}
+              {/if}
+            </Button>
+            <a
+              href={MULVERSE_URLS.orbisPricing}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              {m.license_billing_view_plans()}
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-3.5 text-muted-foreground">
+                <path d="M14 3h7v7M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- 2. Quotas & Enabled Features -->
+    {#if hasLimits || hasFeatures}
       <Card>
-        <CardHeader>
-          <CardTitle id="license-schedule-heading">{m.license_billing_schedule()}</CardTitle>
-        </CardHeader>
-        <CardContent class="p-5">
-          <div class="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3 text-sm sm:grid-cols-[1fr_1fr_auto]">
-            <span class="text-xs text-muted-foreground">{m.license_billing_schedule_item()}</span>
-            <span class="hidden text-xs text-muted-foreground sm:block">{m.license_plan_label()}</span>
-            <span class="text-end text-xs text-muted-foreground">{m.license_valid_until()}</span>
-            <span class="font-medium text-foreground">{statusBadge.label}</span>
-            <span class="hidden text-muted-foreground sm:block">{planDisplay}</span>
-            <span class="text-end tabular-nums text-foreground">
-              {formatDate(licenseStore.validUntil, "datetime") || "—"}
-            </span>
+        <CardContent class="flex flex-col gap-6 p-5">
+          {#if hasLimits}
+            <div class="flex flex-col gap-3">
+              <h3 class="text-sm font-semibold text-foreground">{m.license_limits_title()}</h3>
+              <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {#each licenseStore.limits as limit (limit.key)}
+                  <div class="flex flex-col gap-0.5 rounded-md bg-muted/40 px-3.5 py-3">
+                    <span class="text-xs text-muted-foreground">{getLimitLabel(limit.key)}</span>
+                    <div class="flex items-baseline gap-1.5">
+                      <span class="text-lg font-bold tabular-nums text-foreground">
+                        {limit.max_value !== null && limit.max_value !== undefined
+                          ? limit.max_value
+                          : m.license_limit_unlimited()}
+                      </span>
+                      <span class="text-[11px] text-muted-foreground">
+                        {getUnitLabel(limit.unit)}
+                      </span>
+                    </div>
+                  </div>
+                {/each}
+              </div>
             </div>
-        </CardContent>
-      </Card>
-    </section>
+          {/if}
 
-    {#if licenseStore.limits && licenseStore.limits.length > 0}
-      <section aria-labelledby="license-limits-heading" class="flex flex-col gap-2">
-        <Card>
-          <CardHeader>
-            <CardTitle id="license-limits-heading">{m.license_limits_title()}</CardTitle>
-          </CardHeader>
-          <CardContent class="p-5">
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {#each licenseStore.limits as limit (limit.key)}
-                <div class="flex flex-col gap-1 rounded-lg border border-border/70 p-4">
-                  <span class="text-xs font-medium text-muted-foreground">{getLimitLabel(limit.key)}</span>
-                  <span class="text-xl font-semibold tabular-nums text-foreground">
-                    {limit.max_value !== null && limit.max_value !== undefined ? limit.max_value : m.license_limit_unlimited()}
+          {#if hasFeatures}
+            <div class="flex flex-col gap-3 {hasLimits ? 'border-t border-border/60 pt-5' : ''}">
+              <h3 class="text-sm font-semibold text-foreground">{m.license_features_title()}</h3>
+              <div class="flex flex-wrap gap-2">
+                {#each licenseStore.enabledFeatures as feature (feature)}
+                  <span class="inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground">
+                    <Check size={13} class="shrink-0 text-primary" />
+                    <span>{getFeatureLabel(feature)}</span>
                   </span>
-                  <span class="text-xs text-muted-foreground">{getUnitLabel(limit.unit)}</span>
-                </div>
-              {/each}
+                {/each}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </section>
-    {/if}
-
-    <section aria-labelledby="license-features-heading" class="flex flex-col gap-2">
-      <Card>
-        <CardHeader>
-          <CardTitle id="license-features-heading">{m.license_features_title()}</CardTitle>
-        </CardHeader>
-        <CardContent class="p-5">
-          {#if licenseStore.enabledFeatures && licenseStore.enabledFeatures.length > 0}
-            <div class="flex flex-wrap gap-2">
-              {#each licenseStore.enabledFeatures as feature (feature)}
-                <div class="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
-                  <Check size={14} class="shrink-0 text-primary" />
-                  <span>{getFeatureLabel(feature)}</span>
-                </div>
-              {/each}
-            </div>
-          {:else}
-            <p class="text-sm text-muted-foreground">{m.license_billing_no_features()}</p>
           {/if}
         </CardContent>
       </Card>
-    </section>
+    {/if}
 
-    <section aria-labelledby="organization-finances-heading" class="flex flex-col gap-2">
-      <h2 id="organization-finances-heading" class="px-1 text-sm font-medium text-muted-foreground">
-        {m.license_billing_financial_records()}
-      </h2>
-      <Card>
-        <CardContent class="flex flex-row flex-wrap items-center justify-between gap-4 p-5 text-start">
-          <div class="flex min-w-0 flex-col gap-1">
-            <span class="font-medium text-foreground">{m.finance_fees_assigned_title()}</span>
-            <p class="max-w-2xl text-sm text-muted-foreground">{m.license_billing_financial_records_description()}</p>
-          </div>
-          <div class="flex shrink-0 flex-wrap gap-2">
-            <a
-              href={resolve(`/${orgId}/finance/fees`)}
-              class="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              {m.license_billing_manage_fees()}
-            </a>
-            <a
-              href={resolve(`/${orgId}/finance/payments`)}
-              class="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              {m.license_billing_view_payments()}
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
+    <!-- 3. Financial Shortcuts & Device Seat -->
+    <Card>
+      <CardHeader class="pb-3">
+        <CardTitle class="text-sm font-semibold">{m.license_billing_financial_records()}</CardTitle>
+        <CardDescription class="text-xs">
+          {m.license_billing_financial_records_description()}
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="flex flex-col gap-5 p-5 pt-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <a
+            href={resolve(`/${orgId}/finance/fees`)}
+            class="inline-flex h-8 items-center rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            {m.license_billing_manage_fees()}
+          </a>
+          <a
+            href={resolve(`/${orgId}/finance/payments`)}
+            class="inline-flex h-8 items-center rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            {m.license_billing_view_payments()}
+          </a>
+        </div>
 
-    <section aria-labelledby="installation-id-heading" class="flex flex-col gap-2">
-      <Card>
-        <CardHeader>
-          <CardTitle id="installation-id-heading">{m.license_installation_id()}</CardTitle>
-          <CardDescription>{m.license_installation_id_desc()}</CardDescription>
-        </CardHeader>
-        <CardContent class="p-5">
+        <div class="border-t border-border/60 pt-4">
           <CopyableInput
             id="install_id"
             label={m.license_installation_id()}
             value={licenseStore.installationId}
           />
-          {#if licenseStore.isActive}
-            <div class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
-              <div>
-                <h3 class="text-sm font-medium text-foreground">{m.license_deactivate_title()}</h3>
-                <p class="mt-1 text-xs text-muted-foreground">{m.license_deactivate_desc()}</p>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onclick={handleDeactivate}
-                disabled={isDeactivating}
-                class="text-xs"
-              >
-                {#if isDeactivating}
-                  <LoadingIndicator size="sm" class="me-1.5" />
-                  {m.common_saving()}
-                {:else}
-                  <Trash size={14} class="me-1.5" />
-                  {m.license_deactivate_btn()}
-                {/if}
-              </Button>
+        </div>
+
+        {#if licenseStore.isActive}
+          <div class="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4">
+            <div>
+              <h3 class="text-sm font-medium text-foreground">{m.license_deactivate_title()}</h3>
+              <p class="mt-0.5 text-xs text-muted-foreground">{m.license_deactivate_desc()}</p>
             </div>
-          {/if}
-        </CardContent>
-      </Card>
-    </section>
+            <Button
+              variant="destructive"
+              size="sm"
+              onclick={handleDeactivate}
+              disabled={isDeactivating}
+              class="text-xs"
+            >
+              {#if isDeactivating}
+                <LoadingIndicator size="sm" class="me-1.5" />
+                {m.common_saving()}
+              {:else}
+                <Trash size={14} class="me-1.5" />
+                {m.license_deactivate_btn()}
+              {/if}
+            </Button>
+          </div>
+        {/if}
+      </CardContent>
+    </Card>
   </div>
 </div>

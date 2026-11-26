@@ -105,7 +105,11 @@ async function exportSections() {
       });
     }
     if (empty.length || !scopes.length) {
-      toast.warning(m.exams_workbook_empty_sections({ sections: empty.join("، ") }));
+      toast.warning(
+        m.exams_workbook_empty_sections({
+          sections: empty.join(m.common_list_separator()),
+        }),
+      );
       if (!scopes.length) return;
     }
     const workbook = buildGradeWorkbook({

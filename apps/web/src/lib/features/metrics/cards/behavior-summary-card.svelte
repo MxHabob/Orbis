@@ -88,9 +88,9 @@ const summary = $derived.by(() => {
 });
 
 const displayItems = $derived([
-  { name: "positive", label: m.academics_behavior_type_positive(), value: summary?.positive ?? 0, color: "bg-primary" },
+  { name: "positive", label: m.academics_behavior_type_positive(), value: summary?.positive ?? 0, color: "bg-success" },
   { name: "negative", label: m.academics_behavior_type_negative(), value: summary?.negative ?? 0, color: "bg-destructive" },
-  { name: "other", label: m.common_rooms_type_other(), value: summary?.other ?? 0, color: "bg-muted-foreground" },
+  { name: "other", label: m.common_rooms_type_other(), value: summary?.other ?? 0, color: "bg-chart-2" },
 ].map((item) => ({ ...item, percent: Math.round(item.value * 100 / (summary?.total_records || 1)) })));
 </script>
 
@@ -108,7 +108,7 @@ const displayItems = $derived([
         {/if}
       </div>
       <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
-        <span class="h-1.5 w-1.5 rounded-full bg-rose-500 {summary ? 'animate-pulse' : ''}"></span>
+        <span class="h-1.5 w-1.5 rounded-full bg-destructive {summary ? 'animate-pulse' : ''}"></span>
         {m.academics_behavior_records_title()} {#if summary}• Total: <span class="text-foreground font-mono">{summary.total_records}</span>{/if}
       </div>
     </div>

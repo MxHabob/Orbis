@@ -2,8 +2,8 @@
 import { ChartBar, Users } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { onMount } from "svelte";
 import { api } from "$lib/api";
+import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 import DragIndicator from "../components/drag-indicator.svelte";
 
@@ -28,12 +28,29 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const sections = await api.listSections();
+    const effectivePeriodId =
+      selectedTerm !== "all" ? selectedTerm : academicContext.effectivePeriodId || undefined;
+    const [sections, enrollments] = await Promise.all([
+      api.listSections(),
+      api.listEnrollments({
+        period_id: effectivePeriodId,
+        class_id: selectedClass !== "all" ? selectedClass : undefined,
+        page_size: 100,
+      }).catch(() => []),
+    ]);
+
+    const countsBySection = new Map<string, Set<string>>();
+    for (const enrollment of enrollments) {
+      if (!enrollment.section_id) continue;
+      if (enrollment.status !== "active" && enrollment.status !== "pending_approval") continue;
+      if (!countsBySection.has(enrollment.section_id)) {
+        countsBySection.set(enrollment.section_id, new Set());
+      }
+      countsBySection.get(enrollment.section_id)!.add(enrollment.student_id);
+    }
+
     const filteredSections = sections.filter((section) => {
       if (selectedClass !== "all" && section.id !== selectedClass) return false;
-      if (selectedTerm !== "all" && section.period_id !== selectedTerm) {
-        return false;
-      }
       return true;
     });
     if (filteredSections.length > 0) {
@@ -43,10 +60,10 @@ async function loadData() {
             (getLocale() === "ar"
               ? c.name_ar || c.name
               : c.name || c.name_ar) || String(c.id),
-          count: c.current_students || 0,
+          count: countsBySection.get(c.id)?.size ?? c.current_students ?? 0,
         }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 9); // top 9 sections
+        .slice(0, 9);
 
       activeClassesCount = filteredSections.length;
     } else {
@@ -92,7 +109,7 @@ const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
       <!-- Subtitle legend matching exactly: Student Population -->
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
-          <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
+          <span class="h-2 w-2 rounded-full bg-chart-1 inline-block"></span>
           <span>{m.common_class_overview_students_count()}</span>
         </div>
       </div>
@@ -108,10 +125,9 @@ const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
             {item.name}
           </span>
 
-          <!-- Sunken Progress Bar Track -->
-          <div class="grow h-2.5 bg-muted/40 border border-border/40 rounded-md overflow-hidden relative shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]">
+          <div class="grow h-2.5 bg-muted/50 border border-border/40 rounded-md overflow-hidden relative">
             <div
-              class="h-full rounded-md bg-linear-to-r from-muted-foreground/20 to-foreground rtl:bg-gradient-to-l rtl:from-muted-foreground/20 rtl:to-foreground transition-all duration-500 shadow-[0_1.5px_0_0_rgba(0,0,0,0.15)] border-b border-black/10"
+              class="h-full rounded-md bg-chart-1 transition-all duration-500"
               style="width: {pct}%"
             ></div>
           </div>

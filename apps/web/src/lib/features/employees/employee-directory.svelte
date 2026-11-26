@@ -18,8 +18,6 @@ import {
   Users,
   XMark,
 } from "@orbis/icons";
-import { fly } from "svelte/transition";
-import { quintOut } from "svelte/easing";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
@@ -731,7 +729,6 @@ function handleGridAction(event: GridActionEvent) {
   {#if selectedIds.size > 0}
     <div
       class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md pointer-events-auto select-none"
-      transition:fly={{ y: 35, duration: 250, easing: quintOut }}
     >
       <div class="bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 ring-1 ring-black/5 dark:ring-white/10">
         <div class="flex min-w-0 items-center gap-2.5 text-start">

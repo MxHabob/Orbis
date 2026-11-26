@@ -60,7 +60,7 @@ use orbis_domain::{
         workflow::{WorkflowAction, WorkflowExecution, WorkflowRule},
     },
     errors::DomainError,
-    queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter},
+    queries::filters::{EnrollmentFilter, PaginatedList, PaginationParams, StudentFilter},
 };
 
 // =========================================================================
@@ -894,6 +894,11 @@ pub trait OverrideRequestRepository: Send + Sync {
         org_id: Uuid,
         status: Option<&str>,
     ) -> Result<Vec<AcademicOverrideRequest>, DomainError>;
+    async fn list(
+        &self,
+        org_id: Uuid,
+        filter: OverrideRequestFilter,
+    ) -> Result<PaginatedList<AcademicOverrideRequest>, DomainError>;
     async fn find_active_override(
         &self,
         org_id: Uuid,
@@ -902,6 +907,14 @@ pub trait OverrideRequestRepository: Send + Sync {
         entity_id: Uuid,
     ) -> Result<Option<AcademicOverrideRequest>, DomainError>;
     async fn save(&self, req: &AcademicOverrideRequest) -> Result<(), DomainError>;
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct OverrideRequestFilter {
+    pub status: Option<String>,
+    pub search: Option<String>,
+    pub requested_by: Option<Uuid>,
+    pub pagination: Option<PaginationParams>,
 }
 
 // =========================================================================

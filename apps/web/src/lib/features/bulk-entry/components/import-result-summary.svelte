@@ -42,7 +42,7 @@ const remainingErrorCount = $derived(
 <section
   class="mx-auto w-full overflow-hidden bg-background {embedded
     ? 'rounded-none border-0 shadow-none'
-    : 'my-6 max-w-2xl rounded-xl border border-border/70 shadow-lg animate-in fade-in zoom-in-95 duration-200'}"
+    : 'my-6 max-w-2xl rounded-xl border border-border/70 shadow-lg'}"
 >
   <div class="flex items-center gap-3 border-b border-border/60 px-5 py-4">
     {#if result.failedCount === 0}

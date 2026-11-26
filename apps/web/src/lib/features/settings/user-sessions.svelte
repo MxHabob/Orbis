@@ -8,7 +8,6 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { Computer, Trash, ShieldCheck } from "@orbis/icons";
-import { fade } from "svelte/transition";
 import { formatDate, l } from "$lib/core/i18n";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
@@ -75,7 +74,7 @@ onMount(loadSessions);
     </p>
   </div>
 {:else}
-  <div in:fade={{ duration: 100 }} class="flex flex-col gap-3 text-start">
+  <div class="flex flex-col gap-3 text-start">
     {#each activeSessions as session (session.id)}
       {@const deviceTitle = session.device_name || session.device_id || "Unknown Device"}
       {@const platformInfo = [session.os, session.browser].filter(Boolean).join(" • ") || session.device_type}

@@ -17,6 +17,7 @@ import {
   type GridActionEvent,
 } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
+import { tabsStore } from "$lib/stores";
 import { createClassesQuery } from "$lib/features/academics";
 import StudentTransferDialog from "$lib/features/students/student-transfer-dialog.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -167,6 +168,7 @@ function handleGridAction(event: GridActionEvent) {
   }
   if (event.actionId === "dblclick" && event.row.id) {
     const studentId = event.row.id;
+    tabsStore.markNextNavigationAsNewTab();
     goto(localizeHref(`/${orgId}/students/${studentId}`));
   }
 }
@@ -275,7 +277,10 @@ async function deleteSelectedStudents() {
           variant="outline"
           size="sm"
           class="h-8 px-2.5 text-xs font-medium"
-          onclick={() => goto(localizeHref(`/${orgId}/students/${selectedId}`))}
+          onclick={() => {
+            tabsStore.markNextNavigationAsNewTab();
+            goto(localizeHref(`/${orgId}/students/${selectedId}`));
+          }}
         >
           {m.operations_ui_student_profile()}
         </Button>

@@ -18,6 +18,20 @@ use crate::ports::repositories::{
     AcademicCalendarRepository, AcademicPeriodRepository, PeriodTypeRepository,
 };
 
+#[derive(Debug, Clone, Default)]
+pub struct UpdatePeriodInput {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub start_date: Option<DateTime<Utc>>,
+    pub end_date: Option<DateTime<Utc>>,
+    pub period_kind: Option<String>,
+    pub enrollment_starts_at: Option<DateTime<Utc>>,
+    pub enrollment_ends_at: Option<DateTime<Utc>>,
+    pub grade_entry_starts_at: Option<DateTime<Utc>>,
+    pub grade_entry_ends_at: Option<DateTime<Utc>>,
+}
+
 pub struct CalendarService {
     pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
@@ -417,15 +431,14 @@ impl CalendarService {
         Ok(period)
     }
 
-    /// Open enrollment window for a period
-    pub async fn open_enrollment_window(
+    async fn mutate_period(
         &self,
         ctx: &RequestContext,
         period_id: Uuid,
+        permission: Permission,
+        mutate: impl FnOnce(&mut AcademicPeriod),
     ) -> Result<AcademicPeriod, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::PeriodWrite)
-            .await?;
+        self.permission_checker.check(ctx, permission).await?;
         let mut period = self
             .period_repo
             .find_by_id(period_id)
@@ -433,11 +446,22 @@ impl CalendarService {
             .ok_or_else(|| {
                 DomainError::NotFound(format!("Academic period {} not found", period_id))
             })?;
-
-        period.is_enrollment_open = true;
+        mutate(&mut period);
         period.updated_at = Utc::now();
         self.period_repo.save(&period).await?;
         Ok(period)
+    }
+
+    /// Open enrollment window for a period
+    pub async fn open_enrollment_window(
+        &self,
+        ctx: &RequestContext,
+        period_id: Uuid,
+    ) -> Result<AcademicPeriod, DomainError> {
+        self.mutate_period(ctx, period_id, Permission::PeriodWrite, |p| {
+            p.is_enrollment_open = true;
+        })
+        .await
     }
 
     /// Close enrollment window for a period
@@ -446,21 +470,10 @@ impl CalendarService {
         ctx: &RequestContext,
         period_id: Uuid,
     ) -> Result<AcademicPeriod, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::PeriodWrite)
-            .await?;
-        let mut period = self
-            .period_repo
-            .find_by_id(period_id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::NotFound(format!("Academic period {} not found", period_id))
-            })?;
-
-        period.is_enrollment_open = false;
-        period.updated_at = Utc::now();
-        self.period_repo.save(&period).await?;
-        Ok(period)
+        self.mutate_period(ctx, period_id, Permission::PeriodWrite, |p| {
+            p.is_enrollment_open = false;
+        })
+        .await
     }
 
     /// Open grade entry window for a period
@@ -469,21 +482,14 @@ impl CalendarService {
         ctx: &RequestContext,
         period_id: Uuid,
     ) -> Result<AcademicPeriod, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::PeriodWrite)
-            .await?;
-        let mut period = self
-            .period_repo
-            .find_by_id(period_id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::NotFound(format!("Academic period {} not found", period_id))
-            })?;
-
-        period.is_grade_entry_open = true;
-        period.updated_at = Utc::now();
-        self.period_repo.save(&period).await?;
-        Ok(period)
+        let now = Utc::now();
+        self.mutate_period(ctx, period_id, Permission::PeriodWrite, |p| {
+            p.is_grade_entry_open = true;
+            if p.grade_entry_ends_at.is_some_and(|end| end < now) {
+                p.grade_entry_ends_at = None;
+            }
+        })
+        .await
     }
 
     /// Close grade entry window for a period
@@ -492,21 +498,10 @@ impl CalendarService {
         ctx: &RequestContext,
         period_id: Uuid,
     ) -> Result<AcademicPeriod, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::PeriodWrite)
-            .await?;
-        let mut period = self
-            .period_repo
-            .find_by_id(period_id)
-            .await?
-            .ok_or_else(|| {
-                DomainError::NotFound(format!("Academic period {} not found", period_id))
-            })?;
-
-        period.is_grade_entry_open = false;
-        period.updated_at = Utc::now();
-        self.period_repo.save(&period).await?;
-        Ok(period)
+        self.mutate_period(ctx, period_id, Permission::PeriodWrite, |p| {
+            p.is_grade_entry_open = false;
+        })
+        .await
     }
 
     /// Auto-lock an academic period (grades, attendance, enrollment locked)
@@ -569,7 +564,19 @@ impl CalendarService {
         period.is_locked = false;
         period.locked_at = None;
         period.locked_by = None;
-        period.state = AcademicPeriodState::ActiveTeaching;
+        period.state = if period.period_kind
+            == orbis_domain::entities::academic_period::PeriodKind::Examination
+        {
+            AcademicPeriodState::FinalExams
+        } else {
+            AcademicPeriodState::ActiveTeaching
+        };
+        if period.period_kind.has_grade_entry() {
+            period.is_grade_entry_open = true;
+            if period.grade_entry_ends_at.is_some_and(|end| end < now) {
+                period.grade_entry_ends_at = None;
+            }
+        }
         period.updated_at = now;
 
         self.period_repo.save(&period).await?;
@@ -577,7 +584,7 @@ impl CalendarService {
         let event = DomainEvent::AcademicPeriodStateChanged {
             period_id,
             org_id: period.org_id,
-            new_state: "active_teaching".to_string(),
+            new_state: period.state.to_string(),
             timestamp: now,
         };
         self.event_bus.publish(ctx, &event).await?;
@@ -674,12 +681,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         period_id: Uuid,
-        name: Option<String>,
-        name_ar: Option<String>,
-        code: Option<String>,
-        start_date: Option<DateTime<Utc>>,
-        end_date: Option<DateTime<Utc>>,
-        period_kind: Option<String>,
+        input: UpdatePeriodInput,
     ) -> Result<AcademicPeriod, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
@@ -699,23 +701,35 @@ impl CalendarService {
             ));
         }
 
-        if let Some(n) = name {
+        if let Some(n) = input.name {
             period.name = n;
         }
-        if let Some(n) = name_ar {
+        if let Some(n) = input.name_ar {
             period.name_ar = Some(n);
         }
-        if let Some(c) = code {
+        if let Some(c) = input.code {
             period.code = Some(c);
         }
-        if let Some(s) = start_date {
+        if let Some(s) = input.start_date {
             period.start_date = s;
         }
-        if let Some(e) = end_date {
+        if let Some(e) = input.end_date {
             period.end_date = e;
         }
-        if let Some(k) = period_kind {
+        if let Some(k) = input.period_kind {
             period.period_kind = orbis_domain::entities::academic_period::PeriodKind::from_str(&k);
+        }
+        if let Some(s) = input.enrollment_starts_at {
+            period.enrollment_starts_at = Some(s);
+        }
+        if let Some(e) = input.enrollment_ends_at {
+            period.enrollment_ends_at = Some(e);
+        }
+        if let Some(s) = input.grade_entry_starts_at {
+            period.grade_entry_starts_at = Some(s);
+        }
+        if let Some(e) = input.grade_entry_ends_at {
+            period.grade_entry_ends_at = Some(e);
         }
         period.updated_at = Utc::now();
 

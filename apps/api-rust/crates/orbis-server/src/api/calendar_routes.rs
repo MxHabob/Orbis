@@ -42,6 +42,10 @@ pub struct AcademicPeriodDto {
     pub code: Option<String>,
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,
+    pub enrollment_starts_at: Option<DateTime<Utc>>,
+    pub enrollment_ends_at: Option<DateTime<Utc>>,
+    pub grade_entry_starts_at: Option<DateTime<Utc>>,
+    pub grade_entry_ends_at: Option<DateTime<Utc>>,
     pub period_type: String,
     pub period_kind: String,
     pub status: String,
@@ -98,6 +102,15 @@ pub struct UpdatePeriodRequest {
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
     pub period_kind: Option<String>,
+    pub enrollment_starts_at: Option<DateTime<Utc>>,
+    pub enrollment_ends_at: Option<DateTime<Utc>>,
+    pub grade_entry_starts_at: Option<DateTime<Utc>>,
+    pub grade_entry_ends_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct TransitionPeriodStateRequest {
+    pub state: String,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -142,6 +155,10 @@ fn period_to_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> 
         code: p.code,
         start_date: p.start_date,
         end_date: p.end_date,
+        enrollment_starts_at: p.enrollment_starts_at,
+        enrollment_ends_at: p.enrollment_ends_at,
+        grade_entry_starts_at: p.grade_entry_starts_at,
+        grade_entry_ends_at: p.grade_entry_ends_at,
         period_type: p.period_type.to_string(),
         period_kind: p.period_kind.to_string(),
         status: p.state.to_string(),
@@ -388,12 +405,18 @@ async fn update_period(
         .update_period(
             &ctx,
             id,
-            payload.name,
-            payload.name_ar,
-            payload.code,
-            payload.start_date,
-            payload.end_date,
-            payload.period_kind,
+            orbis_app::services::calendar_service::UpdatePeriodInput {
+                name: payload.name,
+                name_ar: payload.name_ar,
+                code: payload.code,
+                start_date: payload.start_date,
+                end_date: payload.end_date,
+                period_kind: payload.period_kind,
+                enrollment_starts_at: payload.enrollment_starts_at,
+                enrollment_ends_at: payload.enrollment_ends_at,
+                grade_entry_starts_at: payload.grade_entry_starts_at,
+                grade_entry_ends_at: payload.grade_entry_ends_at,
+            },
         )
         .await?;
     Ok(ApiResponse::ok(period_to_dto(p)))
@@ -448,6 +471,109 @@ async fn close_period(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
     let p = state.calendar_service.close_period(&ctx, id).await?;
+    Ok(ApiResponse::ok(period_to_dto(p)))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/grade-entry/open",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn open_grade_entry_window(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state
+        .calendar_service
+        .open_grade_entry_window(&ctx, id)
+        .await?;
+    Ok(ApiResponse::ok(period_to_dto(p)))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/grade-entry/close",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn close_grade_entry_window(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state
+        .calendar_service
+        .close_grade_entry_window(&ctx, id)
+        .await?;
+    Ok(ApiResponse::ok(period_to_dto(p)))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/enrollment/open",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn open_enrollment_window(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state
+        .calendar_service
+        .open_enrollment_window(&ctx, id)
+        .await?;
+    Ok(ApiResponse::ok(period_to_dto(p)))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/enrollment/close",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn close_enrollment_window(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state
+        .calendar_service
+        .close_enrollment_window(&ctx, id)
+        .await?;
+    Ok(ApiResponse::ok(period_to_dto(p)))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods/{id}/transition",
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
+    request_body = TransitionPeriodStateRequest,
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn transition_period_state(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<TransitionPeriodStateRequest>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let new_state = match payload.state.to_lowercase().as_str() {
+        "planning" => orbis_domain::entities::academic_period::AcademicPeriodState::Planning,
+        "enrollment_open" => {
+            orbis_domain::entities::academic_period::AcademicPeriodState::EnrollmentOpen
+        }
+        "active_teaching" => {
+            orbis_domain::entities::academic_period::AcademicPeriodState::ActiveTeaching
+        }
+        "final_exams" => orbis_domain::entities::academic_period::AcademicPeriodState::FinalExams,
+        "grade_submission" => {
+            orbis_domain::entities::academic_period::AcademicPeriodState::GradeSubmission
+        }
+        "closed" => orbis_domain::entities::academic_period::AcademicPeriodState::Closed,
+        "archived" => orbis_domain::entities::academic_period::AcademicPeriodState::Archived,
+        other => {
+            return Err(ApiError::bad_request(format!(
+                "Invalid academic period state: {}",
+                other
+            )));
+        }
+    };
+    let p = state
+        .calendar_service
+        .transition_period_state(&ctx, id, new_state)
+        .await?;
     Ok(ApiResponse::ok(period_to_dto(p)))
 }
 
@@ -576,6 +702,26 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/academic-periods/:id/lock", post(lock_period))
         .route("/api/v1/academic-periods/:id/unlock", post(unlock_period))
         .route("/api/v1/academic-periods/:id/close", post(close_period))
+        .route(
+            "/api/v1/academic-periods/:id/grade-entry/open",
+            post(open_grade_entry_window),
+        )
+        .route(
+            "/api/v1/academic-periods/:id/grade-entry/close",
+            post(close_grade_entry_window),
+        )
+        .route(
+            "/api/v1/academic-periods/:id/enrollment/open",
+            post(open_enrollment_window),
+        )
+        .route(
+            "/api/v1/academic-periods/:id/enrollment/close",
+            post(close_enrollment_window),
+        )
+        .route(
+            "/api/v1/academic-periods/:id/transition",
+            post(transition_period_state),
+        )
         .route("/api/v1/period-templates", get(list_period_types))
         .route(
             "/api/v1/official-calendar-templates",

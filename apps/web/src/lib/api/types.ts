@@ -220,6 +220,15 @@ export interface PaginatedList<T> {
   total_pages: number;
 }
 
+export interface OverrideRequestListParams {
+  status?: string;
+  role?: string;
+  search?: string;
+  mine?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
 export type TimetableSolveMode = "full" | "incremental";
 export type TimetableSolveStatus =
   | "pending"
@@ -1944,6 +1953,11 @@ export interface OrbisApiClient {
   lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
+  openGradeEntryWindow(id: string): Promise<AcademicPeriodDto>;
+  closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto>;
+  openEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
+  closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
+  transitionAcademicPeriodState(id: string, state: string): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
   listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
   applyCalendarTemplate(
@@ -1961,6 +1975,7 @@ export interface OrbisApiClient {
   updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
   listSections(): Promise<SectionDto[]>;
   getSection(id: string): Promise<SectionDto>;
+  deleteSection(id: string): Promise<void>;
   assignSectionSubject(
     req: AssignSectionSubjectRequest,
   ): Promise<SectionSubjectDto>;
@@ -2166,7 +2181,9 @@ export interface OrbisApiClient {
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;
   approveOverride(req: ApproveOverrideInput): Promise<OverrideRequestDto>;
   rejectOverride(req: RejectOverrideInput): Promise<OverrideRequestDto>;
-  listOverrides(status?: string): Promise<OverrideRequestDto[]>;
+  listOverrides(
+    params?: OverrideRequestListParams,
+  ): Promise<PaginatedList<OverrideRequestDto>>;
   getOverride(id: string): Promise<OverrideRequestDto>;
 
   // ── Exam ────────────────────────────────────────────────────

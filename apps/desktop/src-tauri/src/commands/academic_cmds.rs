@@ -499,6 +499,21 @@ pub async fn academic_get_section(
 }
 
 #[tauri::command]
+pub async fn academic_delete_section(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    state
+        .academic_service
+        .delete_section(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
+#[tauri::command]
 pub async fn academic_assign_section_subject(
     request: AssignSectionSubjectInput,
     state: State<'_, AppState>,

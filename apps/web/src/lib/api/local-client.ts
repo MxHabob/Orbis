@@ -154,6 +154,7 @@ import type {
   ChangeStudyModeInput,
   TransferClassInput,
   PaginatedList,
+  OverrideRequestListParams,
   ReportJobStatusDto,
   BatchPrintParams,
   JournalEntryDto,
@@ -456,6 +457,26 @@ export class LocalClient implements OrbisApiClient {
   async closeAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
     return unwrap(await invoke("calendar_close_period", { id }));
   }
+  async openGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_open_grade_entry_window", { id }));
+  }
+  async closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_close_grade_entry_window", { id }));
+  }
+  async openEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_open_enrollment_window", { id }));
+  }
+  async closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_close_enrollment_window", { id }));
+  }
+  async transitionAcademicPeriodState(
+    id: string,
+    state: string,
+  ): Promise<AcademicPeriodDto> {
+    return unwrap(
+      await invoke("calendar_transition_period_state", { id, targetState: state }),
+    );
+  }
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
     return unwrap(await invoke("calendar_list_period_types"));
   }
@@ -509,6 +530,10 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(
       await invoke("academic_update_section", { request: { ...req, id } }),
     );
+  }
+
+  async deleteSection(id: string): Promise<void> {
+    await unwrap(await invoke("academic_delete_section", { id }));
   }
 
   async listSubjects(): Promise<SubjectDto[]> {
@@ -1139,8 +1164,10 @@ export class LocalClient implements OrbisApiClient {
   async rejectOverride(req: RejectOverrideInput): Promise<OverrideRequestDto> {
     return unwrap(await invoke("workflow_reject_override", { request: req }));
   }
-  async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
-    return unwrap(await invoke("workflow_list_overrides", { status }));
+  async listOverrides(
+    params: OverrideRequestListParams = {},
+  ): Promise<PaginatedList<OverrideRequestDto>> {
+    return unwrap(await invoke("workflow_list_overrides", { query: params }));
   }
   async getOverride(id: string): Promise<OverrideRequestDto> {
     return unwrap(await invoke("workflow_get_override", { id }));

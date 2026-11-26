@@ -86,9 +86,21 @@ function getTaskTypeLabel(type: string): string {
         m.autopilot_task_period_lock?.() ||
         m.common_autopilot_task_period_lock()
       );
+    case "period_activate":
+    case "period_transition":
+      return (
+        m.common_autopilot_task_period_transition?.() ||
+        m.ui_autopilot_period_transition()
+      );
+    case "year_activate":
+      return m.common_phase_active();
+    case "year_close":
+      return m.common_autopilot_task_period_lock?.() || m.autopilot_task_period_lock?.() || type;
+    case "generate_report":
     case "report_generation":
       return m.common_autopilot_task_report_generation();
     case "backup":
+    case "backup_database":
       return (
         m.common_autopilot_task_backup?.() || m.ui_autopilot_system_backup()
       );
@@ -104,15 +116,11 @@ function getTaskTypeLabel(type: string): string {
         m.common_autopilot_task_attendance_warning?.() ||
         m.ui_autopilot_attendance_warning()
       );
+    case "late_fee_reminder":
     case "fee_due_notice":
       return (
         m.common_autopilot_task_fee_due_notice?.() ||
         m.ui_autopilot_fee_due_notice()
-      );
-    case "period_transition":
-      return (
-        m.common_autopilot_task_period_transition?.() ||
-        m.ui_autopilot_period_transition()
       );
     case "sync_calendar":
       return (

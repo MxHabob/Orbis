@@ -171,11 +171,11 @@ async function handleSubmit(e: SubmitEvent) {
   const success = await form.submit(async (values: GuardianFormInput) => {
     const relationshipAr =
       values.relationship === "father"
-        ? "أب"
+        ? m.common_guardians_relationship_father({}, { locale: "ar" })
         : values.relationship === "mother"
-          ? "أم"
+            ? m.common_guardians_relationship_mother({}, { locale: "ar" })
           : values.relationship === "uncle"
-            ? "عم"
+              ? m.students_family_uncle({}, { locale: "ar" })
             : "آخر/قريب";
 
     const request: AssignGuardianRequest = {

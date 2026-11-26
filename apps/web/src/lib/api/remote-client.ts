@@ -171,6 +171,7 @@ import type {
   StudentFilterParams,
   EnrollmentFilterParams,
   PaginatedList,
+  OverrideRequestListParams,
   EmployeeFilterInput,
   EmployeeDetailDto,
   PaginatedEmployeesDto,
@@ -650,6 +651,48 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.closePeriod({ client: this.client, path: { id } }));
   }
 
+  private postPeriodAction(
+    path: string,
+    body?: unknown,
+  ): Promise<AcademicPeriodDto> {
+    return this.call<AcademicPeriodDto>(
+      this.client.post<{ 200: AcademicPeriodDto }>({
+        url: path,
+        ...(body !== undefined
+          ? {
+              body: JSON.stringify(body),
+              headers: { "Content-Type": "application/json" },
+            }
+          : {}),
+      }),
+    );
+  }
+
+  async openGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
+    return this.postPeriodAction(`/api/v1/academic-periods/${id}/grade-entry/open`);
+  }
+
+  async closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
+    return this.postPeriodAction(`/api/v1/academic-periods/${id}/grade-entry/close`);
+  }
+
+  async openEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
+    return this.postPeriodAction(`/api/v1/academic-periods/${id}/enrollment/open`);
+  }
+
+  async closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
+    return this.postPeriodAction(`/api/v1/academic-periods/${id}/enrollment/close`);
+  }
+
+  async transitionAcademicPeriodState(
+    id: string,
+    state: string,
+  ): Promise<AcademicPeriodDto> {
+    return this.postPeriodAction(`/api/v1/academic-periods/${id}/transition`, {
+      state,
+    });
+  }
+
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
     return this.call(sdk.listPeriodTypes({ client: this.client })) ?? [];
   }
@@ -727,6 +770,10 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(
       sdk.updateSection({ client: this.client, path: { id }, body: req }),
     );
+  }
+
+  async deleteSection(id: string): Promise<void> {
+    await this.call(sdk.deleteSection({ client: this.client, path: { id } }));
   }
 
   async listSubjects(): Promise<SubjectDto[]> {
@@ -1882,11 +1929,11 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
-  async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
-    return (
-      this.call(
-        sdk.listOverrides({ client: this.client, query: { status } as any }),
-      ) ?? []
+  async listOverrides(
+    params: OverrideRequestListParams = {},
+  ): Promise<PaginatedList<OverrideRequestDto>> {
+    return this.call(
+      sdk.listOverrides({ client: this.client, query: params }),
     );
   }
 

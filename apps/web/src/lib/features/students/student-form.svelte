@@ -2,11 +2,9 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount, tick, untrack } from "svelte";
-import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import { Card } from "@orbis/ui/card";
-import { Badge } from "@orbis/ui/badge";
-import { ArrowLeft, Check, ChevronDown, Printer } from "@orbis/icons";
+import { Check, ChevronDown, Printer } from "@orbis/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +13,6 @@ import {
 } from "@orbis/ui/dropdown-menu";
 
 import { l } from "$lib/core/i18n";
-import { localizeHref } from "$lib/paraglide/runtime";
 import { StudentFormState } from "./form-state.svelte";
 import { createClassesQuery } from "$lib/features/academics";
 import { useQueryClient } from "@tanstack/svelte-query";
@@ -282,92 +279,49 @@ const reviewItems = $derived([
       : m.ui_copy_no_document_requirements_configured_07292a9d() },
 ]);
 
-function cancel() {
-  goto(localizeHref(`/${orgId}/students`));
-}
 </script>
 
 <div class="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-background text-start text-foreground">
-  <header class="shrink-0 border-b border-border bg-background">
-    <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <div class="flex min-w-0 items-start gap-3">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          class="mt-0.5 shrink-0"
-          onclick={cancel}
-          aria-label={m.common_action_back()}
-          disabled={form.isSaving}
-        >
-          <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
-        </Button>
-        <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
-            <h1 class="truncate text-xl font-semibold">
-              {form.isEditMode
-                ? form.personal.nameAr || form.personal.nameEn || m.ui_copy_edit_student_8d69c746()
-                : m.ui_copy_new_student_admission_37fb2c3c()}
-            </h1>
-            {#if form.isEditMode}
-              <Badge
-                variant={form.registrationStatus === "approved"
-                  ? "lime"
-                  : form.registrationStatus === "pending_review"
-                    ? "warning"
-                    : "secondary"}
-              >
-                {form.registrationStatus === "approved"
-                  ? m.ui_copy_approved_39578cc4()
-                  : form.registrationStatus === "pending_review"
-                    ? m.ui_copy_under_review_46b36239()
-                    : form.registrationStatus === "active"
-                      ? m.common_phase_active()
-                    : form.registrationStatus === "inactive"
-                      ? m.common_status_draft()
-                      : form.registrationStatus === "withdrawn"
-                      ? m.common_status_withdrawn()
-                      : form.registrationStatus === "graduated"
-                        ? m.ui_copy_graduated_dc58b020()
-                        : m.ui_copy_draft_873425fa()}
-              </Badge>
-            {/if}
-          </div>
-          {#if form.personal.studentNumber}
-            <p class="mt-1 text-sm text-muted-foreground">{form.personal.studentNumber}</p>
-          {/if}
-        </div>
-      </div>
-
-      {#if form.availableTemplates.length > 0}
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            {#snippet child({ props })}
-            <Button {...props} variant="outline" size="sm" class="gap-2">
-              <Printer class="h-4 w-4" />
-              <span>{m.ui_copy_print_form_ce69ef6c()}</span>
-              <ChevronDown class="h-3.5 w-3.5" />
-            </Button>
-            {/snippet}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="min-w-48">
-            {#each form.availableTemplates as template (template.id)}
-              <DropdownMenuItem
-                onclick={async () => {
-                  form.selectedTemplateId = template.id;
-                  await form.handleDownloadRegistrationForm();
-                }}
-              >
-                <span>{template.name_ar || template.name}</span>
-                {#if form.selectedTemplateId === template.id}
-                  <Check class="ms-auto h-4 w-4" />
-                {/if}
-              </DropdownMenuItem>
+  {#if initialFormSnapshot !== null && !form.isInitializing && !form.initializationFailed}
+    <div class="shrink-0 border-b border-border/60 bg-background/95">
+      <div class="mx-auto w-full max-w-7xl px-4 py-2.5 sm:px-6 lg:px-8">
+        <nav aria-label={m.student_registration_step_navigation()} class="rounded-lg border border-border/70 bg-muted/50 p-1">
+          <ol class="flex flex-wrap gap-1">
+            {#each steps as step, index (step.id)}
+              {@const isCurrent = step.id === activeStep}
+              {@const isCompleted = index < stepIndex}
+              <li class="flex-1 min-w-[120px]">
+                <Button
+                  variant={isCurrent ? "secondary" : "ghost"}
+                  size="sm"
+                  class="w-full justify-center gap-2 rounded-md text-start {isCurrent ? 'bg-background text-foreground shadow-2xs border border-border/70' : 'text-muted-foreground hover:text-foreground'}"
+                  aria-current={isCurrent ? "step" : undefined}
+                  disabled={form.isSaving}
+                  onclick={() => openStep(step.id)}
+                >
+                  <span
+                    class="grid size-5 shrink-0 place-items-center rounded-full text-xs tabular-nums {isCurrent
+                      ? 'bg-primary text-primary-foreground'
+                      : isCompleted
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-muted text-muted-foreground'}"
+                    aria-hidden="true"
+                  >
+                    {#if isCompleted}
+                      <Check class="h-3 w-3" />
+                    {:else}
+                      {index + 1}
+                    {/if}
+                  </span>
+                  <span class="truncate">{step.label()}</span>
+                </Button>
+              </li>
             {/each}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      {/if}
+          </ol>
+        </nav>
+      </div>
     </div>
-  </header>
+  {/if}
 
   <div bind:this={scrollArea} class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
     <div class="mx-auto w-full max-w-7xl space-y-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -417,29 +371,6 @@ function cancel() {
       {/if}
 
       {#if initialFormSnapshot !== null && !form.isInitializing && !form.initializationFailed}
-        <nav aria-label={m.student_registration_step_navigation()} class="rounded-xl border border-border bg-card p-2">
-          <ol class="flex flex-wrap gap-1">
-            {#each steps as step, index (step.id)}
-              <li class="flex-1">
-                <Button
-                  variant={step.id === activeStep ? "secondary" : "ghost"}
-                  size="sm"
-                  class="w-full justify-center gap-2 text-start"
-                  aria-current={step.id === activeStep ? "step" : undefined}
-                  disabled={form.isSaving}
-                  onclick={() => openStep(step.id)}
-                >
-                  <span
-                    class="grid size-5 shrink-0 place-items-center rounded-full text-xs tabular-nums {step.id === activeStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}"
-                    aria-hidden="true"
-                  >{index + 1}</span>
-                  <span>{step.label()}</span>
-                </Button>
-              </li>
-            {/each}
-          </ol>
-        </nav>
-
         <div bind:this={stepPanels} class="w-full min-w-0">
             {#each steps as step, index (step.id)}
               <section
@@ -493,11 +424,43 @@ function cancel() {
     </div>
   </div>
 
-  <footer class="shrink-0 border-t border-border bg-background">
+  <footer class="shrink-0 border-t border-border/70 bg-card/80">
     <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-      {#if requiredFieldIssue}
-        <p role="alert" class="text-sm font-medium text-destructive">{requiredFieldIssue.message}</p>
-      {/if}
+      <div class="flex flex-wrap items-center gap-3">
+        {#if form.availableTemplates.length > 0}
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              {#snippet child({ props })}
+              <Button {...props} variant="outline" size="sm" class="gap-2">
+                <Printer class="h-4 w-4" />
+                <span>{m.ui_copy_print_form_ce69ef6c()}</span>
+                <ChevronDown class="h-3.5 w-3.5" />
+              </Button>
+              {/snippet}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" class="min-w-48">
+              {#each form.availableTemplates as template (template.id)}
+                <DropdownMenuItem
+                  onclick={async () => {
+                    form.selectedTemplateId = template.id;
+                    await form.handleDownloadRegistrationForm();
+                  }}
+                >
+                  <span>{template.name_ar || template.name}</span>
+                  {#if form.selectedTemplateId === template.id}
+                    <Check class="ms-auto h-4 w-4" />
+                  {/if}
+                </DropdownMenuItem>
+              {/each}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        {/if}
+
+        {#if requiredFieldIssue}
+          <p role="alert" class="text-sm font-medium text-destructive">{requiredFieldIssue.message}</p>
+        {/if}
+      </div>
+
       <div class="ms-auto flex flex-wrap items-center justify-end gap-2">
         {#if !form.isEditMode || isSavedDraft}
           <Button

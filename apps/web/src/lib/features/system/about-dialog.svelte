@@ -1,5 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
+import { MULVERSE_URLS } from "@orbis/utils";
 import { api } from "$lib/api/client";
 import type { AppInfo } from "$lib/api/types";
 import {
@@ -17,7 +19,7 @@ let { open = $bindable(false) }: { open?: boolean } = $props();
 let info = $state<AppInfo | null>(null);
 let isLoading = $state(false);
 
-const OFFICIAL_WEBSITE = "https://www.mulverse.com/";
+const OFFICIAL_WEBSITE = MULVERSE_URLS.website;
 
 async function loadAppInfo() {
   isLoading = true;
@@ -57,13 +59,14 @@ $effect(() => {
     <DialogDescription class="sr-only">Orbis and Mulverse Information</DialogDescription>
 
     <!-- Top Visual Banner -->
-    <div class="relative w-full h-48 sm:h-52 overflow-hidden flex items-center justify-center">
-      <img
-        src={mulverseOrbisImg}
-        alt="Mulverse Orbis"
-        class="w-full h-full object-cover select-none"
-      />
-    </div>
+    <SmoothImage
+      src={mulverseOrbisImg}
+      alt="Mulverse Orbis"
+      loading="eager"
+      fetchpriority="high"
+      containerClass="w-full h-48 sm:h-52 rounded-md"
+      class="w-full h-full object-cover select-none"
+    />
 
     <!-- Bottom Content Area -->
     <div class="pt-4 px-1 pb-1 flex flex-col gap-1.5 text-start">

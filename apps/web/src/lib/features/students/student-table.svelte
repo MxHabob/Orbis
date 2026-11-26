@@ -15,6 +15,7 @@ import {
   type GridActionEvent,
 } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
+import { tabsStore } from "$lib/stores";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import {
   defaultFilterTranslations,
@@ -408,6 +409,7 @@ function handleGridAction(event: GridActionEvent) {
     onSelectionChange?.(newSet);
   } else if (event.actionId === "dblclick") {
     if (event.row?.id) {
+      tabsStore.markNextNavigationAsNewTab();
       goto(localizeHref(`/${orgId}/students/${event.row.id}`));
     }
   }

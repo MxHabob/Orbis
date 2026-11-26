@@ -484,6 +484,19 @@ async fn get_section(
     Ok(ApiResponse::ok(section_to_dto(c)))
 }
 
+#[utoipa::path(delete, path = "/api/v1/sections/{id}",
+    params(("id" = Uuid, Path, description = "Section ID")),
+    responses((status = 200, body = bool)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn delete_section(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.academic_service.delete_section(&ctx, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
 #[utoipa::path(post, path = "/api/v1/section-subjects", request_body = AssignSectionSubjectRequest,
     responses((status = 201, body = SectionSubjectDto)),
     security(("bearer" = [])), tag = "Academic")]
@@ -604,7 +617,10 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/subjects", post(create_subject).get(list_subjects))
         .route("/api/v1/subjects/:id", get(get_subject).put(update_subject))
         .route("/api/v1/sections", post(create_section).get(list_sections))
-        .route("/api/v1/sections/:id", get(get_section).put(update_section))
+        .route(
+            "/api/v1/sections/:id",
+            get(get_section).put(update_section).delete(delete_section),
+        )
         .route(
             "/api/v1/section-subjects",
             post(assign_section_subject).get(list_section_subjects),

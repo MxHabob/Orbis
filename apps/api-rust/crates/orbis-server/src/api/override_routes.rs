@@ -15,6 +15,7 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::SubmitOverrideInput;
 use orbis_domain::entities::override_request::{AcademicOverrideRequest, OverrideType};
+use orbis_domain::queries::filters::PaginationParams;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApprovalStepDto {
@@ -111,10 +112,23 @@ pub struct ResolveOverrideRequest {
     pub notes: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::IntoParams)]
 pub struct OverrideQuery {
     pub status: Option<String>,
     pub role: Option<String>,
+    pub search: Option<String>,
+    pub mine: Option<bool>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct PaginatedOverrideRequestsDto {
+    pub items: Vec<OverrideRequestDto>,
+    pub total_count: u64,
+    pub page: u64,
+    pub page_size: u64,
+    pub total_pages: u64,
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -147,20 +161,40 @@ pub async fn submit_override(
 }
 
 #[utoipa::path(get, path = "/api/v1/overrides",
-    responses((status = 200, body = Vec<OverrideRequestDto>)),
+    params(OverrideQuery),
+    responses((status = 200, body = PaginatedOverrideRequestsDto)),
     security(("bearer" = [])), tag = "Workflow")]
 pub async fn list_overrides(
     ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<OverrideQuery>,
-) -> Result<Json<ApiResponse<Vec<OverrideRequestDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<PaginatedOverrideRequestsDto>>, ApiError> {
     let reqs = state
         .workflow_service
-        .list_overrides(&ctx, q.status.as_deref(), q.role.as_deref())
+        .list_overrides_paginated(
+            &ctx,
+            q.status.as_deref(),
+            q.role.as_deref(),
+            q.search.as_deref(),
+            q.mine.unwrap_or(false),
+            PaginationParams {
+                page: q.page,
+                page_size: q.page_size,
+                ..PaginationParams::default()
+            },
+        )
         .await?;
-    Ok(ApiResponse::ok(
-        reqs.into_iter().map(OverrideRequestDto::from).collect(),
-    ))
+    Ok(ApiResponse::ok(PaginatedOverrideRequestsDto {
+        items: reqs
+            .items
+            .into_iter()
+            .map(OverrideRequestDto::from)
+            .collect(),
+        total_count: reqs.total_count,
+        page: reqs.page,
+        page_size: reqs.page_size,
+        total_pages: reqs.total_pages,
+    }))
 }
 
 #[utoipa::path(get, path = "/api/v1/overrides/{id}",

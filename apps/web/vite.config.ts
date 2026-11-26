@@ -13,6 +13,10 @@ const remoteDevHost =
 export default defineConfig(() => {
   return {
     plugins: [
+      paraglideVitePlugin({
+        project: "./project.inlang",
+        outdir: "./src/lib/paraglide",
+      }),
       tailwindcss(),
       sveltekit({
         compilerOptions: {
@@ -22,10 +26,6 @@ export default defineConfig(() => {
         adapter: adapter({
           fallback: "index.html",
         }),
-      }),
-      paraglideVitePlugin({
-        project: "./project.inlang",
-        outdir: "./src/lib/paraglide",
       }),
     ],
     // ── Build Optimization ─────────────────────────────────────────────
@@ -89,6 +89,9 @@ export default defineConfig(() => {
             port: 4174,
           }
         : undefined,
+      watch: {
+        ignored: ["**/src/lib/paraglide/**"],
+      },
     },
   };
 });

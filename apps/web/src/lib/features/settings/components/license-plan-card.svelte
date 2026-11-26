@@ -1,161 +1,126 @@
-
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
-import { formatDate } from "$lib/core/i18n";
 import { Logo } from "@orbis/icons";
 
 let {
   planCode,
   planLabel,
-  validUntil,
+  validUntil: _validUntil = null,
 }: {
   planCode: string;
   planLabel: string;
-  validUntil: string | null;
+  validUntil?: string | null;
 } = $props();
+
+let pointerX = $state(0);
+let pointerY = $state(0);
+let isHovered = $state(false);
 
 const planTheme = $derived.by(() => {
   const plan = planCode.toLowerCase().replace(/[_\s-]+/g, "");
 
   if (plan.includes("enterprise")) {
-    return { color: "#EC4899", glow: "rgba(236, 72, 153, .8)" };
+    return {
+      beam: "bg-brand-pink/20",
+      accent: "text-brand-pink",
+      spotlight: "oklch(from var(--brand-pink) l c h / 0.28)",
+    };
   }
   if (plan.includes("professional")) {
-    return { color: "#A821D9", glow: "rgba(168, 33, 217, .8)" };
+    return {
+      beam: "bg-brand-purple/25",
+      accent: "text-brand-purple",
+      spotlight: "oklch(from var(--brand-purple) l c h / 0.3)",
+    };
   }
   if (plan.includes("growth")) {
-    return { color: "#84CC16", glow: "rgba(132, 204, 22, .8)" };
+    return {
+      beam: "bg-brand-lime/20",
+      accent: "text-brand-lime-dark",
+      spotlight: "oklch(from var(--brand-lime) l c h / 0.28)",
+    };
   }
   if (plan.includes("starter")) {
-    return { color: "#6366F1", glow: "rgba(99, 102, 241, .8)" };
+    return {
+      beam: "bg-brand-indigo/20",
+      accent: "text-brand-indigo",
+      spotlight: "oklch(from var(--brand-indigo) l c h / 0.28)",
+    };
   }
   if (plan.includes("trial") || plan.includes("free")) {
-    return { color: "#9CA3AF", glow: "rgba(156, 163, 175, .7)" };
+    return {
+      beam: "bg-muted-foreground/15",
+      accent: "text-muted-foreground",
+      spotlight: "oklch(from var(--foreground) l c h / 0.1)",
+    };
   }
 
-  return { color: "#7C3AED", glow: "rgba(124, 58, 237, .8)" };
+  return {
+    beam: "bg-primary/20",
+    accent: "text-primary",
+    spotlight: "oklch(from var(--primary) l c h / 0.28)",
+  };
 });
+
+function handlePointerMove(event: PointerEvent & { currentTarget: HTMLDivElement }) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  pointerX = event.clientX - rect.left;
+  pointerY = event.clientY - rect.top;
+  if (!isHovered) isHovered = true;
+}
+
+function handlePointerLeave() {
+  isHovered = false;
+}
 </script>
 
-<div class="license-plan-card flex w-full flex-col items-center gap-4 text-center">
+<div
+  onpointermove={handlePointerMove}
+  onpointerleave={handlePointerLeave}
+  class="relative flex min-h-[10.5rem] w-full flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-start transition-colors duration-200 hover:border-border"
+  role="region"
+  aria-label={planLabel}
+>
+  <!-- Architectural vertical grid lines -->
   <div
-    class="plan-emblem"
-    style:--plan-color={planTheme.color}
-    style:--plan-glow={planTheme.glow}
-    role="img"
-    aria-label={planLabel}
-  >
-    <div class="plan-emblem__logo" aria-hidden="true">
-      <Logo size="100%" dotClass="plan-logo-dot" />
-    </div>
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 opacity-35"
+    style="background-image: repeating-linear-gradient(to right, oklch(from var(--border) l c h / 0.45) 0 1px, transparent 1px 28px);"
+  ></div>
 
-    <div class="plan-emblem__content">
-      <span class="plan-emblem__label">{planLabel}</span>
+  <!-- Ambient diagonal beam -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute -top-14 -end-10 h-36 w-52 -rotate-25 rounded-full blur-2xl opacity-60 {planTheme.beam}"
+  ></div>
+
+  <!-- Cursor-tracking radial spotlight -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out {isHovered
+      ? 'opacity-100'
+      : 'opacity-0'}"
+    style="background: radial-gradient(220px circle at {pointerX}px {pointerY}px, {planTheme.spotlight}, transparent 72%);"
+  ></div>
+
+  <!-- Watermark emblem -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute -bottom-5 -end-4 opacity-[0.07] {planTheme.accent}"
+  >
+    <Logo size={108} />
+  </div>
+
+  <!-- Top Logo -->
+  <div class="relative z-10 flex items-center">
+    <div class="flex size-8 items-center justify-center rounded-md border border-border/60 bg-background/80 backdrop-blur-sm">
+      <Logo size={16} />
     </div>
   </div>
 
-  <div class="flex flex-col items-center gap-1">
-    <span class="text-xs text-muted-foreground">
-      {m.license_valid_until()}
-    </span>
-    <span class="text-sm font-medium tabular-nums text-foreground">
-      {formatDate(validUntil, "datetime") || "—"}
-    </span>
+  <!-- Plan Name -->
+  <div class="relative z-10 pt-6">
+    <h3 class="truncate text-lg font-bold tracking-tight text-foreground">
+      {planLabel}
+    </h3>
   </div>
 </div>
-
-<style>
-  .plan-emblem {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: min(100%, 10rem);
-    aspect-ratio: 642 / 660;
-    color: var(--plan-color);
-    transition: transform 250ms ease;
-  }
-
-  .plan-emblem__logo {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-  }
-
-  .plan-emblem__logo :global(svg) {
-    overflow: visible;
-  }
-
-  /*
-   * The main logo path keeps its original silhouette and color.
-   * Hover glow is applied to the hovered SVG path only.
-   */
-  .plan-emblem__logo :global(svg > path:first-child) {
-    fill: currentColor;
-    transition:
-      filter 250ms ease,
-      opacity 250ms ease;
-  }
-
-  .plan-emblem__logo :global(svg > path:last-child) {
-    fill: #A821D9;
-    transition:
-      filter 250ms ease,
-      opacity 250ms ease;
-  }
-
-  .plan-emblem__content {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 78%;
-    min-width: 0;
-    padding: 0.25rem;
-    pointer-events: none;
-  }
-
-  .plan-emblem__label {
-    max-width: 100%;
-    overflow-wrap: anywhere;
-    text-align: center;
-    font-size: clamp(0.75rem, 1.2vw, 1rem);
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.035em;
-    color: var(--foreground, #fff);
-    text-shadow: 0 0 8px var(--plan-glow);
-    transition: text-shadow 250ms ease;
-  }
-
-  /* Hover the main curved part: glow only that part */
-  .plan-emblem__logo :global(svg > path:first-child:hover) {
-    filter:
-      drop-shadow(0 0 3px var(--plan-color))
-      drop-shadow(0 0 7px var(--plan-glow))
-      drop-shadow(0 0 14px var(--plan-glow));
-  }
-
-  /* Hover the purple dot: glow only the dot */
-  .plan-emblem__logo :global(svg > path:last-child:hover) {
-    filter:
-      drop-shadow(0 0 3px #A821D9)
-      drop-shadow(0 0 8px #A821D9)
-      drop-shadow(0 0 14px rgba(168, 33, 217, .85));
-  }
-
-  .plan-emblem__logo :global(svg > path) {
-    pointer-events: visiblePainted;
-    cursor: pointer;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .plan-emblem,
-    .plan-emblem__logo :global(svg > path),
-    .plan-emblem__label {
-      transition: none;
-    }
-  }
-</style>

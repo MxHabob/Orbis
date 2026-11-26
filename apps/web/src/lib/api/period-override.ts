@@ -15,6 +15,33 @@ export function gradePeriodOverride(periodId: string, sectionSubjectId: string):
   };
 }
 
+export const ACTIVE_PERIOD_STATES = new Set([
+  "active",
+  "active_teaching",
+  "final_exams",
+  "grade_submission",
+  "enrollment_open",
+]);
+
+export function isPeriodActive(
+  period: { status?: string | null; is_locked?: boolean | number | null } | undefined | null,
+): boolean {
+  if (!period || isPeriodLocked(period)) return false;
+  return Boolean(period.status && ACTIVE_PERIOD_STATES.has(period.status));
+}
+
+export function isPeriodLocked(
+  period: { is_locked?: boolean | number | null } | undefined | null,
+): boolean {
+  return Boolean(period?.is_locked);
+}
+
+export function isGradeEntryOpen(
+  period: { is_locked?: boolean | number | null; can_enter_grades?: boolean | null } | undefined | null,
+): boolean {
+  return Boolean(period && !isPeriodLocked(period) && period.can_enter_grades);
+}
+
 export function isGradePeriodOverrideable(period: { status: string; period_kind: string } | undefined): boolean {
   return !!period && period.status !== "archived" &&
     (period.period_kind === "teaching" || period.period_kind === "examination");

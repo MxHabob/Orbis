@@ -8,6 +8,7 @@ use orbis_domain::entities::override_request::{
     AcademicOverrideRequest, OverrideStatus, OverrideType, RiskLevel,
 };
 use orbis_domain::errors::DomainError;
+use orbis_domain::queries::filters::{PaginatedList, PaginationParams};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -86,6 +87,16 @@ pub struct ApproveOverrideInput {
 pub struct RejectOverrideInput {
     pub request_id: String,
     pub reason: String,
+}
+
+#[derive(Deserialize)]
+pub struct OverrideListQuery {
+    pub status: Option<String>,
+    pub role: Option<String>,
+    pub search: Option<String>,
+    pub mine: Option<bool>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 fn override_to_dto(req: AcademicOverrideRequest) -> OverrideRequestDto {
@@ -213,17 +224,33 @@ pub async fn workflow_reject_override(
 
 #[tauri::command]
 pub async fn workflow_list_overrides(
-    status: Option<String>,
+    query: OverrideListQuery,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<OverrideRequestDto>>, String> {
+) -> Result<ApiResponse<PaginatedList<OverrideRequestDto>>, String> {
     let ctx = authenticated_ctx(&state).await?;
-    let items = state
+    let page = state
         .workflow_service
-        .list_overrides(&ctx, status.as_deref(), None)
+        .list_overrides_paginated(
+            &ctx,
+            query.status.as_deref(),
+            query.role.as_deref(),
+            query.search.as_deref(),
+            query.mine.unwrap_or(false),
+            PaginationParams {
+                page: query.page,
+                page_size: query.page_size,
+                ..PaginationParams::default()
+            },
+        )
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(items.into_iter().map(override_to_dto).collect()))
+    Ok(ok(PaginatedList::new(
+        page.items.into_iter().map(override_to_dto).collect(),
+        page.total_count,
+        page.page,
+        page.page_size,
+    )))
 }
 
 #[tauri::command]

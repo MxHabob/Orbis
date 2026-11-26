@@ -115,6 +115,11 @@ use api::{
         api::calendar_routes::lock_period,
         api::calendar_routes::unlock_period,
         api::calendar_routes::close_period,
+        api::calendar_routes::open_grade_entry_window,
+        api::calendar_routes::close_grade_entry_window,
+        api::calendar_routes::open_enrollment_window,
+        api::calendar_routes::close_enrollment_window,
+        api::calendar_routes::transition_period_state,
         api::calendar_routes::list_period_types,
         // Configurable Academic Framework
         api::academic_framework_routes::list_calendars,
@@ -138,6 +143,7 @@ use api::{
         api::academic_routes::update_section,
         api::academic_routes::list_sections,
         api::academic_routes::get_section,
+        api::academic_routes::delete_section,
         api::academic_routes::assign_section_subject,
         api::academic_routes::get_section_subject,
         api::academic_routes::update_section_subject,
@@ -495,6 +501,7 @@ use api::{
             api::student_routes::BulkTransferClassesResponse,
             // Override & Workflow
             api::override_routes::OverrideRequestDto,
+            api::override_routes::PaginatedOverrideRequestsDto,
             api::override_routes::SubmitOverrideRequest,
             api::override_routes::ResolveOverrideRequest,
             api::override_routes::ApprovalStepDto,

@@ -1,4 +1,5 @@
 <script lang="ts">
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
@@ -7,6 +8,7 @@ import { Badge } from "@orbis/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
+import { tabsStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import {
   createTemplateFromCatalog,
@@ -98,6 +100,7 @@ async function useTemplate(template: ReadyTemplate) {
     await onimported();
     toast.success(m.settings_template_marketplace_import_success());
     open = false;
+    tabsStore.markNextNavigationAsNewTab();
     await goto(`/${orgId}/templates/${created.id}`);
   } catch (error) {
     if (isNetworkUnavailable(error)) {
@@ -187,12 +190,11 @@ async function useTemplate(template: ReadyTemplate) {
           {#each filteredTemplates as template (template.id)}
             <article class="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
               {#if template.preview_url}
-                <img
-                  src={template.preview_url}
+                <SmoothImage
+                  src={template.preview_url ?? ""}
                   alt={l(template.name_ar, template.name)}
-                  class="h-28 w-full border-b border-border/40 bg-muted/20 object-cover"
-                  loading="lazy"
-                  decoding="async"
+                  containerClass="h-28 w-full border-b border-border/40 bg-muted/20"
+                  class="h-full w-full object-cover"
                 />
               {:else}
                 <div class="flex h-24 items-center justify-center border-b border-border/40 bg-muted/20 text-xs font-medium text-muted-foreground">

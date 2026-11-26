@@ -18,7 +18,6 @@ import {
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
 import { l, isAr } from "$lib/core/i18n";
-import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import {
   BookOpen,
@@ -500,7 +499,7 @@ function escapeHtml(text: string): string {
       </div>
     </div>
 
-    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0 animate-in fade-in zoom-in-95 duration-150" onclick={openCreateSheet}>
+    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />
       {m.settings_units_add()}
     </Button>
@@ -535,7 +534,7 @@ function escapeHtml(text: string): string {
       </div>
     </div>
   {:else}
-    <div class="overflow-hidden" in:fade={{ duration: 150 }}>
+    <div class="overflow-hidden">
       <div class="overflow-x-auto">
         <Grid>
           <TableHeader>

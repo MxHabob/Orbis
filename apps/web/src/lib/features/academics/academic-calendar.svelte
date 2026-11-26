@@ -34,7 +34,6 @@ import PeriodCreateSheet from "$lib/features/academics/components/period-create-
 import RelatedActions, {
   type ActionGroup,
 } from "$lib/shared/components/related-actions.svelte";
-import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -309,7 +308,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
     </div>
   {:else}
     <!-- Compact Year Overview & Progress Bar -->
-    <div class="p-4 rounded-lg border border-border/60 bg-card/40 flex flex-col gap-3" in:fade={{ duration: 150 }}>
+    <div class="p-4 rounded-lg border border-border/60 bg-card/40 flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
           <span class="text-xs font-bold text-foreground">
@@ -368,7 +367,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
 
     <!-- Timeline Gantt Visualizer View -->
     {#if viewMode === "timeline"}
-      <div class="p-4 rounded-lg border border-border/60 bg-card/40 flex flex-col gap-4" in:fade={{ duration: 150 }}>
+      <div class="p-4 rounded-lg border border-border/60 bg-card/40 flex flex-col gap-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-bold text-foreground">
             {m.academic_calendar_timeline_chart_title()}
@@ -401,8 +400,8 @@ const relatedActionGroups = $derived<ActionGroup[]>([
               {#each rootPeriods as root (root.id)}
                 {@const children = getChildren(root.id)}
                 {@const rootPos = calculateTimelinePosition(root.start_date, root.end_date)}
-                {@const isRootActive = root.status === "active"}
-                {@const isRootLocked = root.is_locked}
+                {@const isRootActive = root.status === "active_teaching" || root.status === "final_exams" || root.status === "grade_submission" || root.status === "enrollment_open"}
+                {@const isRootLocked = Boolean(root.is_locked)}
 
                 <div class="flex flex-col gap-1 p-2.5 rounded-lg border border-border/40 bg-background/40 hover:bg-background/70 transition-colors">
                   <!-- Term Title Bar -->
@@ -471,7 +470,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
       </div>
     {:else}
       <!-- Cards / Grid View -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" in:fade={{ duration: 150 }}>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {#each rootPeriods as root (root.id)}
           {@const children = getChildren(root.id)}
           {@const isRootActive = root.status === "active"}

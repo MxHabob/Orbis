@@ -45,6 +45,8 @@ let {
     period_id?: string | null;
     start_date?: string | null;
     end_date?: string | null;
+    grade_entry_starts_at?: string | null;
+    grade_entry_ends_at?: string | null;
     grading_system?: string | null;
     passing_grade?: number | null;
     max_grade?: number | null;
@@ -82,6 +84,12 @@ const form = untrack(
           ? String(period.start_date).slice(0, 10)
           : "",
         end_date: period?.end_date ? String(period.end_date).slice(0, 10) : "",
+        grade_entry_starts_at: period?.grade_entry_starts_at
+          ? String(period.grade_entry_starts_at).slice(0, 10)
+          : "",
+        grade_entry_ends_at: period?.grade_entry_ends_at
+          ? String(period.grade_entry_ends_at).slice(0, 10)
+          : "",
         grading_system: period?.grading_system || "percentage",
         passing_grade: period?.passing_grade ?? 50,
         max_grade: period?.max_grade ?? 100,
@@ -126,6 +134,12 @@ async function handleSubmit(e: SubmitEvent) {
           name_ar: payload.name_ar || payload.name || undefined,
           start_date: new Date(payload.start_date).toISOString(),
           end_date: new Date(payload.end_date).toISOString(),
+          grade_entry_starts_at: form.values.grade_entry_starts_at
+            ? new Date(form.values.grade_entry_starts_at).toISOString()
+            : undefined,
+          grade_entry_ends_at: form.values.grade_entry_ends_at
+            ? new Date(form.values.grade_entry_ends_at).toISOString()
+            : undefined,
         });
       }
       toast.success(m.common_action_save());
@@ -293,6 +307,30 @@ async function handleSubmit(e: SubmitEvent) {
         />
         {/snippet}
       </FormField>
+
+      {#if isEdit && form.values.period_type !== "year"}
+        <FormField id="per_grade_start" label={m.onboarding_step3_grade_entry_open()}>
+          {#snippet children()}
+          <Input
+            id="per_grade_start"
+            type="date"
+            bind:value={form.values.grade_entry_starts_at}
+            disabled={form.isSubmitting}
+          />
+          {/snippet}
+        </FormField>
+
+        <FormField id="per_grade_end" label={m.onboarding_step3_grade_entry_closed()}>
+          {#snippet children()}
+          <Input
+            id="per_grade_end"
+            type="date"
+            bind:value={form.values.grade_entry_ends_at}
+            disabled={form.isSubmitting}
+          />
+          {/snippet}
+        </FormField>
+      {/if}
     </div>
 
         </AccordionContent>

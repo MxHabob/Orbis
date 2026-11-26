@@ -17,6 +17,7 @@ export {
   ensureFileExtension,
   getExtensionFromMimeType,
 } from "./mime-to-extension";
+export { MULVERSE_URLS } from "./mulverse";
 export {
   getDefaultTaxType,
   getTaxTypeForCountry,

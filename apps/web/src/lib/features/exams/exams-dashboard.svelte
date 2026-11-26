@@ -76,7 +76,7 @@ $effect(() => {
   }
 });
 const isGradeEntryOpen = $derived(
-  Boolean(selectedPeriod?.is_grade_entry_open && !selectedPeriod.is_locked),
+  Boolean(selectedPeriod?.can_enter_grades && !selectedPeriod.is_locked),
 );
 const activeSessionsCount = $derived(
   sessions.filter(
@@ -96,7 +96,7 @@ const shortcuts = $derived([
     icon: Calendar,
   },
   {
-    href: `/${orgId}/academics/exams/control`,
+    href: `/${orgId}/academics/grades`,
     title: m.academics_exams_center_control_title(),
     icon: ChartBar,
   },

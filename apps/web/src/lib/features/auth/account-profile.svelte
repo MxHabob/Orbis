@@ -7,6 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { themeStore, authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -136,13 +137,13 @@ async function handleSaveAvatar(e: Event) {
 
 <div class="flex flex-col gap-6">
   {#if isLoading}
-    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
+    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card" aria-busy="true">
       <div class="bg-muted/20 px-6 py-4 border-b border-border">
-        <div class="h-4 w-28 bg-muted rounded animate-pulse"></div>
+        <Skeleton class="h-4 w-28" />
       </div>
       <div class="p-6 flex flex-col gap-4">
-        <div class="h-9 w-full bg-muted rounded animate-pulse"></div>
-        <div class="h-9 w-full bg-muted rounded animate-pulse"></div>
+        <Skeleton class="h-9 w-full" />
+        <Skeleton class="h-9 w-full" />
       </div>
     </div>
   {:else}

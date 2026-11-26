@@ -22,10 +22,10 @@ import AppSidebar from "./app-sidebar.svelte";
 import StatusBar from "./status-bar.svelte";
 import { licenseStore, uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
-import { slide } from "svelte/transition";
 import { page } from "$app/state";
 import { useQueryClient } from "@tanstack/svelte-query";
 import LicenseFeatureGate from "./license-feature-gate.svelte";
+import AskOrbisSidebar from "$lib/features/ai/views/sidebar.svelte";
 import type { EntitlementKey } from "$lib/api/types";
 import * as m from "$lib/paraglide/messages";
 
@@ -44,7 +44,19 @@ let {
 } = $props();
 
 const queryClient = useQueryClient();
-let askOrbisWidth = $state(25);
+
+function getInitialAskOrbisWidth(): number {
+  if (typeof window === "undefined") return 25;
+  const stored = localStorage.getItem("resizer:ask-orbis-sidebar-width:px");
+  if (!stored) return 25;
+  const px = parseFloat(stored);
+  const base =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const rem = px / base;
+  return !Number.isNaN(rem) && rem >= 20 && rem <= 92 ? rem : 25;
+}
+
+let askOrbisWidth = $state(getInitialAskOrbisWidth());
 
 const requiredFeature = $derived.by((): EntitlementKey | null => {
   const path = page.route.id ?? "";
@@ -114,7 +126,7 @@ function handleKeyDown(e: KeyboardEvent) {
 >
 <div class="flex h-full min-w-0 max-w-full bg-background">
 	{#if !standalone && !uiStore.focusMode}
-		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
+		<div class="overflow-hidden h-full flex shrink-0">
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}
@@ -150,9 +162,7 @@ function handleKeyDown(e: KeyboardEvent) {
 						{orgId}
 						className="h-full w-full"
 					>
-						{#await import("$lib/features/ai/views/sidebar.svelte") then { default: AskOrbisSidebar }}
-							<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />
-						{/await}
+						<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />
 					</LicenseFeatureGate>
 				</div>
 			{/key}

@@ -45,7 +45,6 @@ import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { confirmStore } from "$lib/stores";
 import { orgContext } from "$lib/stores/org-context.svelte";
-import { fade, slide } from "svelte/transition";
 import { accountQueryOptions } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
@@ -499,7 +498,7 @@ function exportCsv() {
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans bg-background/50">
-  <div class="flex min-h-0 w-full flex-1 flex-col gap-4" in:fade={{ duration: 150 }}>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-4">
     
     <!-- Top Action Bar -->
     <header class="flex shrink-0 items-center justify-between gap-4">
@@ -555,7 +554,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }}>
+      <div>
         <FinanceInlineFormCard
           title={m.finance_ui_journal_entry_create_heading()}
           busy={isSubmitting}

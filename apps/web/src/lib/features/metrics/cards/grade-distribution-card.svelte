@@ -26,28 +26,39 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const classId = selectedClass !== "all" ? selectedClass : "";
-    const periodId =
-      selectedTerm !== "all"
-        ? selectedTerm
-        : academicContext.effectivePeriodId || "";
-
-    if (!classId || !periodId) {
+    const scores = (await api.listGrades().catch(() => [])) as any[];
+    if (scores.length === 0) {
       stats = null;
       return;
     }
 
-    const scores = (await api.listGrades().catch(() => [])) as any[];
     const gradeDistribution: Record<string, number> = {};
+    let sumPct = 0;
+    let pctCount = 0;
+    let passCount = 0;
+
     for (const score of scores) {
       const label = String(score.grade_label || "").toUpperCase();
       const key = label
         .replace("+", "_plus")
         .replace("-", "_minus")
         .toLowerCase();
-      gradeDistribution[key] = (gradeDistribution[key] || 0) + 1;
+      if (key) {
+        gradeDistribution[key] = (gradeDistribution[key] || 0) + 1;
+      }
+      const pct = Number(score.percentage ?? score.score);
+      if (Number.isFinite(pct)) {
+        sumPct += pct;
+        pctCount += 1;
+        if (pct >= 50) passCount += 1;
+      }
     }
-    stats = { grade_distribution: gradeDistribution };
+
+    stats = {
+      grade_distribution: gradeDistribution,
+      class_average: pctCount > 0 ? Math.round(sumPct / pctCount) : 0,
+      pass_rate: pctCount > 0 ? Math.round((passCount / pctCount) * 100) : 0,
+    };
   } catch (e) {
     console.error("Error loading grade analytics:", e);
     stats = null;
@@ -194,10 +205,9 @@ function handleMouseLeave() {
               </span>
             {/if}
 
-            <!-- Bar (tactile primary button style) -->
             {#if stats}
               <div 
-                class="w-3 sm:w-4 bg-primary shadow-[0_3px_0_0_oklch(0.35_0.1_280)] dark:shadow-[0_3px_0_0_oklch(0.3_0.1_280)] hover:-translate-y-1 transition-all rounded-t-md cursor-pointer duration-150 z-10"
+                class="w-3 sm:w-4 {bar.name.startsWith('A') ? 'bg-chart-3' : bar.name.startsWith('B') ? 'bg-chart-1' : bar.name.startsWith('C') ? 'bg-chart-4' : 'bg-chart-5'} hover:opacity-85 transition-opacity rounded-t-md cursor-pointer duration-150 z-10"
                 style="height: {bar.pct}%"
                 title="{bar.name}: {bar.value}"
               ></div>

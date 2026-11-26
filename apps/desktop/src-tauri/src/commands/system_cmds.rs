@@ -274,6 +274,11 @@ fn load_release_notes_document(app: &AppHandle) -> Result<Vec<ReleaseChangelogIt
         let images = release.images.clone();
         let resources = release.resources.clone();
         let body = release_markdown(&release);
+        let release_tag = if version.starts_with('v') {
+            version.clone()
+        } else {
+            format!("v{version}")
+        };
 
         result.push(ReleaseChangelogItem {
             version: version.clone(),
@@ -286,7 +291,7 @@ fn load_release_notes_document(app: &AppHandle) -> Result<Vec<ReleaseChangelogIt
             resources,
             is_current: version == app.package_info().version.to_string(),
             is_latest: index == 0,
-            html_url: String::new(),
+            html_url: format!("https://github.com/MxHabob/Orbis/releases/tag/{release_tag}"),
         });
     }
     Ok(result)

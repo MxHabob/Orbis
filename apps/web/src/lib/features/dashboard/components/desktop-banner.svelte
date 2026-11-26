@@ -2,7 +2,6 @@
 import * as m from "$lib/paraglide/messages";
 import { XMark } from "@orbis/icons";
 import { onMount } from "svelte";
-import { fly } from "svelte/transition";
 
 let dismissed = $state(true); // Default to true to prevent hydration mismatch/flash
 let mounted = $state(false);
@@ -23,8 +22,6 @@ function handleDismiss(e: MouseEvent) {
 
 {#if mounted && !dismissed}
 	<div
-		in:fly={{ y: 40, opacity: 0, duration: 500, delay: 500 }}
-		out:fly={{ y: 20, opacity: 0, duration: 300 }}
 		class="fixed bottom-2.5 right-4 z-50 group"
 	>
 		<div class="relative border border-border bg-background shadow-lg w-[300px] overflow-hidden rounded-xl">

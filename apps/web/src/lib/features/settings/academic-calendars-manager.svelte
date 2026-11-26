@@ -41,7 +41,6 @@ import RelatedActions, {
   type ActionGroup,
 } from "$lib/shared/components/related-actions.svelte";
 import YearCreateSheet from "./year-create-sheet.svelte";
-import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -326,7 +325,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
       {/if}
     </div>
   {:else}
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-3" in:fade={{ duration: 150 }}>
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-3">
       {#each filteredYears as year (year.id)}
         {@const yearPeriods = getPeriodsForYear(year.id)}
         {@const isExpanded = !!expandedYears[year.id]}

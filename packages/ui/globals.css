@@ -18,6 +18,10 @@
 
 :root {
   --radius: 0.5rem;
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-normal: 160ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Base */
   --background: oklch(0.99 0 0);
@@ -244,8 +248,8 @@
 
   /* Animations */
   --animate-shimmer: shimmer 2.5s linear infinite;
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-accordion-down: accordion-down 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-accordion-up: accordion-up 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-caret-blink: caret-blink 1.25s ease-out infinite;
 
   @keyframes shimmer {
@@ -311,7 +315,7 @@
    ============================================================ */
 
 @utility btn-tactile {
-  @apply inline-flex items-center justify-center gap-2 rounded-md font-medium text-sm transition-all duration-150 ease-out;
+  @apply inline-flex items-center justify-center gap-2 rounded-md font-medium text-sm transition-[background-color,border-color,box-shadow,color,transform] duration-100 ease-out;
   box-shadow:
     0 2px 0 0 var(--btn-shadow, oklch(0.75 0 0)),
     0 1px 3px 0 oklch(0 0 0 / 0.08);
@@ -363,7 +367,8 @@
 .btn-tactile-ghost {
   @apply btn-tactile bg-transparent text-foreground hover:bg-accent;
   box-shadow: none;
-  &:hover {
+  &:hover,
+  &:active {
     transform: none;
     box-shadow: none;
   }
@@ -445,7 +450,7 @@
 }
 
 @utility input-sunken {
-  @apply w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150;
+  @apply w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] duration-100;
   box-shadow:
     inset 0 2px 4px 0 oklch(0.3 0.05 280 / 0.06),
     inset 0 1px 2px 0 oklch(0.3 0.05 280 / 0.04);
@@ -502,8 +507,8 @@
 @utility card-tactile-interactive {
   @apply card-tactile;
   transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+    box-shadow var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
 
   &:hover {
     box-shadow:
@@ -653,13 +658,9 @@
 }
 
 @utility nav-item {
-  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-150 ease-out;
+  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-100 ease-out;
   &:hover {
     @apply bg-accent text-accent-foreground;
-    transform: scale(1.02);
-  }
-  &:active {
-    transform: scale(0.98);
   }
 }
 
@@ -702,7 +703,7 @@
 }
 
 @utility bar-tactile-this {
-  @apply transition-all duration-150 ease-out;
+  @apply transition-[transform,box-shadow] duration-100 ease-out;
   background-color: var(--foreground);
   box-shadow: 0 3px 0 0 oklch(0.15 0 0);
 
@@ -720,7 +721,7 @@
 }
 
 @utility bar-tactile-last {
-  @apply rounded-t-md transition-all duration-150 ease-out;
+  @apply rounded-t-md transition-[transform,box-shadow,opacity] duration-100 ease-out;
   background-color: var(--muted-foreground);
   opacity: 0.35;
   box-shadow: 0 3px 0 0 oklch(0.4 0 0);

@@ -17,7 +17,6 @@ import {
   CardFooter,
 } from "@orbis/ui/card";
 import { MetricProgress } from "@orbis/ui";
-import { fade } from "svelte/transition";
 import { FinanceSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 import {
@@ -64,7 +63,7 @@ const overviewMetrics = $derived.by(() => {
       onRetry={refetchAll}
     />
   {:else}
-    <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col gap-6">
       <!-- 1. Top 4 KPI Metrics Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card class="p-4 shadow-sm hover:border-primary/40 transition-colors">

@@ -39,7 +39,6 @@ import {
 } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
-import { fade } from "svelte/transition";
 import { goto } from "$app/navigation";
 
 import { l, formatDecimal, formatNumber, formatPercent } from "$lib/core/i18n";
@@ -772,7 +771,7 @@ async function resetStudentDetails() {
       </div>
 
       <!-- Profile Form -->
-      <form onsubmit={saveStudentDetails} in:fade={{ duration: 100 }} class="flex flex-col gap-6">
+      <form onsubmit={saveStudentDetails} class="flex flex-col gap-6">
       
       <Card class="w-full">
         <!-- Card Header -->

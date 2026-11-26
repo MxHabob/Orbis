@@ -12,7 +12,7 @@ import {
 } from "@orbis/icons";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { academicContext, workflowInbox, effectiveContext } from "$lib/stores";
+import { academicContext, workflowInbox, effectiveContext, tabsStore } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -55,8 +55,8 @@ const ACTIONS = $derived.by(() => {
     {
       label: m.common_control_label(),
       icon: UserBadgeCheck,
-      href: `/${orgId}/academics/exams/control`,
-      show: !!period && (period.is_grade_entry_open || period.period_kind === "examination"),
+      href: `/${orgId}/academics/grades`,
+      show: !!period && !period.is_locked && Boolean(period.can_enter_grades),
     },
     {
       label: m.common_action_view_reports(),
@@ -86,6 +86,7 @@ const ACTIONS = $derived.by(() => {
 		{@const Icon = action.icon}
 		<Button
 			href={localizeHref(action.href)}
+			onclick={() => tabsStore.markNextNavigationAsNewTab()}
 		>
 			<Icon size={13} />
 			<span>{action.label}</span>

@@ -7,7 +7,6 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import { countRolePermissions } from "$lib/core/iam";
 
@@ -102,7 +101,7 @@ async function saveRoles() {
     {/each}
   </div>
 {:else}
-  <div in:fade={{ duration: 100 }} class="flex flex-col gap-4 text-start">
+  <div class="flex flex-col gap-4 text-start">
     <!-- List of Roles -->
     <div class="flex flex-col divide-y divide-border/50 rounded-xl border border-border/70 bg-card overflow-hidden">
       {#each availableRoles as role (role.id)}

@@ -414,7 +414,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(student_repo.clone()),
             Some(settings_repo.clone()),
         )
-        .with_attendance_scope_repos(employee_repo.clone(), scheduling_repo.clone()),
+        .with_attendance_scope_repos(employee_repo.clone(), scheduling_repo.clone())
+        .with_override_repo(override_repo.clone()),
     );
 
     let auth_service = Arc::new(
@@ -540,18 +541,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         org_context_resolver.clone(),
     ));
 
-    let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine::new(
-        policy_repo.clone(),
-        autopilot_task_repo.clone(),
-        calendar_service.clone(),
-        progression_service.clone(),
-        report_service.clone(),
-    ));
+    let autopilot_engine = Arc::new(
+        orbis_app::autopilot::engine::AutopilotEngine::new(
+            policy_repo.clone(),
+            autopilot_task_repo.clone(),
+            calendar_service.clone(),
+            progression_service.clone(),
+            report_service.clone(),
+        )
+        .with_smart_services(
+            notification_service.clone(),
+            user_repo.clone(),
+            student_repo.clone(),
+            finance_repo.clone(),
+            academic_repo.clone(),
+            employee_repo.clone(),
+        ),
+    );
 
-    let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
-        calendar_repo.clone(),
-        calendar_repo.clone(),
-    ));
+    let autopilot_evaluator = Arc::new(
+        orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+        )
+        .with_fee_repo(finance_repo.clone()),
+    );
 
     let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
         autopilot_evaluator,

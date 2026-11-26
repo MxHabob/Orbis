@@ -8,7 +8,6 @@ import { Card } from "@orbis/ui/card";
 import { formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
-import { fade } from "svelte/transition";
 import { authStore, academicContext, uiStore } from "$lib/stores";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
@@ -98,7 +97,7 @@ function getTypeLabel(type: string): string {
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 select-none text-start">
-	<div class="flex flex-col gap-2 sm:flex-row sm:items-center" in:fade={{ duration: 150 }}>
+	<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
 		<div class="w-full shrink-0 sm:w-64">
 			<PeriodSelect
 				value={listPeriodId || null}
@@ -160,7 +159,7 @@ function getTypeLabel(type: string): string {
 		</Card>
 	{:else}
 		<!-- Sessions Cards -->
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" in:fade={{ delay: 50, duration: 200 }}>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 			{#each filtered as session (session.id)}
 				<Card class="group gap-4 rounded-xl border-border/60 bg-card p-5 shadow-xs transition-colors hover:border-primary/30">
 					<!-- Top Row: Name + Status -->

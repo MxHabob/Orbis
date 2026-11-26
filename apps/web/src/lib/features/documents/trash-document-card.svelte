@@ -3,6 +3,7 @@
   Card display for soft-deleted documents with restore and permanent purge actions.
 -->
 <script lang="ts">
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -119,13 +120,12 @@ function formatDate(value?: string | null) {
     <!-- Media Rendering -->
     {#if isNearViewport && isImage}
       {#await resolveDocumentUrl(source, document.id) then mediaUrl}
-        <img
+        <SmoothImage
           src={mediaUrl}
           alt={document.name}
-          loading="lazy"
-          decoding="async"
           width="320"
           height="240"
+          containerClass="h-full w-full"
           class="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300 group-hover:scale-105 opacity-80 group-hover:opacity-100"
         />
       {:catch}

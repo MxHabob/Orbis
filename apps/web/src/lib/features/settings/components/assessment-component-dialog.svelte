@@ -19,6 +19,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@orbis/ui/dialog";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 let {
   open = $bindable(false),
   component,
@@ -83,28 +85,26 @@ function submit() {
       </DialogTitle>
     </DialogHeader>
     <div class="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">{m.settings_ui_assessment_component_name()}</Label>
-        <Input
-          bind:value={form.values.name}
-          placeholder={m.settings_ui_assessment_component_example()}
-          class="text-xs"
-          onblur={() => form.markTouched("name")}
+      <div class="sm:col-span-2">
+        <BilingualNameFields
+          arId="assessment-component-name-ar"
+          enId="assessment-component-name-en"
+          arLabel={m.settings_ui_assessment_component_name_ar()}
+          enLabel={m.settings_ui_assessment_component_name_en()}
+          bind:arValue={form.values.name_ar}
+          bind:enValue={form.values.name}
+          arPlaceholder={m.settings_ui_assessment_component_example()}
+          enPlaceholder={m.settings_ui_assessment_component_example()}
+          arError={fieldError("name_ar")}
+          enError={fieldError("name")}
+          onArBlur={() => form.markTouched("name_ar")}
+          onEnBlur={() => form.markTouched("name")}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          disabled={isSaving || form.isSubmitting}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
         />
-        {#if fieldError("name")}
-          <p class="text-[11px] text-destructive">{fieldError("name")}</p>
-        {/if}
-      </div>
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">{m.common_form_full_name_ar()}</Label>
-        <Input
-          bind:value={form.values.name_ar}
-          class="text-xs"
-          onblur={() => form.markTouched("name_ar")}
-        />
-        {#if fieldError("name_ar")}
-          <p class="text-[11px] text-destructive">{fieldError("name_ar")}</p>
-        {/if}
       </div>
       <div class="flex flex-col gap-1.5 sm:col-span-2">
         <Label class="text-xs">{m.settings_ui_assessment_type()}</Label>

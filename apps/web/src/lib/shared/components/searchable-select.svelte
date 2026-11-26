@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
-import type { Snippet } from "svelte";
+import { tick, type Snippet } from "svelte";
 
 interface Props {
   value?: string | null;
@@ -91,10 +91,28 @@ let {
 
 let searchQuery = $state("");
 let searchInput = $state<HTMLInputElement | null>(null);
+let open = $state(false);
 
 function clearSearch() {
   searchQuery = "";
   searchInput?.focus();
+}
+
+function handleOpenChange(isOpen: boolean) {
+  open = isOpen;
+  if (isOpen) {
+    void tick().then(() => searchInput?.focus());
+  } else {
+    searchQuery = "";
+  }
+}
+
+function handleSearchKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape" && searchQuery) {
+    event.preventDefault();
+    event.stopPropagation();
+    clearSearch();
+  }
 }
 const safeItems = $derived(Array.isArray(items) ? items : []);
 
@@ -162,6 +180,8 @@ function handleCreateClick(e: MouseEvent) {
 
 <Select
   type="single"
+  bind:open
+  onOpenChange={handleOpenChange}
   value={value ?? ""}
   onValueChange={handleValueChange}
   {disabled}
@@ -169,16 +189,17 @@ function handleCreateClick(e: MouseEvent) {
   <SelectTrigger
     {id}
     aria-required={required ? "true" : undefined}
-    class="{size === 'sm' ? 'h-8 text-xs' : 'h-9 text-xs'} w-full bg-background text-start flex items-center justify-between gap-2 overflow-hidden {className}"
+    title={displayLabel}
+    class="{size === 'sm' ? 'min-h-8 text-[11px]' : 'min-h-9 text-xs'} w-full bg-background text-start flex items-center justify-between gap-2 overflow-hidden py-1.5 {className}"
   >
-    <span class="truncate font-normal flex-1 text-start {(!value || value === 'all') && !selectedItem ? 'text-muted-foreground' : 'text-foreground'}">
+    <span class="line-clamp-2 break-words whitespace-normal font-normal flex-1 text-start leading-snug {(!value || value === 'all') && !selectedItem ? 'text-muted-foreground' : 'text-foreground'}">
       {displayLabel}
     </span>
   </SelectTrigger>
 
   <SelectContent
-    class="text-xs font-sans w-(--bits-select-anchor-width,100%) min-w-0 max-w-[calc(100dvw-1rem)] p-0 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden {contentClass}"
-    style="max-height: min(75dvh, 28rem)"
+    class="text-xs font-sans w-[min(22rem,calc(100dvw-1rem))] min-w-0 max-w-[calc(100dvw-1rem)] p-0 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden {contentClass}"
+    style="max-height: min(70dvh, 26rem)"
     align="start"
   >
     <!-- Sticky Search Header -->
@@ -190,8 +211,10 @@ function handleCreateClick(e: MouseEvent) {
           placeholder={searchPlaceholder}
           aria-label={searchPlaceholder}
           bind:ref={searchInput}
-          class="h-7 ps-7 pe-6 text-[11px] bg-muted/40 border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40 w-full"
+          class="h-8 ps-8 pe-8 text-xs bg-muted/40 border-border/60 focus-visible:ring-2 focus-visible:ring-primary/30 w-full"
           bind:value={searchQuery}
+          onkeydown={handleSearchKeydown}
+          onmousedown={(event) => event.stopPropagation()}
         />
         {#if searchQuery}
           <button
@@ -208,8 +231,8 @@ function handleCreateClick(e: MouseEvent) {
 
     <!-- Scrollable Items List -->
     <div
-      class="overflow-y-auto overscroll-contain p-1 scrollbar-thin"
-      style="max-height: min(20rem, calc(75dvh - 3rem))"
+      class="overflow-y-auto overscroll-contain p-1 scrollbar-hide"
+      style="max-height: min(18rem, calc(70dvh - 3.25rem))"
     >
       {#if showAllOption}
         <SelectItem
@@ -227,16 +250,16 @@ function handleCreateClick(e: MouseEvent) {
         {@const itemBadge = getItemBadge(item)}
         <SelectItem
           value={itemVal}
-          class="text-xs text-start justify-start cursor-pointer rounded-lg px-2.5 py-2 hover:bg-muted/60 focus:bg-muted/60"
+          class="text-xs text-start justify-start cursor-pointer rounded-lg px-2.5 py-1.5 hover:bg-muted/60 focus:bg-muted/60"
         >
           {#if itemSnippet}
             {@render itemSnippet(item)}
           {:else}
-            <div class="flex items-center justify-between w-full gap-3 min-w-0">
+            <div class="flex items-start justify-between w-full gap-2 min-w-0">
               <div class="flex flex-col min-w-0 flex-1 text-start">
-                <span class="truncate font-medium text-foreground text-xs leading-snug">{itemLab}</span>
+                <span class="whitespace-normal break-words font-medium text-foreground text-xs leading-snug">{itemLab}</span>
                 {#if itemSub}
-                  <span class="text-[10px] font-mono text-muted-foreground/80 truncate leading-tight mt-0.5">
+                  <span class="text-[10px] font-mono text-muted-foreground/80 whitespace-normal break-words leading-tight mt-0.5">
                     {itemSub}
                   </span>
                 {/if}
@@ -252,8 +275,18 @@ function handleCreateClick(e: MouseEvent) {
       {/each}
 
       {#if filteredItems.length === 0}
-        <div class="p-3 text-center text-xs text-muted-foreground italic">
-          {emptyText}
+        <div class="flex min-h-20 flex-col items-center justify-center gap-2 px-4 py-5 text-center text-xs text-muted-foreground">
+          <Search size={16} class="opacity-50" />
+          <span>{emptyText}</span>
+          {#if searchQuery}
+            <button
+              type="button"
+              class="text-primary hover:underline cursor-pointer"
+              onclick={clearSearch}
+            >
+              {m.shared_ui_clear_search()}
+            </button>
+          {/if}
         </div>
       {/if}
     </div>

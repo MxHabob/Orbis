@@ -1,4 +1,5 @@
 <script lang="ts">
+import SmoothImage from "$lib/shared/components/smooth-image.svelte";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api/client";
@@ -179,13 +180,13 @@ onMount(() => {
       {:else if currentRelease}
         <!-- Visual Banner (Dynamic - only if release provides images) -->
         {#if currentRelease.images && currentRelease.images.length > 0}
-          <div class="relative w-full h-48 sm:h-56 overflow-hidden rounded-2xl border border-border/40 flex items-center justify-center bg-muted/20 shadow-xs">
-            <img
-              src={currentRelease.images[0]}
-              alt={currentRelease.title}
-              class="w-full h-full object-cover select-none"
-            />
-          </div>
+          <SmoothImage
+            src={currentRelease.images[0]}
+            alt={currentRelease.title}
+            loading="eager"
+            containerClass="w-full h-48 sm:h-56 rounded-2xl border border-border/40 bg-muted/20 shadow-xs"
+            class="w-full h-full object-cover select-none"
+          />
         {/if}
 
         <!-- Current Release Header & Typography -->
@@ -255,11 +256,11 @@ onMount(() => {
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {#each currentRelease.images.slice(1) as img (img)}
-                <img
+                <SmoothImage
                   src={img}
                   alt={currentRelease.title}
-                  loading="lazy"
-                  class="w-full max-h-60 rounded-xl border border-border/50 bg-muted/20 object-contain"
+                  containerClass="w-full h-56 rounded-xl border border-border/50 bg-muted/20"
+                  class="w-full h-full object-contain"
                 />
               {/each}
             </div>
