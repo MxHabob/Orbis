@@ -1,2 +1,6 @@
-export const isDesktopApp =
-  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+export const isDesktopApp = (() => {
+  if (typeof window === "undefined") return false;
+
+  const internals = Reflect.get(window, "__TAURI_INTERNALS__");
+  return typeof internals?.invoke === "function";
+})();

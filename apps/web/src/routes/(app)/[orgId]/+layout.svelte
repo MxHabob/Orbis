@@ -36,7 +36,7 @@ const isOnboarding = $derived(
 const standaloneWindow = isStandaloneWindow(page.url);
 
 afterNavigate(({ from, to }) => {
-  if (from?.url.pathname !== to?.url.pathname) periodOverrides.dismiss();
+  if (from?.url?.pathname !== to?.url?.pathname) periodOverrides.dismiss();
   if (!standaloneWindow || !to?.url || isStandaloneWindow(to.url)) return;
 
   const url = new URL(to.url);

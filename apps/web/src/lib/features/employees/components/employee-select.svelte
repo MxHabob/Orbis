@@ -7,7 +7,7 @@ Includes a sticky search bar, subtitle with job title/employee number, and suppo
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { l } from "$lib/core/i18n";
-import { createEmployeesQuery } from "$lib/features/employees/queries";
+import { createAllEmployeesQuery } from "$lib/features/employees/queries";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { authStore } from "$lib/stores";
 
@@ -46,9 +46,9 @@ const resolvedOrgId = $derived(
 );
 
 // TanStack Query for Active Employees
-const employeesQuery = createEmployeesQuery(
+const employeesQuery = createAllEmployeesQuery(
   () => resolvedOrgId,
-  () => ({ status: "active", limit: 300 }),
+  () => ({ status: "active" }),
 );
 
 const employees = $derived(

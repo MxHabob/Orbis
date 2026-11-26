@@ -29,7 +29,7 @@ import {
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { onMount } from "svelte";
-import { configureApiClient } from "$lib/api";
+import { configureApiClient, isDesktopApp } from "$lib/api";
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
@@ -113,11 +113,21 @@ function fieldError(field: keyof ConnectionFormValues): string | undefined {
 let customDatabasePath = $state("");
 
 onMount(async () => {
-  configureApiClient("local");
   try {
+    if (isDesktopApp) {
+      configureApiClient("local");
+    } else {
+      form.values.mode = "api";
+    }
+
     const config = await api.connectionGetConfig();
-    form.values.dbFilename = config.local?.db_filename ?? "orbis.db";
-    customDatabasePath = config.local?.custom_path ?? "";
+    if (isDesktopApp) {
+      form.values.dbFilename = config.local?.db_filename ?? "orbis.db";
+      customDatabasePath = config.local?.custom_path ?? "";
+    } else {
+      form.values.serverUrl =
+        config.api?.server_url ?? import.meta.env?.VITE_API_URL ?? "";
+    }
   } catch (error) {
     form.formError = error instanceof Error ? error.message : String(error);
   }
@@ -250,41 +260,43 @@ async function applyDirectMigrations() {
       </CardHeader>
       <CardContent class="p-0">
         <div role="group" aria-label={m.setup_connection_mode_title()}>
-          <button
-            type="button"
-            aria-pressed={form.values.mode === "local"}
-            class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-            onclick={() => { form.values.mode = "local"; form.clearError(); healthResult = null; }}
-          >
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <Computer size={16} />
-            </span>
-            <span class="flex min-w-0 flex-1 flex-col gap-1">
-              <span class="text-xs font-semibold text-foreground">{m.setup_connection_local_title()}</span>
-              <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_local_desc()}</span>
-            </span>
-            {#if form.values.mode === "local"}
-              <CheckCircle class="size-4 shrink-0 text-primary" />
-            {/if}
-          </button>
+          {#if isDesktopApp}
+            <button
+              type="button"
+              aria-pressed={form.values.mode === "local"}
+              class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              onclick={() => { form.values.mode = "local"; form.clearError(); healthResult = null; }}
+            >
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <Computer size={16} />
+              </span>
+              <span class="flex min-w-0 flex-1 flex-col gap-1">
+                <span class="text-xs font-semibold text-foreground">{m.setup_connection_local_title()}</span>
+                <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_local_desc()}</span>
+              </span>
+              {#if form.values.mode === "local"}
+                <CheckCircle class="size-4 shrink-0 text-primary" />
+              {/if}
+            </button>
 
-          <button
-            type="button"
-            aria-pressed={form.values.mode === "direct"}
-            class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-            onclick={() => { form.values.mode = "direct"; form.clearError(); healthResult = null; }}
-          >
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <Database size={16} />
-            </span>
-            <span class="flex min-w-0 flex-1 flex-col gap-1">
-              <span class="text-xs font-semibold text-foreground">{m.setup_connection_direct_title()}</span>
-              <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_direct_desc()}</span>
-            </span>
-            {#if form.values.mode === "direct"}
-              <CheckCircle class="size-4 shrink-0 text-primary" />
-            {/if}
-          </button>
+            <button
+              type="button"
+              aria-pressed={form.values.mode === "direct"}
+              class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              onclick={() => { form.values.mode = "direct"; form.clearError(); healthResult = null; }}
+            >
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <Database size={16} />
+              </span>
+              <span class="flex min-w-0 flex-1 flex-col gap-1">
+                <span class="text-xs font-semibold text-foreground">{m.setup_connection_direct_title()}</span>
+                <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_direct_desc()}</span>
+              </span>
+              {#if form.values.mode === "direct"}
+                <CheckCircle class="size-4 shrink-0 text-primary" />
+              {/if}
+            </button>
+          {/if}
 
           <button
             type="button"
@@ -324,7 +336,7 @@ async function applyDirectMigrations() {
           <p class="px-6 py-4 text-sm text-muted-foreground">
             {m.setup_connection_mode_title()}
           </p>
-        {:else if form.values.mode === "local"}
+        {:else if form.values.mode === "local" && isDesktopApp}
           <SettingsRow
             title={m.setup_connection_db_file_label()}
             description={m.setup_connection_db_file_hint()}

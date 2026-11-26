@@ -28,7 +28,11 @@ function handleSuccess() {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="end" class="w-105 sm:w-120 h-full p-0 flex flex-col overflow-hidden">
+  <Sheet.Content
+    side="end"
+    contentClass="data-[side=end]:sm:!max-w-lg"
+    class="flex flex-col h-full overflow-hidden p-0 gap-0"
+  >
     <GuardianForm
       {orgId}
       {studentId}

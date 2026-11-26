@@ -24,7 +24,7 @@ let {
 
 <Sheet bind:open>
 	<SheetContent
-		contentClass="data-[side=end]:sm:max-w-md"
+		contentClass="data-[side=end]:sm:!max-w-md"
 		class="flex flex-col h-full overflow-hidden p-0 gap-0"
 	>
 		{#key section?.id ?? "__create__"}
