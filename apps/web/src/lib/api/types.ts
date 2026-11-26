@@ -1953,6 +1953,11 @@ export interface OrbisApiClient {
   lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
+  openGradeEntryWindow(id: string): Promise<AcademicPeriodDto>;
+  closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto>;
+  openEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
+  closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
+  transitionAcademicPeriodState(id: string, state: string): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
   listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
   applyCalendarTemplate(

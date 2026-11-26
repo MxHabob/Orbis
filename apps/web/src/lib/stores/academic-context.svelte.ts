@@ -10,6 +10,7 @@ import type {
 } from "@orbis/sdk";
 import { api } from "$lib/api/client";
 import { extractErrorMessage } from "$lib/api";
+import { isPeriodActive } from "$lib/api/period-override";
 import { toast } from "@orbis/ui";
 
 class AcademicContextStore {
@@ -75,7 +76,7 @@ class AcademicContextStore {
   /** First active period or first period in list */
   get activePeriod(): AcademicPeriodDto | null {
     return (
-      this.periods.find((p) => p.status === "active") ?? this.periods[0] ?? null
+      this.periods.find((p) => isPeriodActive(p)) ?? this.periods[0] ?? null
     );
   }
 

@@ -2,6 +2,7 @@
 import * as XLSX from "xlsx";
 import type { GradeDto } from "$lib/api";
 import { buildGradeWorkbook, reviewGradeWorkbook, type GradeWorkbookSheet } from "./grade-workbook";
+import { gradeStatus, parseSheetScore } from "./class-grade-sheet";
 
 const context = { orgId: "org-a", periodId: "month-1", orgName: "School", periodLabel: "Month 1", arabic: false };
 const field = "exam_math:written";
@@ -24,6 +25,13 @@ function scope(id: string, score?: number): GradeWorkbookSheet {
     }],
   };
 }
+
+test("Arabic attendance labels remain accepted regardless of the app language", () => {
+  expect(parseSheetScore("غ", 20)).toBe(gradeStatus.absent());
+  expect(parseSheetScore("معذور", 20)).toBe(gradeStatus.excused());
+  expect(parseSheetScore("بعذر", 20)).toBe(gradeStatus.excused());
+  expect(parseSheetScore("معفى", 20)).toBe(gradeStatus.exempt());
+});
 
 test("each section round-trips with its own enrollment, and blank cells leave grades untouched", async () => {
   const first = scope("A", 12);

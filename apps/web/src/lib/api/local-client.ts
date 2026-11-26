@@ -457,6 +457,24 @@ export class LocalClient implements OrbisApiClient {
   async closeAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
     return unwrap(await invoke("calendar_close_period", { id }));
   }
+  async openGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_open_grade_entry_window", { id }));
+  }
+  async closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_close_grade_entry_window", { id }));
+  }
+  async openEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_open_enrollment_window", { id }));
+  }
+  async closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_close_enrollment_window", { id }));
+  }
+  async transitionAcademicPeriodState(
+    id: string,
+    state: string,
+  ): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_transition_period_state", { id, state }));
+  }
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
     return unwrap(await invoke("calendar_list_period_types"));
   }

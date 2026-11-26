@@ -75,13 +75,25 @@ export function getBreakLabel(type: string): string {
 export function getBreakNames(type: string): { ar: string; en: string } {
   switch (type) {
     case "lunch":
-      return { ar: "استراحة الغداء", en: "Lunch Break" };
+      return {
+        ar: m.academics_schedule_break_lunch({}, { locale: "ar" }),
+        en: m.academics_schedule_break_lunch({}, { locale: "en" }),
+      };
     case "prayer":
-      return { ar: "استراحة الصلاة", en: "Prayer Break" };
+      return {
+        ar: m.academics_schedule_break_prayer({}, { locale: "ar" }),
+        en: m.academics_schedule_break_prayer({}, { locale: "en" }),
+      };
     case "morning":
-      return { ar: "الطابور الصباحي", en: "Morning Assembly" };
+      return {
+        ar: m.academics_schedule_break_morning_assembly({}, { locale: "ar" }),
+        en: m.academics_schedule_break_morning_assembly({}, { locale: "en" }),
+      };
     default:
-      return { ar: "الفسحة", en: "Recess" };
+      return {
+        ar: m.academics_schedule_break_recess({}, { locale: "ar" }),
+        en: m.academics_schedule_break_recess({}, { locale: "en" }),
+      };
   }
 }
 

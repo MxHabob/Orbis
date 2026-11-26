@@ -59,9 +59,30 @@ export function savedScore(grade: GradeDto | undefined): SheetScore {
 export function parseSheetScore(raw: unknown, max: number): SheetScore | undefined {
   const value = String(raw ?? "").trim();
   if (!value) return null;
-  if (["غ", "absent", gradeStatus.absent()].includes(value.toLowerCase())) return gradeStatus.absent();
-  if (value.toLowerCase() === "excused" || value === "\u0645\u0639\u0630\u0648\u0631" || value === "بعذر" || value === gradeStatus.excused()) return gradeStatus.excused();
-  if (value.toLowerCase() === "exempt" || value === "معفى" || value === gradeStatus.exempt()) return gradeStatus.exempt();
+  if (
+    [
+      "absent",
+      gradeStatus.absent(),
+      m.exams_grade_sheet_absent({}, { locale: "ar" }),
+    ].includes(value.toLowerCase())
+  ) {
+    return gradeStatus.absent();
+  }
+  if (
+    value.toLowerCase() === "excused" ||
+    value === m.student_grades_state_excused({}, { locale: "ar" }) ||
+    value === m.exams_grade_sheet_excused_arabic_input({}, { locale: "ar" }) ||
+    value === gradeStatus.excused()
+  ) {
+    return gradeStatus.excused();
+  }
+  if (
+    value.toLowerCase() === "exempt" ||
+    value === m.student_grades_state_exempt({}, { locale: "ar" }) ||
+    value === gradeStatus.exempt()
+  ) {
+    return gradeStatus.exempt();
+  }
   const normalized = value
     .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x660))
     .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x6f0))
@@ -113,9 +134,8 @@ async function loadStudents(classId: string, periodId: string) {
   return students;
 }
 
-export function isGradeEntryOpen(period: AcademicPeriodDto | undefined): boolean {
-  return Boolean(period && !period.is_locked && period.can_enter_grades);
-}
+export { isGradeEntryOpen } from "$lib/api/period-override";
+import { isGradeEntryOpen } from "$lib/api/period-override";
 
 export function gradePeriodChain(periodId: string, periods: AcademicPeriodDto[]): AcademicPeriodDto[] {
   const byId = new Map(periods.map((period) => [period.id, period]));

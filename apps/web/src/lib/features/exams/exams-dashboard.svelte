@@ -76,7 +76,7 @@ $effect(() => {
   }
 });
 const isGradeEntryOpen = $derived(
-  Boolean(selectedPeriod?.is_grade_entry_open && !selectedPeriod.is_locked),
+  Boolean(selectedPeriod?.can_enter_grades && !selectedPeriod.is_locked),
 );
 const activeSessionsCount = $derived(
   sessions.filter(

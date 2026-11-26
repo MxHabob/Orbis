@@ -115,6 +115,11 @@ use api::{
         api::calendar_routes::lock_period,
         api::calendar_routes::unlock_period,
         api::calendar_routes::close_period,
+        api::calendar_routes::open_grade_entry_window,
+        api::calendar_routes::close_grade_entry_window,
+        api::calendar_routes::open_enrollment_window,
+        api::calendar_routes::close_enrollment_window,
+        api::calendar_routes::transition_period_state,
         api::calendar_routes::list_period_types,
         // Configurable Academic Framework
         api::academic_framework_routes::list_calendars,

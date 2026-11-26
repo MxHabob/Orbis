@@ -401,8 +401,8 @@ const relatedActionGroups = $derived<ActionGroup[]>([
               {#each rootPeriods as root (root.id)}
                 {@const children = getChildren(root.id)}
                 {@const rootPos = calculateTimelinePosition(root.start_date, root.end_date)}
-                {@const isRootActive = root.status === "active"}
-                {@const isRootLocked = root.is_locked}
+                {@const isRootActive = root.status === "active_teaching" || root.status === "final_exams" || root.status === "grade_submission" || root.status === "enrollment_open"}
+                {@const isRootLocked = Boolean(root.is_locked)}
 
                 <div class="flex flex-col gap-1 p-2.5 rounded-lg border border-border/40 bg-background/40 hover:bg-background/70 transition-colors">
                   <!-- Term Title Bar -->

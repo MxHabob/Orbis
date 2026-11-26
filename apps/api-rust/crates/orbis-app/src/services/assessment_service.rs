@@ -4,8 +4,9 @@ use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AcademicCalendarRepository, AcademicPeriodRepository, AssessmentSchemeRepository,
     AttendanceRepository, BehaviorRecordRepository, EmployeeRepository, EnrollmentRepository,
-    GpaRecordRepository, GradeRepository, ScheduledLessonRepository, SectionRepository,
-    SectionSubjectRepository, SettingsRepository, StudentRepository, SubjectRepository,
+    GpaRecordRepository, GradeRepository, OverrideRequestRepository, ScheduledLessonRepository,
+    SectionRepository, SectionSubjectRepository, SettingsRepository, StudentRepository,
+    SubjectRepository,
 };
 use crate::services::calculation_engine::{
     AcademicCalculationEngine, AstNode, CalcEngine, apply_rounding,
@@ -316,11 +317,78 @@ pub struct AssessmentService {
     pub year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
     pub settings_repo: Option<Arc<dyn SettingsRepository>>,
+    pub override_repo: Option<Arc<dyn OverrideRequestRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
 
 impl AssessmentService {
+    async fn is_grade_edit_allowed_after_close(&self, org_id: Uuid) -> bool {
+        let Some(sr) = &self.settings_repo else {
+            return false;
+        };
+        sr.get_settings(org_id)
+            .await
+            .map(|s| s.academic.allow_grade_edit_after_close)
+            .unwrap_or(false)
+    }
+
+    async fn has_active_grade_override(
+        &self,
+        org_id: Uuid,
+        period_id: Uuid,
+        section_subject_id: Uuid,
+    ) -> Result<bool, DomainError> {
+        let Some(repo) = &self.override_repo else {
+            return Ok(false);
+        };
+        let Some(req) = repo
+            .find_active_override(
+                org_id,
+                "grade_change",
+                "section_subject",
+                section_subject_id,
+            )
+            .await?
+        else {
+            return Ok(false);
+        };
+        if !req.is_active() {
+            return Ok(false);
+        }
+        let matches_period = req
+            .metadata
+            .get("period_id")
+            .and_then(|v| v.as_str())
+            .map(|pid| pid == period_id.to_string())
+            .unwrap_or(true);
+        Ok(matches_period)
+    }
+
+    async fn validate_grade_period_or_override(
+        &self,
+        periods: &HashMap<Uuid, AcademicPeriod>,
+        org_id: Uuid,
+        grade_period_id: Uuid,
+        offering: &SectionSubject,
+        allow_after_close: bool,
+    ) -> Result<(), DomainError> {
+        match validate_grade_period(periods, org_id, grade_period_id, offering) {
+            Ok(()) => Ok(()),
+            Err(DomainError::PeriodOverrideRequired(targets)) => {
+                if allow_after_close
+                    || self
+                        .has_active_grade_override(org_id, grade_period_id, offering.id)
+                        .await?
+                {
+                    Ok(())
+                } else {
+                    Err(DomainError::PeriodOverrideRequired(targets))
+                }
+            }
+            Err(other) => Err(other),
+        }
+    }
     async fn grade_period_error(
         &self,
         ctx: &RequestContext,
@@ -369,9 +437,15 @@ impl AssessmentService {
             year_repo: None,
             enrollment_repo: None,
             settings_repo: None,
+            override_repo: None,
             event_bus,
             permission_checker,
         }
+    }
+
+    pub fn with_override_repo(mut self, override_repo: Arc<dyn OverrideRequestRepository>) -> Self {
+        self.override_repo = Some(override_repo);
+        self
     }
 
     /// Builder method to supply additional repositories needed for calculated results & report cards
@@ -479,7 +553,15 @@ impl AssessmentService {
             .find_by_id(section_subject_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
-        validate_grade_period(&periods, org_id, period_id, &section_subject)?;
+        let allow_after_close = self.is_grade_edit_allowed_after_close(org_id).await;
+        self.validate_grade_period_or_override(
+            &periods,
+            org_id,
+            period_id,
+            &section_subject,
+            allow_after_close,
+        )
+        .await?;
 
         let scheme = if let Some(id) = section_subject.scheme_id {
             Some(
@@ -757,6 +839,11 @@ impl AssessmentService {
         }
         let mut submitted_keys = HashSet::with_capacity(items.len());
         let mut override_targets = BTreeSet::new();
+        let allow_after_close = self.is_grade_edit_allowed_after_close(org_id).await;
+        let mut verified_period_subjects: HashMap<
+            (Uuid, Uuid),
+            Result<(), Vec<PeriodOverrideTarget>>,
+        > = HashMap::new();
 
         for item in items {
             if let Some(student) = students.get(&item.student_id) {
@@ -770,13 +857,30 @@ impl AssessmentService {
             let section_subject = section_subjects
                 .get(&item.section_subject_id)
                 .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
-            match validate_grade_period(&periods, org_id, item.period_id, section_subject) {
-                Ok(()) => {}
-                Err(DomainError::PeriodOverrideRequired(targets)) => {
-                    override_targets.extend(targets);
-                    continue;
-                }
-                Err(error) => return Err(error),
+            let pair_key = (item.period_id, item.section_subject_id);
+            let check = if let Some(cached) = verified_period_subjects.get(&pair_key) {
+                cached.clone()
+            } else {
+                let res = match self
+                    .validate_grade_period_or_override(
+                        &periods,
+                        org_id,
+                        item.period_id,
+                        section_subject,
+                        allow_after_close,
+                    )
+                    .await
+                {
+                    Ok(()) => Ok(()),
+                    Err(DomainError::PeriodOverrideRequired(targets)) => Err(targets),
+                    Err(error) => return Err(error),
+                };
+                verified_period_subjects.insert(pair_key, res.clone());
+                res
+            };
+            if let Err(targets) = check {
+                override_targets.extend(targets);
+                continue;
             }
 
             let scheme =
@@ -947,7 +1051,17 @@ impl AssessmentService {
             .find_by_id(grade.section_subject_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
-        if let Err(error) = validate_grade_period(&periods, org_id, grade.period_id, &offering) {
+        let allow_after_close = self.is_grade_edit_allowed_after_close(org_id).await;
+        if let Err(error) = self
+            .validate_grade_period_or_override(
+                &periods,
+                org_id,
+                grade.period_id,
+                &offering,
+                allow_after_close,
+            )
+            .await
+        {
             return Err(self.grade_period_error(ctx, error).await?);
         }
         self.grade_repo.delete(grade_id).await?;

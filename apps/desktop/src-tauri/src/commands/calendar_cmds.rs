@@ -4,12 +4,23 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use chrono::{DateTime, Utc};
+use orbis_app::services::calendar_service::UpdatePeriodInput as CalendarUpdatePeriodInput;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
 
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
+}
+
+fn parse_optional_utc(value: Option<String>, field: &str) -> Result<Option<DateTime<Utc>>, String> {
+    value
+        .map(|value| {
+            DateTime::parse_from_rfc3339(&value)
+                .map(|date| date.with_timezone(&Utc))
+                .map_err(|_| format!("Invalid {field} format"))
+        })
+        .transpose()
 }
 
 #[derive(Serialize)]
@@ -87,6 +98,10 @@ pub struct UpdatePeriodInput {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub period_kind: Option<String>,
+    pub enrollment_starts_at: Option<String>,
+    pub enrollment_ends_at: Option<String>,
+    pub grade_entry_starts_at: Option<String>,
+    pub grade_entry_ends_at: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -360,34 +375,33 @@ pub async fn calendar_update_period(
 ) -> Result<ApiResponse<AcademicPeriodDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-    let start_date = match request.start_date {
-        Some(ref s) => Some(
-            DateTime::parse_from_rfc3339(s)
-                .map(|d| d.with_timezone(&Utc))
-                .map_err(|_| "Invalid start_date format")?,
-        ),
-        None => None,
-    };
-    let end_date = match request.end_date {
-        Some(ref s) => Some(
-            DateTime::parse_from_rfc3339(s)
-                .map(|d| d.with_timezone(&Utc))
-                .map_err(|_| "Invalid end_date format")?,
-        ),
-        None => None,
-    };
+    let start_date = parse_optional_utc(request.start_date, "start_date")?;
+    let end_date = parse_optional_utc(request.end_date, "end_date")?;
+    let enrollment_starts_at =
+        parse_optional_utc(request.enrollment_starts_at, "enrollment_starts_at")?;
+    let enrollment_ends_at = parse_optional_utc(request.enrollment_ends_at, "enrollment_ends_at")?;
+    let grade_entry_starts_at =
+        parse_optional_utc(request.grade_entry_starts_at, "grade_entry_starts_at")?;
+    let grade_entry_ends_at =
+        parse_optional_utc(request.grade_entry_ends_at, "grade_entry_ends_at")?;
 
     let p = state
         .calendar_service
         .update_period(
             &ctx,
             uid,
-            request.name,
-            request.name_ar,
-            request.code,
-            start_date,
-            end_date,
-            request.period_kind,
+            CalendarUpdatePeriodInput {
+                name: request.name,
+                name_ar: request.name_ar,
+                code: request.code,
+                start_date,
+                end_date,
+                period_kind: request.period_kind,
+                enrollment_starts_at,
+                enrollment_ends_at,
+                grade_entry_starts_at,
+                grade_entry_ends_at,
+            },
         )
         .await
         .map_err(|e| e.to_string())?;

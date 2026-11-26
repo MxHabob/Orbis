@@ -5,6 +5,11 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
 -->
 <script lang="ts">
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import {
+  isGradeEntryOpen,
+  isPeriodActive,
+  isPeriodLocked,
+} from "$lib/api/period-override";
 import { formatDate } from "$lib/core/i18n";
 import {
   createPeriodsQuery,
@@ -138,8 +143,8 @@ let filteredPeriods = $derived(
 
     const matchesStatus =
       selectedStatusFilters.length === 0 ||
-      (selectedStatusFilters.includes("active") && p.status === "active") ||
-      (selectedStatusFilters.includes("locked") && p.is_locked);
+      (selectedStatusFilters.includes("active") && isPeriodActive(p)) ||
+      (selectedStatusFilters.includes("locked") && isPeriodLocked(p));
 
     const matchesType =
       selectedTypeFilters.length === 0 ||
@@ -209,6 +214,20 @@ async function requestLock(periodId: string) {
     await api.lockAcademicPeriod(periodId);
     await handleRefresh();
     toast.success(m.ui_copy_period_locked_successfully_c75e6ca2());
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
+  }
+}
+
+async function requestToggleGradeEntry(period: AcademicPeriodDto) {
+  try {
+    if (period.is_grade_entry_open) {
+      await api.closeGradeEntryWindow(period.id);
+    } else {
+      await api.openGradeEntryWindow(period.id);
+    }
+    await handleRefresh();
+    toast.success(m.common_action_save());
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
@@ -373,7 +392,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
               </span>
 
               <!-- Status Badges -->
-              {#if node.status === "active"}
+              {#if isPeriodActive(node)}
                 <Badge
                   variant="info"
                   class="text-[9px] px-1.5 py-0 h-4 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
@@ -385,9 +404,22 @@ const relatedActionGroups = $derived<ActionGroup[]>([
                   variant="secondary"
                   class="text-[9px] px-1.5 py-0 h-4 rounded-full font-medium"
                 >
-                  {node.is_locked === 1
+                  {isPeriodLocked(node)
                     ? m.common_phase_locked()
                     : m.common_status_disabled()}
+                </Badge>
+              {/if}
+
+              {#if node.period_kind === "teaching" || node.period_kind === "examination"}
+                <Badge
+                  variant="outline"
+                  class="text-[9px] px-1.5 py-0 h-4 rounded-full font-medium {isGradeEntryOpen(node)
+                    ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                    : 'border-border/60 text-muted-foreground'}"
+                >
+                  {isGradeEntryOpen(node)
+                    ? m.onboarding_step3_grade_entry_open()
+                    : m.onboarding_step3_grade_entry_closed()}
                 </Badge>
               {/if}
 
@@ -412,7 +444,22 @@ const relatedActionGroups = $derived<ActionGroup[]>([
 
           <!-- Right Actions -->
           <div class="flex items-center gap-1 shrink-0">
-            {#if node.status !== "active" && node.is_locked !== 1}
+            {#if isPeriodActive(node) && !isPeriodLocked(node) && (node.period_kind === "teaching" || node.period_kind === "examination")}
+              <Button
+                variant="ghost"
+                size="sm"
+                class="text-[11px] h-7 px-2 font-medium {node.is_grade_entry_open ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-500/10' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10'}"
+                onclick={() => requestToggleGradeEntry(node)}
+              >
+                <span class="hidden sm:inline">
+                  {node.is_grade_entry_open
+                    ? m.onboarding_step3_grade_entry_closed()
+                    : m.onboarding_step3_grade_entry_open()}
+                </span>
+              </Button>
+            {/if}
+
+            {#if !isPeriodActive(node) || isPeriodLocked(node)}
               <Button
                 variant="ghost"
                 size="sm"
@@ -424,7 +471,7 @@ const relatedActionGroups = $derived<ActionGroup[]>([
               </Button>
             {/if}
 
-            {#if node.status === "active" && node.is_locked !== 1}
+            {#if isPeriodActive(node) && !isPeriodLocked(node)}
               <Button
                 variant="ghost"
                 size="sm"

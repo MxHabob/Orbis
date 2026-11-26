@@ -43,6 +43,10 @@ export type AcademicPeriodDto = {
     code?: string | null;
     created_at: string;
     end_date: string;
+    enrollment_ends_at?: string | null;
+    enrollment_starts_at?: string | null;
+    grade_entry_ends_at?: string | null;
+    grade_entry_starts_at?: string | null;
     id: string;
     is_enrollment_open: boolean;
     is_grade_entry_open: boolean;
@@ -3016,6 +3020,10 @@ export type UpdateOrgUnitRequest = {
 export type UpdatePeriodRequest = {
     code?: string | null;
     end_date?: string | null;
+    enrollment_ends_at?: string | null;
+    enrollment_starts_at?: string | null;
+    grade_entry_ends_at?: string | null;
+    grade_entry_starts_at?: string | null;
     name?: string | null;
     name_ar?: string | null;
     period_kind?: string | null;

@@ -56,7 +56,7 @@ const ACTIONS = $derived.by(() => {
       label: m.common_control_label(),
       icon: UserBadgeCheck,
       href: `/${orgId}/academics/exams/control`,
-      show: !!period && (period.is_grade_entry_open || period.period_kind === "examination"),
+      show: !!period && !period.is_locked && Boolean(period.can_enter_grades),
     },
     {
       label: m.common_action_view_reports(),

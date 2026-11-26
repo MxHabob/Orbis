@@ -670,7 +670,8 @@ impl OnboardingService {
                 is_enrollment_open: false,
                 grade_entry_starts_at: None,
                 grade_entry_ends_at: None,
-                is_grade_entry_open: false,
+                is_grade_entry_open: calendar_period_state(exam_start, exam_end, now, true)
+                    == AcademicPeriodState::FinalExams,
                 exam_starts_at: Some(exam_start),
                 exam_ends_at: Some(exam_end),
                 is_locked: false,

@@ -317,8 +317,24 @@ async function importWorkbook(event: Event) {
         throw new Error(m.exams_grade_sheet_file_context());
       }
     }
-    const imported = new Map(XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet)
-      .map((row) => [String(row.student_id ?? row.studentId ?? row.StudentId ?? row["معرف الطالب"] ?? "").trim(), row]));
+    const arabicStudentIdHeader = m.exams_grade_sheet_student_id_header(
+      {},
+      { locale: "ar" },
+    );
+    const imported = new Map(
+      XLSX.utils
+        .sheet_to_json<Record<string, unknown>>(sheet)
+        .map((row) => [
+          String(
+            row.student_id ??
+              row.studentId ??
+              row.StudentId ??
+              row[arabicStudentIdHeader] ??
+              "",
+          ).trim(),
+          row,
+        ]),
+    );
     const visibleIds = new Set(visibleRows.map((row) => row.student_id));
     let changed = 0;
     let rejected = 0;

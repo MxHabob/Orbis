@@ -472,4 +472,70 @@ mod tests {
         assert_eq!(stored.status, OverrideStatus::Pending);
         assert_eq!(stored.current_approver_role.as_deref(), Some("org_admin"));
     }
+
+    #[tokio::test]
+    async fn list_filters_before_paginating() {
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        let backend = db.get_database_backend();
+        let table = Schema::new(backend).create_table_from_entity(OverrideEntity);
+        db.execute(backend.build(&table)).await.unwrap();
+        let repo = OverrideRepoImpl { db };
+        let org_id = Uuid::new_v4();
+        let requester_id = Uuid::new_v4();
+        let older_id = Uuid::new_v4();
+        let now = Utc::now();
+
+        for (id, status, requester_name, created_at) in [
+            (older_id, "pending", "Alice", now - Duration::minutes(2)),
+            (
+                Uuid::new_v4(),
+                "pending",
+                "Alice",
+                now - Duration::minutes(1),
+            ),
+            (Uuid::new_v4(), "rejected", "Alice", now),
+            (Uuid::new_v4(), "pending", "Bob", now),
+        ] {
+            let request: AcademicOverrideRequest = serde_json::from_value(serde_json::json!({
+                "id": id,
+                "org_id": org_id,
+                "entity_type": "student",
+                "entity_id": Uuid::new_v4(),
+                "override_type": "grade_change",
+                "risk_level": "high",
+                "reason": "Grade correction",
+                "requested_by": requester_id,
+                "requested_by_name": requester_name,
+                "status": status,
+                "approval_chain": [],
+                "created_at": created_at,
+                "updated_at": created_at,
+                "metadata": {}
+            }))
+            .unwrap();
+            repo.save(&request).await.unwrap();
+        }
+
+        let page = repo
+            .list(
+                org_id,
+                OverrideRequestFilter {
+                    status: Some("pending".into()),
+                    search: Some("Alice".into()),
+                    requested_by: Some(requester_id),
+                    pagination: Some(orbis_domain::queries::filters::PaginationParams {
+                        page: Some(2),
+                        page_size: Some(1),
+                        ..Default::default()
+                    }),
+                },
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(page.total_count, 2);
+        assert_eq!(page.page, 2);
+        assert_eq!(page.items.len(), 1);
+        assert_eq!(page.items[0].id, older_id);
+    }
 }
