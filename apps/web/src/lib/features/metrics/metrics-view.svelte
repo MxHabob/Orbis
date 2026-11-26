@@ -8,6 +8,7 @@ import MetricsGrid from "./components/metrics-grid.svelte";
 import DraggableChartCard from "./components/draggable-chart-card.svelte";
 
 // Cards
+import InstitutionOverviewCard from "./cards/institution-overview-card.svelte";
 import AttendanceTrendsCard from "./cards/attendance-trends-card.svelte";
 import TotalStudentsCard from "./cards/total-students-card.svelte";
 import GenderDistributionCard from "./cards/gender-distribution-card.svelte";
@@ -61,7 +62,9 @@ function handleResizeChart(id: ChartId, newColSpan: ColSpan) {
 				{isEditing}
 				onResize={(newSpan) => handleResizeChart(chartId, newSpan)}
 			>
-				{#if chartId === "attendance-trends"}
+				{#if chartId === "institution-overview"}
+					<InstitutionOverviewCard {orgId} {isEditing} />
+				{:else if chartId === "attendance-trends"}
 					<AttendanceTrendsCard
 						{orgId}
 						{isEditing}

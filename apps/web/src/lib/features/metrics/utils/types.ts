@@ -1,5 +1,6 @@
 // Chart type identifiers for the school dashboard
 export type ChartId =
+  | "institution-overview"
   | "attendance-trends"
   | "total-students"
   | "gender-distribution"
@@ -19,6 +20,7 @@ export interface ChartLayoutItem {
 
 // All widgets in default order
 export const DEFAULT_CHART_ORDER: ChartId[] = [
+  "institution-overview",
   "attendance-trends",
   "total-students",
   "gender-distribution",
@@ -31,6 +33,7 @@ export const DEFAULT_CHART_ORDER: ChartId[] = [
 
 // Default responsive card layouts
 export const DEFAULT_CHART_LAYOUT: ChartLayoutItem[] = [
+  { id: "institution-overview", colSpan: 12 },
   { id: "attendance-trends", colSpan: 6 },
   { id: "total-students", colSpan: 6 },
   { id: "gender-distribution", colSpan: 6 },
@@ -38,12 +41,14 @@ export const DEFAULT_CHART_LAYOUT: ChartLayoutItem[] = [
   { id: "fee-collection", colSpan: 12 },
   { id: "profit", colSpan: 6 },
   { id: "grade-distribution", colSpan: 6 },
+  { id: "behavior-analysis", colSpan: 12 },
 ];
 
 export const VALID_COL_SPANS: ColSpan[] = [4, 6, 8, 12];
 
 // Display names for educational report types
 export const chartDisplayNames: Record<ChartId, string> = {
+  "institution-overview": "Institution Overview",
   "attendance-trends": "Attendance Rate",
   "total-students": "Total Students",
   "gender-distribution": "Gender Distribution",

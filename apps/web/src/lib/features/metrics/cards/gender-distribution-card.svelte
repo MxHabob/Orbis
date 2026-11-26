@@ -79,8 +79,16 @@ $effect(() => {
   }
 });
 
-const maxVal = 800;
-const yTicks = [0, 200, 400, 600, 800];
+const maxVal = $derived(
+  Math.max(10, Math.ceil((Math.max(femaleCount, maleCount) * 1.2) / 10) * 10),
+);
+const yTicks = $derived([
+  0,
+  Math.round(maxVal * 0.25),
+  Math.round(maxVal * 0.5),
+  Math.round(maxVal * 0.75),
+  maxVal,
+]);
 
 const femalePct = $derived(Math.min(100, (femaleCount / maxVal) * 100));
 const malePct = $derived(Math.min(100, (maleCount / maxVal) * 100));
@@ -125,14 +133,13 @@ function handleMouseLeave() {
         {m.reports_gender_dist_total_students({ count: String(totalCount) })}
       </div>
       
-      <!-- Subtitle legend matching exactly: Female (white dot) and Male (gray dot) -->
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
-          <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
+          <span class="h-2 w-2 rounded-full bg-chart-1 inline-block"></span>
           <span>{m.common_form_female()}</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span class="h-2 w-2 rounded-full bg-muted-foreground/40 inline-block"></span>
+          <span class="h-2 w-2 rounded-full bg-chart-2 inline-block"></span>
           <span>{m.common_form_male()}</span>
         </div>
       </div>
@@ -169,7 +176,7 @@ function handleMouseLeave() {
           {/if}
           <!-- Bar -->
           <div 
-            class="w-10 bar-tactile-this z-10"
+            class="w-10 rounded-t-md bg-chart-1 transition-all duration-300 z-10"
             style="height: {femalePct}%"
             title="Female"
           ></div>
@@ -186,7 +193,7 @@ function handleMouseLeave() {
           {/if}
           <!-- Bar -->
           <div 
-            class="w-10 bar-tactile-last z-10"
+            class="w-10 rounded-t-md bg-chart-2 transition-all duration-300 z-10"
             style="height: {malePct}%"
             title="Male"
           ></div>

@@ -18,7 +18,7 @@ let {
   onerror,
 }: {
   src?: string | null;
-  alt: string;
+  alt?: string | null;
   class?: string;
   containerClass?: string;
   style?: string;
@@ -75,7 +75,7 @@ function handleError(event: ImageEvent) {
     <img
       bind:this={imgEl}
       src={resolvedSrc}
-      {alt}
+      alt={alt ?? ""}
       {loading}
       {decoding}
       {fetchpriority}

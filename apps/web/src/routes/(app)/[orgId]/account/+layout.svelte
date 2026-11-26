@@ -25,13 +25,15 @@ const menuItems = $derived([
 ]);
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide px-2">
-  <div class="w-full  flex flex-col gap-6">
-    <!-- Secondary Navigation -->
+<div class="flex h-full w-full flex-col overflow-hidden">
+  <!-- Secondary Navigation -->
+  <div class="shrink-0 px-5 pt-2 md:px-8">
     <SecondaryMenu items={menuItems} {basePath} />
+  </div>
 
-    <!-- Sub-route content -->
-    <div class="w-full flex-1">
+  <!-- Sub-route content -->
+  <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide px-5 py-6 pb-10 md:px-8 md:py-7">
+    <div class="w-full">
       {@render children()}
     </div>
   </div>

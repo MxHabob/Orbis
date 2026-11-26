@@ -301,7 +301,7 @@ function handleMouseLeave() {
           <path
             d={linePath}
             fill="none"
-            class="stroke-foreground"
+            class="stroke-chart-2"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -313,7 +313,7 @@ function handleMouseLeave() {
               cx={pt.x}
               cy={pt.y}
               r={hoveredIdx === idx ? 5 : 3}
-              class="fill-background stroke-foreground transition-all duration-100"
+              class="fill-background stroke-chart-2 transition-all duration-100"
               stroke-width="1.5"
             />
           {/each}

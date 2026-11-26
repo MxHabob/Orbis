@@ -21,19 +21,12 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
-import { Badge } from "@orbis/ui/badge";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  QuestionMarkCircle,
-  Check,
-  ChevronDown,
-  ChevronUp,
-} from "@orbis/icons";
 
 let {
   open = $bindable(false),
@@ -51,7 +44,6 @@ let isComposeOpened = $state(false);
 let isCopied = $state(false);
 let submitError = $state<string | null>(null);
 let composeUrl = $state<string | null>(null);
-let showDiagnosticsPreview = $state(false);
 let isLoadingInfo = $state(false);
 let infoError = $state<string | null>(null);
 
@@ -187,49 +179,35 @@ $effect(() => {
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="max-w-2xl max-h-[90dvh] p-0 gap-0 overflow-hidden flex flex-col bg-background/95 backdrop-blur-md border-border/60 shadow-2xl">
-    <!-- Header -->
-    <DialogHeader class="px-6 py-4 border-b border-border/40 bg-muted/20 text-start space-y-1">
-      <div class="flex items-center gap-2">
-        <div class="size-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-          <QuestionMarkCircle size={14} />
-        </div>
-        <DialogTitle class="text-base font-semibold text-foreground tracking-tight">
-          {m.ui_system_support_support_diagnostic_assistance()}
-        </DialogTitle>
-      </div>
-      <DialogDescription class="text-xs text-muted-foreground">
+  <DialogContent class="sm:max-w-[460px] p-5 gap-4 text-start">
+    <DialogHeader class="text-start space-y-0">
+      <DialogTitle class="text-base font-bold tracking-tight text-foreground">
+        {m.ui_system_support_support_diagnostic_assistance()}
+      </DialogTitle>
+      <DialogDescription class="sr-only">
         {m.ui_system_support_description()}
       </DialogDescription>
     </DialogHeader>
 
     {#if isComposeOpened}
-      <div class="p-8 text-center space-y-4 my-auto">
-        <div class="size-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
-          <Check size={24} strokeWidth={2.5} />
-        </div>
+      <div class="py-4 text-center space-y-4">
         <div class="space-y-1.5">
-          <h3 class="text-base font-bold text-foreground">
+          <h3 class="text-base font-semibold text-foreground">
             {m.ui_system_support_compose_ready()}
           </h3>
-          <p class="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+          <p class="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
             {m.ui_system_support_compose_instructions()}
           </p>
         </div>
 
-        <div class="pt-2 flex items-center justify-center gap-3">
+        <div class="pt-1 flex items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onclick={copyDiagnosticReport}
-            class="h-8 text-xs font-normal gap-1.5 px-3"
+            class="h-8 text-xs"
           >
-            {#if isCopied}
-              <Check size={13} class="text-emerald-500" />
-              <span>{m.ui_system_support_copied()}</span>
-            {:else}
-              <span>{m.ui_system_support_copy_full_report()}</span>
-            {/if}
+            {isCopied ? m.ui_system_support_copied() : m.ui_system_support_copy_full_report()}
           </Button>
 
           <Button
@@ -246,10 +224,8 @@ $effect(() => {
         </div>
       </div>
     {:else}
-      <!-- Form Body -->
-      <form onsubmit={handleSubmit} class="flex-1 overflow-y-auto p-6 space-y-4">
-        <!-- Category (and Email only if not available from user profile) -->
-        <div class="grid grid-cols-1 {!userEmail ? 'sm:grid-cols-2' : ''} gap-4">
+      <form onsubmit={handleSubmit} class="flex flex-col gap-3.5">
+        <div class="grid grid-cols-1 {!userEmail ? 'sm:grid-cols-2' : ''} gap-3.5">
           <div class="space-y-1.5">
             <Label class="text-xs font-medium text-foreground">
               {m.ui_system_support_category()}
@@ -288,7 +264,6 @@ $effect(() => {
           {/if}
         </div>
 
-        <!-- Subject -->
         <div class="space-y-1.5">
           <Label for="support-subj" class="text-xs font-medium text-foreground">
             {m.ui_system_support_subject_title()}
@@ -304,7 +279,6 @@ $effect(() => {
           />
         </div>
 
-        <!-- Description -->
         <div class="space-y-1.5">
           <Label for="support-msg" class="text-xs font-medium text-foreground">
             {m.ui_system_support_description_details()}
@@ -320,48 +294,14 @@ $effect(() => {
           />
         </div>
 
-        <!-- Attached Diagnostic Telemetry Box -->
-        <div class="rounded-lg border border-border/50 bg-muted/20 overflow-hidden text-xs">
-          <button
-            type="button"
-            onclick={() => (showDiagnosticsPreview = !showDiagnosticsPreview)}
-            class="w-full px-3.5 py-2.5 flex items-center justify-between text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-start"
-          >
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-[11px]">
-                {m.ui_system_support_auto_attached_diagnostic_telemetry()}
-              </span>
-              {#if info}
-                <Badge variant="outline" class="text-[9px] font-mono px-1 py-0 h-3.5 border-border">
-                  {info.target_os} • v{info.version}
-                </Badge>
-              {/if}
-            </div>
+        {#if infoError}
+          <p class="text-xs text-destructive" role="alert">
+            {m.ui_system_support_diagnostics_unavailable()} {infoError}
+          </p>
+        {/if}
 
-            <span>
-              {#if showDiagnosticsPreview}
-                <ChevronUp size={13} />
-              {:else}
-                <ChevronDown size={13} />
-              {/if}
-            </span>
-          </button>
-
-          {#if showDiagnosticsPreview}
-            <div class="p-3 border-t border-border/40 bg-background/50 font-mono text-[10px] text-muted-foreground space-y-1 max-h-36 overflow-y-auto">
-              <pre>{JSON.stringify(diagnosticPayload, null, 2)}</pre>
-            </div>
-          {/if}
-          {#if isLoadingInfo}
-            <p class="px-3 pb-3 text-xs text-muted-foreground">{m.ui_system_support_loading_diagnostics()}</p>
-          {:else if infoError}
-            <p class="px-3 pb-3 text-xs text-destructive" role="alert">
-              {m.ui_system_support_diagnostics_unavailable()} {infoError}
-            </p>
-          {/if}
-        </div>
         {#if submitError}
-          <div class="space-y-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive" role="alert">
+          <div class="space-y-1.5 rounded-md border border-destructive/20 bg-destructive/5 p-2.5 text-xs text-destructive" role="alert">
             <p>{m.ui_system_support_compose_failed()} {submitError}</p>
             {#if composeUrl}
               <a href={composeUrl} target="_blank" rel="noreferrer" class="font-medium underline underline-offset-4">
@@ -370,55 +310,46 @@ $effect(() => {
             {/if}
           </div>
         {/if}
-      </form>
 
-      <!-- Footer Action Bar -->
-      <div class="px-6 py-3 border-t border-border/40 bg-muted/20 flex items-center justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onclick={copyDiagnosticReport}
-          class="h-8 text-xs font-normal gap-1.5 px-3 border-border/60"
-        >
-          {#if isCopied}
-            <Check size={13} class="text-emerald-500" />
-            <span class="text-emerald-600 dark:text-emerald-400 font-medium">
-              {m.ui_system_support_report_copied()}
-            </span>
-          {:else}
-            <span>{m.ui_system_support_copy_report()}</span>
-          {/if}
-        </Button>
-
-        <div class="flex items-center gap-2">
+        <div class="pt-1 flex items-center justify-between gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onclick={() => (open = false)}
-            class="h-8 px-3 text-xs"
+            onclick={copyDiagnosticReport}
+            class="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
           >
-            {m.common_action_cancel()}
+            {isCopied ? m.ui_system_support_report_copied() : m.ui_system_support_copy_report()}
           </Button>
 
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            disabled={isSubmitting || isLoadingInfo || !info || !subject.trim() || !message.trim()}
-            onclick={handleSubmit}
-            class="h-8 px-4 text-xs font-medium gap-1.5"
-          >
-            {#if isSubmitting}
-              <LoadingIndicator class="text-xs" />
-              <span>{m.ui_system_support_sending()}</span>
-            {:else}
-              <span>{m.ui_system_support_send_report()}</span>
-            {/if}
-          </Button>
+          <div class="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onclick={() => (open = false)}
+              class="h-8 px-3 text-xs"
+            >
+              {m.common_action_cancel()}
+            </Button>
+
+            <Button
+              type="submit"
+              variant="default"
+              size="sm"
+              disabled={isSubmitting || isLoadingInfo || !info || !subject.trim() || !message.trim()}
+              class="h-8 px-4 text-xs font-medium"
+            >
+              {#if isSubmitting}
+                <LoadingIndicator class="me-1.5 text-xs" />
+                {m.ui_system_support_sending()}
+              {:else}
+                {m.ui_system_support_send_report()}
+              {/if}
+            </Button>
+          </div>
         </div>
-      </div>
+      </form>
     {/if}
   </DialogContent>
 </Dialog>

@@ -189,7 +189,7 @@ async function useTemplate(template: ReadyTemplate) {
             <article class="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
               {#if template.preview_url}
                 <SmoothImage
-                  src={template.preview_url}
+                  src={template.preview_url ?? ""}
                   alt={l(template.name_ar, template.name)}
                   containerClass="h-28 w-full border-b border-border/40 bg-muted/20"
                   class="h-full w-full object-cover"
