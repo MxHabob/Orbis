@@ -51,7 +51,7 @@
           "image": "./assets/images/splash-icon-light.png",
           "imageWidth": 120,
           "dark": {
-            "backgroundColor": "#111111",
+            "backgroundColor": "#1F1F1F",
             "image": "./assets/images/android-icon-foreground.png"
           }
         }
@@ -78,7 +78,6 @@
         }
       ],
       "expo-web-browser",
-      "expo-updates",
       "./plugins/with-android-cleartext-traffic.cjs",
       "./plugins/with-android-window-layout.cjs",
       "./plugins/with-android-release-signing.cjs",

@@ -76,7 +76,7 @@ colors.overlay = "rgb(var(--overlay) / 0.1)";
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
-    "../../packages/**/*.{js,jsx,ts,tsx}",
+    "../../packages/*/src/**/*.{js,jsx,ts,tsx}",
   ],
   presets: [require("nativewind/preset")],
   darkMode: "class",

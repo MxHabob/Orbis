@@ -10,8 +10,15 @@
  *   [ Apps / Home (with desktop lime badge) ]    [ Digital ID ]    [ Analytics / Behavior AI ]
  */
 
-import React, { useEffect, useState } from "react";
-import { Animated, Keyboard, Platform, Pressable, View } from "react-native";
+import React, { useEffect } from "react";
+import { Keyboard, Platform, Pressable, View } from "react-native";
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { ChartBar, Document, Grid } from "@orbis/icons/native";
 import type { BottomTabBarProps } from "expo-router/tabs";
@@ -51,9 +58,10 @@ export function FloatingTabBar({
   const theme = useTheme();
   const router = useRouter();
   const { t, isArabic } = useI18n();
+  const reduceMotion = useReducedMotion();
 
-  const [translateY] = useState(() => new Animated.Value(0));
-  const [opacity] = useState(() => new Animated.Value(1));
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
   useEffect(() => {
     const showEvent =
@@ -62,40 +70,37 @@ export function FloatingTabBar({
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
     const showSub = Keyboard.addListener(showEvent, () => {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 80,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      if (reduceMotion) {
+        translateY.value = 80;
+        opacity.value = 0;
+        return;
+      }
+      translateY.value = withTiming(80, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 150 });
     });
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      if (reduceMotion) {
+        translateY.value = 0;
+        opacity.value = 1;
+        return;
+      }
+      translateY.value = withTiming(0, { duration: 250 });
+      opacity.value = withTiming(1, { duration: 200 });
     });
 
     return () => {
       showSub.remove();
       hideSub.remove();
+      cancelAnimation(translateY);
+      cancelAnimation(opacity);
     };
-  }, [opacity, translateY]);
+  }, [opacity, reduceMotion, translateY]);
+
+  const barAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
 
   const bottom = Math.max(insets.bottom, 12) + 4;
 
@@ -136,11 +141,7 @@ export function FloatingTabBar({
     <Animated.View
       pointerEvents="box-none"
       className="absolute left-five right-five flex-row items-center justify-between z-50 min-h-14"
-      style={{
-        bottom,
-        transform: [{ translateY }],
-        opacity,
-      }}
+      style={[{ bottom }, barAnimatedStyle]}
     >
       {/* LEFT — Apps (Home) with NEW badge synchronized with desktop badge-brand-lime */}
       <View className="w-14 h-14 relative items-center justify-center shrink-0">

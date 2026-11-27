@@ -13,6 +13,7 @@ import {
   InstitutionCard,
   type InstitutionCardProps,
 } from "@/components/institutions/institution-card";
+import { Card } from "@/components/ui/card";
 import { useTheme } from "@/hooks/use-theme";
 import {
   createDiscoveredLocalInstitution,
@@ -25,6 +26,8 @@ type LocalNetworkAccess = "granted" | "denied" | "unknown";
 
 export const isLocalDiscoveryAvailable =
   Platform.OS !== "web" &&
+  typeof TurboModuleRegistry !== "undefined" &&
+  typeof TurboModuleRegistry.get === "function" &&
   TurboModuleRegistry.get<TurboModule>("Zeroconf") !== null;
 
 interface LocalInstitutionDiscoveryProps {
@@ -138,7 +141,7 @@ export function LocalInstitutionDiscovery({
           hitSlop={8}
           className="min-h-11 min-w-11 items-center justify-center rounded-full"
         >
-          <Refresh size={17} color={theme.info} />
+          <Refresh size={17} color={theme.primary} />
         </Pressable>
       </View>
       {institutions.length > 0 ? (
@@ -162,7 +165,11 @@ export function LocalInstitutionDiscovery({
           />
         ))
       ) : (
-        <View className="min-h-[68px] flex-row items-center gap-3 rounded-2xl bg-card px-4 py-3">
+        <Card
+          variant="default"
+          padding="four"
+          className="min-h-[60px] flex-row items-center gap-three"
+        >
           <View className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
           <Text
             accessibilityRole={
@@ -181,7 +188,7 @@ export function LocalInstitutionDiscovery({
                   ? t("auth_institution_lan_error")
                   : t("auth_institution_lan_empty")}
           </Text>
-        </View>
+        </Card>
       )}
     </View>
   );

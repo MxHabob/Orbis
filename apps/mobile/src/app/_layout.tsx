@@ -41,15 +41,6 @@ void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
 });
 
 export default function RootLayout() {
-  useEffect(() => {
-    void SplashScreen.hideAsync().catch((error: unknown) => {
-      console.error(
-        "[Orbis Mobile Startup] Failed to hide the native splash screen.",
-        error,
-      );
-    });
-  }, []);
-
   return (
     <AppErrorBoundary fallback={StartupErrorFallback}>
       <AppProviders>
@@ -155,6 +146,13 @@ function RootLayoutContent() {
         );
       },
     );
+
+    void SplashScreen.hideAsync().catch((error: unknown) => {
+      console.error(
+        "[Orbis Mobile Startup] Failed to hide the native splash screen.",
+        error,
+      );
+    });
   }, [isThemeReady, systemBackgroundColor]);
 
   return (
@@ -162,7 +160,7 @@ function RootLayoutContent() {
       <ToastProvider>
         <ThemedStatusBar />
         <View
-          className="flex-1"
+          className={isDark ? "flex-1 dark" : "flex-1"}
           style={{ direction: isArabic ? "rtl" : "ltr" }}
         >
           <OfflineStatusBanner visible={isOffline} />
@@ -173,7 +171,6 @@ function RootLayoutContent() {
               contentStyle: {
                 backgroundColor: currentColors.background,
                 direction: isArabic ? "rtl" : "ltr",
-                paddingTop: isOffline ? 68 : 0,
               },
             }}
           >
@@ -191,7 +188,6 @@ function RootLayoutContent() {
                 headerShown: false,
                 contentStyle: {
                   backgroundColor: currentColors.background,
-                  paddingTop: isOffline ? 68 : 0,
                 },
               }}
             />

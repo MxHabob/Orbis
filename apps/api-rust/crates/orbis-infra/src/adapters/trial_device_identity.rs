@@ -15,6 +15,12 @@ const DEPLOYMENT_KEY_ACCOUNT: &str = "identity";
 #[cfg(windows)]
 const LEGACY_TRIAL_KEY_FILE: &str = "trial_device_key.dpapi";
 const TRIAL_KEY_LOCK_FILE: &str = ".trial-device-key.lock";
+#[cfg(target_os = "linux")]
+const HEADLESS_INSTALLATION_ID_FILE: &str = ".installation-id";
+#[cfg(target_os = "linux")]
+const HEADLESS_TRIAL_KEY_FILE: &str = ".trial-device-key";
+#[cfg(target_os = "linux")]
+const HEADLESS_DEPLOYMENT_KEY_FILE: &str = ".deployment-identity";
 
 pub fn load_or_create(app_data_dir: &Path, installation_id: &str) -> Result<SigningKey, String> {
     load_or_create_with_service(app_data_dir, installation_id, TRIAL_KEY_SERVICE)
@@ -25,6 +31,11 @@ pub fn load_or_create(app_data_dir: &Path, installation_id: &str) -> Result<Sign
 pub fn load_or_create_deployment_identity(app_data_dir: &Path) -> Result<SigningKey, String> {
     let lock = lock_identity_store(app_data_dir)?;
     let result = (|| {
+        #[cfg(target_os = "linux")]
+        if !has_linux_secret_service() {
+            return load_or_create_seed_file(&app_data_dir.join(HEADLESS_DEPLOYMENT_KEY_FILE));
+        }
+
         let entry =
             Entry::new(DEPLOYMENT_KEY_SERVICE, DEPLOYMENT_KEY_ACCOUNT).map_err(|error| {
                 format!("Failed to open the operating system's secure key store: {error}")
@@ -36,6 +47,10 @@ pub fn load_or_create_deployment_identity(app_data_dir: &Path) -> Result<Signing
                 rand::rngs::OsRng.fill_bytes(&mut *seed);
                 store_seed(&entry, &seed)?;
                 Ok(SigningKey::from_bytes(&seed))
+            }
+            #[cfg(target_os = "linux")]
+            Err(error) if is_keyring_unavailable(&error) => {
+                load_or_create_seed_file(&app_data_dir.join(HEADLESS_DEPLOYMENT_KEY_FILE))
             }
             Err(error) => Err(format!(
                 "Failed to read the deployment identity from the operating system's secure key store: {error}"
@@ -79,6 +94,11 @@ pub(crate) fn load_or_create_installation_id_with_service(
 ) -> Result<String, String> {
     let lock = lock_identity_store(app_data_dir)?;
     let result = (|| {
+        #[cfg(target_os = "linux")]
+        if !has_linux_secret_service() {
+            return load_or_create_installation_id_file(app_data_dir);
+        }
+
         let entry = Entry::new(service, account).map_err(|error| {
             format!("Failed to open the operating system's secure key store: {error}")
         })?;
@@ -89,19 +109,7 @@ pub(crate) fn load_or_create_installation_id_with_service(
                 Ok(installation_id)
             }
             Err(KeyringError::NoEntry) => {
-                let legacy_path = app_data_dir.join("installation_id");
-                let installation_id = if legacy_path.exists() {
-                    let id = fs::read_to_string(&legacy_path)
-                        .map_err(|error| {
-                            format!("Failed to read the previous installation ID: {error}")
-                        })?
-                        .trim()
-                        .to_owned();
-                    validate_installation_id(&id)?;
-                    id
-                } else {
-                    orbis_domain::entities::license::generate_installation_id()
-                };
+                let installation_id = resolve_or_generate_installation_id(app_data_dir)?;
                 entry.set_password(&installation_id).map_err(|error| {
                     format!("Failed to save installation identity in the operating system's secure key store: {error}")
                 })?;
@@ -118,6 +126,10 @@ pub(crate) fn load_or_create_installation_id_with_service(
                         "Failed to verify the saved installation ID in the operating system's secure key store: {error}"
                     )),
                 }
+            }
+            #[cfg(target_os = "linux")]
+            Err(error) if is_keyring_unavailable(&error) => {
+                load_or_create_installation_id_file(app_data_dir)
             }
             Err(error) => Err(format!(
                 "Failed to read the installation identity from the operating system's secure key store: {error}"
@@ -186,10 +198,15 @@ fn load_or_create_with_service(
 }
 
 fn load_or_create_locked(
-    _app_data_dir: &Path,
+    app_data_dir: &Path,
     installation_id: &str,
     service: &str,
 ) -> Result<SigningKey, String> {
+    #[cfg(target_os = "linux")]
+    if !has_linux_secret_service() {
+        return load_or_create_seed_file(&app_data_dir.join(HEADLESS_TRIAL_KEY_FILE));
+    }
+
     let entry = Entry::new(service, TRIAL_KEY_ACCOUNT).map_err(|error| {
         format!("Failed to open the operating system's secure key store: {error}")
     })?;
@@ -205,9 +222,9 @@ fn load_or_create_locked(
             }
 
             #[cfg(windows)]
-            if let Some(seed) = load_legacy_seed(_app_data_dir)? {
+            if let Some(seed) = load_legacy_seed(app_data_dir)? {
                 store_seed(&entry, &seed)?;
-                remove_legacy_key(_app_data_dir);
+                remove_legacy_key(app_data_dir);
                 return Ok(SigningKey::from_bytes(&seed));
             }
 
@@ -215,6 +232,10 @@ fn load_or_create_locked(
             rand::rngs::OsRng.fill_bytes(&mut *seed);
             store_seed(&entry, &seed)?;
             Ok(SigningKey::from_bytes(&seed))
+        }
+        #[cfg(target_os = "linux")]
+        Err(error) if is_keyring_unavailable(&error) => {
+            load_or_create_seed_file(&app_data_dir.join(HEADLESS_TRIAL_KEY_FILE))
         }
         Err(error) => Err(format!(
             "Failed to read the trial identity from the operating system's secure key store: {error}"
@@ -366,6 +387,89 @@ fn unprotect(value: &[u8]) -> Result<Vec<u8>, String> {
         windows_sys::Win32::Foundation::LocalFree(output.pbData.cast());
     }
     Ok(seed)
+}
+
+fn resolve_or_generate_installation_id(app_data_dir: &Path) -> Result<String, String> {
+    let legacy_path = app_data_dir.join("installation_id");
+    if legacy_path.exists() {
+        let id = fs::read_to_string(&legacy_path)
+            .map_err(|error| format!("Failed to read the previous installation ID: {error}"))?
+            .trim()
+            .to_owned();
+        validate_installation_id(&id)?;
+        return Ok(id);
+    }
+    Ok(orbis_domain::entities::license::generate_installation_id())
+}
+
+#[cfg(target_os = "linux")]
+fn has_linux_secret_service() -> bool {
+    std::env::var_os("DBUS_SESSION_BUS_ADDRESS")
+        .is_some_and(|value| !value.is_empty())
+}
+
+#[cfg(target_os = "linux")]
+fn is_keyring_unavailable(error: &KeyringError) -> bool {
+    matches!(
+        error,
+        KeyringError::PlatformFailure(_) | KeyringError::NoStorageAccess(_)
+    )
+}
+
+#[cfg(target_os = "linux")]
+fn write_restricted_secret_file(path: &Path, contents: &str) -> Result<(), String> {
+    use std::os::unix::fs::OpenOptionsExt;
+
+    if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create identity directory: {error}"))?;
+    }
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(path)
+        .map_err(|error| format!("Failed to open headless identity file: {error}"))?;
+    file.write_all(contents.as_bytes())
+        .map_err(|error| format!("Failed to write headless identity file: {error}"))?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn load_or_create_installation_id_file(app_data_dir: &Path) -> Result<String, String> {
+    let path = app_data_dir.join(HEADLESS_INSTALLATION_ID_FILE);
+    if path.exists() {
+        let id = fs::read_to_string(&path)
+            .map_err(|error| format!("Failed to read installation identity file: {error}"))?
+            .trim()
+            .to_owned();
+        validate_installation_id(&id)?;
+        return Ok(id);
+    }
+
+    let installation_id = resolve_or_generate_installation_id(app_data_dir)?;
+    write_restricted_secret_file(&path, &installation_id)?;
+    remove_plaintext_installation_id(app_data_dir);
+    Ok(installation_id)
+}
+
+#[cfg(target_os = "linux")]
+fn load_or_create_seed_file(path: &Path) -> Result<SigningKey, String> {
+    if path.exists() {
+        let encoded = Zeroizing::new(
+            fs::read_to_string(path)
+                .map_err(|error| format!("Failed to read headless signing key: {error}"))?,
+        );
+        return decode_seed(encoded.trim());
+    }
+
+    let mut seed = Zeroizing::new([0_u8; 32]);
+    rand::rngs::OsRng.fill_bytes(&mut *seed);
+    let encoded = Zeroizing::new(base64::engine::general_purpose::STANDARD.encode(&*seed));
+    write_restricted_secret_file(path, &encoded)?;
+    Ok(SigningKey::from_bytes(&seed))
 }
 
 #[cfg(all(test, windows))]

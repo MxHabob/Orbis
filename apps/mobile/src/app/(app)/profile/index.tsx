@@ -54,6 +54,7 @@ type ProfileMenuItem = {
   subtitle: string;
   icon: React.ReactNode;
   trailingText?: string;
+  busy?: boolean;
   onPress: () => void;
 };
 
@@ -238,6 +239,7 @@ export default function ProfileScreen() {
       : t("updates_check_button"),
     icon: <ArrowUpCircle size={20} color={theme.mutedForeground} />,
     trailingText: appVersion,
+    busy: isCheckingUpdates,
     onPress: () => void handleCheckForUpdates(),
   });
 
@@ -305,7 +307,6 @@ export default function ProfileScreen() {
           items={helpItems}
           directionChevron={DirectionChevron}
           mutedForeground={theme.mutedForeground}
-          isCheckingUpdates={isCheckingUpdates}
         />
 
         <Button
@@ -403,14 +404,12 @@ function ProfileMenuGroup({
   directionChevron: DirectionChevron,
   mutedForeground,
   leadingContent,
-  isCheckingUpdates = false,
 }: {
   title: string;
   items: ProfileMenuItem[];
   directionChevron: typeof ChevronLeft;
   mutedForeground: string;
   leadingContent?: React.ReactNode;
-  isCheckingUpdates?: boolean;
 }) {
   return (
     <View className="gap-two">
@@ -430,13 +429,13 @@ function ProfileMenuGroup({
               accessibilityRole="button"
               accessibilityLabel={`${item.title}. ${item.subtitle}`}
               accessibilityState={{
-                busy: item.id === "updates" && isCheckingUpdates,
-                disabled: item.id === "updates" && isCheckingUpdates,
+                busy: Boolean(item.busy),
+                disabled: Boolean(item.busy),
               }}
-              disabled={item.id === "updates" && isCheckingUpdates}
+              disabled={Boolean(item.busy)}
               onPress={item.onPress}
               className={`min-h-16 flex-row items-center justify-between gap-three px-four py-three active:bg-secondary/50 ${
-                item.id === "updates" && isCheckingUpdates ? "opacity-60" : ""
+                item.busy ? "opacity-60" : ""
               }`}
             >
               <View className="flex-1 flex-row items-center gap-three">

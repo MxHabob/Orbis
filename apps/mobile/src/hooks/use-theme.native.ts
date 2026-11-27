@@ -21,7 +21,7 @@ export function useTheme() {
     brandIndigo: useColor("--brand-indigo", "#5B84AE", "#7EA9D5"),
     brandRose: useColor("--brand-rose", "#E0615C", "#EA6A64"),
 
-    background: useColor("--background", "#FCFCFC", "#111111"),
+    background: useColor("--background", "#FCFCFC", "#1F1F1F"),
     foreground: useColor("--foreground", "#1D1D1D", "#E4E4E4"),
     backgroundElement: useColor("--background-element", "#F2F2F2", "#292929"),
     backgroundSelected: useColor("--background-selected", "#EBEBEB", "#333333"),

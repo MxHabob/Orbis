@@ -1,5 +1,10 @@
-import { Appearance } from "react-native";
-import { getSecureItem, setSecureItem } from "@/lib/api/storage";
+import { colorScheme } from "nativewind";
+import { Appearance, Platform } from "react-native";
+import {
+  deleteSecureItem,
+  getSecureItem,
+  setSecureItem,
+} from "@/lib/api/storage";
 
 const THEME_STORAGE_KEY = "orbis_app_theme";
 
@@ -17,14 +22,24 @@ export async function loadThemePreference(): Promise<ThemePreference> {
 }
 
 export function applyThemePreference(preference: ThemePreference) {
-  Appearance.setColorScheme(
-    preference === "system" ? "unspecified" : preference,
-  );
+  colorScheme.set(preference);
+  if (
+    Platform.OS !== "web" &&
+    typeof Appearance.setColorScheme === "function"
+  ) {
+    Appearance.setColorScheme(
+      preference === "system" ? "unspecified" : preference,
+    );
+  }
 }
 
 export async function saveThemePreference(
   preference: ThemePreference,
 ): Promise<void> {
-  await setSecureItem(THEME_STORAGE_KEY, preference);
+  if (preference === "system") {
+    await deleteSecureItem(THEME_STORAGE_KEY);
+  } else {
+    await setSecureItem(THEME_STORAGE_KEY, preference);
+  }
   applyThemePreference(preference);
 }

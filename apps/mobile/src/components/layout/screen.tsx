@@ -11,7 +11,7 @@
  */
 
 import React from "react";
-import { View, type ViewProps } from "react-native";
+import { Platform, View, type ViewProps } from "react-native";
 import { useSafeAreaInsets, type Edge } from "react-native-safe-area-context";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { StatusBar } from "expo-status-bar";
@@ -71,6 +71,7 @@ export function Screen({
   if (keyboardAvoiding) {
     return (
       <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >

@@ -116,8 +116,8 @@ export default function LinkedInstitutionsScreen() {
 
         {isInitializing || isCheckingSelectedLocal ? (
           <View className="gap-three">
-            <Skeleton className="h-20 w-full rounded-2xl" />
-            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-md" />
+            <Skeleton className="h-20 w-full rounded-md" />
           </View>
         ) : linkedInstitutions.length > 0 ? (
           <View className="gap-three">

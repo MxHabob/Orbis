@@ -208,7 +208,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <Animated.View
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
-            className="w-full max-w-[420px] flex-row items-center gap-three rounded-2xl border border-card-border bg-card-elevated px-four py-three"
+            className="w-full max-w-[420px] flex-row items-center gap-three rounded-md border border-card-border bg-card-elevated px-four py-three"
             style={animatedStyle}
           >
             <View

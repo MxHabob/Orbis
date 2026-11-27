@@ -7,8 +7,9 @@
 import React, { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Redirect, useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Screen } from "@/components/layout/screen";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { LanguageToggle } from "@/components/ui/language-toggle";
@@ -39,7 +40,6 @@ function getMfaUserId(response: unknown): string | undefined {
 
 export default function SignInScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { t, locale, setLocale, isArabic } = useI18n();
   const { login, loginWithGoogle, selectedInstitution, institutions } =
     useAuth();
@@ -102,21 +102,12 @@ export default function SignInScreen() {
   };
 
   return (
-    <View
-      className="flex-1 bg-background"
-      style={{ direction: isArabic ? "rtl" : "ltr" }}
-    >
+    <Screen edges={["top", "bottom", "left", "right"]}>
       <KeyboardAwareView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1 }}
       >
-        <View
-          className="flex-1 gap-5 px-5"
-          style={{
-            paddingTop: insets.top + 8,
-            paddingBottom: Math.max(insets.bottom, 12) + 8,
-          }}
-        >
+        <View className="flex-1 gap-four px-five pb-three pt-two">
           <View className="flex-row justify-end">
             <LanguageToggle
               accessibilityLabel={
@@ -127,7 +118,7 @@ export default function SignInScreen() {
             />
           </View>
 
-          <View className="flex-1 justify-end gap-2 pb-1">
+          <View className="flex-1 justify-end gap-two pb-one">
             <Text className="text-[28px] leading-9 font-semibold tracking-tight text-foreground">
               {t("auth_sign_in")}
             </Text>
@@ -136,7 +127,7 @@ export default function SignInScreen() {
             </Text>
           </View>
 
-          <View className="gap-3 rounded-2xl border border-border bg-card p-4">
+          <Card padding="four" className="gap-three">
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/institution-select")}
@@ -162,7 +153,6 @@ export default function SignInScreen() {
               autoComplete="email"
               textContentType="username"
               returnKeyType="next"
-              style={{ minHeight: 32, fontSize: 12 }}
             />
 
             <View>
@@ -193,7 +183,6 @@ export default function SignInScreen() {
                 textContentType="password"
                 returnKeyType="go"
                 onSubmitEditing={() => void handleSignIn()}
-                style={{ minHeight: 32, fontSize: 12 }}
               />
             </View>
 
@@ -215,7 +204,7 @@ export default function SignInScreen() {
               size="md"
             />
 
-            <View className="flex-row items-center gap-3">
+            <View className="flex-row items-center gap-three">
               <View className="h-px flex-1 bg-border" />
               <Text className="text-sm text-muted-foreground">
                 {t("auth_or_divider")}
@@ -233,7 +222,7 @@ export default function SignInScreen() {
               size="md"
             />
 
-            <View className="items-center pt-1">
+            <View className="items-center pt-one">
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push("/(auth)/explore")}
@@ -245,9 +234,9 @@ export default function SignInScreen() {
                 </Text>
               </Pressable>
             </View>
-          </View>
+          </Card>
         </View>
       </KeyboardAwareView>
-    </View>
+    </Screen>
   );
 }

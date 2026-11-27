@@ -1,4 +1,10 @@
-import React, { useState } from "react";
+import {
+  AvatarController,
+  type AvatarHat,
+  Avatar as CompanionAvatar,
+  pickNextAvatarHat,
+} from "@orbis/avatar-engine/native";
+import React, { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Button } from "@/components/ui/button";
@@ -15,10 +21,25 @@ export function WelcomeOnboarding({
   const { t, locale, setLocale } = useI18n();
   const [isContinuing, setIsContinuing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [avatarHat, setAvatarHat] = useState<AvatarHat>("graduation");
+  const [avatarController] = useState(() => new AvatarController());
+
+  useEffect(
+    () => () => {
+      avatarController.destroy();
+    },
+    [avatarController],
+  );
+
+  const handleAvatarPress = useCallback(() => {
+    setAvatarHat((current) => pickNextAvatarHat(current));
+    avatarController.tapReaction();
+  }, [avatarController]);
 
   async function handleContinue() {
     setIsContinuing(true);
     setErrorMessage(null);
+    avatarController.celebrate();
     try {
       await onContinue();
     } catch (error) {
@@ -26,6 +47,7 @@ export function WelcomeOnboarding({
         "[Mobile Onboarding] Failed to save completion state.",
         error,
       );
+      avatarController.error();
       setErrorMessage(t("onboarding_continue_error"));
     } finally {
       setIsContinuing(false);
@@ -40,7 +62,8 @@ export function WelcomeOnboarding({
           "flex-grow justify-between gap-eight px-six pb-six pt-four",
       }}
     >
-      <View className="flex-row justify-end">
+      <View className="flex-row items-center justify-between">
+        <OrganizationLogo size={36} />
         <LanguageToggle
           accessibilityLabel={
             locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
@@ -59,9 +82,15 @@ export function WelcomeOnboarding({
         />
       </View>
 
-      <View className="items-center gap-eight py-eight">
-        <OrganizationLogo size={76} />
-        <View className="max-w-sm gap-four">
+      <View className="items-center gap-six py-eight">
+        <CompanionAvatar
+          size={136}
+          controller={avatarController}
+          hat={avatarHat}
+          label={t("onboarding_title")}
+          onPress={handleAvatarPress}
+        />
+        <View className="max-w-sm gap-three">
           <Text className="text-center text-[28px] leading-9 font-bold tracking-tight text-foreground">
             {t("onboarding_title")}
           </Text>

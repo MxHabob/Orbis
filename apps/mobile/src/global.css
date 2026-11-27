@@ -119,104 +119,109 @@
     --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
   }
 
-  .dark {
-    --background: 17 17 17;
-    --foreground: 228 228 228;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 31 31 31;
+      --foreground: 228 228 228;
 
-    /* Surfaces */
-    --card: 41 41 41;
-    --card-foreground: 228 228 228;
+      /* Surfaces */
+      --card: 41 41 41;
+      --card-foreground: 228 228 228;
 
-    --popover: 46 46 46;
-    --popover-foreground: 228 228 228;
+      --popover: 46 46 46;
+      --popover-foreground: 228 228 228;
 
-    /* Brand */
-    --primary: 152 150 218;
-    --primary-foreground: 255 255 255;
+      /* Brand */
+      --primary: 152 150 218;
+      --primary-foreground: 255 255 255;
 
-    /* Neutral */
-    --secondary: 51 51 51;
-    --secondary-foreground: 228 228 228;
+      /* Neutral */
+      --secondary: 51 51 51;
+      --secondary-foreground: 228 228 228;
 
-    --muted: 46 46 46;
-    --muted-foreground: 158 158 158;
+      --muted: 46 46 46;
+      --muted-foreground: 158 158 158;
 
-    --accent: 56 56 56;
-    --accent-foreground: 228 228 228;
+      --accent: 56 56 56;
+      --accent-foreground: 228 228 228;
 
-    /* States */
-    --destructive: 236 91 87;
-    --destructive-foreground: 255 255 255;
+      /* States */
+      --destructive: 236 91 87;
+      --destructive-foreground: 255 255 255;
 
-    /* Inputs */
-    --border: 66 66 66;
-    --input: 56 56 56;
-    --ring: 152 150 218;
+      /* Inputs */
+      --border: 66 66 66;
+      --input: 56 56 56;
+      --ring: 152 150 218;
 
-    /* Charts */
-    --chart-1: 152 150 218;
-    --chart-2: 126 169 213;
-    --chart-3: 145 191 146;
-    --chart-4: 233 198 125;
-    --chart-5: 234 106 100;
+      /* Charts */
+      --chart-1: 152 150 218;
+      --chart-2: 126 169 213;
+      --chart-3: 145 191 146;
+      --chart-4: 233 198 125;
+      --chart-5: 234 106 100;
 
-    /* Sidebar */
-    --sidebar: 36 36 36;
-    --sidebar-foreground: 228 228 228;
+      /* Sidebar */
+      --sidebar: 36 36 36;
+      --sidebar-foreground: 228 228 228;
 
-    --sidebar-primary: 152 150 218;
-    --sidebar-primary-foreground: 255 255 255;
+      --sidebar-primary: 152 150 218;
+      --sidebar-primary-foreground: 255 255 255;
 
-    --sidebar-accent: 51 51 51;
-    --sidebar-accent-foreground: 228 228 228;
+      --sidebar-accent: 51 51 51;
+      --sidebar-accent-foreground: 228 228 228;
 
-    --sidebar-border: 66 66 66;
-    --sidebar-ring: 152 150 218;
+      --sidebar-border: 66 66 66;
+      --sidebar-ring: 152 150 218;
 
-    /* Brand Palette */
-    --brand-purple: 152 150 218;
-    --brand-purple-light: 176 175 245;
-    --brand-purple-dark: 116 113 179;
+      /* Brand Palette */
+      --brand-purple: 152 150 218;
+      --brand-purple-light: 176 175 245;
+      --brand-purple-dark: 116 113 179;
 
-    --brand-lime: 152 197 152;
-    --brand-lime-dark: 115 160 116;
+      --brand-lime: 152 197 152;
+      --brand-lime-dark: 115 160 116;
 
-    --brand-violet: 228 228 228;
-    --brand-indigo: 126 169 213;
-    --brand-rose: 234 106 100;
+      --brand-pink: 209 31 150;
+      --brand-pink-light: 221 46 169;
 
-    /* Extended Surfaces */
-    --primary-light: 176 175 245;
-    --primary-dark: 116 113 179;
-    --background-element: 41 41 41;
-    --background-selected: 51 51 51;
-    --card-elevated: 51 51 51;
-    --card-border: 61 61 61;
-    --border-subtle: 56 56 56;
+      --brand-violet: 228 228 228;
+      --brand-indigo: 126 169 213;
+      --brand-rose: 234 106 100;
 
-    /* Semantic Status */
-    --success: 57 195 75;
-    --success-light: 13 56 17;
-    --warning: 228 172 89;
-    --warning-light: 63 48 27;
-    --error: 236 91 87;
-    --error-light: 77 38 35;
-    --info: 126 169 213;
-    --info-light: 30 47 65;
+      /* Extended Surfaces */
+      --primary-light: 176 175 245;
+      --primary-dark: 116 113 179;
+      --background-element: 41 41 41;
+      --background-selected: 51 51 51;
+      --card-elevated: 51 51 51;
+      --card-border: 61 61 61;
+      --border-subtle: 56 56 56;
 
-    /* Button Shadows */
-    --btn-shadow-primary: 38 36 94;
-    --btn-shadow-secondary: 58 58 58;
-    --btn-shadow-destructive: 147 0 0;
-    --btn-shadow-lime: 88 111 0;
+      /* Semantic Status */
+      --success: 57 195 75;
+      --success-light: 13 56 17;
+      --warning: 228 172 89;
+      --warning-light: 63 48 27;
+      --error: 236 91 87;
+      --error-light: 77 38 35;
+      --info: 126 169 213;
+      --info-light: 30 47 65;
 
-    /* Tab Bar */
-    --tab-bar-background: 41 41 41;
-    --tab-bar-border: 66 66 66;
-    --tab-bar-active: 152 150 218;
-    --tab-bar-inactive: 158 158 158;
+      /* Button Shadows */
+      --btn-shadow-primary: 38 36 94;
+      --btn-shadow-secondary: 58 58 58;
+      --btn-shadow-destructive: 147 0 0;
+      --btn-shadow-lime: 88 111 0;
 
-    /* Brand Extensions */
-    --brand-lime-foreground: 145 230 148;
+      /* Tab Bar */
+      --tab-bar-background: 41 41 41;
+      --tab-bar-border: 66 66 66;
+      --tab-bar-active: 152 150 218;
+      --tab-bar-inactive: 158 158 158;
+
+      /* Brand Extensions */
+      --brand-lime-foreground: 145 230 148;
+    }
   }
 }

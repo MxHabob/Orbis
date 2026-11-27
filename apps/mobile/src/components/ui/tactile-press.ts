@@ -1,8 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Pressable } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
@@ -16,9 +18,18 @@ export function useTactilePress(
   shadowColor: string,
 ) {
   const progress = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    return () => cancelAnimation(progress);
+  }, [progress]);
 
   const animateTo = useCallback(
     (toValue: number) => {
+      if (reduceMotion) {
+        progress.set(toValue);
+        return;
+      }
       progress.set(
         toValue === 1
           ? withTiming(1, {
@@ -28,7 +39,7 @@ export function useTactilePress(
           : withSpring(0, { damping: 18, stiffness: 240, mass: 0.7 }),
       );
     },
-    [progress],
+    [progress, reduceMotion],
   );
 
   const onPressIn = useCallback(() => {
@@ -37,7 +48,10 @@ export function useTactilePress(
 
   const onPressOut = useCallback(() => animateTo(0), [animateTo]);
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateY: enabled ? progress.value * 2 : 0 }],
+    transform: [
+      { translateY: enabled ? progress.value * 2 : 0 },
+      { scale: enabled ? 1 - progress.value * 0.015 : 1 },
+    ],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: enabled ? 0.14 * (1 - progress.value) : 0,
     shadowRadius: enabled ? 3 * (1 - progress.value) : 0,
