@@ -127,8 +127,7 @@ function handleTabKeydown(e: KeyboardEvent, tabId: string) {
     e.preventDefault();
     const isRtl =
       tabStripEl !== null && getComputedStyle(tabStripEl).direction === "rtl";
-    const step =
-      e.key === "ArrowLeft" ? (isRtl ? 1 : -1) : isRtl ? -1 : 1;
+    const step = e.key === "ArrowLeft" ? (isRtl ? 1 : -1) : isRtl ? -1 : 1;
     const idx = tabsStore.tabs.findIndex((t) => t.id === tabId);
     const target = tabsStore.tabs[idx + step];
     if (target) {

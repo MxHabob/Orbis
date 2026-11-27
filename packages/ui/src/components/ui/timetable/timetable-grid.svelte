@@ -4,7 +4,11 @@ import BreakRow from "./break-row.svelte";
 import CalendarHeader from "./calendar-header.svelte";
 import SessionCard from "./session-card.svelte";
 import TimeGutter from "./time-gutter.svelte";
-import { enrichTimeSlots, formatTimeRange, type EnrichedTimeSlot } from "./utils.js";
+import {
+  enrichTimeSlots,
+  formatTimeRange,
+  type EnrichedTimeSlot,
+} from "./utils.js";
 
 interface Props {
   timeSlots: any[];

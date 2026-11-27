@@ -70,7 +70,9 @@ export default function WebViewerScreen() {
           <WebView
             key={`${url}:${retryKey}`}
             source={{ uri: url }}
-            originWhitelist={__DEV__ ? ["https://*", "http://*"] : ["https://*"]}
+            originWhitelist={
+              __DEV__ ? ["https://*", "http://*"] : ["https://*"]
+            }
             mixedContentMode="never"
             onLoadStart={() => {
               setIsLoading(true);

@@ -158,8 +158,10 @@ const failedStudents = $derived(
 const avgPercentage = $derived(
   totalStudents > 0
     ? Math.round(
-        activeResults.reduce((sum, r) => sum + Number(r.overall_percentage), 0) /
-          totalStudents,
+        activeResults.reduce(
+          (sum, r) => sum + Number(r.overall_percentage),
+          0,
+        ) / totalStudents,
       )
     : 0,
 );

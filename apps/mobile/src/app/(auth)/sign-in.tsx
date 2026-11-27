@@ -143,133 +143,133 @@ export default function SignInScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
         >
-        <View className="flex-1 gap-four px-five pb-three pt-two">
-          <View className="flex-row justify-end">
-            <LanguageToggle
-              accessibilityLabel={
-                locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
-              }
-              onPress={toggleLanguage}
-              label={locale === "ar" ? "English" : "العربية"}
-            />
-          </View>
-
-          <View className="flex-1 justify-end pb-two">
-            <Text className="text-[28px] leading-9 font-semibold tracking-tight text-foreground">
-              {t("auth_sign_in")}
-            </Text>
-          </View>
-
-          <Card padding="four" className="gap-three">
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push("/institution-select")}
-              hitSlop={8}
-              className="min-h-11 justify-center"
-            >
-              <Text className="text-sm font-semibold text-primary">
-                {institutions.length > 1
-                  ? t("auth_institution_switch")
-                  : `${t("auth_institution_current")}: ${isArabic && selectedInstitution.name_ar ? selectedInstitution.name_ar : selectedInstitution.name}`}
-              </Text>
-            </Pressable>
-
-            <Input
-              label={t("auth_username_or_email")}
-              placeholder={t("auth_username_or_email")}
-              value={values.email}
-              onChangeText={(value) => setValue("email", value)}
-              onBlur={() => markTouched("email")}
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              textContentType="username"
-              returnKeyType="next"
-            />
-
-            <View>
-              <View className="mb-one flex-row items-center justify-between">
-                <Text className="text-sm font-medium text-foreground">
-                  {t("auth_password")}
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push("/(auth)/forgot-password")}
-                  hitSlop={8}
-                  className="min-h-11 justify-center"
-                >
-                  <Text className="text-sm font-semibold text-primary">
-                    {t("auth_forgot_password")}
-                  </Text>
-                </Pressable>
-              </View>
-              <Input
-                placeholder="••••••••"
-                value={values.password}
-                onChangeText={(value) => setValue("password", value)}
-                onBlur={() => markTouched("password")}
-                error={errors.password}
-                secureTextEntry
-                autoComplete="current-password"
-                textContentType="password"
-                returnKeyType="go"
-                onSubmitEditing={() => void handleSignIn()}
+          <View className="flex-1 gap-four px-five pb-three pt-two">
+            <View className="flex-row justify-end">
+              <LanguageToggle
+                accessibilityLabel={
+                  locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
+                }
+                onPress={toggleLanguage}
+                label={locale === "ar" ? "English" : "العربية"}
               />
             </View>
 
-            {formError ? (
-              <Text
-                accessibilityRole="alert"
-                className="text-start text-xs leading-4 font-medium text-destructive"
-              >
-                {formError}
+            <View className="flex-1 justify-end pb-two">
+              <Text className="text-[28px] leading-9 font-semibold tracking-tight text-foreground">
+                {t("auth_sign_in")}
               </Text>
-            ) : null}
-
-            <Button
-              title={t("auth_sign_in")}
-              onPress={() => void handleSignIn()}
-              disabled={isSubmitting}
-              loading={isSubmitting}
-              fullWidth
-              size="lg"
-            />
-
-            <View className="flex-row items-center gap-three">
-              <View className="h-px flex-1 bg-border" />
-              <Text className="text-sm text-muted-foreground">
-                {t("auth_or_divider")}
-              </Text>
-              <View className="h-px flex-1 bg-border" />
             </View>
 
-            <Button
-              title={t("auth_continue_google")}
-              onPress={() => void handleGoogleSignIn()}
-              disabled={isSubmitting}
-              loading={isSubmitting}
-              variant="outline"
-              fullWidth
-              size="lg"
-            />
-
-            <View className="items-center pt-one">
+            <Card padding="four" className="gap-three">
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push("/(auth)/explore")}
+                onPress={() => router.push("/institution-select")}
                 hitSlop={8}
                 className="min-h-11 justify-center"
               >
-                <Text className="text-sm text-muted-foreground">
-                  {t("visitor_explore")}
+                <Text className="text-sm font-semibold text-primary">
+                  {institutions.length > 1
+                    ? t("auth_institution_switch")
+                    : `${t("auth_institution_current")}: ${isArabic && selectedInstitution.name_ar ? selectedInstitution.name_ar : selectedInstitution.name}`}
                 </Text>
               </Pressable>
-            </View>
-          </Card>
-        </View>
-      </KeyboardAwareView>
-    </Screen>
+
+              <Input
+                label={t("auth_username_or_email")}
+                placeholder={t("auth_username_or_email")}
+                value={values.email}
+                onChangeText={(value) => setValue("email", value)}
+                onBlur={() => markTouched("email")}
+                error={errors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="username"
+                returnKeyType="next"
+              />
+
+              <View>
+                <View className="mb-one flex-row items-center justify-between">
+                  <Text className="text-sm font-medium text-foreground">
+                    {t("auth_password")}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push("/(auth)/forgot-password")}
+                    hitSlop={8}
+                    className="min-h-11 justify-center"
+                  >
+                    <Text className="text-sm font-semibold text-primary">
+                      {t("auth_forgot_password")}
+                    </Text>
+                  </Pressable>
+                </View>
+                <Input
+                  placeholder="••••••••"
+                  value={values.password}
+                  onChangeText={(value) => setValue("password", value)}
+                  onBlur={() => markTouched("password")}
+                  error={errors.password}
+                  secureTextEntry
+                  autoComplete="current-password"
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={() => void handleSignIn()}
+                />
+              </View>
+
+              {formError ? (
+                <Text
+                  accessibilityRole="alert"
+                  className="text-start text-xs leading-4 font-medium text-destructive"
+                >
+                  {formError}
+                </Text>
+              ) : null}
+
+              <Button
+                title={t("auth_sign_in")}
+                onPress={() => void handleSignIn()}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                fullWidth
+                size="lg"
+              />
+
+              <View className="flex-row items-center gap-three">
+                <View className="h-px flex-1 bg-border" />
+                <Text className="text-sm text-muted-foreground">
+                  {t("auth_or_divider")}
+                </Text>
+                <View className="h-px flex-1 bg-border" />
+              </View>
+
+              <Button
+                title={t("auth_continue_google")}
+                onPress={() => void handleGoogleSignIn()}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                variant="outline"
+                fullWidth
+                size="lg"
+              />
+
+              <View className="items-center pt-one">
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(auth)/explore")}
+                  hitSlop={8}
+                  className="min-h-11 justify-center"
+                >
+                  <Text className="text-sm text-muted-foreground">
+                    {t("visitor_explore")}
+                  </Text>
+                </Pressable>
+              </View>
+            </Card>
+          </View>
+        </KeyboardAwareView>
+      </Screen>
     </View>
   );
 }

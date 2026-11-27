@@ -181,6 +181,12 @@ export const queryKeys = {
     overrides: (
       orgId?: string,
       filter?: { status?: string; mine?: boolean; search?: string },
-    ) => [...queryKeys.workflow.all, "overrides", orgId ?? "", filter ?? {}] as const,
+    ) =>
+      [
+        ...queryKeys.workflow.all,
+        "overrides",
+        orgId ?? "",
+        filter ?? {},
+      ] as const,
   },
 };

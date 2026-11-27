@@ -1229,8 +1229,10 @@ export function useUnreadCountQuery() {
     staleTime: NOTIFICATION_STALE_TIME,
     refetchInterval: 1000 * 60 * 2, // Poll every 2 minutes for badge
     retry: (failureCount, error) =>
-      !(error instanceof Error && error.message.toLowerCase().includes("license")) &&
-      failureCount < 2,
+      !(
+        error instanceof Error &&
+        error.message.toLowerCase().includes("license")
+      ) && failureCount < 2,
   });
 }
 

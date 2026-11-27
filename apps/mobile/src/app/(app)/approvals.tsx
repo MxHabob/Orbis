@@ -1,10 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  View,
-} from "react-native";
+import { FlatList, Pressable, RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
 import {
   CheckCircle,
@@ -247,9 +242,7 @@ export default function ApprovalsScreen() {
       setActionNotes((prev) => ({ ...prev, [request.id]: "" }));
       setExpandedId(null);
     } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : t("common_error"),
-      );
+      toast.error(error instanceof Error ? error.message : t("common_error"));
     } finally {
       setProcessingId(null);
     }
@@ -487,7 +480,9 @@ export default function ApprovalsScreen() {
                       {approvalChain.length > 0 ? (
                         <View className="flex-row flex-wrap items-center gap-one">
                           {approvalChain.map((step, idx) => (
-                            <React.Fragment key={`${request.id}-step-${step.step_order}`}>
+                            <React.Fragment
+                              key={`${request.id}-step-${step.step_order}`}
+                            >
                               <Badge
                                 variant={statusBadgeVariant(step.status)}
                                 label={step.approver_name || step.approver_role}

@@ -113,10 +113,7 @@ export default function AiChatScreen() {
 
   const renderMessage = useCallback(
     ({ item }: { item: ChatMessageItem }) => (
-      <ChatMessageBubble
-        message={item}
-        toolsLabel={t("ai_chat_tools_used")}
-      />
+      <ChatMessageBubble message={item} toolsLabel={t("ai_chat_tools_used")} />
     ),
     [t],
   );

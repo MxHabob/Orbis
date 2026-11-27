@@ -316,8 +316,7 @@ function getStatusInfo(status?: string | null) {
   if (s.includes("fail") || s === "failed") {
     return {
       label: m.student_grades_status_failed(),
-      badgeClass:
-        "bg-destructive/10 text-destructive border-destructive/20",
+      badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
     };
   }
   if (s.includes("incomplete")) {

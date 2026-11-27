@@ -1,7 +1,9 @@
 import type { QueryClient } from "@tanstack/svelte-query";
 import { queryKeys, type UserDto } from "$lib/api";
 
-export function isUserActive(user: Partial<UserDto> | null | undefined): boolean {
+export function isUserActive(
+  user: Partial<UserDto> | null | undefined,
+): boolean {
   if (!user) return true;
   if (user.is_active !== undefined && user.is_active !== null) {
     return Boolean(user.is_active);

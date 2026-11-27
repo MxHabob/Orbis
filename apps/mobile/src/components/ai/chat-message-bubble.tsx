@@ -24,9 +24,7 @@ export const ChatMessageBubble = React.memo<ChatMessageBubbleProps>(
     const isUser = message.role === "user";
 
     return (
-      <View
-        className={`w-full ${isUser ? "items-end" : "items-start"}`}
-      >
+      <View className={`w-full ${isUser ? "items-end" : "items-start"}`}>
         <View
           className={`max-w-[85%] gap-two rounded-md border px-3.5 py-2.5 ${
             isUser
@@ -49,7 +47,9 @@ export const ChatMessageBubble = React.memo<ChatMessageBubbleProps>(
             {message.content}
           </Text>
 
-          {!isUser && message.executedTools && message.executedTools.length > 0 ? (
+          {!isUser &&
+          message.executedTools &&
+          message.executedTools.length > 0 ? (
             <View className="flex-row flex-wrap items-center gap-one pt-half">
               <Text className="text-[11px] font-medium text-muted-foreground">
                 {toolsLabel}:

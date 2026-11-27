@@ -1,11 +1,6 @@
 import Constants from "expo-constants";
 import { useEffect, useState } from "react";
-import {
-  Linking,
-  Platform,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Linking, Platform, View, useWindowDimensions } from "react-native";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -80,8 +75,7 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
       message: "",
     },
     validators: {
-      subject: (value) =>
-        !value.trim() ? t("support_required_fields") : null,
+      subject: (value) => (!value.trim() ? t("support_required_fields") : null),
       contactEmail: (value) => {
         const trimmed = value.trim();
         if (trimmed && !EMAIL_REGEX.test(trimmed)) {
@@ -89,8 +83,7 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
         }
         return null;
       },
-      message: (value) =>
-        !value.trim() ? t("support_required_fields") : null,
+      message: (value) => (!value.trim() ? t("support_required_fields") : null),
     },
   });
 
@@ -158,7 +151,11 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
           </DrawerHeader>
 
           <DrawerScrollView
-            contentContainerStyle={{ gap: 16, paddingTop: 16, paddingBottom: 16 }}
+            contentContainerStyle={{
+              gap: 16,
+              paddingTop: 16,
+              paddingBottom: 16,
+            }}
             style={{ flex: 1, minHeight: 0 }}
           >
             <View className="px-five">

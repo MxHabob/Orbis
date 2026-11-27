@@ -7,7 +7,11 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 import { countRolePermissions } from "$lib/core/iam";
-import { createMutation, createQuery, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { createUserQuery } from "$lib/features/settings/queries";
 import { invalidateUserQueries } from "./user-detail";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";

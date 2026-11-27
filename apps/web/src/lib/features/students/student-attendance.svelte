@@ -24,9 +24,7 @@ import { attendanceFilterFields } from "$lib/core/filter-configs";
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
 const attendanceQuery = createStudentAttendanceQuery(() => studentId);
-const attendanceRecords = $derived<AttendanceDto[]>(
-  attendanceQuery.data ?? [],
-);
+const attendanceRecords = $derived<AttendanceDto[]>(attendanceQuery.data ?? []);
 const isLoading = $derived(attendanceQuery.isLoading);
 
 const presentCount = $derived(

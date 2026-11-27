@@ -48,7 +48,9 @@ const form = new FormController<SubjectDraft, CreateSubjectInput>({
     name: subject?.name ?? "",
     name_ar: subject?.name_ar ?? "",
     code: subject?.code ?? "",
-    credit_hours: Number(subject?.credit_hours ?? (orgContext.isUniversity ? 3 : 1)),
+    credit_hours: Number(
+      subject?.credit_hours ?? (orgContext.isUniversity ? 3 : 1),
+    ),
     color: subject?.color ?? "",
     description: subject?.description ?? "",
     sort_order: subject?.sort_order ?? 1,

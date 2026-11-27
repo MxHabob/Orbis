@@ -2237,8 +2237,7 @@ impl AssessmentService {
                     }
                 }
                 if !direct_components.is_empty() {
-                    let computed_max: Decimal =
-                        direct_components.iter().map(|c| c.max_score).sum();
+                    let computed_max: Decimal = direct_components.iter().map(|c| c.max_score).sum();
                     let mut breakdown = PeriodComponentScores {
                         components: direct_components,
                         total: Decimal::ZERO,
@@ -2793,8 +2792,7 @@ impl AssessmentService {
             }
 
             let total_score: Decimal = subject_results.iter().map(|s| s.term_total).sum();
-            let max_possible_score =
-                Decimal::from(subject_results.len()) * policy.term_max_score;
+            let max_possible_score = Decimal::from(subject_results.len()) * policy.term_max_score;
             let raw_pct = if max_possible_score > Decimal::ZERO {
                 (total_score / max_possible_score) * Decimal::from(100)
             } else {

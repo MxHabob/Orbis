@@ -165,60 +165,60 @@ export function FloatingTabBar({
         className="absolute left-five right-five flex-row items-center justify-between z-50 min-h-14"
         style={[{ bottom }, barAnimatedStyle]}
       >
-      {/* LEFT — Apps (Home) with NEW badge synchronized with desktop badge-brand-lime */}
-      <View className="w-14 h-14 relative items-center justify-center shrink-0">
-        <View
-          pointerEvents="none"
-          className={`absolute -top-[9px] ${
-            isArabic ? "-right-1" : "-left-1"
-          } h-[22px] px-[9px] rounded-full items-center justify-center z-10 border border-brand-lime/30 bg-brand-lime/15`}
-        >
-          <Text className="text-[11px] leading-[14px] font-bold tracking-wider uppercase text-brand-lime-dark">
-            {t("badge_new")}
-          </Text>
+        {/* LEFT — Apps (Home) with NEW badge synchronized with desktop badge-brand-lime */}
+        <View className="w-14 h-14 relative items-center justify-center shrink-0">
+          <View
+            pointerEvents="none"
+            className={`absolute -top-[9px] ${
+              isArabic ? "-right-1" : "-left-1"
+            } h-[22px] px-[9px] rounded-full items-center justify-center z-10 border border-brand-lime/30 bg-brand-lime/15`}
+          >
+            <Text className="text-[11px] leading-[14px] font-bold tracking-wider uppercase text-brand-lime-dark">
+              {t("badge_new")}
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: isAppsFocused }}
+            accessibilityLabel={appsLabel}
+            onPress={() => navigateToRoute(ROUTE_APPS)}
+            className="w-14 h-14 rounded-full bg-card items-center justify-center shrink-0"
+            style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
+          >
+            <Grid size={22} color={theme.foreground} strokeWidth={1.8} />
+          </Pressable>
         </View>
 
+        {/* CENTER — Digital ID (Document icon + Label) */}
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ selected: isAppsFocused }}
-          accessibilityLabel={appsLabel}
-          onPress={() => navigateToRoute(ROUTE_APPS)}
+          accessibilityLabel={digitalIdLabel}
+          onPress={() => router.push("/Id")}
+          className="h-14 min-w-[140px] px-five rounded-full bg-card flex-row items-center justify-center gap-two shrink-0"
+          style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
+        >
+          <Document size={21} color={theme.foreground} strokeWidth={1.8} />
+          <Text
+            numberOfLines={1}
+            className="text-[15px] leading-5 font-medium text-foreground shrink"
+          >
+            {digitalIdLabel}
+          </Text>
+        </Pressable>
+
+        {/* RIGHT — Analytics (Behavior & AI) */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: isAnalyticsFocused }}
+          accessibilityLabel={analyticsLabel}
+          onPress={() => navigateToRoute(ROUTE_ANALYTICS)}
           className="w-14 h-14 rounded-full bg-card items-center justify-center shrink-0"
           style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
         >
-          <Grid size={22} color={theme.foreground} strokeWidth={1.8} />
+          <ChartBar size={21} color={theme.foreground} strokeWidth={1.8} />
         </Pressable>
-      </View>
-
-      {/* CENTER — Digital ID (Document icon + Label) */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={digitalIdLabel}
-        onPress={() => router.push("/Id")}
-        className="h-14 min-w-[140px] px-five rounded-full bg-card flex-row items-center justify-center gap-two shrink-0"
-        style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
-      >
-        <Document size={21} color={theme.foreground} strokeWidth={1.8} />
-        <Text
-          numberOfLines={1}
-          className="text-[15px] leading-5 font-medium text-foreground shrink"
-        >
-          {digitalIdLabel}
-        </Text>
-      </Pressable>
-
-      {/* RIGHT — Analytics (Behavior & AI) */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: isAnalyticsFocused }}
-        accessibilityLabel={analyticsLabel}
-        onPress={() => navigateToRoute(ROUTE_ANALYTICS)}
-        className="w-14 h-14 rounded-full bg-card items-center justify-center shrink-0"
-        style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
-      >
-        <ChartBar size={21} color={theme.foreground} strokeWidth={1.8} />
-      </Pressable>
-    </Animated.View>
+      </Animated.View>
     </>
   );
 }

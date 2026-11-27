@@ -1,6 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage, type NotificationPreferenceResponseDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type NotificationPreferenceResponseDto,
+} from "$lib/api";
 import { authStore, themeStore } from "$lib/stores";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 import { Card } from "@orbis/ui/card";
@@ -22,9 +26,7 @@ import { GlobeAlt } from "@orbis/icons";
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
 const queryClient = useQueryClient();
-const isOwnAccount = $derived(
-  Boolean(userId) && authStore.userId === userId,
-);
+const isOwnAccount = $derived(Boolean(userId) && authStore.userId === userId);
 
 const prefsQuery = createQuery<NotificationPreferenceResponseDto[]>(() => ({
   queryKey: ["notifications", "preferences", orgId, userId],

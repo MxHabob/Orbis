@@ -1,5 +1,12 @@
 <script lang="ts">
-import { CheckSquare, InfoCircle, Pencil, Pin, Trash, Users } from "@orbis/icons";
+import {
+  CheckSquare,
+  InfoCircle,
+  Pencil,
+  Pin,
+  Trash,
+  Users,
+} from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { formatTimeRange, resolveSubjectColor } from "./utils.js";
 

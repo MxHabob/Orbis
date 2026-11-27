@@ -54,7 +54,9 @@ async function handleAddRecord() {
     newDescription = "";
     newPoints = 1;
   } catch (e: unknown) {
-    toast.error(`${m.academics_behavior_add_failed()}: ${extractErrorMessage(e)}`);
+    toast.error(
+      `${m.academics_behavior_add_failed()}: ${extractErrorMessage(e)}`,
+    );
   }
 }
 

@@ -8,15 +8,17 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { Computer, Trash, ShieldCheck } from "@orbis/icons";
 import { formatDate, l } from "$lib/core/i18n";
-import { createMutation, createQuery, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import EmptyState from "$lib/shared/components/empty-state.svelte";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
 const queryClient = useQueryClient();
-const isOwnAccount = $derived(
-  Boolean(userId) && authStore.userId === userId,
-);
+const isOwnAccount = $derived(Boolean(userId) && authStore.userId === userId);
 
 const devicesQuery = createQuery<UserDeviceDto[]>(() => ({
   queryKey: ["auth", "devices", orgId, userId],

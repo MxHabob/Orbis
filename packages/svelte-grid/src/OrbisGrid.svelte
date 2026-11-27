@@ -556,7 +556,9 @@ const colAligns = $derived(visibleCols.map((col) => defaultAlign(col)));
 const editableCols = $derived(
   readonly
     ? []
-    : visibleCols.flatMap((col, index) => (isEditableColumn(col) ? [index] : [])),
+    : visibleCols.flatMap((col, index) =>
+        isEditableColumn(col) ? [index] : [],
+      ),
 );
 const normalizedRange = $derived(
   selection.range ? normalizeRange(selection.range) : null,

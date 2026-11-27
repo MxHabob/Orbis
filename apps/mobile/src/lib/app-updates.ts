@@ -32,7 +32,10 @@ function parseSemver(version: string): [number, number, number] | null {
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
-function compareSemver(a: [number, number, number], b: [number, number, number]) {
+function compareSemver(
+  a: [number, number, number],
+  b: [number, number, number],
+) {
   for (let i = 0; i < 3; i += 1) {
     if (a[i] !== b[i]) return a[i] - b[i];
   }

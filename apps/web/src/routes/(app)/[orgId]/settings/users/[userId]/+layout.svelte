@@ -79,7 +79,9 @@ async function handleGenerateTempPassword() {
       credentialModalOpen = true;
       toast.success(m.employees_password_reset_success());
     } catch (e: unknown) {
-      toast.error(extractErrorMessage(e) || m.shared_ui_reset_password_failed());
+      toast.error(
+        extractErrorMessage(e) || m.shared_ui_reset_password_failed(),
+      );
     }
   }
 }
@@ -174,7 +176,9 @@ const headerActions = $derived<SplitActionItem[]>(
           label: m.ui_copy_user_audit_logs_55f2f1f7(),
           icon: ShieldCheck,
           onSelect: () =>
-            void goto(localizeHref(`/${orgId}/settings/audit?userId=${userId}`)),
+            void goto(
+              localizeHref(`/${orgId}/settings/audit?userId=${userId}`),
+            ),
         },
         {
           id: "toggle-status",
