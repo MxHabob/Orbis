@@ -789,17 +789,6 @@ pub async fn update_user(
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
-#[utoipa::path(
-    post,
-    path = "/api/v1/iam/users/{id}/reset-password",
-    params(("id" = Uuid, Path, description = "User ID")),
-    responses(
-        (status = 200, description = "Password reset successfully", body = AccountProvisioningResultDto),
-        (status = 404, description = "User not found")
-    ),
-    security(("bearer" = [])),
-    tag = "IAM"
-)]
 pub async fn delete_user(
     ctx: AuthContext,
     State(state): State<AppState>,
@@ -833,6 +822,17 @@ pub async fn delete_user(
     Ok(ApiResponse::ok_with_id((), ctx.request_id))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/iam/users/{id}/reset-password",
+    params(("id" = Uuid, Path, description = "User ID")),
+    responses(
+        (status = 200, description = "Password reset successfully", body = AccountProvisioningResultDto),
+        (status = 404, description = "User not found")
+    ),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
 pub async fn reset_user_password(
     ctx: AuthContext,
     State(state): State<AppState>,
