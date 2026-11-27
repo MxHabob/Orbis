@@ -513,12 +513,14 @@ dependencies = [
  "indicatif",
  "inquire",
  "orbis-app",
+ "orbis-domain",
  "orbis-infra",
  "regex",
  "reqwest",
  "sea-orm",
  "sea-orm-migration",
  "serde",
+ "serde_json",
  "tokio",
  "tracing-subscriber",
  "uuid",
@@ -2237,7 +2239,7 @@ dependencies = [
 
 [[package]]
 name = "orbis-app"
-version = "1.2.1"
+version = "1.2.6"
 dependencies = [
  "async-trait",
  "chrono",

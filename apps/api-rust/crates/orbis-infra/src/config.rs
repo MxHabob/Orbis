@@ -33,20 +33,20 @@ pub fn resolve_server_secrets() -> Result<ServerSecrets, String> {
     resolve_server_secrets_from_config(&path, jwt_override, mfa_override)
 }
 
-fn server_config_path() -> Result<PathBuf, String> {
+pub fn server_config_path() -> Result<PathBuf, String> {
     match std::env::var_os(SERVER_CONFIG_ENV) {
         Some(path) if !path.is_empty() => Ok(PathBuf::from(path)),
         _ => default_server_config_path(),
     }
 }
 
-#[derive(Deserialize, Serialize)]
-struct ServerConfig {
-    database_url: String,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ServerConfig {
+    pub database_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    jwt_secret: Option<String>,
+    pub jwt_secret: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    mfa_encryption_key: Option<String>,
+    pub mfa_encryption_key: Option<String>,
 }
 
 fn resolve_database_url_from_config(path: &Path) -> Result<String, String> {
@@ -200,13 +200,21 @@ fn non_empty(value: Option<String>) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-fn generate_secret() -> String {
+pub fn generate_secret() -> String {
     let mut bytes = [0u8; 32];
     rand::rngs::OsRng.fill_bytes(&mut bytes);
     hex::encode(bytes)
 }
 
-fn persist_server_config(path: &Path, config: &ServerConfig) -> Result<(), String> {
+pub fn persist_server_config(path: &Path, config: &ServerConfig) -> Result<(), String> {
+    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        fs::create_dir_all(parent).map_err(|error| {
+            format!(
+                "Unable to create Orbis server configuration directory at {}: {error}",
+                parent.display()
+            )
+        })?;
+    }
     let temporary_path =
         path.with_file_name(format!(".server-{}.tmp", uuid::Uuid::new_v4().simple()));
     let mut options = OpenOptions::new();
