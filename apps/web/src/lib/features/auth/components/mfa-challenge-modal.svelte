@@ -52,7 +52,10 @@ async function handleSubmitChallenge() {
     toast.success(m.common_mfa_challenge_success());
     open = false;
   } catch (err: unknown) {
-    const message = err instanceof Error && err.message ? err.message : m.common_mfa_challenge_invalid_code();
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : m.common_mfa_challenge_invalid_code();
     errorMessage = message;
     toast.error(message);
   } finally {

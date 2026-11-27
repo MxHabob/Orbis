@@ -217,10 +217,7 @@ export const queryKeys = {
   // ── Workflow & Overrides ────────────────────────────────────
   workflow: {
     all: ["workflow"] as const,
-    overrides: (
-      orgId?: string,
-      filter?: object,
-    ) => {
+    overrides: (orgId?: string, filter?: object) => {
       return [
         ...queryKeys.workflow.all,
         "overrides",
@@ -287,8 +284,10 @@ export const queryKeys = {
         "studentFeeSummary",
         orgId ?? "current",
       ] as const,
-    paymentsForOrg: (orgId: string) => [...queryKeys.finance.all, "payments", orgId] as const,
-    studentFeesForOrg: (orgId: string) => [...queryKeys.finance.all, "studentFees", orgId] as const,
+    paymentsForOrg: (orgId: string) =>
+      [...queryKeys.finance.all, "payments", orgId] as const,
+    studentFeesForOrg: (orgId: string) =>
+      [...queryKeys.finance.all, "studentFees", orgId] as const,
     payments: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
         return [

@@ -110,7 +110,8 @@ function handleAskOrbis() {
 
 async function handleDeleteSection() {
   if (!classData) return;
-  const displayName = l(classData.name_ar, classData.name) || classData.code || sectionId;
+  const displayName =
+    l(classData.name_ar, classData.name) || classData.code || sectionId;
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete(),
     description: m.academics_class_delete_confirm({ name: displayName }),

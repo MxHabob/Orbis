@@ -119,7 +119,6 @@ const effectiveFilter = $derived.by<UniversalFilter>(() => {
   const conds = [...(activeFilter?.conditions || [])];
   if (selectedRole && selectedRole !== "all") {
     conds.push({
-
       field: "role",
       operator: "eq",
       value: selectedRole,

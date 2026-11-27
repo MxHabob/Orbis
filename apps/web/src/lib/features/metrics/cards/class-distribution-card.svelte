@@ -29,20 +29,28 @@ async function loadData() {
   isLoading = true;
   try {
     const effectivePeriodId =
-      selectedTerm !== "all" ? selectedTerm : academicContext.effectivePeriodId || undefined;
+      selectedTerm !== "all"
+        ? selectedTerm
+        : academicContext.effectivePeriodId || undefined;
     const [sections, enrollments] = await Promise.all([
       api.listSections(),
-      api.listEnrollments({
-        period_id: effectivePeriodId,
-        class_id: selectedClass !== "all" ? selectedClass : undefined,
-        page_size: 100,
-      }).catch(() => []),
+      api
+        .listEnrollments({
+          period_id: effectivePeriodId,
+          class_id: selectedClass !== "all" ? selectedClass : undefined,
+          page_size: 100,
+        })
+        .catch(() => []),
     ]);
 
     const countsBySection = new Map<string, Set<string>>();
     for (const enrollment of enrollments) {
       if (!enrollment.section_id) continue;
-      if (enrollment.status !== "active" && enrollment.status !== "pending_approval") continue;
+      if (
+        enrollment.status !== "active" &&
+        enrollment.status !== "pending_approval"
+      )
+        continue;
       if (!countsBySection.has(enrollment.section_id)) {
         countsBySection.set(enrollment.section_id, new Set());
       }

@@ -1,13 +1,25 @@
 ﻿<script lang="ts">
 import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
-import { gradePeriodOverride, isGradePeriodOverrideable } from "$lib/api/period-override";
+import {
+  gradePeriodOverride,
+  isGradePeriodOverrideable,
+} from "$lib/api/period-override";
 
 import { onMount, untrack } from "svelte";
 import * as XLSX from "xlsx";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { api, extractErrorMessage, type RecordGradeItemRequest } from "$lib/api";
-import { academicContext, authStore, effectiveContext, uiStore } from "$lib/stores";
+import {
+  api,
+  extractErrorMessage,
+  type RecordGradeItemRequest,
+} from "$lib/api";
+import {
+  academicContext,
+  authStore,
+  effectiveContext,
+  uiStore,
+} from "$lib/stores";
 import { useUnsavedGuard } from "$lib/stores/unsaved-guard.svelte";
 import { confirmStore } from "$lib/stores/confirm.svelte";
 import { toast } from "@orbis/ui";
@@ -15,10 +27,24 @@ import type { GridRowsChangeEvent } from "@orbis/svelte-grid";
 import { ControlGrid } from "../academics";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import BulkGradeWorkbooks from "./components/bulk-grade-workbooks.svelte";
-import { buildGradeWorkbook, downloadGradeWorkbook, isGradeWorkbook, reviewGradeWorkbook } from "./grade-workbook";
 import {
-  buildGradeGridColumns, isGradeEntryOpen, loadClassGradeSheet, makeGradeItem, parseSheetScore, savedScore, withSheetTotals,
-  type SheetComponent, type SheetRow, type SheetScore, type SheetSubject,
+  buildGradeWorkbook,
+  downloadGradeWorkbook,
+  isGradeWorkbook,
+  reviewGradeWorkbook,
+} from "./grade-workbook";
+import {
+  buildGradeGridColumns,
+  isGradeEntryOpen,
+  loadClassGradeSheet,
+  makeGradeItem,
+  parseSheetScore,
+  savedScore,
+  withSheetTotals,
+  type SheetComponent,
+  type SheetRow,
+  type SheetScore,
+  type SheetSubject,
 } from "./class-grade-sheet";
 
 let { orgId, bulk = false }: { orgId: string; bulk?: boolean } = $props();
@@ -42,28 +68,53 @@ let scopeCanEnter = $state<boolean | null>(null);
 let bulkBusy = $state(false);
 let reviewingBulkWorkbook = $state(false);
 const guard = useUnsavedGuard({ title: m.common_unsaved_changes() });
-const period = $derived(academicContext.allPeriods.find((item) => item.id === periodId));
+const period = $derived(
+  academicContext.allPeriods.find((item) => item.id === periodId),
+);
 const entryOpen = $derived(scopeCanEnter ?? isGradeEntryOpen(period));
-const canWriteGrades = $derived(effectiveContext.hasPermission("grade:write") && !academicContext.isReadOnly);
+const canWriteGrades = $derived(
+  effectiveContext.hasPermission("grade:write") && !academicContext.isReadOnly,
+);
 const canEdit = $derived(entryOpen && canWriteGrades);
 const arabic = $derived(getLocale() === "ar");
-const visibleSubjects = $derived(subjects.filter((subject) =>
-  subject.components.length > 0 && (!subjectId || subjectId === "all" || subject.id === subjectId)));
+const visibleSubjects = $derived(
+  subjects.filter(
+    (subject) =>
+      subject.components.length > 0 &&
+      (!subjectId || subjectId === "all" || subject.id === subjectId),
+  ),
+);
 const canRequestOverride = $derived(
-  canWriteGrades && effectiveContext.hasPermission("workflow:write") &&
-  isGradePeriodOverrideable(period) && visibleSubjects.length > 0,
+  canWriteGrades &&
+    effectiveContext.hasPermission("workflow:write") &&
+    isGradePeriodOverrideable(period) &&
+    visibleSubjects.length > 0,
 );
 function requestGradeOverride() {
   const activePeriodId = periodId;
   if (activePeriodId) {
-    periodOverrides.open(orgId, visibleSubjects.map((subject) => gradePeriodOverride(activePeriodId, subject.id)));
+    periodOverrides.open(
+      orgId,
+      visibleSubjects.map((subject) =>
+        gradePeriodOverride(activePeriodId, subject.id),
+      ),
+    );
   }
 }
-const visibleRows = $derived(!studentId || studentId === "all" ? rows : rows.filter((row) => row.student_id === studentId));
-const selectedComponents = $derived(visibleSubjects.flatMap((subject) =>
-  subject.components.map((component) => ({
-    subject, component, key: visibleSubjects.length === 1 ? component.code : component.field,
-  }))));
+const visibleRows = $derived(
+  !studentId || studentId === "all"
+    ? rows
+    : rows.filter((row) => row.student_id === studentId),
+);
+const selectedComponents = $derived(
+  visibleSubjects.flatMap((subject) =>
+    subject.components.map((component) => ({
+      subject,
+      component,
+      key: visibleSubjects.length === 1 ? component.code : component.field,
+    })),
+  ),
+);
 const pending = $derived.by(() => {
   const items: RecordGradeItemRequest[] = [];
   if (!periodId) return items;
@@ -72,7 +123,12 @@ const pending = $derived.by(() => {
       for (const component of subject.components) {
         const value = row[component.field] as SheetScore | undefined;
         const saved = row.savedGrades[component.field];
-        if (value == null || value === savedScore(saved) || component.historical) continue;
+        if (
+          value == null ||
+          value === savedScore(saved) ||
+          component.historical
+        )
+          continue;
         items.push(makeGradeItem(periodId, subject, component, row, value));
       }
     }
@@ -86,30 +142,42 @@ $effect(() => guard.setDirty(isDirty));
 function validateScore(raw: unknown, row: SheetRow, component: SheetComponent) {
   const saved = row.savedGrades[component.field];
   const value = parseSheetScore(raw, component.max_score);
-  if (saved && !saved.component_code && !saved.component_id) return m.exams_grade_sheet_historical();
+  if (saved && !saved.component_code && !saved.component_id)
+    return m.exams_grade_sheet_historical();
   if (value === null && saved) return m.exams_grade_sheet_keep_saved();
-  if (value === undefined) return m.exams_grade_sheet_score_range({ max: component.max_score });
+  if (value === undefined)
+    return m.exams_grade_sheet_score_range({ max: component.max_score });
   return { ok: true, value };
 }
 
-const columns = $derived(buildGradeGridColumns(visibleSubjects, {
-  arabic,
-  validate: canEdit ? validateScore : undefined,
-  showTotals: !subjectId || subjectId === "all",
-  showGrade: academicContext.gradeScaleItems.length > 0,
-}));
+const columns = $derived(
+  buildGradeGridColumns(visibleSubjects, {
+    arabic,
+    validate: canEdit ? validateScore : undefined,
+    showTotals: !subjectId || subjectId === "all",
+    showGrade: academicContext.gradeScaleItems.length > 0,
+  }),
+);
 
 onMount(() => {
   classId = academicContext.selectedClassId || null;
-  periodId = uiStore.getPreference(
-    { userId: authStore.userId, organizationId: orgId },
-    "exams.selectedPeriodId", "", (value): value is string => typeof value === "string",
-  ) || null;
+  periodId =
+    uiStore.getPreference(
+      { userId: authStore.userId, organizationId: orgId },
+      "exams.selectedPeriodId",
+      "",
+      (value): value is string => typeof value === "string",
+    ) || null;
 });
 
 $effect(() => {
   const periods = academicContext.allPeriods;
-  if (periodId && periods.length && !periods.some((item) => item.id === periodId)) periodId = null;
+  if (
+    periodId &&
+    periods.length &&
+    !periods.some((item) => item.id === periodId)
+  )
+    periodId = null;
   if (!periodId) {
     const available = periods.filter(isGradeEntryOpen);
     if (available.length === 1) periodId = available[0]!.id;
@@ -125,7 +193,11 @@ $effect(() => {
     academicContext.selectedClassId = selectedClass ?? "";
     if (hasPeriod && selectedPeriod) {
       academicContext.selectedPeriodId = selectedPeriod;
-      uiStore.setPreference({ userId: authStore.userId, organizationId: scope }, "exams.selectedPeriodId", selectedPeriod);
+      uiStore.setPreference(
+        { userId: authStore.userId, organizationId: scope },
+        "exams.selectedPeriodId",
+        selectedPeriod,
+      );
     }
     subjectId = "all";
     studentId = "all";
@@ -144,12 +216,18 @@ async function refresh(selectedClass = classId, selectedPeriod = periodId) {
   if (!selectedClass || !selectedPeriod) return;
   try {
     const periods = await api.listAcademicPeriods();
-    const sheet = await loadClassGradeSheet(selectedClass, selectedPeriod, periods);
+    const sheet = await loadClassGradeSheet(
+      selectedClass,
+      selectedPeriod,
+      periods,
+    );
     if (version !== loadVersion) return;
     subjects = sheet.subjects;
     rosterPeriodId = sheet.rosterPeriodId;
     scopeCanEnter = sheet.canEnter;
-    rows = sheet.rows.map((row) => withSheetTotals(row, sheet.subjects, academicContext.gradeScaleItems));
+    rows = sheet.rows.map((row) =>
+      withSheetTotals(row, sheet.subjects, academicContext.gradeScaleItems),
+    );
   } catch (error) {
     if (version !== loadVersion) return;
     loadError = true;
@@ -160,23 +238,33 @@ async function refresh(selectedClass = classId, selectedPeriod = periodId) {
 }
 
 async function reload() {
-  if (isDirty && !await confirmStore.prompt({
-    title: m.common_unsaved_changes(),
-    description: m.exams_grade_sheet_discard_prompt(),
-    confirmText: m.exams_grade_sheet_discard(),
-    cancelText: m.common_action_cancel(),
-    variant: "destructive",
-  })) return;
+  if (
+    isDirty &&
+    !(await confirmStore.prompt({
+      title: m.common_unsaved_changes(),
+      description: m.exams_grade_sheet_discard_prompt(),
+      confirmText: m.exams_grade_sheet_discard(),
+      cancelText: m.common_action_cancel(),
+      variant: "destructive",
+    }))
+  )
+    return;
   await refresh();
 }
 
 function applyRows(event: GridRowsChangeEvent) {
   if (!canEdit || busy) return;
-  const updated = new Map(event.changedRows.map((row) => [row.student_id, row as SheetRow]));
+  const updated = new Map(
+    event.changedRows.map((row) => [row.student_id, row as SheetRow]),
+  );
   rows = rows.map((row) => {
     const changed = updated.get(row.student_id);
     if (!changed) return row;
-    return withSheetTotals({ ...changed }, subjects, academicContext.gradeScaleItems);
+    return withSheetTotals(
+      { ...changed },
+      subjects,
+      academicContext.gradeScaleItems,
+    );
   });
 }
 
@@ -185,14 +273,19 @@ async function save() {
   isSaving = true;
   try {
     const result = await api.batchRecordGrades({ items: pending });
-    const grades = new Map(result.grades.map((grade) => [
-      `${grade.student_id}:${grade.section_subject_id}:${grade.component_code}`, grade,
-    ]));
+    const grades = new Map(
+      result.grades.map((grade) => [
+        `${grade.student_id}:${grade.section_subject_id}:${grade.component_code}`,
+        grade,
+      ]),
+    );
     rows = rows.map((row) => {
       const next: SheetRow = { ...row, savedGrades: { ...row.savedGrades } };
       for (const subject of subjects) {
         for (const component of subject.components) {
-          const grade = grades.get(`${row.student_id}:${subject.id}:${component.code}`);
+          const grade = grades.get(
+            `${row.student_id}:${subject.id}:${component.code}`,
+          );
           if (!grade) continue;
           next[component.field] = savedScore(grade);
           next.savedGrades[component.field] = grade;
@@ -200,9 +293,12 @@ async function save() {
       }
       return withSheetTotals(next, subjects, academicContext.gradeScaleItems);
     });
-    toast.success(m.common_control_save_success({ total: String(result.count) }));
+    toast.success(
+      m.common_control_save_success({ total: String(result.count) }),
+    );
   } catch (error) {
-    if (!periodOverrides.handleError(orgId, error)) toast.error(extractErrorMessage(error));
+    if (!periodOverrides.handleError(orgId, error))
+      toast.error(extractErrorMessage(error));
   } finally {
     isSaving = false;
   }
@@ -210,13 +306,17 @@ async function save() {
 
 async function calculateRankings() {
   if (!canEdit || busy || isDirty || !rows.length) return;
-  const field = subjectId && subjectId !== "all" ? `total_${subjectId}` : "total";
+  const field =
+    subjectId && subjectId !== "all" ? `total_${subjectId}` : "total";
   const ranked = rows.filter((row) => row[field] != null);
   if (!ranked.length) return;
   isCalculating = true;
   try {
     await api.calculateRankings({
-      items: ranked.map((row) => ({ id: row.student_id, score: String(row[field]) })),
+      items: ranked.map((row) => ({
+        id: row.student_id,
+        score: String(row[field]),
+      })),
     });
     toast.success(m.exams_control_rankings_calculated());
   } catch (error) {
@@ -227,18 +327,39 @@ async function calculateRankings() {
 }
 
 async function exportWorkbook() {
-  if (!classId || !period || !rosterPeriodId || !subjects.length || !rows.length || bulkBusy) return;
+  if (
+    !classId ||
+    !period ||
+    !rosterPeriodId ||
+    !subjects.length ||
+    !rows.length ||
+    bulkBusy
+  )
+    return;
   const scope = { classId, rosterPeriodId, rows, subjects, canEnter: canEdit };
   const selectedPeriod = period;
   isExporting = true;
   try {
     const section = await api.getSection(scope.classId);
-    const workbook = buildGradeWorkbook({
-      orgId, periodId: selectedPeriod.id, orgName: orgContext.displayName,
-      periodLabel: (arabic && selectedPeriod.name_ar) || selectedPeriod.name,
-      yearLabel: arabic ? academicContext.yearLabelAr : academicContext.yearLabel, arabic,
-    }, [{ ...scope, className: (arabic && section.name_ar) || section.name }]);
-    if (await downloadGradeWorkbook(workbook, "orbis-grades-" + section.id.slice(0, 8) + ".xlsx")) {
+    const workbook = buildGradeWorkbook(
+      {
+        orgId,
+        periodId: selectedPeriod.id,
+        orgName: orgContext.displayName,
+        periodLabel: (arabic && selectedPeriod.name_ar) || selectedPeriod.name,
+        yearLabel: arabic
+          ? academicContext.yearLabelAr
+          : academicContext.yearLabel,
+        arabic,
+      },
+      [{ ...scope, className: (arabic && section.name_ar) || section.name }],
+    );
+    if (
+      await downloadGradeWorkbook(
+        workbook,
+        "orbis-grades-" + section.id.slice(0, 8) + ".xlsx",
+      )
+    ) {
       toast.success(m.common_action_export());
     }
   } catch (error) {
@@ -252,14 +373,23 @@ async function stageClassWorkbook(workbook: XLSX.WorkBook) {
   const sectionId = classId;
   const selectedPeriodId = periodId;
   if (!sectionId || !selectedPeriodId) return;
-  const [periods, section] = await Promise.all([api.listAcademicPeriods(), api.getSection(sectionId)]);
-  const plan = await reviewGradeWorkbook(workbook, { orgId, periodId: selectedPeriodId }, async (scopeId) => {
-    if (scopeId !== sectionId) throw new Error(m.exams_workbook_use_bulk());
-    return {
-      ...await loadClassGradeSheet(scopeId, selectedPeriodId, periods),
-      classId: scopeId, className: (arabic && section.name_ar) || section.name,
-    };
-  }, arabic);
+  const [periods, section] = await Promise.all([
+    api.listAcademicPeriods(),
+    api.getSection(sectionId),
+  ]);
+  const plan = await reviewGradeWorkbook(
+    workbook,
+    { orgId, periodId: selectedPeriodId },
+    async (scopeId) => {
+      if (scopeId !== sectionId) throw new Error(m.exams_workbook_use_bulk());
+      return {
+        ...(await loadClassGradeSheet(scopeId, selectedPeriodId, periods)),
+        classId: scopeId,
+        className: (arabic && section.name_ar) || section.name,
+      };
+    },
+    arabic,
+  );
   if (plan.errors.length) {
     toast.error(plan.errors[0]);
     return;
@@ -270,8 +400,11 @@ async function stageClassWorkbook(workbook: XLSX.WorkBook) {
     const row = byId.get(change.studentId);
     const saved = row?.savedGrades[change.field];
     const current = row?.[change.field] ?? null;
-    if (!row || (saved?.updated_at ?? null) !== change.revision ||
-        (current !== savedScore(saved) && current !== change.after)) {
+    if (
+      !row ||
+      (saved?.updated_at ?? null) !== change.revision ||
+      (current !== savedScore(saved) && current !== change.after)
+    ) {
       toast.error(m.exams_workbook_grade_changed());
       return;
     }
@@ -281,7 +414,13 @@ async function stageClassWorkbook(workbook: XLSX.WorkBook) {
   }
   rows = rows.map((row) => {
     const edits = byStudent.get(row.student_id);
-    return edits ? withSheetTotals({ ...row, ...edits }, subjects, academicContext.gradeScaleItems) : row;
+    return edits
+      ? withSheetTotals(
+          { ...row, ...edits },
+          subjects,
+          academicContext.gradeScaleItems,
+        )
+      : row;
   });
   if (plan.changes.length) {
     subjectId = "all";
@@ -304,16 +443,23 @@ async function importWorkbook(event: Event) {
       await stageClassWorkbook(workbook);
       return;
     }
-    const sheet = workbook.Sheets.Grades ?? workbook.Sheets[workbook.SheetNames[0] ?? ""];
+    const sheet =
+      workbook.Sheets.Grades ?? workbook.Sheets[workbook.SheetNames[0] ?? ""];
     if (!sheet) throw new Error(m.common_control_no_data());
     const context = workbook.Sheets.Context;
     if (context) {
-      const metadata = new Map(XLSX.utils.sheet_to_json<{ key: string; value: string }>(context)
-        .map(({ key, value }) => [key, value]));
+      const metadata = new Map(
+        XLSX.utils
+          .sheet_to_json<{ key: string; value: string }>(context)
+          .map(({ key, value }) => [key, value]),
+      );
       const offering = metadata.get("section_subject_id");
-      if ((metadata.get("period_id") && metadata.get("period_id") !== periodId) ||
-          (metadata.get("class_id") && metadata.get("class_id") !== classId) ||
-          (offering && !visibleSubjects.some((subject) => subject.id === offering))) {
+      if (
+        (metadata.get("period_id") && metadata.get("period_id") !== periodId) ||
+        (metadata.get("class_id") && metadata.get("class_id") !== classId) ||
+        (offering &&
+          !visibleSubjects.some((subject) => subject.id === offering))
+      ) {
         throw new Error(m.exams_grade_sheet_file_context());
       }
     }
@@ -344,8 +490,12 @@ async function importWorkbook(event: Event) {
       const next = { ...row };
       for (const { component, key } of selectedComponents) {
         if (component.historical) continue;
-        const raw = data[component.field] ?? data[key] ??
-          (visibleSubjects.length === 1 ? data[`exam_${key}`] ?? data[`comp:${key}`] : undefined);
+        const raw =
+          data[component.field] ??
+          data[key] ??
+          (visibleSubjects.length === 1
+            ? (data[`exam_${key}`] ?? data[`comp:${key}`])
+            : undefined);
         if (raw == null || String(raw).trim() === "") continue;
         const validation = validateScore(raw, row, component);
         if (typeof validation === "string") {

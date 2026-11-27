@@ -5,7 +5,11 @@ import { getLocale } from "$lib/paraglide/runtime";
 import type { AcademicPeriodDto } from "$lib/api";
 import { LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { OrbisGrid, type GridRowsChangeEvent, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type GridRowsChangeEvent,
+  type OrbisColumnDef,
+} from "@orbis/svelte-grid";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import ClassSelect from "./class-select.svelte";
 import type { SheetRow, SheetSubject } from "../../exams/class-grade-sheet";
@@ -47,19 +51,44 @@ let {
   periodId = $bindable(),
   subjectId = $bindable(),
   studentId = $bindable(),
-  children, workbookReview = false, periods, period, subjects, rows, visibleRows, columns,
-  isLoading, loadError, canEdit, entryOpen, isDirty, busy, isSaving,
-  isExporting, isImporting, isCalculating,
-  onRefresh, onSave, onRowsChange, onCalculate, onExport, onImport, onRequestOverride,
+  children,
+  workbookReview = false,
+  periods,
+  period,
+  subjects,
+  rows,
+  visibleRows,
+  columns,
+  isLoading,
+  loadError,
+  canEdit,
+  entryOpen,
+  isDirty,
+  busy,
+  isSaving,
+  isExporting,
+  isImporting,
+  isCalculating,
+  onRefresh,
+  onSave,
+  onRowsChange,
+  onCalculate,
+  onExport,
+  onImport,
+  onRequestOverride,
 }: Props = $props();
 
 const arabic = $derived(getLocale() === "ar");
 function periodLabel(item: AcademicPeriodDto) {
   const parent = periods.find((candidate) => candidate.id === item.parent_id);
   const name = (arabic && item.name_ar) || item.name;
-  return parent ? ((arabic && parent.name_ar) || parent.name) + " / " + name : name;
+  return parent
+    ? ((arabic && parent.name_ar) || parent.name) + " / " + name
+    : name;
 }
-const configuredSubjects = $derived(subjects.filter((subject) => subject.components.length > 0));
+const configuredSubjects = $derived(
+  subjects.filter((subject) => subject.components.length > 0),
+);
 const hasSheet = $derived(Boolean(configuredSubjects.length && rows.length));
 </script>
 

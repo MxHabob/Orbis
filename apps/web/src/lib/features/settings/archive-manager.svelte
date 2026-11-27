@@ -358,7 +358,9 @@ const archiveMenuActions = $derived([
     id: "new-folder",
     label: m.settings_ui_archive_new_folder(),
     icon: NewFolderAlt,
-    onSelect: () => { isCreateFolderModalOpen = true; },
+    onSelect: () => {
+      isCreateFolderModalOpen = true;
+    },
   },
   {
     id: "trash",

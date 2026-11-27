@@ -6,7 +6,10 @@ import { toast } from "@orbis/ui";
 import { api, queryKeys, type AccountDto } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
-import { createOrgSettingsQuery, createUsersQuery } from "$lib/features/settings/queries";
+import {
+  createOrgSettingsQuery,
+  createUsersQuery,
+} from "$lib/features/settings/queries";
 import { treasuryKind } from "../treasury-policy";
 
 let { orgId, accounts }: { orgId: string; accounts: AccountDto[] } = $props();
@@ -17,10 +20,22 @@ const id = $props.id();
 let userId = $state<string | null>(null);
 let draftAccountId = $state<string | null | undefined>(undefined);
 let saving = $state(false);
-const users = $derived((usersQuery.data ?? []).filter((user) => user.org_id === orgId && user.is_active));
-const cashboxes = $derived(accounts.filter((account) => treasuryKind(account) === "cash"));
-const assignedAccountId = $derived(userId ? settingsQuery.data?.finance?.cashier_cash_accounts?.[userId] : undefined);
-const selectedAccountId = $derived(draftAccountId === undefined ? assignedAccountId ?? null : draftAccountId);
+const users = $derived(
+  (usersQuery.data ?? []).filter(
+    (user) => user.org_id === orgId && user.is_active,
+  ),
+);
+const cashboxes = $derived(
+  accounts.filter((account) => treasuryKind(account) === "cash"),
+);
+const assignedAccountId = $derived(
+  userId
+    ? settingsQuery.data?.finance?.cashier_cash_accounts?.[userId]
+    : undefined,
+);
+const selectedAccountId = $derived(
+  draftAccountId === undefined ? (assignedAccountId ?? null) : draftAccountId,
+);
 const loading = $derived(settingsQuery.isPending || usersQuery.isPending);
 const loadFailed = $derived(settingsQuery.isError || usersQuery.isError);
 
@@ -28,7 +43,8 @@ async function save() {
   const cashierId = userId;
   const accountId = draftAccountId;
   if (!cashierId || accountId === undefined || saving || loadFailed) return;
-  if (accountId && !cashboxes.some((account) => account.id === accountId)) return;
+  if (accountId && !cashboxes.some((account) => account.id === accountId))
+    return;
   saving = true;
   try {
     const settings = await api.getSettings();

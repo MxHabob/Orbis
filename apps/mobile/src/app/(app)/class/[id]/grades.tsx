@@ -28,18 +28,26 @@ type MatrixComponent = {
   sort_order: number;
 };
 
-function extractSchemeComponents(scheme: Record<string, unknown> | null | undefined): MatrixComponent[] {
+function extractSchemeComponents(
+  scheme: Record<string, unknown> | null | undefined,
+): MatrixComponent[] {
   if (!scheme) return [];
   const raw: unknown[] =
     Array.isArray(scheme.components) && scheme.components.length > 0
       ? (scheme.components as unknown[])
-      : Array.isArray((scheme.formula as Record<string, unknown> | null)?.components)
-        ? (((scheme.formula as Record<string, unknown>).components as unknown[]) ?? [])
+      : Array.isArray(
+            (scheme.formula as Record<string, unknown> | null)?.components,
+          )
+        ? (((scheme.formula as Record<string, unknown>)
+            .components as unknown[]) ?? [])
         : [];
   if (raw.length === 0) return [];
   return raw
     .map((c, i) => {
-      const comp = (typeof c === "object" && c !== null ? c : {}) as Record<string, unknown>;
+      const comp = (typeof c === "object" && c !== null ? c : {}) as Record<
+        string,
+        unknown
+      >;
       return {
         code: String(comp.code ?? comp.id ?? `comp-${i}`),
         name: String(comp.name ?? ""),
@@ -68,7 +76,8 @@ function findSchemeForSectionSubject(
   }
   return (
     schemes.find(
-      (s) => String(s.level) === "monthly_period" || String(s.level) === "monthly",
+      (s) =>
+        String(s.level) === "monthly_period" || String(s.level) === "monthly",
     ) ??
     schemes.find((s) => s.is_default === true) ??
     schemes[0] ??
@@ -95,7 +104,9 @@ export default function ClassGradesScreen() {
 
   const resolvedSelectedSubjectId = useMemo(() => {
     if (classSubjects.length === 0) return "";
-    return classSubjects.some((item: SectionSubjectDto) => item.id === selectedSubjectId)
+    return classSubjects.some(
+      (item: SectionSubjectDto) => item.id === selectedSubjectId,
+    )
       ? selectedSubjectId
       : classSubjects[0].id;
   }, [classSubjects, selectedSubjectId]);
@@ -113,7 +124,11 @@ export default function ClassGradesScreen() {
     queryFn: async () => {
       const response = await (api as any).listSchemes({ throwOnError: true });
       let data: unknown = response;
-      while (typeof data === "object" && data !== null && "data" in (data as any)) {
+      while (
+        typeof data === "object" &&
+        data !== null &&
+        "data" in (data as any)
+      ) {
         data = (data as any).data;
       }
       return Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
@@ -129,10 +144,21 @@ export default function ClassGradesScreen() {
   const classItem = classQuery.data?.classItem;
 
   const matrixComponents = useMemo<MatrixComponent[]>(() => {
-    const scheme = findSchemeForSectionSubject(schemesQuery.data ?? [], selectedClassSubject);
+    const scheme = findSchemeForSectionSubject(
+      schemesQuery.data ?? [],
+      selectedClassSubject,
+    );
     const comps = extractSchemeComponents(scheme);
     if (comps.length > 0) return comps;
-    return [{ code: "__score", name: t("teacher_score"), name_ar: t("teacher_score"), max_score: 100, sort_order: 1 }];
+    return [
+      {
+        code: "__score",
+        name: t("teacher_score"),
+        name_ar: t("teacher_score"),
+        max_score: 100,
+        sort_order: 1,
+      },
+    ];
   }, [schemesQuery.data, selectedClassSubject, t]);
 
   const existingGradesByStudent = useMemo(() => {
@@ -145,12 +171,14 @@ export default function ClassGradesScreen() {
       const byComp = map.get(studentId)!;
       // prefer exact component match; for single-score fallback keep first
       if (!byComp.has(compKey)) byComp.set(compKey, grade);
-      if (compKey === "__score" && !byComp.has("__score")) byComp.set("__score", grade);
+      if (compKey === "__score" && !byComp.has("__score"))
+        byComp.set("__score", grade);
     }
     return map;
   }, [gradesQuery.data, classItem]);
 
-  const getCellKey = (studentId: string, componentCode: string) => `${studentId}::${componentCode}`;
+  const getCellKey = (studentId: string, componentCode: string) =>
+    `${studentId}::${componentCode}`;
   const getInputValue = (studentId: string, componentCode: string) =>
     scores[getCellKey(studentId, componentCode)] ?? "";
 
@@ -169,17 +197,33 @@ export default function ClassGradesScreen() {
     const invalidStudentIds: string[] = [];
     const items = (classQuery.data?.roster ?? []).flatMap(
       ({ student, enrollment }: TeacherRosterEntry) => {
-        const existingByComp = existingGradesByStudent.get(String(student.id)) ?? new Map<string, GradeDto>();
+        const existingByComp =
+          existingGradesByStudent.get(String(student.id)) ??
+          new Map<string, GradeDto>();
         return matrixComponents.flatMap((comp) => {
           const raw = getInputValue(String(student.id), comp.code).trim();
           if (!raw) return [];
-          if (existingByComp.has(comp.code) || (comp.code === "__score" && existingByComp.size > 0 && existingByComp.has("__score"))) {
+          if (
+            existingByComp.has(comp.code) ||
+            (comp.code === "__score" &&
+              existingByComp.size > 0 &&
+              existingByComp.has("__score"))
+          ) {
             return [];
           }
           // if fallback single-score mode and there is any existing grade for student in period, treat as recorded
-          if (comp.code === "__score" && matrixComponents.length === 1 && existingByComp.size > 0) return [];
+          if (
+            comp.code === "__score" &&
+            matrixComponents.length === 1 &&
+            existingByComp.size > 0
+          )
+            return [];
           const numericScore = Number(raw);
-          if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > comp.max_score) {
+          if (
+            !Number.isFinite(numericScore) ||
+            numericScore < 0 ||
+            numericScore > comp.max_score
+          ) {
             invalidStudentIds.push(String(student.id));
             return [];
           }
@@ -294,29 +338,47 @@ export default function ClassGradesScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator>
                 <View className="overflow-hidden rounded-xl border border-border bg-card">
                   <View className="flex-row items-center border-b border-border bg-muted/40 px-three py-two">
-                    <Text className="w-8 text-xs font-semibold text-muted-foreground">#</Text>
+                    <Text className="w-8 text-xs font-semibold text-muted-foreground">
+                      #
+                    </Text>
                     <View style={{ width: studentColWidth }}>
                       <Text className="text-xs font-semibold text-muted-foreground">
                         {isArabic ? "الطالب" : "Student"}
                       </Text>
                     </View>
                     {matrixComponents.map((comp) => (
-                      <View key={comp.code} style={{ width: scoreColWidth }} className="items-end">
-                        <Text className="text-xs font-semibold text-muted-foreground" numberOfLines={1}>
-                          {(isArabic ? comp.name_ar || comp.name : comp.name) || comp.code}
+                      <View
+                        key={comp.code}
+                        style={{ width: scoreColWidth }}
+                        className="items-end"
+                      >
+                        <Text
+                          className="text-xs font-semibold text-muted-foreground"
+                          numberOfLines={1}
+                        >
+                          {(isArabic ? comp.name_ar || comp.name : comp.name) ||
+                            comp.code}
                         </Text>
-                        <Text className="text-[11px] text-muted-foreground">{comp.max_score}</Text>
+                        <Text className="text-[11px] text-muted-foreground">
+                          {comp.max_score}
+                        </Text>
                       </View>
                     ))}
                   </View>
                   {classQuery.data?.roster.map(
-                    ({ student, enrollment }: TeacherRosterEntry, index: number) => {
+                    (
+                      { student, enrollment }: TeacherRosterEntry,
+                      index: number,
+                    ) => {
                       const studentId = String(student.id);
-                      const existingByComp = existingGradesByStudent.get(studentId) ?? new Map<string, GradeDto>();
+                      const existingByComp =
+                        existingGradesByStudent.get(studentId) ??
+                        new Map<string, GradeDto>();
                       const studentName = isArabic
                         ? student.name_ar || student.full_name
                         : student.display_name || student.full_name;
-                      const isLastRow = index === (classQuery.data?.roster.length ?? 0) - 1;
+                      const isLastRow =
+                        index === (classQuery.data?.roster.length ?? 0) - 1;
                       return (
                         <View
                           key={student.id}
@@ -324,21 +386,35 @@ export default function ClassGradesScreen() {
                             isLastRow ? "" : "border-b border-border"
                           }`}
                         >
-                          <Text className="w-8 text-xs text-muted-foreground">{index + 1}</Text>
+                          <Text className="w-8 text-xs text-muted-foreground">
+                            {index + 1}
+                          </Text>
                           <View style={{ width: studentColWidth }}>
-                            <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                            <Text
+                              className="text-sm font-medium text-foreground"
+                              numberOfLines={1}
+                            >
                               {studentName}
                             </Text>
-                            <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                            <Text
+                              className="text-xs text-muted-foreground"
+                              numberOfLines={1}
+                            >
                               {enrollment.student_number}
                             </Text>
                           </View>
                           {matrixComponents.map((comp) => {
                             const existing =
                               existingByComp.get(comp.code) ??
-                              (comp.code === "__score" ? Array.from(existingByComp.values())[0] : undefined);
+                              (comp.code === "__score"
+                                ? Array.from(existingByComp.values())[0]
+                                : undefined);
                             return (
-                              <View key={comp.code} style={{ width: scoreColWidth }} className="items-end">
+                              <View
+                                key={comp.code}
+                                style={{ width: scoreColWidth }}
+                                className="items-end"
+                              >
                                 {existing ? (
                                   <View className="items-end">
                                     <Text className="text-sm font-semibold text-primary">
@@ -352,14 +428,17 @@ export default function ClassGradesScreen() {
                                       setSaveError(null);
                                       setScores((current) => ({
                                         ...current,
-                                        [getCellKey(studentId, comp.code)]: value,
+                                        [getCellKey(studentId, comp.code)]:
+                                          value,
                                       }));
                                     }}
                                     keyboardType="decimal-pad"
                                     inputMode="decimal"
                                     maxLength={6}
                                     placeholder={`0-${comp.max_score}`}
-                                    containerStyle={{ width: scoreColWidth - 8 }}
+                                    containerStyle={{
+                                      width: scoreColWidth - 8,
+                                    }}
                                     accessibilityLabel={`${studentName}, ${isArabic ? comp.name_ar || comp.name : comp.name || t("teacher_score")}`}
                                   />
                                 )}
@@ -372,12 +451,20 @@ export default function ClassGradesScreen() {
                   )}
                 </View>
               </ScrollView>
-              {classQuery.data?.roster.every(({ student }: TeacherRosterEntry) => {
-                const byComp = existingGradesByStudent.get(String(student.id));
-                if (!byComp || byComp.size === 0) return false;
-                if (matrixComponents.length === 1 && matrixComponents[0].code === "__score") return byComp.size > 0;
-                return matrixComponents.every((c) => byComp.has(c.code));
-              }) ? (
+              {classQuery.data?.roster.every(
+                ({ student }: TeacherRosterEntry) => {
+                  const byComp = existingGradesByStudent.get(
+                    String(student.id),
+                  );
+                  if (!byComp || byComp.size === 0) return false;
+                  if (
+                    matrixComponents.length === 1 &&
+                    matrixComponents[0].code === "__score"
+                  )
+                    return byComp.size > 0;
+                  return matrixComponents.every((c) => byComp.has(c.code));
+                },
+              ) ? (
                 <Text className="text-sm text-muted-foreground">
                   {t("teacher_no_grade_entries")}
                 </Text>

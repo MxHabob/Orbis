@@ -7,7 +7,11 @@ import type {
   EffectiveContextDto,
   LoginResponse,
 } from "$lib/api/types";
-import { extractErrorMessage, getConnectionScope, setRemoteSessionToken } from "$lib/api";
+import {
+  extractErrorMessage,
+  getConnectionScope,
+  setRemoteSessionToken,
+} from "$lib/api";
 import { ApiRequestError } from "$lib/api/remote-client";
 import { effectiveContext } from "./effective-context.svelte";
 import { systemStore } from "./system.svelte";
@@ -105,7 +109,9 @@ class AuthStore {
 
   private async _restore() {
     try {
-      if (localStorage.getItem("orbis_connection_scope") !== getConnectionScope()) {
+      if (
+        localStorage.getItem("orbis_connection_scope") !== getConnectionScope()
+      ) {
         localStorage.removeItem("orbis_token");
         localStorage.removeItem("orbis_user");
         localStorage.removeItem("orbis_connection_scope");

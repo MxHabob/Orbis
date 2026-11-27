@@ -50,90 +50,88 @@ const isLoading = $derived(feesQuery.isLoading);
 const loadError = $derived(Boolean(feesQuery.error));
 
 const data = $derived.by(() => {
-    if (!selectedCurrency) return [];
-    const startDate = new Date(`${dateRange.fromDate}T00:00:00Z`);
-    const endDate = new Date(`${dateRange.toDate}T00:00:00Z`);
-    if (
-      Number.isNaN(startDate.getTime()) ||
-      Number.isNaN(endDate.getTime()) ||
-      startDate > endDate
-    ) {
-      return [];
-    }
+  if (!selectedCurrency) return [];
+  const startDate = new Date(`${dateRange.fromDate}T00:00:00Z`);
+  const endDate = new Date(`${dateRange.toDate}T00:00:00Z`);
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    Number.isNaN(endDate.getTime()) ||
+    startDate > endDate
+  ) {
+    return [];
+  }
 
-    const monthCount =
-      (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 +
-      endDate.getUTCMonth() -
-      startDate.getUTCMonth() +
-      1;
-    const bucketUnit = monthCount > 36 ? "year" : "month";
-    const firstBucket = new Date(
-      Date.UTC(
-        startDate.getUTCFullYear(),
-        bucketUnit === "month" ? startDate.getUTCMonth() : 0,
-        1,
-      ),
-    );
-    const lastBucket = new Date(
-      Date.UTC(
-        endDate.getUTCFullYear(),
-        bucketUnit === "month" ? endDate.getUTCMonth() : 0,
-        1,
-      ),
-    );
-    const chartBuckets: {
-      key: string;
-      label: string;
-      invoiced: number;
-      collected: number;
-    }[] = [];
-    for (
-      const current = new Date(firstBucket);
-      current <= lastBucket;
-      current.setUTCMonth(
-        current.getUTCMonth() + (bucketUnit === "month" ? 1 : 12),
-      )
-    ) {
-      const key =
+  const monthCount =
+    (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 +
+    endDate.getUTCMonth() -
+    startDate.getUTCMonth() +
+    1;
+  const bucketUnit = monthCount > 36 ? "year" : "month";
+  const firstBucket = new Date(
+    Date.UTC(
+      startDate.getUTCFullYear(),
+      bucketUnit === "month" ? startDate.getUTCMonth() : 0,
+      1,
+    ),
+  );
+  const lastBucket = new Date(
+    Date.UTC(
+      endDate.getUTCFullYear(),
+      bucketUnit === "month" ? endDate.getUTCMonth() : 0,
+      1,
+    ),
+  );
+  const chartBuckets: {
+    key: string;
+    label: string;
+    invoiced: number;
+    collected: number;
+  }[] = [];
+  for (
+    const current = new Date(firstBucket);
+    current <= lastBucket;
+    current.setUTCMonth(
+      current.getUTCMonth() + (bucketUnit === "month" ? 1 : 12),
+    )
+  ) {
+    const key =
+      bucketUnit === "month"
+        ? `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, "0")}`
+        : String(current.getUTCFullYear());
+    chartBuckets.push({
+      key,
+      label:
         bucketUnit === "month"
-          ? `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, "0")}`
-          : String(current.getUTCFullYear());
-      chartBuckets.push({
-        key,
-        label:
-          bucketUnit === "month"
-            ? formatDate(current, "date", {
-                month: "short",
-                year: monthCount > 12 ? "2-digit" : undefined,
-                timeZone: "UTC",
-              })
-            : String(current.getUTCFullYear()),
-        invoiced: 0,
-        collected: 0,
-      });
-    }
-    const monthsByKey = new Map(
-      chartBuckets.map((month) => [month.key, month]),
-    );
+          ? formatDate(current, "date", {
+              month: "short",
+              year: monthCount > 12 ? "2-digit" : undefined,
+              timeZone: "UTC",
+            })
+          : String(current.getUTCFullYear()),
+      invoiced: 0,
+      collected: 0,
+    });
+  }
+  const monthsByKey = new Map(chartBuckets.map((month) => [month.key, month]));
 
-    for (const fee of feesQuery.data ?? []) {
-      const bucketKey = getBucketKey(fee.due_date, bucketUnit);
-      if (!bucketKey) continue;
-      const bucket = monthsByKey.get(bucketKey);
-      if (bucket) bucket.invoiced += toAmount(fee.net_amount);
-    }
+  for (const fee of feesQuery.data ?? []) {
+    const bucketKey = getBucketKey(fee.due_date, bucketUnit);
+    if (!bucketKey) continue;
+    const bucket = monthsByKey.get(bucketKey);
+    if (bucket) bucket.invoiced += toAmount(fee.net_amount);
+  }
 
-    for (const payment of payments) {
-      const paidAt = new Date(payment.paid_at || payment.created_at);
-      const bucketKey = Number.isNaN(paidAt.getTime())
-        ? undefined
-        : formatDateKey(paidAt).slice(0, bucketUnit === "year" ? 4 : 7);
-      if (!bucketKey) continue;
-      const bucket = monthsByKey.get(bucketKey);
-      if (bucket) bucket.collected += toAmount(payment.amount);
-    }
+  for (const payment of payments) {
+    const paidAt = new Date(payment.paid_at || payment.created_at);
+    const bucketKey = Number.isNaN(paidAt.getTime())
+      ? undefined
+      : formatDateKey(paidAt).slice(0, bucketUnit === "year" ? 4 : 7);
+    if (!bucketKey) continue;
+    const bucket = monthsByKey.get(bucketKey);
+    if (bucket) bucket.collected += toAmount(payment.amount);
+  }
 
-    return chartBuckets;
+  return chartBuckets;
 });
 
 const displayData = $derived(data);
@@ -172,8 +170,12 @@ const collectedLine = $derived(
 
 let hoveredIdx = $state<number | null>(null);
 let tooltipPos = $state<{ x: number; y: number } | null>(null);
-const hoveredPoint = $derived(hoveredIdx === null ? undefined : chartPoints[hoveredIdx]);
-const highlightedPoint = $derived(hoveredPoint ?? (chartPoints.length === 1 ? chartPoints[0] : undefined));
+const hoveredPoint = $derived(
+  hoveredIdx === null ? undefined : chartPoints[hoveredIdx],
+);
+const highlightedPoint = $derived(
+  hoveredPoint ?? (chartPoints.length === 1 ? chartPoints[0] : undefined),
+);
 
 function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   if (!hasRecords || chartPoints.length === 0) return;

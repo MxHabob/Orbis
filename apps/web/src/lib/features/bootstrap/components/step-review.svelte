@@ -52,7 +52,9 @@ const avatarController = new AvatarController();
 let productKey = $state("");
 let productKeyError = $state<string | null>(null);
 const blueprint = $derived(getBlueprint(form.institutionType));
-const country = $derived(setupRegions.find((region) => region.code === form.countryCode));
+const country = $derived(
+  setupRegions.find((region) => region.code === form.countryCode),
+);
 const track = $derived(
   EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack),
 );
@@ -89,7 +91,6 @@ $effect(() => {
 });
 
 onDestroy(() => avatarController.destroy());
-
 
 async function submitProductKey() {
   const key = productKey.trim();

@@ -11,7 +11,13 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { CheckCircle, ClockRotateRight, Refresh, Search, User } from "@orbis/icons";
+import {
+  CheckCircle,
+  ClockRotateRight,
+  Refresh,
+  Search,
+  User,
+} from "@orbis/icons";
 import type { OverrideRequestDto } from "$lib/api/types";
 import EmptyState from "$lib/shared/components/empty-state.svelte";
 import OverrideRequestCard from "./components/override-request-card.svelte";
@@ -88,9 +94,13 @@ const visibleRequests = $derived.by(() => {
         : pendingRequests;
 
   if (activeTab === "pending" && pendingFilter === "admission") {
-    list = list.filter((request) => request.override_type === "admission_approval");
+    list = list.filter(
+      (request) => request.override_type === "admission_approval",
+    );
   } else if (activeTab === "pending" && pendingFilter === "override") {
-    list = list.filter((request) => request.override_type !== "admission_approval");
+    list = list.filter(
+      (request) => request.override_type !== "admission_approval",
+    );
   }
 
   return [...list].sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -111,11 +121,7 @@ const emptyDescription = $derived(
 );
 
 function handleTabChange(value: string) {
-  if (
-    value === "pending" ||
-    value === "mine" ||
-    value === "history"
-  ) {
+  if (value === "pending" || value === "mine" || value === "history") {
     activeTab = value;
   }
 }

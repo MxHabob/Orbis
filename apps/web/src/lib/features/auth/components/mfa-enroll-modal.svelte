@@ -64,7 +64,10 @@ async function startEnrollment() {
       });
     }
   } catch (err: unknown) {
-    const message = err instanceof Error && err.message ? err.message : m.auth_ui_mfa_enrollment_failed();
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : m.auth_ui_mfa_enrollment_failed();
     errorMessage = message;
     toast.error(message);
   } finally {
@@ -136,7 +139,10 @@ async function handleVerifyAndActivate() {
     toast.success(m.common_mfa_enroll_success());
     step = "codes";
   } catch (err: unknown) {
-    const message = err instanceof Error && err.message ? err.message : m.auth_ui_mfa_verification_failed();
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : m.auth_ui_mfa_verification_failed();
     errorMessage = message;
     toast.error(message);
   } finally {

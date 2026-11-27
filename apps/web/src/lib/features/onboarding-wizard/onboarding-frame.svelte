@@ -31,8 +31,12 @@ afterNavigate(({ from, to }) => {
 });
 
 let disposed = false;
-onDestroy(() => { disposed = true; });
-onMount(() => { void loadOnboardingState(); });
+onDestroy(() => {
+  disposed = true;
+});
+onMount(() => {
+  void loadOnboardingState();
+});
 
 async function loadOnboardingState() {
   isLoadingState = true;
@@ -67,10 +71,14 @@ const steps = $derived(
 const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 
 const previousStepIndex = $derived(
-  steps.findLastIndex((step, index) => index < currentStepIndex && step.isAccessible),
+  steps.findLastIndex(
+    (step, index) => index < currentStepIndex && step.isAccessible,
+  ),
 );
 const nextStepIndex = $derived(
-  steps.findIndex((step, index) => index > currentStepIndex && step.isAccessible),
+  steps.findIndex(
+    (step, index) => index > currentStepIndex && step.isAccessible,
+  ),
 );
 
 const currentStepIndex = $derived(
@@ -79,7 +87,9 @@ const currentStepIndex = $derived(
 const currentStep = $derived(
   currentStepIndex >= 0 ? steps[currentStepIndex] : null,
 );
-const stepPosition = $derived(currentStep ? `${currentStepIndex + 1} / ${steps.length}` : "");
+const stepPosition = $derived(
+  currentStep ? `${currentStepIndex + 1} / ${steps.length}` : "",
+);
 
 async function exitSetup() {
   await navigateOnboardingRoute(`/${orgId}`);
@@ -95,7 +105,6 @@ async function goToStep(index: number) {
     await navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`);
   }
 }
-
 </script>
 
 <SetupWorkspace

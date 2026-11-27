@@ -79,7 +79,10 @@ function toggleDay(day: number) {
 function addBreak() {
   const after = Math.min(
     periodsCount,
-    Math.max(1, breaks.length === 0 ? 2 : breaks[breaks.length - 1].afterPeriod + 2),
+    Math.max(
+      1,
+      breaks.length === 0 ? 2 : breaks[breaks.length - 1].afterPeriod + 2,
+    ),
   );
   breaks = [
     ...breaks,

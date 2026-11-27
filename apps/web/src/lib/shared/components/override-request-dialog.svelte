@@ -2,7 +2,14 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { LoadingIndicator, toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
 import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
 import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
@@ -12,25 +19,42 @@ import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
 import { academicContext } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
-const request = $derived(periodOverrides.request?.orgId === orgId ? periodOverrides.request : null);
+const request = $derived(
+  periodOverrides.request?.orgId === orgId ? periodOverrides.request : null,
+);
 const target = $derived(request?.targets[0]);
-const period = $derived(academicContext.allPeriods.find((item) => item.id === target?.period_id));
+const period = $derived(
+  academicContext.allPeriods.find((item) => item.id === target?.period_id),
+);
 let submitting = $state(false);
 
 const targetLabel = createQuery(() => {
   const current = target;
   return {
-    queryKey: ["period-override-label", orgId, current?.entity_type, current?.entity_id],
-    enabled: current?.entity_type === "section" || current?.entity_type === "section_subject",
+    queryKey: [
+      "period-override-label",
+      orgId,
+      current?.entity_type,
+      current?.entity_id,
+    ],
+    enabled:
+      current?.entity_type === "section" ||
+      current?.entity_type === "section_subject",
     staleTime: 60_000,
     retry: false,
     queryFn: async () => {
       if (current?.entity_type === "section_subject") {
         const assignment = await api.getSectionSubject(current.entity_id);
         const [section, subject] = await Promise.all([
-          api.getSection(assignment.section_id), api.getSubject(assignment.subject_id),
+          api.getSection(assignment.section_id),
+          api.getSubject(assignment.subject_id),
         ]);
-        return [l(section.name_ar, section.name), l(subject.name_ar, subject.name)].filter(Boolean).join(" · ");
+        return [
+          l(section.name_ar, section.name),
+          l(subject.name_ar, subject.name),
+        ]
+          .filter(Boolean)
+          .join(" · ");
       }
       if (current?.entity_type === "section") {
         const section = await api.getSection(current.entity_id);

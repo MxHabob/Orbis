@@ -74,7 +74,10 @@ let dateOverride = $state<string>();
 let defaultDate = $state("");
 const selectedDate = $derived.by(() => {
   const requested = page.url.searchParams.get("date");
-  return dateOverride ?? (requested && isValidDateValue(requested) ? requested : defaultDate);
+  return (
+    dateOverride ??
+    (requested && isValidDateValue(requested) ? requested : defaultDate)
+  );
 });
 let selectedLessonId = $state("");
 let lessonOptions = $state<AttendanceLessonOption[]>([]);
@@ -142,9 +145,10 @@ async function loadClasses() {
   isLoadingClasses = true;
   classLoadError = false;
   try {
-    const timezone = orgContext.orgId === page.params.orgId && orgContext.isInitialized
-      ? orgContext.timezone
-      : (await api.getCurrentOrg()).timezone;
+    const timezone =
+      orgContext.orgId === page.params.orgId && orgContext.isInitialized
+        ? orgContext.timezone
+        : (await api.getCurrentOrg()).timezone;
     defaultDate = formatDateKey(new Date(), timezone);
     classes = await api.listSections();
     if (classes.length > 0) {

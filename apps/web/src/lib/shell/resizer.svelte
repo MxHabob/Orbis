@@ -100,7 +100,8 @@ function reportWidth(value: number) {
 
 function persistWidth(value: number) {
   if (persistId) {
-    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const base =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     localStorage.setItem(`resizer:${persistId}:px`, String(value * base));
   }
 }
@@ -111,24 +112,35 @@ function growsTowardRightForViewport() {
 }
 
 function onKeyDown(event: KeyboardEvent) {
-  if (!viewport || isDragging || event.altKey || event.ctrlKey || event.metaKey) return;
-  const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  if (!viewport || isDragging || event.altKey || event.ctrlKey || event.metaKey)
+    return;
+  const base =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   const current = viewport.getBoundingClientRect().width / base;
   const collapsed = collapsible && current <= collapsedWidth;
   let next: number;
   switch (event.key) {
     case "ArrowLeft":
     case "ArrowRight": {
-      const grows = (event.key === "ArrowRight") === growsTowardRightForViewport();
-      next = !grows && collapsed
-        ? collapsedWidth
-        : Math.max(minWidth, Math.min(maxWidth, current + (grows ? 1 : -1)));
+      const grows =
+        (event.key === "ArrowRight") === growsTowardRightForViewport();
+      next =
+        !grows && collapsed
+          ? collapsedWidth
+          : Math.max(minWidth, Math.min(maxWidth, current + (grows ? 1 : -1)));
       break;
     }
-    case "Home": next = collapsible ? collapsedWidth : minWidth; break;
-    case "End": next = maxWidth; break;
-    case "Enter": next = collapsible && !collapsed ? collapsedWidth : defaultValue; break;
-    default: return;
+    case "Home":
+      next = collapsible ? collapsedWidth : minWidth;
+      break;
+    case "End":
+      next = maxWidth;
+      break;
+    case "Enter":
+      next = collapsible && !collapsed ? collapsedWidth : defaultValue;
+      break;
+    default:
+      return;
   }
   event.preventDefault();
   reportWidth(next);
@@ -136,7 +148,8 @@ function onKeyDown(event: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-  if (!viewport || pointerId !== undefined || !e.isPrimary || e.button !== 0) return;
+  if (!viewport || pointerId !== undefined || !e.isPrimary || e.button !== 0)
+    return;
   e.preventDefault();
   const target = e.currentTarget as HTMLElement;
   target.setPointerCapture(e.pointerId);
@@ -146,7 +159,8 @@ function onPointerDown(e: PointerEvent) {
   startX = e.clientX;
   startWidth = viewport.getBoundingClientRect().width;
   growsTowardRight = growsTowardRightForViewport();
-  rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  rootFontSize =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   requestedWidth = undefined;
 
   document.body.style.cursor = "ew-resize";

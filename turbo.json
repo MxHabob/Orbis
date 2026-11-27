@@ -118,7 +118,10 @@
     "tauri:build:prod": {
       "cache": false,
       "env": ["VITE_*"],
-      "passThroughEnv": ["TAURI_SIGNING_PRIVATE_KEY", "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"]
+      "passThroughEnv": [
+        "TAURI_SIGNING_PRIVATE_KEY",
+        "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+      ]
     }
   }
 }

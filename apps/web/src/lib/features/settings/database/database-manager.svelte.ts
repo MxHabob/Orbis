@@ -88,7 +88,8 @@ export class DatabaseManagerController {
     this.isCheckingHealth = true;
     this.healthResult = null;
     try {
-      const result = await this.connection.connectionCheckRemoteHealth(serverUrl);
+      const result =
+        await this.connection.connectionCheckRemoteHealth(serverUrl);
       this.healthResult = result;
       return result;
     } finally {
@@ -118,7 +119,9 @@ export class DatabaseManagerController {
 
     try {
       if (params.mode === "api" && params.serverUrl) {
-        const health = await this.connection.connectionCheckRemoteHealth(params.serverUrl);
+        const health = await this.connection.connectionCheckRemoteHealth(
+          params.serverUrl,
+        );
         if (!health.reachable) {
           throw new Error(health.error || "Unable to connect to Orbis API");
         }
@@ -153,7 +156,8 @@ export class DatabaseManagerController {
     try {
       this.config = await this.connection.connectionReset();
       localStorage.removeItem("orbis_connection_scope");
-      this.operationSuccess = "Connection reset. Restart Orbis to choose a connection.";
+      this.operationSuccess =
+        "Connection reset. Restart Orbis to choose a connection.";
     } catch (e) {
       this.operationError = e instanceof Error ? e.message : String(e);
     } finally {

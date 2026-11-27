@@ -52,19 +52,26 @@ const enrollmentQuery = createQuery(() => {
           students.add(enrollment.student_id);
         }
         // Local clients may return the full list without applying pagination.
-        if (batch.length < pageSize || enrollmentIds.size === previousSize) return students;
+        if (batch.length < pageSize || enrollmentIds.size === previousSize)
+          return students;
       }
     },
   };
 });
 
-const isLoading = $derived(recordsQuery.isLoading || periodsQuery.isLoading || enrollmentQuery.isLoading);
-const failed = $derived(recordsQuery.isError || periodsQuery.isError || enrollmentQuery.isError);
+const isLoading = $derived(
+  recordsQuery.isLoading || periodsQuery.isLoading || enrollmentQuery.isLoading,
+);
+const failed = $derived(
+  recordsQuery.isError || periodsQuery.isError || enrollmentQuery.isError,
+);
 let hoveredIndex = $state<number | null>(null);
 
 const summary = $derived.by(() => {
   if (failed) return null;
-  const selectedPeriod = periodsQuery.data?.find((item) => item.id === selectedTerm);
+  const selectedPeriod = periodsQuery.data?.find(
+    (item) => item.id === selectedTerm,
+  );
   if (selectedTerm !== "all" && !selectedPeriod) return null;
   const cutoff = new Date();
   if (period === "3-months" || period === "6-months") {
@@ -74,24 +81,62 @@ const summary = $derived.by(() => {
   }
   cutoff.setHours(0, 0, 0, 0);
   const lowerBound = period === "all" ? -Infinity : cutoff.getTime();
-  const termStart = selectedPeriod ? Date.parse(selectedPeriod.start_date) : -Infinity;
-  const termEnd = selectedPeriod ? new Date(selectedPeriod.end_date).setHours(23, 59, 59, 999) : Infinity;
+  const termStart = selectedPeriod
+    ? Date.parse(selectedPeriod.start_date)
+    : -Infinity;
+  const termEnd = selectedPeriod
+    ? new Date(selectedPeriod.end_date).setHours(23, 59, 59, 999)
+    : Infinity;
   const scoped = selectedClass !== "all" || selectedTerm !== "all";
   const records = (recordsQuery.data ?? []).filter((record) => {
     const date = Date.parse(record.created_at);
-    return (!scoped || enrollmentQuery.data?.has(record.student_id)) &&
-      date >= Math.max(lowerBound, termStart) && date <= termEnd;
+    return (
+      (!scoped || enrollmentQuery.data?.has(record.student_id)) &&
+      date >= Math.max(lowerBound, termStart) &&
+      date <= termEnd
+    );
   });
-  const positive = records.filter((record) => record.record_type === "positive").length;
-  const negative = records.filter((record) => record.record_type === "negative").length;
-  return records.length ? { total_records: records.length, positive, negative, other: records.length - positive - negative } : null;
+  const positive = records.filter(
+    (record) => record.record_type === "positive",
+  ).length;
+  const negative = records.filter(
+    (record) => record.record_type === "negative",
+  ).length;
+  return records.length
+    ? {
+        total_records: records.length,
+        positive,
+        negative,
+        other: records.length - positive - negative,
+      }
+    : null;
 });
 
-const displayItems = $derived([
-  { name: "positive", label: m.academics_behavior_type_positive(), value: summary?.positive ?? 0, color: "bg-success" },
-  { name: "negative", label: m.academics_behavior_type_negative(), value: summary?.negative ?? 0, color: "bg-destructive" },
-  { name: "other", label: m.common_rooms_type_other(), value: summary?.other ?? 0, color: "bg-chart-2" },
-].map((item) => ({ ...item, percent: Math.round(item.value * 100 / (summary?.total_records || 1)) })));
+const displayItems = $derived(
+  [
+    {
+      name: "positive",
+      label: m.academics_behavior_type_positive(),
+      value: summary?.positive ?? 0,
+      color: "bg-success",
+    },
+    {
+      name: "negative",
+      label: m.academics_behavior_type_negative(),
+      value: summary?.negative ?? 0,
+      color: "bg-destructive",
+    },
+    {
+      name: "other",
+      label: m.common_rooms_type_other(),
+      value: summary?.other ?? 0,
+      color: "bg-chart-2",
+    },
+  ].map((item) => ({
+    ...item,
+    percent: Math.round((item.value * 100) / (summary?.total_records || 1)),
+  })),
+);
 </script>
 
 <div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm">

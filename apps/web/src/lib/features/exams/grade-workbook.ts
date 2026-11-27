@@ -2,15 +2,26 @@
 import type { RecordGradeItemRequest } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import {
-  gradeStatus, makeGradeItem, parseSheetScore, savedScore,
-  type SheetComponent, type SheetRow, type SheetScore, type SheetSubject,
+  gradeStatus,
+  makeGradeItem,
+  parseSheetScore,
+  savedScore,
+  type SheetComponent,
+  type SheetRow,
+  type SheetScore,
+  type SheetSubject,
 } from "./class-grade-sheet";
 
 const manifestName = "_Orbis";
 const manifestVersion = "grade-workbook-1";
 const fieldRow = 4;
 const firstStudentRow = 5;
-const identityFields = ["student_name", "student_id", "enrollment_id", "baseline"];
+const identityFields = [
+  "student_name",
+  "student_id",
+  "enrollment_id",
+  "baseline",
+];
 
 interface GradeWorkbookContext {
   orgId: string;
@@ -55,7 +66,10 @@ interface SheetManifest {
   schema: string;
 }
 
-function headerText(item: { name: string; name_ar?: string | null }, arabic: boolean) {
+function headerText(
+  item: { name: string; name_ar?: string | null },
+  arabic: boolean,
+) {
   return (arabic && item.name_ar) || item.name;
 }
 
@@ -64,17 +78,31 @@ function studentText(row: SheetRow, arabic: boolean) {
 }
 
 function componentColumns(subjects: SheetSubject[]) {
-  return subjects.flatMap((subject) => subject.components.map((component) => ({ subject, component })));
+  return subjects.flatMap((subject) =>
+    subject.components.map((component) => ({ subject, component })),
+  );
 }
 
 function schemaOf(subjects: SheetSubject[]) {
-  return JSON.stringify(componentColumns(subjects)
-    .map(({ subject, component }) => [component.field, subject.schemeId ?? "", subject.schemeRevision ?? "", component.max_score, Boolean(component.historical)])
-    .sort(([left], [right]) => String(left).localeCompare(String(right), "en")));
+  return JSON.stringify(
+    componentColumns(subjects)
+      .map(({ subject, component }) => [
+        component.field,
+        subject.schemeId ?? "",
+        subject.schemeRevision ?? "",
+        component.max_score,
+        Boolean(component.historical),
+      ])
+      .sort(([left], [right]) =>
+        String(left).localeCompare(String(right), "en"),
+      ),
+  );
 }
 
 function fieldsInSnapshotOrder(subjects: SheetSubject[]) {
-  return componentColumns(subjects).map(({ component }) => component.field).sort();
+  return componentColumns(subjects)
+    .map(({ component }) => component.field)
+    .sort();
 }
 
 function canonicalScore(value: SheetScore | undefined): SheetScore {
@@ -90,7 +118,12 @@ function safeSheetName(name: string, index: number) {
 }
 
 export function buildGradeWorkbook(
-  context: GradeWorkbookContext & { orgName: string; periodLabel: string; yearLabel?: string; arabic: boolean },
+  context: GradeWorkbookContext & {
+    orgName: string;
+    periodLabel: string;
+    yearLabel?: string;
+    arabic: boolean;
+  },
   scopes: GradeWorkbookSheet[],
 ) {
   const workbook = XLSX.utils.book_new();
@@ -98,7 +131,9 @@ export function buildGradeWorkbook(
   const manifest = [[manifestVersion, context.orgId, context.periodId]];
   for (const scope of scopes) {
     const name = safeSheetName(scope.className, workbook.SheetNames.length);
-    const subjects = scope.subjects.filter((subject) => subject.components.length);
+    const subjects = scope.subjects.filter(
+      (subject) => subject.components.length,
+    );
     const layout = subjects.flatMap((subject) => [
       ...subject.components.map((component) => ({
         key: component.field,
@@ -108,7 +143,10 @@ export function buildGradeWorkbook(
       {
         key: `total_${subject.id}`,
         label: m.common_grades_col_total(),
-        maximum: subject.components.reduce((total, component) => total + component.max_score, 0),
+        maximum: subject.components.reduce(
+          (total, component) => total + component.max_score,
+          0,
+        ),
       },
     ]);
     const groupLabels = identityFields.map(() => "");
@@ -117,21 +155,50 @@ export function buildGradeWorkbook(
     const subtotalColumns: number[] = [];
     for (const subject of subjects) {
       groupLabels[col] = headerText(subject, context.arabic);
-      merges.push({ s: { r: 1, c: col }, e: { r: 1, c: col + subject.components.length } });
+      merges.push({
+        s: { r: 1, c: col },
+        e: { r: 1, c: col + subject.components.length },
+      });
       subtotalColumns.push(col + subject.components.length);
       col += subject.components.length + 1;
     }
     if (subtotalColumns.length) {
-      layout.push({ key: "total", label: m.exams_grade_sheet_grand_total(),
-        maximum: subjects.reduce((sum, subject) => sum + subject.components.reduce((maximum, component) => maximum + component.max_score, 0), 0) });
+      layout.push({
+        key: "total",
+        label: m.exams_grade_sheet_grand_total(),
+        maximum: subjects.reduce(
+          (sum, subject) =>
+            sum +
+            subject.components.reduce(
+              (maximum, component) => maximum + component.max_score,
+              0,
+            ),
+          0,
+        ),
+      });
     }
     merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(3, col) } });
     // Start the heading at the first visible (student name) column.
     const snapshotFields = fieldsInSnapshotOrder(scope.subjects);
     const headers = [
-      [[context.orgName, scope.className, context.yearLabel, context.periodLabel].filter(Boolean).join(" / ")],
+      [
+        [
+          context.orgName,
+          scope.className,
+          context.yearLabel,
+          context.periodLabel,
+        ]
+          .filter(Boolean)
+          .join(" / "),
+      ],
       groupLabels,
-      [m.common_word_student(), "", "", "", ...layout.map((column) => column.label)],
+      [
+        m.common_word_student(),
+        "",
+        "",
+        "",
+        ...layout.map((column) => column.label),
+      ],
       ["", "", "", "", ...layout.map((column) => column.maximum)],
       [...identityFields, ...layout.map((column) => column.key)],
     ];
@@ -139,28 +206,55 @@ export function buildGradeWorkbook(
       studentText(row, context.arabic),
       row.student_id,
       row.enrollment_id ?? "",
-      JSON.stringify(snapshotFields.map((field) => {
-        const grade = row.savedGrades[field];
-        return [canonicalScore(savedScore(grade)), grade?.updated_at ?? null];
-      })),
+      JSON.stringify(
+        snapshotFields.map((field) => {
+          const grade = row.savedGrades[field];
+          return [canonicalScore(savedScore(grade)), grade?.updated_at ?? null];
+        }),
+      ),
       ...layout.map((column) => row[column.key] ?? ""),
     ]);
     const sheet = XLSX.utils.aoa_to_sheet([...headers, ...values]);
-    sheet["!rows"] = [{ hpt: 25 }, { hpt: 22 }, { hpt: 21 }, {}, { hidden: true }];
-    sheet["!cols"] = [{ wch: 29 }, { hidden: true }, { hidden: true }, { hidden: true },
-      ...layout.map((column) => ({ wch: Math.max(13, Math.min(22, column.label.length + 4)) }))];
+    sheet["!rows"] = [
+      { hpt: 25 },
+      { hpt: 22 },
+      { hpt: 21 },
+      {},
+      { hidden: true },
+    ];
+    sheet["!cols"] = [
+      { wch: 29 },
+      { hidden: true },
+      { hidden: true },
+      { hidden: true },
+      ...layout.map((column) => ({
+        wch: Math.max(13, Math.min(22, column.label.length + 4)),
+      })),
+    ];
     sheet["!merges"] = merges;
     let start = identityFields.length;
     for (const subject of subjects) {
       const end = start + subject.components.length;
       for (let index = 0; index < values.length; index++) {
         const r = firstStudentRow + index;
-        const range = XLSX.utils.encode_range({ s: { r, c: start }, e: { r, c: end - 1 } });
+        const range = XLSX.utils.encode_range({
+          s: { r, c: start },
+          e: { r, c: end - 1 },
+        });
         const subtotal = values[index]?.[end];
         sheet[XLSX.utils.encode_cell({ r, c: end })] = {
           t: typeof subtotal === "number" ? "n" : "s",
           v: typeof subtotal === "number" ? subtotal : "",
-          f: "IF(COUNT(" + range + ")+COUNTIF(" + range + ' ,"absent")+COUNTIF(' + range + ',"\u063a")=0,"",SUM(' + range + "))",
+          f:
+            "IF(COUNT(" +
+            range +
+            ")+COUNTIF(" +
+            range +
+            ' ,"absent")+COUNTIF(' +
+            range +
+            ',"\u063a")=0,"",SUM(' +
+            range +
+            "))",
         };
       }
       start = end + 1;
@@ -168,7 +262,9 @@ export function buildGradeWorkbook(
     if (subtotalColumns.length) {
       for (let index = 0; index < values.length; index++) {
         const r = firstStudentRow + index;
-        const cells = subtotalColumns.map((c) => XLSX.utils.encode_cell({ r, c })).join(",");
+        const cells = subtotalColumns
+          .map((c) => XLSX.utils.encode_cell({ r, c }))
+          .join(",");
         const total = scope.rows[index]?.total;
         sheet[XLSX.utils.encode_cell({ r, c: col })] = {
           t: typeof total === "number" ? "n" : "s",
@@ -178,7 +274,12 @@ export function buildGradeWorkbook(
       }
     }
     XLSX.utils.book_append_sheet(workbook, sheet, name);
-    manifest.push([name, scope.classId, scope.rosterPeriodId, schemaOf(scope.subjects)]);
+    manifest.push([
+      name,
+      scope.classId,
+      scope.rosterPeriodId,
+      schemaOf(scope.subjects),
+    ]);
   }
   const guide = XLSX.utils.aoa_to_sheet([
     [m.exams_workbook_guide()],
@@ -187,8 +288,15 @@ export function buildGradeWorkbook(
   ]);
   guide["!cols"] = [{ wch: 100 }];
   XLSX.utils.book_append_sheet(workbook, guide, m.exams_workbook_guide());
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(manifest), manifestName);
-  workbook.Workbook.Sheets = workbook.SheetNames.map((sheetName) => ({ name: sheetName, Hidden: sheetName === manifestName ? 2 : 0 }));
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet(manifest),
+    manifestName,
+  );
+  workbook.Workbook.Sheets = workbook.SheetNames.map((sheetName) => ({
+    name: sheetName,
+    Hidden: sheetName === manifestName ? 2 : 0,
+  }));
   return workbook;
 }
 
@@ -196,32 +304,63 @@ export function isGradeWorkbook(workbook: XLSX.WorkBook) {
   return Boolean(workbook.Sheets[manifestName]);
 }
 
-export async function downloadGradeWorkbook(workbook: XLSX.WorkBook, filename: string) {
+export async function downloadGradeWorkbook(
+  workbook: XLSX.WorkBook,
+  filename: string,
+) {
   const { isTauri } = await import("@tauri-apps/api/core");
   if (!isTauri()) {
     XLSX.writeFile(workbook, filename);
     return true;
   }
-  const [{ save }, { writeFile }] = await Promise.all([import("@tauri-apps/plugin-dialog"), import("@tauri-apps/plugin-fs")]);
-  const path = await save({ defaultPath: filename, filters: [{ name: "Excel", extensions: ["xlsx"] }] });
+  const [{ save }, { writeFile }] = await Promise.all([
+    import("@tauri-apps/plugin-dialog"),
+    import("@tauri-apps/plugin-fs"),
+  ]);
+  const path = await save({
+    defaultPath: filename,
+    filters: [{ name: "Excel", extensions: ["xlsx"] }],
+  });
   if (!path) return false;
-  await writeFile(path, new Uint8Array(XLSX.write(workbook, { bookType: "xlsx", type: "array" })));
+  await writeFile(
+    path,
+    new Uint8Array(XLSX.write(workbook, { bookType: "xlsx", type: "array" })),
+  );
   return true;
 }
 
-function readManifest(workbook: XLSX.WorkBook, context: GradeWorkbookContext): SheetManifest[] {
+function readManifest(
+  workbook: XLSX.WorkBook,
+  context: GradeWorkbookContext,
+): SheetManifest[] {
   const manifest = workbook.Sheets[manifestName];
   if (!manifest) throw new Error(m.exams_workbook_template_required());
-  const [[version, orgId, periodId] = [], ...entries] = XLSX.utils.sheet_to_json<string[]>(manifest, {
-    header: 1, raw: false, blankrows: false,
-  });
-  if (version !== manifestVersion || orgId !== context.orgId || periodId !== context.periodId || !entries.length) {
+  const [[version, orgId, periodId] = [], ...entries] =
+    XLSX.utils.sheet_to_json<string[]>(manifest, {
+      header: 1,
+      raw: false,
+      blankrows: false,
+    });
+  if (
+    version !== manifestVersion ||
+    orgId !== context.orgId ||
+    periodId !== context.periodId ||
+    !entries.length
+  ) {
     throw new Error(m.exams_grade_sheet_file_context());
   }
   const classIds = new Set<string>();
   const names = new Set<string>();
   return entries.map(([name, classId, rosterPeriodId, schema]) => {
-    if (!name || !classId || !rosterPeriodId || !schema || names.has(name) || classIds.has(classId) || !workbook.Sheets[name]) {
+    if (
+      !name ||
+      !classId ||
+      !rosterPeriodId ||
+      !schema ||
+      names.has(name) ||
+      classIds.has(classId) ||
+      !workbook.Sheets[name]
+    ) {
       throw new Error(m.exams_grade_sheet_file_context());
     }
     names.add(name);
@@ -233,11 +372,19 @@ function readManifest(workbook: XLSX.WorkBook, context: GradeWorkbookContext): S
 function readSnapshot(value: unknown): [SheetScore, string | null][] | null {
   try {
     const parsed: unknown = JSON.parse(String(value));
-    if (!Array.isArray(parsed) || parsed.some((entry) =>
-      !Array.isArray(entry) || entry.length !== 2 ||
-      ![null, "number", "string"].includes(entry[0] === null ? null : typeof entry[0]) ||
-      (entry[1] !== null && typeof entry[1] !== "string"),
-    )) return null;
+    if (
+      !Array.isArray(parsed) ||
+      parsed.some(
+        (entry) =>
+          !Array.isArray(entry) ||
+          entry.length !== 2 ||
+          ![null, "number", "string"].includes(
+            entry[0] === null ? null : typeof entry[0],
+          ) ||
+          (entry[1] !== null && typeof entry[1] !== "string"),
+      )
+    )
+      return null;
     return parsed;
   } catch {
     return null;
@@ -255,16 +402,29 @@ export async function reviewGradeWorkbook(
     const scope = await loadSheet(entry.classId);
     plan.sheets.push(scope);
     const addError = (message: string, row?: number, col?: number) => {
-      const address = row === undefined ? "" : col === undefined ? ` · ${row + 1}` : ` · ${XLSX.utils.encode_cell({ r: row, c: col })}`;
+      const address =
+        row === undefined
+          ? ""
+          : col === undefined
+            ? ` · ${row + 1}`
+            : ` · ${XLSX.utils.encode_cell({ r: row, c: col })}`;
       plan.errors.push(`${scope.className}${address} — ${message}`);
     };
-    if (entry.rosterPeriodId !== scope.rosterPeriodId || entry.schema !== schemaOf(scope.subjects)) {
+    if (
+      entry.rosterPeriodId !== scope.rosterPeriodId ||
+      entry.schema !== schemaOf(scope.subjects)
+    ) {
       addError(m.exams_workbook_schema_changed());
       continue;
     }
     const fields = fieldsInSnapshotOrder(scope.subjects);
     const sheet = workbook.Sheets[entry.name]!;
-    const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true, defval: "", range: 0 });
+    const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+      header: 1,
+      raw: true,
+      defval: "",
+      range: 0,
+    });
     const keys = (data[fieldRow] ?? []).map(String);
     const indexByKey = new Map<string, number>();
     for (const [index, key] of keys.entries()) {
@@ -281,14 +441,24 @@ export async function reviewGradeWorkbook(
       continue;
     }
     const students = new Map(scope.rows.map((row) => [row.student_id, row]));
-    const components = new Map(componentColumns(scope.subjects).map((item) => [item.component.field, item]));
+    const components = new Map(
+      componentColumns(scope.subjects).map((item) => [
+        item.component.field,
+        item,
+      ]),
+    );
     const seen = new Set<string>();
     for (let index = firstStudentRow; index < data.length; index++) {
       const cells = data[index] ?? [];
       if (cells.every((cell) => !String(cell ?? "").trim())) continue;
       const studentId = String(cells[indexByKey.get("student_id")!] ?? "");
       const row = students.get(studentId);
-      if (!row || seen.has(studentId) || String(cells[indexByKey.get("enrollment_id")!] ?? "") !== (row.enrollment_id ?? "")) {
+      if (
+        !row ||
+        seen.has(studentId) ||
+        String(cells[indexByKey.get("enrollment_id")!] ?? "") !==
+          (row.enrollment_id ?? "")
+      ) {
         addError(m.exams_workbook_student_changed(), index);
         continue;
       }
@@ -305,26 +475,46 @@ export async function reviewGradeWorkbook(
         const { subject, component } = components.get(field)!;
         const value = parseSheetScore(raw, component.max_score);
         if (value == null) {
-          addError(m.exams_grade_sheet_score_range({ max: component.max_score }), index, col);
+          addError(
+            m.exams_grade_sheet_score_range({ max: component.max_score }),
+            index,
+            col,
+          );
           continue;
         }
         const saved = row.savedGrades[field];
         const before = savedScore(saved);
         const [original, revision] = snapshot[snapshotIndex]!;
         if (canonicalScore(value) === original || value === before) continue;
-        if (component.historical || (saved && !saved.component_code && !saved.component_id)) {
+        if (
+          component.historical ||
+          (saved && !saved.component_code && !saved.component_id)
+        ) {
           addError(m.exams_grade_sheet_historical(), index, col);
           continue;
         }
-        if (!row.enrollment_id || canonicalScore(before) !== original || (saved?.updated_at ?? null) !== revision) {
+        if (
+          !row.enrollment_id ||
+          canonicalScore(before) !== original ||
+          (saved?.updated_at ?? null) !== revision
+        ) {
           addError(m.exams_workbook_grade_changed(), index, col);
           continue;
         }
         plan.changes.push({
           id: `${scope.classId}:${studentId}:${field}`,
-          classId: scope.classId, className: scope.className, studentId, student: studentText(row, arabic),
-          subject: headerText(subject, arabic), component: headerText(component, arabic), field, before,
-          after: value, revision, item: makeGradeItem(context.periodId, subject, component, row, value), isNew: !saved,
+          classId: scope.classId,
+          className: scope.className,
+          studentId,
+          student: studentText(row, arabic),
+          subject: headerText(subject, arabic),
+          component: headerText(component, arabic),
+          field,
+          before,
+          after: value,
+          revision,
+          item: makeGradeItem(context.periodId, subject, component, row, value),
+          isNew: !saved,
         });
       }
     }

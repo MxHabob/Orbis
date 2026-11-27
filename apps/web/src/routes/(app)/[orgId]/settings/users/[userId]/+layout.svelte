@@ -81,7 +81,6 @@ async function handleGenerateTempPassword() {
   }
 }
 
-
 async function handleDeleteUser() {
   if (!userId) return;
   const confirmed = await confirmStore.prompt({

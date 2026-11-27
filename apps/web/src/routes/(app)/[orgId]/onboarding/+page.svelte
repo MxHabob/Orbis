@@ -6,7 +6,12 @@ import { Button } from "@orbis/ui/button";
 import { Card, CardContent } from "@orbis/ui/card";
 import { Input } from "@orbis/ui/input";
 import { Progress } from "@orbis/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import type { OnboardingTaskStatus, SetupTaskDto } from "$lib/api/types";
 import { effectiveContext, systemStore } from "$lib/stores";
 import EmptyState from "$lib/shared/components/empty-state.svelte";
@@ -14,7 +19,10 @@ import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { navigateOnboardingRoute } from "$lib/features/onboarding-wizard/navigation";
 import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
-import { filterSetupTasks, type SetupTaskFilter } from "$lib/features/onboarding-wizard/task-filters";
+import {
+  filterSetupTasks,
+  type SetupTaskFilter,
+} from "$lib/features/onboarding-wizard/task-filters";
 import {
   deriveSteps,
   findNextIncompleteStep,
@@ -27,11 +35,18 @@ const isArabic = $derived(getLocale() === "ar");
 const onboardingState = $derived(systemStore.onboardingState);
 const tasks = $derived(onboardingState?.tasks ?? []);
 const categories = $derived(onboardingState?.categories ?? []);
-const steps = $derived(deriveSteps(tasks, (permission) => effectiveContext.hasPermission(permission)));
+const steps = $derived(
+  deriveSteps(tasks, (permission) =>
+    effectiveContext.hasPermission(permission),
+  ),
+);
 const recommendedTask = $derived(onboardingState?.recommended_next_task);
-const canOpenRecommended = $derived(isTaskAccessible(steps, recommendedTask?.id));
+const canOpenRecommended = $derived(
+  isTaskAccessible(steps, recommendedTask?.id),
+);
 const guidedStep = $derived(
-  findNextIncompleteStep(steps) ?? steps.find((step) => step.id === "review" && step.isAccessible),
+  findNextIncompleteStep(steps) ??
+    steps.find((step) => step.id === "review" && step.isAccessible),
 );
 
 let search = $state("");
@@ -56,8 +71,12 @@ const statusLabels = {
   not_applicable: m.onboarding_task_status_not_applicable,
 } satisfies Record<OnboardingTaskStatus, () => string>;
 
-const activeFilter = $derived(filters.find((option) => option.value === filter) ?? filters[0]);
-const filteredTasks = $derived(filterSetupTasks(tasks, { category, status: filter, search }));
+const activeFilter = $derived(
+  filters.find((option) => option.value === filter) ?? filters[0],
+);
+const filteredTasks = $derived(
+  filterSetupTasks(tasks, { category, status: filter, search }),
+);
 
 function localized(english: string, arabic?: string | null) {
   return (isArabic ? arabic : english) || english || arabic || "";
@@ -82,7 +101,8 @@ async function refresh() {
     const requestedOrg = orgId;
     const result = await fetchLatestOnboardingState(requestedOrg);
     if (page.params.orgId !== requestedOrg) return;
-    if (result.org_id !== requestedOrg) throw new Error(m.onboarding_state_load_failed());
+    if (result.org_id !== requestedOrg)
+      throw new Error(m.onboarding_state_load_failed());
     systemStore.onboardingState = result;
   } catch {
     refreshFailed = true;
@@ -99,7 +119,8 @@ function openTask(task: SetupTaskDto) {
 }
 
 function openGuidedSetup() {
-  if (guidedStep) return navigateOnboardingRoute(`/${orgId}/onboarding/${guidedStep.route}`);
+  if (guidedStep)
+    return navigateOnboardingRoute(`/${orgId}/onboarding/${guidedStep.route}`);
 }
 </script>
 

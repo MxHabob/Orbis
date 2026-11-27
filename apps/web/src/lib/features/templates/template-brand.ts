@@ -1,7 +1,9 @@
 import { orgContext } from "$lib/stores/org-context.svelte";
 
 export function organizationBrandColor() {
-  return /^#[0-9a-f]{6}$/i.test(orgContext.primaryColor) ? orgContext.primaryColor : "#475569";
+  return /^#[0-9a-f]{6}$/i.test(orgContext.primaryColor)
+    ? orgContext.primaryColor
+    : "#475569";
 }
 
 export function resolveTemplateColor(color: string) {

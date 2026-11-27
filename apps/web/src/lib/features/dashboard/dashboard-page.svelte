@@ -25,7 +25,9 @@ const { stats: statsQuery, access } = createDashboardStatsQuery(
 const stats = $derived(statsQuery.data ?? null);
 const isLoading = $derived(access.isLoading || statsQuery.isLoading);
 const error = $derived(
-  access.error || statsQuery.error ? extractErrorMessage(access.error ?? statsQuery.error) : null,
+  access.error || statsQuery.error
+    ? extractErrorMessage(access.error ?? statsQuery.error)
+    : null,
 );
 </script>
 

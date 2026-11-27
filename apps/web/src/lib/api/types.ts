@@ -712,7 +712,11 @@ export interface StatementFilterParams {
 }
 
 export interface ProcessDisbursementRequest {
-  additional_lines?: Array<{ beneficiary_account_id: string; amount: number | string; notes?: string }>;
+  additional_lines?: Array<{
+    beneficiary_account_id: string;
+    amount: number | string;
+    notes?: string;
+  }>;
   treasury_account_id: string;
   beneficiary_account_id: string;
   amount: number | string;
@@ -1958,7 +1962,10 @@ export interface OrbisApiClient {
   closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto>;
   openEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
   closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
-  transitionAcademicPeriodState(id: string, state: string): Promise<AcademicPeriodDto>;
+  transitionAcademicPeriodState(
+    id: string,
+    state: string,
+  ): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
   listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
   applyCalendarTemplate(

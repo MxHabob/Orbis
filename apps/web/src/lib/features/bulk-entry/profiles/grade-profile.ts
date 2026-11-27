@@ -32,7 +32,9 @@ export interface GradeRowData {
 }
 
 function normalizeToken(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function parseBooleanLike(value: unknown): boolean | null {
@@ -133,7 +135,8 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
     headerEn: "Score*",
     required: true,
     type: "decimal",
-    descriptionAr: "قيمة الدرجة (يمكن تركها فارغة/0 مع حالة غائب أو بعذر أو معفى)",
+    descriptionAr:
+      "قيمة الدرجة (يمكن تركها فارغة/0 مع حالة غائب أو بعذر أو معفى)",
     example: "18.5",
   },
   {
@@ -180,36 +183,109 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const gradeGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
-  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
+  {
+    id: "__idx",
+    header: m.bulk_entry_grid_row_number(),
+    width: 50,
+    pin: "left",
+    readonly: true,
+  },
+  {
+    id: "status",
+    header: m.bulk_entry_grid_status(),
+    width: 110,
+    pin: "left",
+    type: "badge",
+    readonly: true,
+  },
   { id: "student_id", header: "Student ID", width: 150 },
-  { id: "student_name", header: m.bulk_entry_grade_header_student_name(), width: 180, readonly: true },
+  {
+    id: "student_name",
+    header: m.bulk_entry_grade_header_student_name(),
+    width: 180,
+    readonly: true,
+  },
   { id: "period_id", header: "Period ID", width: 150 },
   { id: "section_subject_id", header: "Section Subject ID", width: 180 },
   { id: "component_code", header: "Component Code", width: 160 },
-  { id: "score", header: m.bulk_entry_grade_header_score(), width: 100, type: "decimal", align: "center" },
-  { id: "max_score", header: m.bulk_entry_grade_header_max_score(), width: 110, type: "decimal", align: "center" },
-  { id: "is_absent", header: "Absent", width: 90, type: "boolean", align: "center" },
-  { id: "is_excused", header: m.bulk_entry_grade_header_is_excused(), width: 100, type: "boolean", align: "center" },
-  { id: "is_exempt", header: "Exempt", width: 90, type: "boolean", align: "center" },
+  {
+    id: "score",
+    header: m.bulk_entry_grade_header_score(),
+    width: 100,
+    type: "decimal",
+    align: "center",
+  },
+  {
+    id: "max_score",
+    header: m.bulk_entry_grade_header_max_score(),
+    width: 110,
+    type: "decimal",
+    align: "center",
+  },
+  {
+    id: "is_absent",
+    header: "Absent",
+    width: 90,
+    type: "boolean",
+    align: "center",
+  },
+  {
+    id: "is_excused",
+    header: m.bulk_entry_grade_header_is_excused(),
+    width: 100,
+    type: "boolean",
+    align: "center",
+  },
+  {
+    id: "is_exempt",
+    header: "Exempt",
+    width: 90,
+    type: "boolean",
+    align: "center",
+  },
   { id: "notes", header: m.bulk_entry_grade_header_notes(), width: 180 },
 ];
 
-function asRefItems(items: any[], nameKeys: string[] = ["name", "title", "label"], codeKeys: string[] = ["code"]): ReferenceItem[] {
+function asRefItems(
+  items: any[],
+  nameKeys: string[] = ["name", "title", "label"],
+  codeKeys: string[] = ["code"],
+): ReferenceItem[] {
   return (items || [])
     .map((it) => {
       if (!it || typeof it !== "object") return null;
       const id = String(it.id ?? it.value ?? "");
       if (!id) return null;
-      const name = String(nameKeys.map((k) => it[k]).find((v) => typeof v === "string" && v) ?? it.name_ar ?? it.nameAr ?? id);
-      const nameAr = typeof it.name_ar === "string" ? it.name_ar : (typeof it.nameAr === "string" ? it.nameAr : undefined);
-      const codeVal = codeKeys.map((k) => it[k]).find((v) => typeof v === "string" && v);
-      return { id, code: codeVal ? String(codeVal) : undefined, name, nameAr, meta: it as Record<string, unknown> } as ReferenceItem;
+      const name = String(
+        nameKeys.map((k) => it[k]).find((v) => typeof v === "string" && v) ??
+          it.name_ar ??
+          it.nameAr ??
+          id,
+      );
+      const nameAr =
+        typeof it.name_ar === "string"
+          ? it.name_ar
+          : typeof it.nameAr === "string"
+            ? it.nameAr
+            : undefined;
+      const codeVal = codeKeys
+        .map((k) => it[k])
+        .find((v) => typeof v === "string" && v);
+      return {
+        id,
+        code: codeVal ? String(codeVal) : undefined,
+        name,
+        nameAr,
+        meta: it as Record<string, unknown>,
+      } as ReferenceItem;
     })
     .filter(Boolean) as ReferenceItem[];
 }
 
-export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDetails> = {
+export const gradeImportProfile: BulkImportProfile<
+  GradeRowData,
+  GradePreviewDetails
+> = {
   id: "grades",
   displayName: {
     ar: "استيراد درجات وتقييمات بالجملة",
@@ -224,29 +300,56 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
   gridColumns: gradeGridColumns,
 
   async buildReferenceData(_orgId: string): Promise<BulkReferenceData> {
-    const [periods, schemes, students, sections, subjects, sectionSubjects] = await Promise.all([
-      (api as any).listAcademicPeriods?.().catch(() => []) ?? Promise.resolve([]),
-      (api as any).listAssessmentSchemes?.().catch(() => []) ?? Promise.resolve([]),
-      (api as any).listStudents?.({ limit: 500 }).catch(() => (api as any).listStudents?.().catch(() => [])) ?? Promise.resolve([]),
-      (api as any).listSections?.().catch(() => []) ?? Promise.resolve([]),
-      (api as any).listSubjects?.().catch(() => []) ?? Promise.resolve([]),
-      (api as any).listSectionSubjects?.().catch(() => []) ?? Promise.resolve([]),
-    ]);
+    const [periods, schemes, students, sections, subjects, sectionSubjects] =
+      await Promise.all([
+        (api as any).listAcademicPeriods?.().catch(() => []) ??
+          Promise.resolve([]),
+        (api as any).listAssessmentSchemes?.().catch(() => []) ??
+          Promise.resolve([]),
+        (api as any)
+          .listStudents?.({ limit: 500 })
+          .catch(() => (api as any).listStudents?.().catch(() => [])) ??
+          Promise.resolve([]),
+        (api as any).listSections?.().catch(() => []) ?? Promise.resolve([]),
+        (api as any).listSubjects?.().catch(() => []) ?? Promise.resolve([]),
+        (api as any).listSectionSubjects?.().catch(() => []) ??
+          Promise.resolve([]),
+      ]);
 
-    const studentItems = Array.isArray(students) ? students : (students?.items ?? students?.data ?? []);
-    const sectionSubjectItems = Array.isArray(sectionSubjects) ? sectionSubjects : (sectionSubjects?.items ?? sectionSubjects?.data ?? []);
+    const studentItems = Array.isArray(students)
+      ? students
+      : (students?.items ?? students?.data ?? []);
+    const sectionSubjectItems = Array.isArray(sectionSubjects)
+      ? sectionSubjects
+      : (sectionSubjects?.items ?? sectionSubjects?.data ?? []);
 
     return {
       classes: [],
       teachers: [],
-      sections: asRefItems(Array.isArray(sections) ? sections : [], ["name", "title"], ["code"]),
+      sections: asRefItems(
+        Array.isArray(sections) ? sections : [],
+        ["name", "title"],
+        ["code"],
+      ),
       levels: [],
-      subjects: asRefItems(Array.isArray(subjects) ? subjects : [], ["name", "title"], ["code"]),
+      subjects: asRefItems(
+        Array.isArray(subjects) ? subjects : [],
+        ["name", "title"],
+        ["code"],
+      ),
       feeTemplates: [],
       discountTemplates: [],
       userGroups: [],
-      assessmentSchemes: asRefItems(Array.isArray(schemes) ? schemes : [], ["name", "title"], ["code", "level"]),
-      academicPeriods: asRefItems(Array.isArray(periods) ? periods : [], ["name", "title"], ["code"]),
+      assessmentSchemes: asRefItems(
+        Array.isArray(schemes) ? schemes : [],
+        ["name", "title"],
+        ["code", "level"],
+      ),
+      academicPeriods: asRefItems(
+        Array.isArray(periods) ? periods : [],
+        ["name", "title"],
+        ["code"],
+      ),
       existingSectionSubjectAssignments: sectionSubjectItems.map((it: any) => ({
         classId: String(it?.section_id ?? it?.sectionId ?? ""),
         subjectId: String(it?.subject_id ?? it?.subjectId ?? ""),
@@ -263,18 +366,43 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       },
       // expose extra refs via meta consumers can read if needed
       ...({
-        students: asRefItems(studentItems, ["full_name", "name", "student_number"], ["student_number", "code"]),
-        sectionSubjects: asRefItems(sectionSubjectItems, ["name", "subject_name", "title"], ["code"]),
+        students: asRefItems(
+          studentItems,
+          ["full_name", "name", "student_number"],
+          ["student_number", "code"],
+        ),
+        sectionSubjects: asRefItems(
+          sectionSubjectItems,
+          ["name", "subject_name", "title"],
+          ["code"],
+        ),
       } as any),
     } as BulkReferenceData;
   },
 
-  validateCell(colId: string, value: unknown, row: GradeRowData, _refData: BulkReferenceData): BulkCellIssue | null {
+  validateCell(
+    colId: string,
+    value: unknown,
+    row: GradeRowData,
+    _refData: BulkReferenceData,
+  ): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
 
-    if (["student_id", "period_id", "section_subject_id", "component_code", "max_score"].includes(colId)) {
+    if (
+      [
+        "student_id",
+        "period_id",
+        "section_subject_id",
+        "component_code",
+        "max_score",
+      ].includes(colId)
+    ) {
       if (!strVal) {
-        return { severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_required() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_required(),
+        };
       }
     }
 
@@ -283,63 +411,124 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       const hasStatus = state.isAbsent || state.isExcused || state.isExempt;
       if (!strVal) {
         if (hasStatus) return null; // allow empty score when a status flag is set
-        return { severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_required() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_required(),
+        };
       }
       const num = parseScoreInput(strVal);
       if (num === null) {
-        return { severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_numeric() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_numeric(),
+        };
       }
       if (num < 0) {
-        return { severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_nonnegative() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_nonnegative(),
+        };
       }
       const maximum = parseScoreInput(row.max_score);
       if (maximum === null || maximum <= 0) {
-        return { severity: "BLOCKING_ERROR", columnId: "max_score", message: m.bulk_entry_grade_validation_max_positive() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: "max_score",
+          message: m.bulk_entry_grade_validation_max_positive(),
+        };
       }
       if (num > maximum) {
-        return { severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_exceeds_max({ score: num, maximum }) };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_exceeds_max({
+            score: num,
+            maximum,
+          }),
+        };
       }
     }
 
     if (colId === "max_score" && strVal) {
       const maximum = parseScoreInput(strVal);
       if (maximum === null || maximum <= 0) {
-        return { severity: "BLOCKING_ERROR", columnId: "max_score", message: m.bulk_entry_grade_validation_max_positive() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: "max_score",
+          message: m.bulk_entry_grade_validation_max_positive(),
+        };
       }
       const scoreStr = String(row.score ?? "").trim();
       if (scoreStr !== "") {
         const score = parseScoreInput(scoreStr);
         if (score !== null && score > maximum) {
-          return { severity: "BLOCKING_ERROR", columnId: "score", message: m.bulk_entry_grade_validation_exceeds_max({ score, maximum }) };
+          return {
+            severity: "BLOCKING_ERROR",
+            columnId: "score",
+            message: m.bulk_entry_grade_validation_exceeds_max({
+              score,
+              maximum,
+            }),
+          };
         }
       }
     }
 
     if (["is_absent", "is_excused", "is_exempt"].includes(colId) && strVal) {
       if (parseBooleanLike(strVal) === null) {
-        return { severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_boolean() };
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_boolean(),
+        };
       }
     }
 
     return null;
   },
 
-  validateRow(row: GradeRowData, allRows: GradeRowData[], rowIndex: number, _refData: BulkReferenceData, context?: BulkValidationContext): BulkCellIssue[] {
+  validateRow(
+    row: GradeRowData,
+    allRows: GradeRowData[],
+    rowIndex: number,
+    _refData: BulkReferenceData,
+    context?: BulkValidationContext,
+  ): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
 
     // Conflicting or invalid status flags
     const flags = resolveStateFlags(row);
     if (flags.invalid.length > 0) {
       for (const colId of flags.invalid) {
-        issues.push({ severity: "BLOCKING_ERROR", columnId: colId, message: m.bulk_entry_grade_validation_boolean() });
+        issues.push({
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_grade_validation_boolean(),
+        });
       }
     }
-    const activeCount = [flags.isAbsent, flags.isExcused, flags.isExempt].filter(Boolean).length;
+    const activeCount = [
+      flags.isAbsent,
+      flags.isExcused,
+      flags.isExempt,
+    ].filter(Boolean).length;
     if (activeCount > 1) {
-      issues.push({ severity: "BLOCKING_ERROR", columnId: "is_absent", message: m.bulk_entry_grade_validation_boolean() });
+      issues.push({
+        severity: "BLOCKING_ERROR",
+        columnId: "is_absent",
+        message: m.bulk_entry_grade_validation_boolean(),
+      });
     }
 
-    if (row.student_id && row.period_id && row.section_subject_id && row.component_code) {
+    if (
+      row.student_id &&
+      row.period_id &&
+      row.section_subject_id &&
+      row.component_code
+    ) {
       const key = JSON.stringify([
         row.student_id.trim().toLowerCase(),
         row.period_id.trim().toLowerCase(),
@@ -360,19 +549,32 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
           });
 
       if (duplicateIndex !== -1) {
-        issues.push({ severity: "BLOCKING_ERROR", columnId: "score", message: m.bulk_entry_grade_validation_duplicate({ row: duplicateIndex + 1 }) });
+        issues.push({
+          severity: "BLOCKING_ERROR",
+          columnId: "score",
+          message: m.bulk_entry_grade_validation_duplicate({
+            row: duplicateIndex + 1,
+          }),
+        });
       }
     }
 
     // Cross-field: if no status and score empty, score is required (cell validator also enforces, but keep row consistent)
     if (!isNonScoredState(row) && String(row.score ?? "").trim() === "") {
-      issues.push({ severity: "BLOCKING_ERROR", columnId: "score", message: m.bulk_entry_grade_validation_required() });
+      issues.push({
+        severity: "BLOCKING_ERROR",
+        columnId: "score",
+        message: m.bulk_entry_grade_validation_required(),
+      });
     }
 
     return issues;
   },
 
-  async generatePreview(rows: GradeRowData[], _refData: BulkReferenceData): Promise<BulkPreviewSummary<GradePreviewDetails>> {
+  async generatePreview(
+    rows: GradeRowData[],
+    _refData: BulkReferenceData,
+  ): Promise<BulkPreviewSummary<GradePreviewDetails>> {
     let validCount = 0;
     let errorCount = 0;
     const sectionSubjectsSummary: Record<string, number> = {};
@@ -387,19 +589,30 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         row.section_subject_id?.trim().toLowerCase(),
         row.component_code?.trim().toLowerCase(),
       ]);
-      const hasContext = Boolean(row.student_id?.trim() && row.period_id?.trim() && row.section_subject_id?.trim() && row.component_code?.trim());
+      const hasContext = Boolean(
+        row.student_id?.trim() &&
+          row.period_id?.trim() &&
+          row.section_subject_id?.trim() &&
+          row.component_code?.trim(),
+      );
       const max = parseScoreInput(row.max_score);
       const flags = resolveStateFlags(row);
       const hasStatus = flags.isAbsent || flags.isExcused || flags.isExempt;
       const scoreStr = String(row.score ?? "").trim();
-      const score = scoreStr === "" && hasStatus ? 0 : parseScoreInput(row.score);
-      const badFlags = flags.invalid.length > 0 || [flags.isAbsent, flags.isExcused, flags.isExempt].filter(Boolean).length > 1;
+      const score =
+        scoreStr === "" && hasStatus ? 0 : parseScoreInput(row.score);
+      const badFlags =
+        flags.invalid.length > 0 ||
+        [flags.isAbsent, flags.isExcused, flags.isExempt].filter(Boolean)
+          .length > 1;
       const isInvalid =
         !hasContext ||
         (scoreStr === "" && !hasStatus) ||
         score === null ||
-        max === null || max <= 0 ||
-        score < 0 || score > max ||
+        max === null ||
+        max <= 0 ||
+        score < 0 ||
+        score > max ||
         badFlags ||
         seen.has(key);
       if (hasContext) seen.add(key);
@@ -407,9 +620,15 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         errorCount++;
       } else {
         validCount++;
-        if (row.section_subject_id) sectionSubjectsSummary[row.section_subject_id] = (sectionSubjectsSummary[row.section_subject_id] || 0) + 1;
-        if (row.period_id) academicPeriodsSummary[row.period_id] = (academicPeriodsSummary[row.period_id] || 0) + 1;
-        if (row.component_code) assessmentComponentsSummary[row.component_code] = (assessmentComponentsSummary[row.component_code] || 0) + 1;
+        if (row.section_subject_id)
+          sectionSubjectsSummary[row.section_subject_id] =
+            (sectionSubjectsSummary[row.section_subject_id] || 0) + 1;
+        if (row.period_id)
+          academicPeriodsSummary[row.period_id] =
+            (academicPeriodsSummary[row.period_id] || 0) + 1;
+        if (row.component_code)
+          assessmentComponentsSummary[row.component_code] =
+            (assessmentComponentsSummary[row.component_code] || 0) + 1;
       }
     }
 
@@ -428,15 +647,40 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
     };
   },
 
-  async commitChunk(rows: GradeRowData[], _orgId: string, _refData: BulkReferenceData, onProgress?: (progress: import("../types").ChunkProgress) => void): Promise<{ success: boolean; errors?: string[] }> {
+  async commitChunk(
+    rows: GradeRowData[],
+    _orgId: string,
+    _refData: BulkReferenceData,
+    onProgress?: (progress: import("../types").ChunkProgress) => void,
+  ): Promise<{ success: boolean; errors?: string[] }> {
     const items = buildGradeBatchItems(rows);
     try {
-      onProgress?.({ totalChunks: 1, currentChunk: 1, chunkSize: rows.length, totalRows: rows.length, processedRows: 0, committedRows: 0, failedRows: 0, isFinished: false, hasErrors: false });
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: 0,
+        committedRows: 0,
+        failedRows: 0,
+        isFinished: false,
+        hasErrors: false,
+      });
       const result = await api.batchRecordGrades({ items });
       if (result.count !== items.length) {
         return { success: false, errors: [m.bulk_entry_grade_commit_failed()] };
       }
-      onProgress?.({ totalChunks: 1, currentChunk: 1, chunkSize: rows.length, totalRows: rows.length, processedRows: rows.length, committedRows: rows.length, failedRows: 0, isFinished: true, hasErrors: false });
+      onProgress?.({
+        totalChunks: 1,
+        currentChunk: 1,
+        chunkSize: rows.length,
+        totalRows: rows.length,
+        processedRows: rows.length,
+        committedRows: rows.length,
+        failedRows: 0,
+        isFinished: true,
+        hasErrors: false,
+      });
       return { success: true };
     } catch (err: any) {
       return { success: false, errors: [err.message || String(err)] };
@@ -444,29 +688,49 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
   },
 };
 
-export function buildGradeBatchItems(rows: GradeRowData[]): RecordGradeItemRequest[] {
+export function buildGradeBatchItems(
+  rows: GradeRowData[],
+): RecordGradeItemRequest[] {
   return rows.map((row) => {
-    const requiredIds = [row.student_id, row.period_id, row.section_subject_id, row.component_code];
+    const requiredIds = [
+      row.student_id,
+      row.period_id,
+      row.section_subject_id,
+      row.component_code,
+    ];
     if (requiredIds.some((id) => typeof id !== "string" || !id.trim())) {
-      throw new TypeError("Grade rows require student, period, offering, and component IDs.");
+      throw new TypeError(
+        "Grade rows require student, period, offering, and component IDs.",
+      );
     }
 
     const flags = resolveStateFlags(row);
-    if (flags.invalid.length > 0 || [flags.isAbsent, flags.isExcused, flags.isExempt].filter(Boolean).length > 1) {
-      throw new TypeError("Grade rows require valid, non-conflicting status flags.");
+    if (
+      flags.invalid.length > 0 ||
+      [flags.isAbsent, flags.isExcused, flags.isExempt].filter(Boolean).length >
+        1
+    ) {
+      throw new TypeError(
+        "Grade rows require valid, non-conflicting status flags.",
+      );
     }
     const hasStatus = flags.isAbsent || flags.isExcused || flags.isExempt;
 
     const maximum = parseScoreInput(row.max_score);
     if (maximum === null || maximum <= 0) {
-      throw new RangeError("Grade rows require a valid positive maximum score.");
+      throw new RangeError(
+        "Grade rows require a valid positive maximum score.",
+      );
     }
 
     const scoreStr = String(row.score ?? "").trim();
     let score = parseScoreInput(row.score);
     if (score === null) {
       if (scoreStr === "" && hasStatus) score = 0;
-      else throw new RangeError("Grade score must be within its explicit maximum.");
+      else
+        throw new RangeError(
+          "Grade score must be within its explicit maximum.",
+        );
     }
     if (!Number.isFinite(score) || score < 0 || score > maximum) {
       throw new RangeError("Grade score must be within its explicit maximum.");

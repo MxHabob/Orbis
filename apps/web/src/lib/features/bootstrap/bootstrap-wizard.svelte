@@ -106,7 +106,10 @@ async function initializeBootstrap() {
       }
       return;
     }
-    applySetupRegion(form.values, detectSetupRegion() ?? form.values.countryCode);
+    applySetupRegion(
+      form.values,
+      detectSetupRegion() ?? form.values.countryCode,
+    );
   } catch (error) {
     bootstrapStatusError = extractErrorMessage(error);
   } finally {
@@ -284,7 +287,9 @@ function enterWorkspace() {
   }
   const orgId = bootstrapResult?.organization_id || authStore.orgId;
   if (orgId) {
-    const destination = bootstrapResult?.setup_required ? `/${orgId}/onboarding` : `/${orgId}`;
+    const destination = bootstrapResult?.setup_required
+      ? `/${orgId}/onboarding`
+      : `/${orgId}`;
     goto(resolve(localizeHref(destination) as Pathname), {
       replaceState: true,
     });

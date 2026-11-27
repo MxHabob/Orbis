@@ -86,7 +86,8 @@ export function applyPaste(args: {
   createEmptyRow?: () => GridRow;
   fixedRows?: boolean;
 }): { rows: GridRow[]; result: BulkResult } {
-  const { columns, startRow, startCol, matrix, createEmptyRow, fixedRows } = args;
+  const { columns, startRow, startCol, matrix, createEmptyRow, fixedRows } =
+    args;
   const rows = args.rows.slice();
   const accepted: GridRow[] = [];
   const rejected: BulkResult["rejected"] = [];

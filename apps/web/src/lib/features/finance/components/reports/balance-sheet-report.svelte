@@ -9,7 +9,13 @@ import * as m from "$lib/paraglide/messages";
 import { createLedgerReport } from "./report-data.svelte";
 import { extractErrorMessage } from "$lib/api";
 import { balancesMatch } from "./ledger-report";
-import { exportReport, formatReportAmount, searchReportRows, statementRows, statementTotal } from "./report-view";
+import {
+  exportReport,
+  formatReportAmount,
+  searchReportRows,
+  statementRows,
+  statementTotal,
+} from "./report-view";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -29,7 +35,14 @@ let { orgId }: { orgId: string } = $props();
 let searchQuery = $state("");
 
 const report = createLedgerReport(() => orgId);
-const { accounts, activeCurrencies, baseCurrency, summaries, isLoading, queryError } = $derived(report);
+const {
+  accounts,
+  activeCurrencies,
+  baseCurrency,
+  summaries,
+  isLoading,
+  queryError,
+} = $derived(report);
 const { refetchAll } = report;
 
 const summaryKpis = $derived.by(() => {
@@ -115,8 +128,17 @@ const balanceSheetSource = $derived.by(() => {
   const rows = statementRows(accounts, balanceSheetGroups, summaries);
   if (!rows.length) return rows;
   rows.push(
-    statementTotal(m.finance_report_unclosed_result(), summaries, (summary) => summary.netIncome, m.finance_ui_equity_capital()),
-    statementTotal(m.finance_ui_liabilities_and_equity_total(), summaries, (summary) => summary.liabilitiesAndEquity),
+    statementTotal(
+      m.finance_report_unclosed_result(),
+      summaries,
+      (summary) => summary.netIncome,
+      m.finance_ui_equity_capital(),
+    ),
+    statementTotal(
+      m.finance_ui_liabilities_and_equity_total(),
+      summaries,
+      (summary) => summary.liabilitiesAndEquity,
+    ),
   );
   return rows;
 });

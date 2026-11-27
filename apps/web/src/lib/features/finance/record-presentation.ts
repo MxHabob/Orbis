@@ -11,20 +11,29 @@ export function financeRecordColumn(): OrbisColumnDef {
     width: 88,
     readonly: true,
     sortable: false,
-    meta: { items: [{ id: "view", icon: "Eye", label: m.finance_ui_open_record() }] },
+    meta: {
+      items: [{ id: "view", icon: "Eye", label: m.finance_ui_open_record() }],
+    },
   };
 }
 
 export function paymentMethodLabel(value: string) {
   switch (value.toLowerCase()) {
-    case "cash": return m.finance_ui_payment_method_cash();
+    case "cash":
+      return m.finance_ui_payment_method_cash();
     case "bank":
-    case "bank_transfer": return m.finance_ui_payment_method_bank_transfer();
-    case "check": return m.finance_ui_payment_method_check();
-    case "credit_card": return m.finance_ui_payment_method_credit_card_moyasar();
-    case "mada": return m.finance_ui_payment_method_mada();
-    case "apple_pay": return m.finance_ui_payment_moyasar_apple_pay();
-    default: return value;
+    case "bank_transfer":
+      return m.finance_ui_payment_method_bank_transfer();
+    case "check":
+      return m.finance_ui_payment_method_check();
+    case "credit_card":
+      return m.finance_ui_payment_method_credit_card_moyasar();
+    case "mada":
+      return m.finance_ui_payment_method_mada();
+    case "apple_pay":
+      return m.finance_ui_payment_moyasar_apple_pay();
+    default:
+      return value;
   }
 }
 

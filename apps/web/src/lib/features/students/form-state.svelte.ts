@@ -185,9 +185,13 @@ export class StudentFormState {
 
   private appliedClassDefault = false;
 
-  applyClassOptions(classes: ClassDto[], contextualIds: readonly (string | null)[]) {
+  applyClassOptions(
+    classes: ClassDto[],
+    contextualIds: readonly (string | null)[],
+  ) {
     this.classes = classes;
-    if (this.isEditMode || this.appliedClassDefault || classes.length === 0) return;
+    if (this.isEditMode || this.appliedClassDefault || classes.length === 0)
+      return;
     this.appliedClassDefault = true;
     if (this.personal.classId) return;
 
@@ -373,8 +377,7 @@ export class StudentFormState {
 
     const trimmed = (value || "").trim();
     const hasName =
-      !!this.personal.nameEn?.trim() ||
-      !!this.personal.nameAr?.trim();
+      !!this.personal.nameEn?.trim() || !!this.personal.nameAr?.trim();
 
     if (!trimmed && !(field === "full_name" && hasName)) {
       this.duplicateWarnings = {
@@ -388,7 +391,10 @@ export class StudentFormState {
       try {
         const payload: DuplicateCheckRequest = {
           exclude_student_id: this.studentId,
-          full_name: this.personal.nameEn?.trim() || this.personal.nameAr?.trim() || undefined,
+          full_name:
+            this.personal.nameEn?.trim() ||
+            this.personal.nameAr?.trim() ||
+            undefined,
           birth_date: this.personal.birthDate || undefined,
         };
         if (field !== "full_name") {
@@ -396,8 +402,10 @@ export class StudentFormState {
         } else if (this.personal.nationalId?.trim()) {
           payload.national_id = this.personal.nationalId.trim();
         }
-        if (this.personal.phone?.trim()) payload.phone = this.personal.phone.trim();
-        if (this.personal.email?.trim()) payload.email = this.personal.email.trim();
+        if (this.personal.phone?.trim())
+          payload.phone = this.personal.phone.trim();
+        if (this.personal.email?.trim())
+          payload.email = this.personal.email.trim();
 
         const res = await api.checkDuplicate(payload);
 
@@ -546,13 +554,23 @@ export class StudentFormState {
   }
 
   // Save operation
-  getRequiredFieldIssue(saveAsDraft: boolean, includesField = (_id: string) => true) {
-    if (includesField("nameAr") && !this.personal.nameAr.trim() && !this.personal.nameEn.trim()) {
+  getRequiredFieldIssue(
+    saveAsDraft: boolean,
+    includesField = (_id: string) => true,
+  ) {
+    if (
+      includesField("nameAr") &&
+      !this.personal.nameAr.trim() &&
+      !this.personal.nameEn.trim()
+    ) {
       return { id: "nameAr", message: m.common_form_error_name_required() };
     }
     if (saveAsDraft) return null;
     if (includesField("classSelect") && !this.personal.classId) {
-      return { id: "classSelect", message: m.common_form_error_class_required() };
+      return {
+        id: "classSelect",
+        message: m.common_form_error_class_required(),
+      };
     }
 
     const fields = [
@@ -567,21 +585,34 @@ export class StudentFormState {
       ["blood_type", this.personal.bloodType, "bloodType"],
       ["emergency_contact", this.personal.emergencyContact, "emergencyContact"],
       ["medical_notes", this.personal.medicalNotes, "medicalNotes"],
-      ["special_needs_notes", this.personal.specialNeedsNotes, "specialNeedsNotes"],
+      [
+        "special_needs_notes",
+        this.personal.specialNeedsNotes,
+        "specialNeedsNotes",
+      ],
       ["previous_school", this.personal.previousSchool, "previousSchool"],
       ["address", this.personal.address, "address"],
     ] as const;
-    const missing = fields.find(([key, value, id]) => includesField(id) && this.requiredFields[key] && !value.trim());
-    return missing ? { id: missing[2], message: m.common_form_error_required_fields() } : null;
+    const missing = fields.find(
+      ([key, value, id]) =>
+        includesField(id) && this.requiredFields[key] && !value.trim(),
+    );
+    return missing
+      ? { id: missing[2], message: m.common_form_error_required_fields() }
+      : null;
   }
 
   private get primaryGuardian() {
-    return this.guardian.linkedGuardians.find((guardian) => guardian.is_primary) ??
-      this.guardian.linkedGuardians[0];
+    return (
+      this.guardian.linkedGuardians.find((guardian) => guardian.is_primary) ??
+      this.guardian.linkedGuardians[0]
+    );
   }
 
   private get blockingDocumentRequirements() {
-    return this.document.requirements.filter((requirement) => requirement.blocks_enrollment);
+    return this.document.requirements.filter(
+      (requirement) => requirement.blocks_enrollment,
+    );
   }
 
   getAdmissionIssue(
@@ -602,27 +633,33 @@ export class StudentFormState {
         return {
           id: duplicate[1],
           step: "profile" as const,
-          message: m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb(),
+          message:
+            m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb(),
         };
       }
     }
 
-    if (this.isEditMode && this.originalStudent?.student?.status !== "inactive") return null;
+    if (this.isEditMode && this.originalStudent?.student?.status !== "inactive")
+      return null;
 
     if (!step || step === "contacts") {
       const guardians = this.guardian.linkedGuardians;
       const primary = this.primaryGuardian;
       if (!this.admissionPolicy.allowNoGuardian && !primary?.full_name.trim()) {
         return {
-          id: primary ? `guardian-name-${guardians.indexOf(primary)}` : "registration-contacts-heading",
+          id: primary
+            ? `guardian-name-${guardians.indexOf(primary)}`
+            : "registration-contacts-heading",
           step: "contacts" as const,
           message: m.common_validation_guardian_name_required(),
         };
       }
 
-      const unlinked = guardians.findIndex((guardian) =>
-        guardian !== primary && !guardian.guardian_id &&
-        (guardian.full_name.trim() || guardian.phone.trim()),
+      const unlinked = guardians.findIndex(
+        (guardian) =>
+          guardian !== primary &&
+          !guardian.guardian_id &&
+          (guardian.full_name.trim() || guardian.phone.trim()),
       );
       if (unlinked >= 0) {
         return {
@@ -643,10 +680,11 @@ export class StudentFormState {
           .filter((item) => item.is_fulfilled)
           .map((item) => item.requirement.code),
       );
-      const missing = codes.find((code) =>
-        !fulfilled.has(code) &&
-        !this.document.submittedDocs.includes(code) &&
-        !this.document.attachments[code],
+      const missing = codes.find(
+        (code) =>
+          !fulfilled.has(code) &&
+          !this.document.submittedDocs.includes(code) &&
+          !this.document.attachments[code],
       );
       if (missing) {
         return {
@@ -665,7 +703,8 @@ export class StudentFormState {
       this.isEditMode &&
       this.originalStudent?.student?.status === "inactive" &&
       !saveAsDraft;
-    const displayName = this.personal.nameAr.trim() || this.personal.nameEn.trim();
+    const displayName =
+      this.personal.nameAr.trim() || this.personal.nameEn.trim();
     const issue = this.getRequiredFieldIssue(saveAsDraft);
     if (issue) {
       toast.error(issue.message);
@@ -768,7 +807,13 @@ export class StudentFormState {
           if (!polled) break;
           registrationJobState = polled;
         }
-        if (periodOverrides.open(this.orgId, registrationJobState.override_targets ?? [])) return;
+        if (
+          periodOverrides.open(
+            this.orgId,
+            registrationJobState.override_targets ?? [],
+          )
+        )
+          return;
         if (registrationJobState.status === "failed") {
           throw new Error(
             registrationJobState.error || "Student registration failed.",
@@ -1144,7 +1189,12 @@ export class StudentFormState {
         name_ar: this.personal.nameAr,
         name_en: this.personal.nameEn,
         birth_date: this.personal.birthDate,
-        sex: this.personal.sex === "male" ? "ذكر" : this.personal.sex === "female" ? "أنثى" : "",
+        sex:
+          this.personal.sex === "male"
+            ? "ذكر"
+            : this.personal.sex === "female"
+              ? "أنثى"
+              : "",
         sex_en: this.personal.sex,
         class_name: this.selectedClassName,
         student_number: this.personal.studentNumber,

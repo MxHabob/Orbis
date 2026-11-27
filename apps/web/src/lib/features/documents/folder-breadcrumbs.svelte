@@ -26,7 +26,8 @@ let {
 
 const isCurriculum = $derived(
   currentFolder?.folder_type === "curriculum" ||
-    (currentFolder?.metadata as Record<string, unknown> | null)?.ai_agent_accessible === true,
+    (currentFolder?.metadata as Record<string, unknown> | null)
+      ?.ai_agent_accessible === true,
 );
 const isStudent = $derived(
   currentFolder?.folder_type === "student" ||

@@ -133,7 +133,8 @@ const templatesQuery = createQuery(() => ({
       documentType,
       status: "published",
     });
-    if (entityType.startsWith("finance") && documentType) return Array.isArray(list) ? list : [];
+    if (entityType.startsWith("finance") && documentType)
+      return Array.isArray(list) ? list : [];
     if ((!list || list.length === 0) && documentType) {
       list = await api.listTemplates({ documentType, status: "published" });
     }

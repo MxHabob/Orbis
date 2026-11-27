@@ -82,7 +82,6 @@ $effect(() => {
   }
 });
 
-
 const activeBranchCount = $derived(
   branches.filter((branch) => branch.is_active).length,
 );
@@ -110,7 +109,6 @@ function updateMaxBranches(raw: string) {
   const parsed = Number.parseInt(raw, 10);
   policy.max_branches = Number.isNaN(parsed) || parsed < 1 ? null : parsed;
 }
-
 </script>
 
 <Card>

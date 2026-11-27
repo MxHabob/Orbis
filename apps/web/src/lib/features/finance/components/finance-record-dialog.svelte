@@ -2,11 +2,22 @@
 import * as m from "$lib/paraglide/messages";
 import type { Snippet } from "svelte";
 import { Button } from "@orbis/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
 import { Printer } from "@orbis/icons";
 
 let {
-  open = $bindable(false), title, fields, children, onprint,
+  open = $bindable(false),
+  title,
+  fields,
+  children,
+  onprint,
 }: {
   open?: boolean;
   title: string;

@@ -15,7 +15,10 @@ export function dashboardBranch(
   return access.organization_wide ? undefined : access.units[0]?.id;
 }
 
-export function createDashboardAccessQuery(orgId: () => string, userId: () => string) {
+export function createDashboardAccessQuery(
+  orgId: () => string,
+  userId: () => string,
+) {
   return createQuery<DashboardAccessDto>(() => ({
     queryKey: queryKeys.org.dashboardAccess(orgId(), userId()),
     queryFn: () => api.getDashboardAccess(),

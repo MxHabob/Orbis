@@ -1,22 +1,52 @@
 <script lang="ts">
 import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
-import { gradePeriodOverride, isGradePeriodOverrideable } from "$lib/api/period-override";
+import {
+  gradePeriodOverride,
+  isGradePeriodOverrideable,
+} from "$lib/api/period-override";
 
 import * as XLSX from "xlsx";
 import { onDestroy } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { api, extractErrorMessage, type AcademicPeriodDto, type SectionDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type AcademicPeriodDto,
+  type SectionDto,
+} from "$lib/api";
 import { academicContext, effectiveContext } from "$lib/stores";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
-import { OrbisGrid, type OrbisColumnDef, type GridRow } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridRow,
+} from "@orbis/svelte-grid";
 import { createClassesQuery } from "../../academics/queries";
-import { buildGradeGridColumns, loadClassGradeSheet, loadGradeSheetReferences, withSheetTotals } from "../class-grade-sheet";
-import { buildGradeWorkbook, downloadGradeWorkbook, reviewGradeWorkbook, type GradeWorkbookPlan } from "../grade-workbook";
+import {
+  buildGradeGridColumns,
+  loadClassGradeSheet,
+  loadGradeSheetReferences,
+  withSheetTotals,
+} from "../class-grade-sheet";
+import {
+  buildGradeWorkbook,
+  downloadGradeWorkbook,
+  reviewGradeWorkbook,
+  type GradeWorkbookPlan,
+} from "../grade-workbook";
 
-let { orgId, period, blocked, canEdit, onBusyChange, onReviewChange, onSaved }: {
+let {
+  orgId,
+  period,
+  blocked,
+  canEdit,
+  onBusyChange,
+  onReviewChange,
+  onSaved,
+}: {
   orgId: string;
   period: AcademicPeriodDto;
   blocked: boolean;
@@ -28,20 +58,35 @@ let { orgId, period, blocked, canEdit, onBusyChange, onReviewChange, onSaved }: 
 
 const classes = createClassesQuery(() => orgId);
 const arabic = $derived(getLocale() === "ar");
-const label = (item: SectionDto | AcademicPeriodDto) => (arabic && item.name_ar) || item.name;
-const sectionLabel = (section: SectionDto) => [label(section), section.code].filter(Boolean).join(" / ");
+const label = (item: SectionDto | AcademicPeriodDto) =>
+  (arabic && item.name_ar) || item.name;
+const sectionLabel = (section: SectionDto) =>
+  [label(section), section.code].filter(Boolean).join(" / ");
 let selectedIds = $state<string[]>([]);
 let filter = $state("");
-const filtered = $derived((classes.data ?? []).filter((section) =>
-  section.is_active && sectionLabel(section).toLocaleLowerCase().includes(filter.trim().toLocaleLowerCase()),
-));
+const filtered = $derived(
+  (classes.data ?? []).filter(
+    (section) =>
+      section.is_active &&
+      sectionLabel(section)
+        .toLocaleLowerCase()
+        .includes(filter.trim().toLocaleLowerCase()),
+  ),
+);
 let busy = $state(false);
 let fileInput: HTMLInputElement;
-let stagedFile = $state.raw<{ workbook: XLSX.WorkBook; name: string } | null>(null);
+let stagedFile = $state.raw<{ workbook: XLSX.WorkBook; name: string } | null>(
+  null,
+);
 let plan = $state.raw<GradeWorkbookPlan | null>(null);
 let reviewClassId = $state("");
-const reviewSheet = $derived(plan?.sheets.find((sheet) => sheet.classId === reviewClassId) ?? plan?.sheets[0]);
-const newCount = $derived(plan?.changes.filter((change) => change.isNew).length ?? 0);
+const reviewSheet = $derived(
+  plan?.sheets.find((sheet) => sheet.classId === reviewClassId) ??
+    plan?.sheets[0],
+);
+const newCount = $derived(
+  plan?.changes.filter((change) => change.isNew).length ?? 0,
+);
 const editsByStudent = $derived.by(() => {
   const edits = new Map<string, Map<string, unknown>>();
   for (const change of plan?.changes ?? []) {
@@ -52,17 +97,29 @@ const editsByStudent = $derived.by(() => {
   }
   return edits;
 });
-const previewRows = $derived(reviewSheet?.rows.map((row) => withSheetTotals(
-  { ...row, ...Object.fromEntries(editsByStudent.get(row.student_id) ?? []) },
-  reviewSheet.subjects, academicContext.gradeScaleItems,
-)) ?? []);
-const previewColumns = $derived(buildGradeGridColumns(reviewSheet?.subjects ?? [], {
-  arabic,
-  showGrade: Boolean(academicContext.gradeScaleItems.length),
-}));
+const previewRows = $derived(
+  reviewSheet?.rows.map((row) =>
+    withSheetTotals(
+      {
+        ...row,
+        ...Object.fromEntries(editsByStudent.get(row.student_id) ?? []),
+      },
+      reviewSheet.subjects,
+      academicContext.gradeScaleItems,
+    ),
+  ) ?? [],
+);
+const previewColumns = $derived(
+  buildGradeGridColumns(reviewSheet?.subjects ?? [], {
+    arabic,
+    showGrade: Boolean(academicContext.gradeScaleItems.length),
+  }),
+);
 
 function highlightChange(row: GridRow, column: OrbisColumnDef) {
-  return editsByStudent.get(String(row.student_id))?.has(String(column.id)) ? "bg-primary/15 font-semibold" : "";
+  return editsByStudent.get(String(row.student_id))?.has(String(column.id))
+    ? "bg-primary/15 font-semibold"
+    : "";
 }
 
 function clearReview() {
@@ -75,7 +132,9 @@ function clearReview() {
 onDestroy(() => onReviewChange(false));
 
 function toggle(id: string) {
-  selectedIds = selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id];
+  selectedIds = selectedIds.includes(id)
+    ? selectedIds.filter((item) => item !== id)
+    : [...selectedIds, id];
 }
 
 function setBusy(value: boolean) {
@@ -88,19 +147,32 @@ async function exportSections() {
   setBusy(true);
   try {
     const context = { orgId, periodId: period.id };
-    const [periods, references] = await Promise.all([api.listAcademicPeriods(), loadGradeSheetReferences()]);
+    const [periods, references] = await Promise.all([
+      api.listAcademicPeriods(),
+      loadGradeSheetReferences(),
+    ]);
     const scopes = [];
     const empty: string[] = [];
     for (const classId of selectedIds) {
       const section = classes.data?.find((item) => item.id === classId);
       if (!section) continue;
-      const scope = await loadClassGradeSheet(classId, period.id, periods, references);
-      if (!scope.rows.length || !scope.subjects.some((subject) => subject.components.length)) {
+      const scope = await loadClassGradeSheet(
+        classId,
+        period.id,
+        periods,
+        references,
+      );
+      if (
+        !scope.rows.length ||
+        !scope.subjects.some((subject) => subject.components.length)
+      ) {
         empty.push(sectionLabel(section));
         continue;
       }
       scopes.push({
-        ...scope, classId, className: sectionLabel(section),
+        ...scope,
+        classId,
+        className: sectionLabel(section),
         rows: scope.rows.map((row) => withSheetTotals(row, scope.subjects, [])),
       });
     }
@@ -112,10 +184,24 @@ async function exportSections() {
       );
       if (!scopes.length) return;
     }
-    const workbook = buildGradeWorkbook({
-      ...context, orgName: orgContext.displayName, periodLabel: label(period), yearLabel: arabic ? academicContext.yearLabelAr : academicContext.yearLabel, arabic,
-    }, scopes);
-    if (await downloadGradeWorkbook(workbook, `orbis-grades-${period.code || period.id.slice(0, 8)}.xlsx`)) {
+    const workbook = buildGradeWorkbook(
+      {
+        ...context,
+        orgName: orgContext.displayName,
+        periodLabel: label(period),
+        yearLabel: arabic
+          ? academicContext.yearLabelAr
+          : academicContext.yearLabel,
+        arabic,
+      },
+      scopes,
+    );
+    if (
+      await downloadGradeWorkbook(
+        workbook,
+        `orbis-grades-${period.code || period.id.slice(0, 8)}.xlsx`,
+      )
+    ) {
       toast.success(m.common_action_export());
     }
   } catch (error) {
@@ -126,14 +212,28 @@ async function exportSections() {
 }
 
 async function createPlan(workbook: XLSX.WorkBook) {
-  const [periods, availableSections, references] = await Promise.all([api.listAcademicPeriods(), api.listSections(), loadGradeSheetReferences()]);
+  const [periods, availableSections, references] = await Promise.all([
+    api.listAcademicPeriods(),
+    api.listSections(),
+    loadGradeSheetReferences(),
+  ]);
   const sections = new Map(availableSections.map((item) => [item.id, item]));
-  return reviewGradeWorkbook(workbook, { orgId, periodId: period.id }, async (classId) => {
-    const section = sections.get(classId);
-    if (!section) throw new Error(m.exams_grade_sheet_file_context());
-    const scope = await loadClassGradeSheet(classId, period.id, periods, references);
-    return { ...scope, classId, className: sectionLabel(section) };
-  }, arabic);
+  return reviewGradeWorkbook(
+    workbook,
+    { orgId, periodId: period.id },
+    async (classId) => {
+      const section = sections.get(classId);
+      if (!section) throw new Error(m.exams_grade_sheet_file_context());
+      const scope = await loadClassGradeSheet(
+        classId,
+        period.id,
+        periods,
+        references,
+      );
+      return { ...scope, classId, className: sectionLabel(section) };
+    },
+    arabic,
+  );
 }
 
 async function importFile(event: Event) {
@@ -156,39 +256,72 @@ async function importFile(event: Event) {
 }
 
 function fingerprint(review: GradeWorkbookPlan) {
-  return JSON.stringify(review.changes.map(({ id, revision, item }) => [id, revision, item]));
+  return JSON.stringify(
+    review.changes.map(({ id, revision, item }) => [id, revision, item]),
+  );
 }
 
 async function saveReview() {
-  if (!plan?.changes.length || plan.errors.length || !stagedFile || !canEdit || blocked || busy) return;
+  if (
+    !plan?.changes.length ||
+    plan.errors.length ||
+    !stagedFile ||
+    !canEdit ||
+    blocked ||
+    busy
+  )
+    return;
   setBusy(true);
   try {
     const refreshed = await createPlan(stagedFile.workbook);
-    if (refreshed.errors.length || fingerprint(refreshed) !== fingerprint(plan)) {
+    if (
+      refreshed.errors.length ||
+      fingerprint(refreshed) !== fingerprint(plan)
+    ) {
       plan = refreshed;
       toast.warning(m.exams_workbook_review_again());
       return;
     }
-    const result = await api.batchRecordGrades({ items: refreshed.changes.map((change) => change.item) });
+    const result = await api.batchRecordGrades({
+      items: refreshed.changes.map((change) => change.item),
+    });
     clearReview();
-    toast.success(m.common_control_save_success({ total: String(result.count) }));
+    toast.success(
+      m.common_control_save_success({ total: String(result.count) }),
+    );
     onSaved();
   } catch (error) {
-    if (!periodOverrides.handleError(orgId, error)) toast.error(extractErrorMessage(error));
+    if (!periodOverrides.handleError(orgId, error))
+      toast.error(extractErrorMessage(error));
   } finally {
     setBusy(false);
   }
 }
 
-const closedSheets = $derived(new Set(plan?.sheets.filter((sheet) => !sheet.canEnter).map((sheet) => sheet.classId)));
-const closedChanges = $derived(plan?.changes.filter((change) => closedSheets.has(change.classId)) ?? []);
-const canRequestOverride = $derived(canEdit && effectiveContext.hasPermission("workflow:write") &&
-  isGradePeriodOverrideable(period) && closedChanges.length > 0);
+const closedSheets = $derived(
+  new Set(
+    plan?.sheets
+      .filter((sheet) => !sheet.canEnter)
+      .map((sheet) => sheet.classId),
+  ),
+);
+const closedChanges = $derived(
+  plan?.changes.filter((change) => closedSheets.has(change.classId)) ?? [],
+);
+const canRequestOverride = $derived(
+  canEdit &&
+    effectiveContext.hasPermission("workflow:write") &&
+    isGradePeriodOverrideable(period) &&
+    closedChanges.length > 0,
+);
 
 function requestOverride() {
-  periodOverrides.open(orgId, closedChanges.map(({ item }) =>
-    gradePeriodOverride(item.period_id, item.section_subject_id),
-  ));
+  periodOverrides.open(
+    orgId,
+    closedChanges.map(({ item }) =>
+      gradePeriodOverride(item.period_id, item.section_subject_id),
+    ),
+  );
 }
 </script>
 

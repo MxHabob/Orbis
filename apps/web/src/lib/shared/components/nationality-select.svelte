@@ -140,7 +140,9 @@ const countryList = $derived.by<CountryItem[]>(() => {
         c.alpha3,
         c.name,
         nameAr,
-        ...(known ? [known({}, { locale: "ar" }), known({}, { locale: "en" })] : []),
+        ...(known
+          ? [known({}, { locale: "ar" }), known({}, { locale: "en" })]
+          : []),
       ],
     };
   });
@@ -163,7 +165,9 @@ const selectedValue = $derived.by(() => {
   if (!key) return "";
 
   const selected = countryList.find((country) =>
-    [...country.searchNames, country.demonym].some((name) => name.toLowerCase() === key),
+    [...country.searchNames, country.demonym].some(
+      (name) => name.toLowerCase() === key,
+    ),
   );
   return selected?.demonym ?? value;
 });

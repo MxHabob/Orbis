@@ -202,7 +202,6 @@ async function handleGridAction(event: GridActionEvent) {
     editingCurrency =
       currencies.find((currency) => currency.code === c.code) ?? c;
     showAddDialog = true;
-
   }
 }
 </script>

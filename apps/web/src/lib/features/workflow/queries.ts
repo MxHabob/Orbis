@@ -32,10 +32,7 @@ export function createPendingApprovalsQuery(
     page_size: 50,
   });
   return createQuery<OverrideRequestDto[]>(() => ({
-    queryKey: queryKeys.workflow.overrides(
-      orgId(),
-      getFilter(),
-    ),
+    queryKey: queryKeys.workflow.overrides(orgId(), getFilter()),
     queryFn: async () => (await api.listOverrides(getFilter())).items,
     enabled: !!orgId(),
     staleTime: 30 * 1000,

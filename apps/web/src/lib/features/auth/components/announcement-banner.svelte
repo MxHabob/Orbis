@@ -12,17 +12,17 @@ let latestRelease = $state<ReleaseChangelogItem | null>(null);
 const MULVERSE_WEBSITE = MULVERSE_URLS.website;
 
 onMount(async () => {
-	try {
-		const releases = await api.systemGetChangelog();
-		latestRelease =
-			releases.find((release) => release.is_latest) ?? releases[0] ?? null;
-	} catch (error) {
-		console.warn("Failed to load the login announcement release:", error);
-	}
+  try {
+    const releases = await api.systemGetChangelog();
+    latestRelease =
+      releases.find((release) => release.is_latest) ?? releases[0] ?? null;
+  } catch (error) {
+    console.warn("Failed to load the login announcement release:", error);
+  }
 });
 
 function openMulverseWebsite() {
-	window.open(MULVERSE_WEBSITE, "_blank", "noopener,noreferrer");
+  window.open(MULVERSE_WEBSITE, "_blank", "noopener,noreferrer");
 }
 </script>
 

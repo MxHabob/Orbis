@@ -71,7 +71,11 @@ const filter = $derived(search.trim().toLocaleLowerCase());
 
 function matches(node: TemplateNode): boolean {
   if (!filter) return true;
-  if ([node.name, node.id, node.type].some((value) => value?.toLocaleLowerCase().includes(filter))) {
+  if (
+    [node.name, node.id, node.type].some((value) =>
+      value?.toLocaleLowerCase().includes(filter),
+    )
+  ) {
     return true;
   }
   return isContainerNode(node) && node.children.some(matches);

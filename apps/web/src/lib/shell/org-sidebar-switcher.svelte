@@ -25,7 +25,10 @@ import { api } from "$lib/api/client";
 import { l } from "$lib/core/i18n/locale";
 import { authStore, effectiveContext } from "$lib/stores";
 import { onMount } from "svelte";
-import { createDashboardAccessQuery, dashboardBranch } from "$lib/features/dashboard/queries";
+import {
+  createDashboardAccessQuery,
+  dashboardBranch,
+} from "$lib/features/dashboard/queries";
 
 let {
   orgId,
@@ -39,18 +42,22 @@ let {
   primaryColor?: string;
 } = $props();
 
-const access = createDashboardAccessQuery(() => orgId, () => authStore.userId);
+const access = createDashboardAccessQuery(
+  () => orgId,
+  () => authStore.userId,
+);
 const branches = $derived(access.data?.units ?? []);
-const activeBranch = $derived(dashboardBranch(access.data, effectiveContext.activeOrgUnitId));
+const activeBranch = $derived(
+  dashboardBranch(access.data, effectiveContext.activeOrgUnitId),
+);
 let organizations = $state<{ id: string; label: string }[]>([]);
 
 const orgNameDisplay = $derived(l(orgNameAr, orgName) ?? "");
 const orgInitials = $derived(orgNameDisplay.trim().charAt(0).toUpperCase());
 const currentBranchLabel = $derived.by(() => {
-  if (!activeBranch) return access.data?.organization_wide ? m.shared_ui_all_branches() : "";
-  const currentBranch = branches.find(
-    (branch) => branch.id === activeBranch,
-  );
+  if (!activeBranch)
+    return access.data?.organization_wide ? m.shared_ui_all_branches() : "";
+  const currentBranch = branches.find((branch) => branch.id === activeBranch);
   return currentBranch
     ? l(currentBranch.name_ar, currentBranch.name)
     : m.shared_ui_selected_branch();
@@ -90,7 +97,6 @@ onMount(() => {
         )
       : [currentOrganization, ...organizations];
   }
-
 });
 
 function handleNavigate(path: string) {

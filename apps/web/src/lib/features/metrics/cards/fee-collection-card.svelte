@@ -1,8 +1,16 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
-import { createPaymentsQuery, createStudentFeesQuery } from "$lib/features/finance/queries";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import {
+  createPaymentsQuery,
+  createStudentFeesQuery,
+} from "$lib/features/finance/queries";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { formatDateKey } from "$lib/core/i18n/format";
@@ -33,92 +41,113 @@ const firstMonth = $derived.by(() => {
   else month.setUTCMonth(0);
   return month;
 });
-const needsEnrollmentFilter = $derived(selectedClass !== "all" || selectedTerm !== "all");
+const needsEnrollmentFilter = $derived(
+  selectedClass !== "all" || selectedTerm !== "all",
+);
 const paymentsQuery = createPaymentsQuery(
   () => orgId,
   () => ({
-    from_date: period === "all"
-      ? undefined
-      : `${firstMonth.getUTCFullYear() - 1}-${String(firstMonth.getUTCMonth() + 1).padStart(2, "0")}-01`,
+    from_date:
+      period === "all"
+        ? undefined
+        : `${firstMonth.getUTCFullYear() - 1}-${String(firstMonth.getUTCMonth() + 1).padStart(2, "0")}-01`,
     to_date: today,
   }),
 );
 const feesQuery = createStudentFeesQuery(
   () => orgId,
-  () => selectedTerm === "all" ? undefined : { period_id: selectedTerm },
+  () => (selectedTerm === "all" ? undefined : { period_id: selectedTerm }),
   () => needsEnrollmentFilter,
 );
-const enrollmentsQuery = createEnrollmentsQuery(() => orgId, () => ({
-  class_id: selectedClass === "all" ? undefined : selectedClass,
-  period_id: selectedTerm === "all" ? undefined : selectedTerm,
-}));
-const isLoading = $derived(paymentsQuery.isLoading ||
-  (needsEnrollmentFilter && (feesQuery.isLoading || enrollmentsQuery.isLoading)));
+const enrollmentsQuery = createEnrollmentsQuery(
+  () => orgId,
+  () => ({
+    class_id: selectedClass === "all" ? undefined : selectedClass,
+    period_id: selectedTerm === "all" ? undefined : selectedTerm,
+  }),
+);
+const isLoading = $derived(
+  paymentsQuery.isLoading ||
+    (needsEnrollmentFilter &&
+      (feesQuery.isLoading || enrollmentsQuery.isLoading)),
+);
 const filteredPayments = $derived.by(() => {
-    const payments = paymentsQuery.data ?? [];
-    const fees = feesQuery.data ?? [];
-    const enrollments = enrollmentsQuery.data ?? [];
-    const enrollmentIds = new Set(
-      enrollments.map((enrollment) => enrollment.id),
-    );
-    const feeIds = new Set(
-      fees
-        .filter(
-          (fee) =>
-            selectedClass === "all" ||
-            (fee.enrollment_id != null && enrollmentIds.has(fee.enrollment_id)),
-        )
-        .map((fee) => fee.id),
-    );
-    return needsEnrollmentFilter
-      ? payments.filter((payment) =>
+  const payments = paymentsQuery.data ?? [];
+  const fees = feesQuery.data ?? [];
+  const enrollments = enrollmentsQuery.data ?? [];
+  const enrollmentIds = new Set(enrollments.map((enrollment) => enrollment.id));
+  const feeIds = new Set(
+    fees
+      .filter(
+        (fee) =>
+          selectedClass === "all" ||
+          (fee.enrollment_id != null && enrollmentIds.has(fee.enrollment_id)),
+      )
+      .map((fee) => fee.id),
+  );
+  return needsEnrollmentFilter
+    ? payments.filter(
+        (payment) =>
           (payment.fee_id != null && feeIds.has(payment.fee_id)) ||
-          (payment.enrollment_id != null && enrollmentIds.has(payment.enrollment_id)),
-        )
-      : payments;
+          (payment.enrollment_id != null &&
+            enrollmentIds.has(payment.enrollment_id)),
+      )
+    : payments;
 });
-const currencies = $derived([...new Set(
-  filteredPayments.map((payment) => payment.currency_code).filter(Boolean),
-)].sort());
+const currencies = $derived(
+  [
+    ...new Set(
+      filteredPayments.map((payment) => payment.currency_code).filter(Boolean),
+    ),
+  ].sort(),
+);
 let selectedCurrency = $state("");
 const currency = $derived(
-  currencies.includes(selectedCurrency) ? selectedCurrency :
-    currencies.includes(orgContext.baseCurrency) ? orgContext.baseCurrency :
-      (currencies[0] ?? orgContext.baseCurrency),
+  currencies.includes(selectedCurrency)
+    ? selectedCurrency
+    : currencies.includes(orgContext.baseCurrency)
+      ? orgContext.baseCurrency
+      : (currencies[0] ?? orgContext.baseCurrency),
 );
-const loadError = $derived(paymentsQuery.isError ||
-  (needsEnrollmentFilter && (feesQuery.isError || enrollmentsQuery.isError)));
+const loadError = $derived(
+  paymentsQuery.isError ||
+    (needsEnrollmentFilter && (feesQuery.isError || enrollmentsQuery.isError)),
+);
 const data = $derived.by(() => {
-    const buckets = new Map<string, number>();
-    for (const payment of filteredPayments) {
-      if (payment.currency_code !== currency) continue;
-      const paidAt = new Date(payment.paid_at || payment.created_at);
-      const amount = Number(payment.amount ?? 0);
-      if (Number.isNaN(paidAt.getTime()) || !Number.isFinite(amount)) continue;
-      const dateKey = formatDateKey(paidAt);
-      const key = dateKey.slice(0, period === "all" ? 4 : 7);
-      buckets.set(key, (buckets.get(key) ?? 0) + amount);
-    }
+  const buckets = new Map<string, number>();
+  for (const payment of filteredPayments) {
+    if (payment.currency_code !== currency) continue;
+    const paidAt = new Date(payment.paid_at || payment.created_at);
+    const amount = Number(payment.amount ?? 0);
+    if (Number.isNaN(paidAt.getTime()) || !Number.isFinite(amount)) continue;
+    const dateKey = formatDateKey(paidAt);
+    const key = dateKey.slice(0, period === "all" ? 4 : 7);
+    buckets.set(key, (buckets.get(key) ?? 0) + amount);
+  }
 
-    if (period === "all") {
-      return [...buckets.keys()].sort().map((year) => ({
-        month: year,
-        amount: buckets.get(year) ?? 0,
-        lastYearAmount: buckets.get(String(Number(year) - 1)) ?? 0,
-      }));
-    }
+  if (period === "all") {
+    return [...buckets.keys()].sort().map((year) => ({
+      month: year,
+      amount: buckets.get(year) ?? 0,
+      lastYearAmount: buckets.get(String(Number(year) - 1)) ?? 0,
+    }));
+  }
 
-    const months = [];
-    for (const date = new Date(firstMonth); date <= currentMonth; date.setUTCMonth(date.getUTCMonth() + 1)) {
-      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-      const year = date.getUTCFullYear();
-      months.push({
-        month: formatDate(date, "date", { month: "short", timeZone: "UTC" }),
-        amount: buckets.get(`${year}-${month}`) ?? 0,
-        lastYearAmount: buckets.get(`${year - 1}-${month}`) ?? 0,
-      });
-    }
-    return months;
+  const months = [];
+  for (
+    const date = new Date(firstMonth);
+    date <= currentMonth;
+    date.setUTCMonth(date.getUTCMonth() + 1)
+  ) {
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const year = date.getUTCFullYear();
+    months.push({
+      month: formatDate(date, "date", { month: "short", timeZone: "UTC" }),
+      amount: buckets.get(`${year}-${month}`) ?? 0,
+      lastYearAmount: buckets.get(`${year - 1}-${month}`) ?? 0,
+    });
+  }
+  return months;
 });
 
 // Define Y ticks based on max value (e.g. max is around 65k, tick upper bound 80k)

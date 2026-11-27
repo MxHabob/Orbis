@@ -56,7 +56,11 @@ import {
 } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import { tick } from "svelte";
-import { financeRecordColumn, paymentMethodLabel, receiptPrintContext } from "./record-presentation";
+import {
+  financeRecordColumn,
+  paymentMethodLabel,
+  receiptPrintContext,
+} from "./record-presentation";
 import FinanceRecordDialog from "./components/finance-record-dialog.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import DateRangeFilter from "$lib/shared/components/date-range-filter.svelte";
@@ -70,8 +74,15 @@ import type { CurrencyDto } from "$lib/api/types";
 
 import { paymentRequestFingerprint } from "./payment-attempt-key";
 import PaymentMethodField from "./components/payment-method-field.svelte";
-import { createAvailablePaymentMethodsQuery, manualPaymentMethods } from "./queries";
-import { accountQueryOptions, isCashOrBankAccount, refreshPaymentData } from "./queries";
+import {
+  createAvailablePaymentMethodsQuery,
+  manualPaymentMethods,
+} from "./queries";
+import {
+  accountQueryOptions,
+  isCashOrBankAccount,
+  refreshPaymentData,
+} from "./queries";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -95,10 +106,11 @@ function createReceiptLine(): ReceiptLine {
   };
 }
 
-
 // Dynamic payment methods from Integration Layer
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
-const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? manualPaymentMethods());
+const availablePaymentMethods = $derived(
+  paymentMethodsQuery.data ?? manualPaymentMethods(),
+);
 
 // ── State ──────────────────────────────────────────────────────────────
 let accounts = $state<AccountDto[]>([]);
@@ -118,7 +130,9 @@ let selectedCurrency = $state(orgContext.baseCurrency || "");
 let paymentMethod = $state("cash");
 let sourceToken = $state("");
 let methodReference = $state("");
-const showsMethodReference = $derived(paymentMethod === "bank_transfer" || paymentMethod === "check");
+const showsMethodReference = $derived(
+  paymentMethod === "bank_transfer" || paymentMethod === "check",
+);
 let receiptLines = $state<ReceiptLine[]>([createReceiptLine()]);
 const paymentAttemptKeys = new Map<string, string>();
 const availableCurrencies = $derived([
@@ -149,16 +163,32 @@ const availableCurrencies = $derived([
   ),
 ]);
 const settingsQuery = createCashierAssignmentQuery(() => orgId);
-const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
-  ? settingsQuery.data[authStore.userId ?? ""] ?? null
-  : undefined);
-const methodTreasuries = $derived(eligibleTreasuries(treasuries, paymentMethod, cashAssignment));
-const treasuryAccountsForCurrency = $derived(methodTreasuries.filter((account) => account.currency.toUpperCase() === selectedCurrency.toUpperCase()));
-const activeTreasuryId = $derived(resolveTreasury(treasuryAccountsForCurrency, selectedTreasuryId));
+const cashAssignment = $derived(
+  settingsQuery.data && !settingsQuery.isError
+    ? (settingsQuery.data[authStore.userId ?? ""] ?? null)
+    : undefined,
+);
+const methodTreasuries = $derived(
+  eligibleTreasuries(treasuries, paymentMethod, cashAssignment),
+);
+const treasuryAccountsForCurrency = $derived(
+  methodTreasuries.filter(
+    (account) =>
+      account.currency.toUpperCase() === selectedCurrency.toUpperCase(),
+  ),
+);
+const activeTreasuryId = $derived(
+  resolveTreasury(treasuryAccountsForCurrency, selectedTreasuryId),
+);
 
 let initialTreasuryResolved = $state(false);
 $effect(() => {
-  if (initialTreasuryResolved || cashAssignment === undefined || !treasuries.length) return;
+  if (
+    initialTreasuryResolved ||
+    cashAssignment === undefined ||
+    !treasuries.length
+  )
+    return;
   initialTreasuryResolved = true;
   const initialId = activeTreasuryId || methodTreasuries[0]?.id;
   if (initialId) handleTreasuryChange(initialId);
@@ -208,10 +238,15 @@ const paymentPageFilter = $derived({
   to_date: dateRange.toDate || undefined,
 });
 const paymentsQuery = createInfiniteQuery(() => {
-  const filters = { ...paymentPageFilter, search: searchQuery.trim() || undefined, ...paymentPageSort };
+  const filters = {
+    ...paymentPageFilter,
+    search: searchQuery.trim() || undefined,
+    ...paymentPageSort,
+  };
   return {
     queryKey: [...queryKeys.finance.payments(orgId, filters), "paginated"],
-    queryFn: ({ pageParam }) => api.listPaymentsPaginated({ ...filters, page: pageParam, page_size: 50 }),
+    queryFn: ({ pageParam }) =>
+      api.listPaymentsPaginated({ ...filters, page: pageParam, page_size: 50 }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
@@ -354,7 +389,9 @@ function clearForm() {
   formError = "";
 }
 
-async function getPaymentAttemptKey(request: Parameters<typeof api.processPayment>[0]) {
+async function getPaymentAttemptKey(
+  request: Parameters<typeof api.processPayment>[0],
+) {
   const fingerprint = await paymentRequestFingerprint(request);
   const existing = paymentAttemptKeys.get(fingerprint);
   if (existing) return existing;
@@ -363,9 +400,15 @@ async function getPaymentAttemptKey(request: Parameters<typeof api.processPaymen
   return key;
 }
 
-const receivableAccountIds = $derived(new Set(receivableAccounts.map((account) => String(account.id))));
-const accountsById = $derived(new Map(accounts.map((account) => [String(account.id), account])));
-const enrollmentsById = $derived(new Map(students.map((item) => [item.id, item])));
+const receivableAccountIds = $derived(
+  new Set(receivableAccounts.map((account) => String(account.id))),
+);
+const accountsById = $derived(
+  new Map(accounts.map((account) => [String(account.id), account])),
+);
+const enrollmentsById = $derived(
+  new Map(students.map((item) => [item.id, item])),
+);
 const enrollmentByStudentId = $derived.by(() => {
   const index = new Map<string, EnrollmentDto>();
   for (const item of students) {
@@ -390,16 +433,29 @@ async function handleSavePayment() {
     return;
   }
 
-  if (receiptLines.some((line) => line.amount == null || !Number.isFinite(line.amount) || line.amount <= 0)) {
+  if (
+    receiptLines.some(
+      (line) =>
+        line.amount == null ||
+        !Number.isFinite(line.amount) ||
+        line.amount <= 0,
+    )
+  ) {
     formError = m.finance_ui_payment_amount_invalid();
     return;
   }
 
-  if (!selectedPaymentMethodObj || (paymentMethodsQuery.isError && selectedPaymentMethodObj.is_digital_gateway)) {
+  if (
+    !selectedPaymentMethodObj ||
+    (paymentMethodsQuery.isError && selectedPaymentMethodObj.is_digital_gateway)
+  ) {
     formError = m.finance_ui_payment_method_unavailable();
     return;
   }
-  if (selectedPaymentMethodObj.is_digital_gateway && receiptLines.length !== 1) {
+  if (
+    selectedPaymentMethodObj.is_digital_gateway &&
+    receiptLines.length !== 1
+  ) {
     formError = m.finance_ui_payment_gateway_single_line();
     return;
   }
@@ -416,27 +472,37 @@ async function handleSavePayment() {
       notes: line.notes.trim() || undefined,
     }));
     if (!first) return;
-    const payer = additional.length ? undefined : accountsById.get(first.account_id);
+    const payer = additional.length
+      ? undefined
+      : accountsById.get(first.account_id);
     const request = {
       receivable_account_id: first.account_id,
       account_id: activeTreasuryId,
       amount: first.amount,
       additional_allocations: additional,
       method: paymentMethod,
-      source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
+      source: selectedPaymentMethodObj.requires_source_token
+        ? sourceToken.trim()
+        : undefined,
       payer_name: payer?.name_ar || payer?.name || undefined,
       receipt_number: receiptNumber.trim() || undefined,
       payment_date: paymentDate || undefined,
-      reference: showsMethodReference ? methodReference.trim() || undefined : undefined,
+      reference: showsMethodReference
+        ? methodReference.trim() || undefined
+        : undefined,
       notes: first.notes,
     };
-    await api.processPayment({ ...request, idempotency_key: await getPaymentAttemptKey(request) });
+    await api.processPayment({
+      ...request,
+      idempotency_key: await getPaymentAttemptKey(request),
+    });
     toast.success(m.finance_ui_receipt_posted_success());
     void refreshPaymentData(queryClient, orgId);
     clearForm();
     showAddForm = false;
   } catch (error) {
-    formError = extractErrorMessage(error) || m.finance_ui_receipt_save_failed();
+    formError =
+      extractErrorMessage(error) || m.finance_ui_receipt_save_failed();
   } finally {
     isSubmitting = false;
   }
@@ -446,7 +512,9 @@ async function handleSavePayment() {
 function toPaymentGridRow(p: PaymentDto, idx: number) {
   const enrollment = p.enrollment_id
     ? enrollmentsById.get(p.enrollment_id)
-    : p.student_id ? enrollmentByStudentId.get(p.student_id) : undefined;
+    : p.student_id
+      ? enrollmentByStudentId.get(p.student_id)
+      : undefined;
   const accountName = p.payer_name || enrollment?.student_number || "—";
   const treasury = accountsById.get(String(p.account_id));
   const treasuryName = treasury
@@ -498,13 +566,14 @@ async function printDetail() {
 }
 
 const paymentPrintContexts = $derived(
-  printRows.map((payment) => receiptPrintContext(payment, payment.counter_account_display)),
+  printRows.map((payment) =>
+    receiptPrintContext(payment, payment.counter_account_display),
+  ),
 );
 
 function handlePaymentSelection(selection: SelectionSnapshot) {
   paymentSelection = selection;
 }
-
 
 const detailsColumn = $derived(financeRecordColumn());
 let detailsOpen = $state(false);

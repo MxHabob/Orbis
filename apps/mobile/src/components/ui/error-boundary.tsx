@@ -39,9 +39,7 @@ export function ErrorFallback({
         </Text>
 
         <Text className="text-center text-sm leading-5 text-muted-foreground">
-          {__DEV__
-            ? error.message
-            : t("common_unexpected_error_hint")}
+          {__DEV__ ? error.message : t("common_unexpected_error_hint")}
         </Text>
 
         <View className="mt-two">

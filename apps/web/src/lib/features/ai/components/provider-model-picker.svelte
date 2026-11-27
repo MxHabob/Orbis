@@ -278,7 +278,9 @@ async function handleSelectProviderAndModel(
         isEnabled: true,
       });
       toast.success(
-        m.ai_ui_provider_activated({ name: (l(app.name_ar, app.name) ?? app.name) }),
+        m.ai_ui_provider_activated({
+          name: l(app.name_ar, app.name) ?? app.name,
+        }),
       );
     } catch (e) {
       toast.error(extractErrorMessage(e));

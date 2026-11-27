@@ -8,7 +8,12 @@ import {
   queryKeys,
   type AccountProvisioningResultDto,
 } from "$lib/api";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField, toast } from "@orbis/ui";

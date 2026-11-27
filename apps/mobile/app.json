@@ -9,9 +9,7 @@
     "userInterfaceStyle": "automatic",
     "android": {
       "versionCode": 21,
-      "permissions": [
-        "android.permission.ACCESS_LOCAL_NETWORK"
-      ],
+      "permissions": ["android.permission.ACCESS_LOCAL_NETWORK"],
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
@@ -24,9 +22,7 @@
     "ios": {
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Orbis connects to your school server on the local network.",
-        "NSBonjourServices": [
-          "_orbis-api._tcp"
-        ],
+        "NSBonjourServices": ["_orbis-api._tcp"],
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -75,14 +71,8 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": [
-              "ar",
-              "en"
-            ],
-            "android": [
-              "ar",
-              "en"
-            ]
+            "ios": ["ar", "en"],
+            "android": ["ar", "en"]
           },
           "supportsRTL": true
         }

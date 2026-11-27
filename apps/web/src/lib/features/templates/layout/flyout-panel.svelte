@@ -47,7 +47,6 @@ let toolsTab = $state("layers");
 function close() {
   store.activeRailPanel = null;
 }
-
 </script>
 
 {#if isOpen}

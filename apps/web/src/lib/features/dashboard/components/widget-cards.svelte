@@ -16,11 +16,19 @@ const staffVal = $derived(formatNumber(stats?.total_employees ?? 0));
 const unitsQuery = createOrgUnitsQuery(() => orgId);
 const branchVal = $derived(
   unitsQuery.data
-    ? formatNumber(unitsQuery.data.filter((unit) => unit.unit_type === "branch" && unit.is_active).length)
+    ? formatNumber(
+        unitsQuery.data.filter(
+          (unit) => unit.unit_type === "branch" && unit.is_active,
+        ).length,
+      )
     : "—",
 );
 const branchDetail = $derived(
-  unitsQuery.data ? undefined : unitsQuery.isError ? m.common_loading_error() : m.common_loading(),
+  unitsQuery.data
+    ? undefined
+    : unitsQuery.isError
+      ? m.common_loading_error()
+      : m.common_loading(),
 );
 
 const enrollmentVal = $derived(formatPercent(stats?.enrollment_rate ?? 0));

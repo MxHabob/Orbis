@@ -116,16 +116,32 @@ const availableCurrencies = $derived([
     ),
 ]);
 const settingsQuery = createCashierAssignmentQuery(() => orgId);
-const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
-  ? settingsQuery.data[authStore.userId ?? ""] ?? null
-  : undefined);
-const methodTreasuries = $derived(eligibleTreasuries(treasuries, paymentMethod, cashAssignment));
-const treasuryAccountsForCurrency = $derived(methodTreasuries.filter((account) => account.currency.toUpperCase() === selectedCurrency.toUpperCase()));
-const activeTreasuryId = $derived(resolveTreasury(treasuryAccountsForCurrency, treasuryAccountId));
+const cashAssignment = $derived(
+  settingsQuery.data && !settingsQuery.isError
+    ? (settingsQuery.data[authStore.userId ?? ""] ?? null)
+    : undefined,
+);
+const methodTreasuries = $derived(
+  eligibleTreasuries(treasuries, paymentMethod, cashAssignment),
+);
+const treasuryAccountsForCurrency = $derived(
+  methodTreasuries.filter(
+    (account) =>
+      account.currency.toUpperCase() === selectedCurrency.toUpperCase(),
+  ),
+);
+const activeTreasuryId = $derived(
+  resolveTreasury(treasuryAccountsForCurrency, treasuryAccountId),
+);
 
 let initialTreasuryResolved = $state(false);
 $effect(() => {
-  if (initialTreasuryResolved || cashAssignment === undefined || !treasuries.length) return;
+  if (
+    initialTreasuryResolved ||
+    cashAssignment === undefined ||
+    !treasuries.length
+  )
+    return;
   initialTreasuryResolved = true;
   const initialId = activeTreasuryId || methodTreasuries[0]?.id;
   if (initialId) handleTreasuryChange(initialId);
@@ -168,7 +184,9 @@ async function loadData(reloadCatalogs = true) {
   try {
     const [entriesList, accountsList, currenciesList] = await Promise.all([
       api.listJournalEntries(),
-      reloadCatalogs ? queryClient.fetchQuery(accountQueryOptions(orgId)) : Promise.resolve(accounts),
+      reloadCatalogs
+        ? queryClient.fetchQuery(accountQueryOptions(orgId))
+        : Promise.resolve(accounts),
       reloadCatalogs
         ? queryClient.fetchQuery({
             queryKey: queryKeys.finance.currencies(),
@@ -182,8 +200,9 @@ async function loadData(reloadCatalogs = true) {
     if (reloadCatalogs) treasuries = accountsList.filter(isCashOrBankAccount);
     if (reloadCatalogs) currencies = currenciesList;
 
-
-    disbursements = entriesList.filter((entry) => entry.source_type === "disbursement_voucher");
+    disbursements = entriesList.filter(
+      (entry) => entry.source_type === "disbursement_voucher",
+    );
   } catch (e) {
     console.error("Failed to load disbursements data:", e);
     toast.error(m.finance_ui_disbursements_load_failed());
@@ -264,7 +283,9 @@ function removeDisbursementLine(lineId: number) {
   disbursementLines = disbursementLines.filter((line) => line.id !== lineId);
 }
 
-const accountsById = $derived(new Map(accounts.map((account) => [account.id, account])));
+const accountsById = $derived(
+  new Map(accounts.map((account) => [account.id, account])),
+);
 
 function getAccountName(id?: string | null): string {
   if (!id) return "—";
@@ -276,7 +297,14 @@ function getAccountName(id?: string | null): string {
 async function handleSaveDisbursement() {
   if (isSubmitting) return;
   formError = "";
-  if (disbursementLines.some((line) => line.amount == null || !Number.isFinite(line.amount) || line.amount <= 0)) {
+  if (
+    disbursementLines.some(
+      (line) =>
+        line.amount == null ||
+        !Number.isFinite(line.amount) ||
+        line.amount <= 0,
+    )
+  ) {
     formError = m.finance_ui_disbursement_amount_invalid();
     return;
   }
@@ -329,9 +357,12 @@ async function handleSaveDisbursement() {
     clearForm();
     showAddForm = false;
     await loadData(false);
-    await queryClient.invalidateQueries({ queryKey: queryKeys.finance.accounts(orgId) });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.accounts(orgId),
+    });
   } catch (error) {
-    formError = extractErrorMessage(error) || m.finance_ui_disbursement_save_failed();
+    formError =
+      extractErrorMessage(error) || m.finance_ui_disbursement_save_failed();
   } finally {
     isSubmitting = false;
   }
@@ -340,8 +371,15 @@ async function handleSaveDisbursement() {
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   disbursements.map((d, idx) => {
-    const beneficiaryIds = [...new Set((d.lines ?? []).filter((line) => Number(line.debit_amount) > 0).map((line) => line.account_id))];
-    if (!beneficiaryIds.length && d.debit_account_id) beneficiaryIds.push(d.debit_account_id);
+    const beneficiaryIds = [
+      ...new Set(
+        (d.lines ?? [])
+          .filter((line) => Number(line.debit_amount) > 0)
+          .map((line) => line.account_id),
+      ),
+    ];
+    if (!beneficiaryIds.length && d.debit_account_id)
+      beneficiaryIds.push(d.debit_account_id);
     const treasuryId = d.credit_account_id || d.lines?.[1]?.account_id;
     const amt = Number(d.amount || d.lines?.[0]?.debit_amount || 0);
     const curr = d.currency_code || orgContext.baseCurrency;
@@ -409,9 +447,7 @@ const disbursementPrintContexts = $derived(
       amount: Number(
         disbursement.amount || disbursement.lines?.[0]?.debit_amount || 0,
       ),
-      currency:
-        disbursement.currency_code ||
-        orgContext.baseCurrency,
+      currency: disbursement.currency_code || orgContext.baseCurrency,
       description:
         disbursement.description_ar || disbursement.description || "",
     },
@@ -428,7 +464,6 @@ const disbursementPrintContexts = $derived(
 function handleDisbursementSelection(selection: SelectionSnapshot) {
   disbursementSelection = selection;
 }
-
 
 const detailsColumn = $derived(financeRecordColumn());
 let detailsOpen = $state(false);

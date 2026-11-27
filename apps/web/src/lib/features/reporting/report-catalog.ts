@@ -13,11 +13,17 @@ export const REPORT_CATEGORIES = [
   { id: "all", label: () => m.operations_ui_report_category_all() },
   { id: "academic", label: () => m.operations_ui_report_category_academic() },
   { id: "student", label: () => m.operations_ui_report_category_student() },
-  { id: "attendance", label: () => m.operations_ui_report_category_attendance() },
+  {
+    id: "attendance",
+    label: () => m.operations_ui_report_category_attendance(),
+  },
   { id: "exam", label: () => m.operations_ui_report_category_exams() },
   { id: "finance", label: () => m.operations_ui_report_category_finance() },
   { id: "hr", label: () => m.operations_ui_report_category_hr() },
-  { id: "administration", label: () => m.operations_ui_report_category_administration() },
+  {
+    id: "administration",
+    label: () => m.operations_ui_report_category_administration(),
+  },
 ] as const;
 
 const FORMAT_LABELS: Record<string, () => string> = {
@@ -32,7 +38,10 @@ export function getFormatFilterLabel(format: string): string {
   return (FORMAT_LABELS[format] ?? (() => m.operations_ui_export_format()))();
 }
 
-const CATEGORY_MATCHERS: Record<string, { domains: string[]; categories: string[] }> = {
+const CATEGORY_MATCHERS: Record<
+  string,
+  { domains: string[]; categories: string[] }
+> = {
   student: {
     domains: ["student", "students"],
     categories: ["students", "admissions"],

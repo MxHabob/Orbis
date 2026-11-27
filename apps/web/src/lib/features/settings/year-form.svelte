@@ -44,7 +44,13 @@ const defaultEndDate = `${currentYearNum + 1}-06-30`;
 const form = untrack(
   () =>
     new FormController({
-      schema: z.object({ name: z.string(), name_ar: z.string(), start_date: z.string(), end_date: z.string(), notes: z.string() }),
+      schema: z.object({
+        name: z.string(),
+        name_ar: z.string(),
+        start_date: z.string(),
+        end_date: z.string(),
+        notes: z.string(),
+      }),
       initialValues: {
         name:
           year?.name ||

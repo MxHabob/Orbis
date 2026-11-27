@@ -60,13 +60,30 @@ let {
 
 const domain = $derived((selectedDefinition?.domain ?? "").toLowerCase());
 const needsAcademicFilters = $derived(
-  ["academic", "student", "students", "exam", "exams", "attendance", "behavior"].includes(domain),
+  [
+    "academic",
+    "student",
+    "students",
+    "exam",
+    "exams",
+    "attendance",
+    "behavior",
+  ].includes(domain),
 );
 const supportsStudentFilter = $derived(
-  ["academic", "student", "students", "attendance", "behavior", "finance"].includes(domain),
+  [
+    "academic",
+    "student",
+    "students",
+    "attendance",
+    "behavior",
+    "finance",
+  ].includes(domain),
 );
 const needsDateRange = $derived(
-  ["attendance", "behavior", "finance", "administration", "system"].includes(domain),
+  ["attendance", "behavior", "finance", "administration", "system"].includes(
+    domain,
+  ),
 );
 </script>
 

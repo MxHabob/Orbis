@@ -61,7 +61,11 @@ export default function ClassAttendanceScreen() {
   const timeZone = organizationQuery.data?.timezone;
   const today = timeZone ? formatDateKey(new Date(), timeZone) : undefined;
   const [dateOverride, setDate] = useState<string>();
-  const date = dateOverride ?? (typeof requestedDate === "string" && isValidDate(requestedDate) ? requestedDate : today);
+  const date =
+    dateOverride ??
+    (typeof requestedDate === "string" && isValidDate(requestedDate)
+      ? requestedDate
+      : today);
   const [selectedLessonId, setSelectedLessonId] = useState(
     typeof lessonId === "string" ? lessonId : "",
   );
@@ -170,7 +174,8 @@ export default function ClassAttendanceScreen() {
         void classQuery.refetch();
         void scheduleQuery.refetch();
         if (date) void attendanceQuery.refetch();
-        if (!organizationQuery.data || organizationQuery.isError) void organizationQuery.refetch();
+        if (!organizationQuery.data || organizationQuery.isError)
+          void organizationQuery.refetch();
       }}
     >
       <View className="gap-three">

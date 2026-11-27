@@ -1,11 +1,19 @@
 <script lang="ts">
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@orbis/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui/accordion";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import type { AcademicPeriodDto } from "$lib/api";
 import type { StudentFormState } from "../form-state.svelte";
 
-let { state, period }: { state: StudentFormState; period: AcademicPeriodDto | null } = $props();
+let {
+  state,
+  period,
+}: { state: StudentFormState; period: AcademicPeriodDto | null } = $props();
 </script>
 
 <Accordion

@@ -253,7 +253,8 @@ const tableLayout = $derived.by(() => {
     numRows,
     headerBgColor: style.headerBgColor || "#0f172a",
     headerTextColor: style.headerTextColor || "#ffffff",
-    alternateRowBgColor: style.altRowBgColor || style.alternateRowBgColor || "#f8fafc",
+    alternateRowBgColor:
+      style.altRowBgColor || style.alternateRowBgColor || "#f8fafc",
     borderColor: style.borderColor || "#cbd5e1",
     borderWidth: style.borderWidth ?? 0.75,
     headerFontSize: style.headerFontSize ?? 8,

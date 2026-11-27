@@ -50,7 +50,9 @@ let editingSection = $state<SectionDto | null>(null);
 
 async function handleDeleteSection(cls: SectionDto) {
   const displayName =
-    l(cls.name_ar, cls.name) || cls.code || m.common_classes_value_unavailable();
+    l(cls.name_ar, cls.name) ||
+    cls.code ||
+    m.common_classes_value_unavailable();
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete(),
     description: m.academics_class_delete_confirm({ name: displayName }),
@@ -99,9 +101,7 @@ const totalClassesCount = $derived(
 const totalStudentsCount = $derived(
   Number(summary?.total_enrolled_students ?? 0),
 );
-const averageClassSize = $derived(
-  Number(summary?.average_section_size ?? 0),
-);
+const averageClassSize = $derived(Number(summary?.average_section_size ?? 0));
 const pageLoading = $derived(summaryQuery.isLoading);
 const classMenuActions = $derived([
   {

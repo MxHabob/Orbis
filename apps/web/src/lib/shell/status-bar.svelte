@@ -11,10 +11,11 @@ import {
   uiStore,
 } from "$lib/stores";
 import { api, isDesktopApp } from "$lib/api";
+import { createOrganizationQuery } from "$lib/features/settings/queries";
 import {
-  createOrganizationQuery,
-} from "$lib/features/settings/queries";
-import { createDashboardAccessQuery, dashboardBranch } from "$lib/features/dashboard/queries";
+  createDashboardAccessQuery,
+  dashboardBranch,
+} from "$lib/features/dashboard/queries";
 import { createprogressionJobsQuery } from "$lib/features/academics/promotion-queries";
 import { updateManager } from "$lib/features/system/update-manager.svelte";
 import type { BulkCommitResult } from "$lib/features/bulk-entry/types";
@@ -39,7 +40,10 @@ import SystemClock from "./system-clock.svelte";
 
 const orgId = $derived(authStore.orgId);
 const organizationQuery = createOrganizationQuery(() => orgId);
-const dashboardAccess = createDashboardAccessQuery(() => orgId, () => authStore.userId);
+const dashboardAccess = createDashboardAccessQuery(
+  () => orgId,
+  () => authStore.userId,
+);
 const progressionJobsQuery = createprogressionJobsQuery(() => orgId);
 let operationOpen = $state(false);
 let licenseOpen = $state(false);
@@ -92,7 +96,8 @@ const organizationName = $derived(
 const branchName = $derived.by(() => {
   const access = dashboardAccess.data;
   const branchId = dashboardBranch(access, effectiveContext.activeOrgUnitId);
-  if (!branchId) return access?.organization_wide ? m.shared_ui_all_branches() : "";
+  if (!branchId)
+    return access?.organization_wide ? m.shared_ui_all_branches() : "";
   const branch = access?.units.find((unit) => unit.id === branchId);
   return branch
     ? l(branch.name_ar, branch.name)

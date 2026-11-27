@@ -259,7 +259,9 @@ import type {
 } from "./types";
 
 type DesktopPayment = Omit<PaymentDto, "currency_code" | "updated_at"> &
-  Partial<Pick<PaymentDto, "currency_code" | "updated_at">> & { currency?: string };
+  Partial<Pick<PaymentDto, "currency_code" | "updated_at">> & {
+    currency?: string;
+  };
 
 function normalizeDesktopPayment(payment: DesktopPayment): PaymentDto {
   return {
@@ -475,7 +477,10 @@ export class LocalClient implements OrbisApiClient {
     state: string,
   ): Promise<AcademicPeriodDto> {
     return unwrap(
-      await invoke("calendar_transition_period_state", { id, targetState: state }),
+      await invoke("calendar_transition_period_state", {
+        id,
+        targetState: state,
+      }),
     );
   }
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
@@ -1336,7 +1341,9 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("finance_delete_student_fee", { id }));
   }
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
-    const payment = unwrap<DesktopPayment>(await invoke("finance_process_payment", { request: req }));
+    const payment = unwrap<DesktopPayment>(
+      await invoke("finance_process_payment", { request: req }),
+    );
     return normalizeDesktopPayment(payment);
   }
   async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {

@@ -3,7 +3,11 @@ import type { JournalEntryDto } from "$lib/api";
 import { formatCurrency } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 
-let { entry, accountName }: { entry?: JournalEntryDto; accountName: (accountId: string) => string } = $props();
+let {
+  entry,
+  accountName,
+}: { entry?: JournalEntryDto; accountName: (accountId: string) => string } =
+  $props();
 </script>
 
 {#if entry?.lines?.length}

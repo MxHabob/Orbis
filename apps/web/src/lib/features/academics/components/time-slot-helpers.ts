@@ -1,10 +1,7 @@
 import type { TimeSlotDto } from "$lib/api";
 import { isAr } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
-import {
-  ARABIC_PERIOD_NAMES,
-  ENGLISH_PERIOD_NAMES,
-} from "@orbis/ui/timetable";
+import { ARABIC_PERIOD_NAMES, ENGLISH_PERIOD_NAMES } from "@orbis/ui/timetable";
 
 export interface BreakRule {
   id: number;
@@ -48,7 +45,10 @@ export function formatMinutesToTime(totalMinutes: number): string {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
-export function getPeriodNames(orderNumber: number): { ar: string; en: string } {
+export function getPeriodNames(orderNumber: number): {
+  ar: string;
+  en: string;
+} {
   return {
     ar:
       ARABIC_PERIOD_NAMES[orderNumber] ??

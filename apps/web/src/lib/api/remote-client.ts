@@ -268,7 +268,10 @@ import type {
   ActivateKeyRequest,
 } from "./types";
 
-import { parsePeriodOverrideTargets, periodOverrideTargets } from "./period-override";
+import {
+  parsePeriodOverrideTargets,
+  periodOverrideTargets,
+} from "./period-override";
 
 export class ApiRequestError extends Error {
   constructor(
@@ -526,7 +529,11 @@ export class RemoteClient implements OrbisApiClient {
 
   async getDashboard(orgUnitId?: string): Promise<DashboardCountsDto> {
     const path = "/api/v1/organizations/current/dashboard";
-    return this.fetchApi(orgUnitId ? `${path}?${new URLSearchParams({ org_unit_id: orgUnitId })}` : path);
+    return this.fetchApi(
+      orgUnitId
+        ? `${path}?${new URLSearchParams({ org_unit_id: orgUnitId })}`
+        : path,
+    );
   }
 
   async getDashboardAccess(): Promise<DashboardAccessDto> {
@@ -670,19 +677,27 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async openGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/grade-entry/open`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/grade-entry/open`,
+    );
   }
 
   async closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/grade-entry/close`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/grade-entry/close`,
+    );
   }
 
   async openEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/enrollment/open`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/enrollment/open`,
+    );
   }
 
   async closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/enrollment/close`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/enrollment/close`,
+    );
   }
 
   async transitionAcademicPeriodState(
@@ -1921,9 +1936,7 @@ export class RemoteClient implements OrbisApiClient {
   async submitOverride(
     req: SubmitOverrideRequestInput,
   ): Promise<OverrideRequestDto> {
-    return this.call(
-      sdk.submitOverride({ client: this.client, body: req }),
-    );
+    return this.call(sdk.submitOverride({ client: this.client, body: req }));
   }
 
   async approveOverride(
@@ -1951,9 +1964,7 @@ export class RemoteClient implements OrbisApiClient {
   async listOverrides(
     params: OverrideRequestListParams = {},
   ): Promise<PaginatedList<OverrideRequestDto>> {
-    return this.call(
-      sdk.listOverrides({ client: this.client, query: params }),
-    );
+    return this.call(sdk.listOverrides({ client: this.client, query: params }));
   }
 
   async getOverride(id: string): Promise<OverrideRequestDto> {
@@ -3056,7 +3067,9 @@ export class RemoteClient implements OrbisApiClient {
         version: typeof body.version === "string" ? body.version : undefined,
         api_version:
           typeof body.api_version === "string" ? body.api_version : undefined,
-        error: ready ? undefined : "This endpoint did not return a ready Orbis API response",
+        error: ready
+          ? undefined
+          : "This endpoint did not return a ready Orbis API response",
       };
     } catch (error) {
       return {
