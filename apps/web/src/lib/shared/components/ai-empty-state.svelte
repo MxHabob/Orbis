@@ -39,16 +39,11 @@ const avatarController = new AvatarController();
 let displayedText = $state("");
 
 let animFrameId: number | null = null;
-let stateTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function stopStreaming() {
   if (animFrameId !== null) {
     cancelAnimationFrame(animFrameId);
     animFrameId = null;
-  }
-  if (stateTimeout !== null) {
-    clearTimeout(stateTimeout);
-    stateTimeout = null;
   }
 }
 
@@ -74,9 +69,6 @@ function startStreaming(fullText: string) {
     } else {
       animFrameId = null;
       avatarController.happy();
-      stateTimeout = setTimeout(() => {
-        avatarController.idle();
-      }, 1000);
     }
   }
 

@@ -799,3 +799,67 @@ pub async fn report_get_definition(
         .ok_or_else(|| format!("Report definition not found: {}", code))?;
     Ok(ok(definition_dto(def)))
 }
+
+#[derive(Serialize)]
+pub struct SyncDefaultsDto {
+    pub templates_inserted: u64,
+    pub templates_updated: u64,
+    pub templates_skipped_customized: u64,
+    pub reports_synced: u64,
+}
+
+#[tauri::command]
+pub async fn template_sync_defaults(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SyncDefaultsDto>, String> {
+    let ctx = make_ctx(&state);
+    let can_sync = state
+        .permission_checker
+        .check(
+            &ctx,
+            orbis_domain::iam::permission::Permission::TemplateWrite,
+        )
+        .await
+        .is_ok()
+        || state
+            .permission_checker
+            .check(
+                &ctx,
+                orbis_domain::iam::permission::Permission::TemplatePublish,
+            )
+            .await
+            .is_ok();
+    if !can_sync {
+        return Err("Missing permission to sync default templates and reports".to_string());
+    }
+
+    let actor_id = ctx.actor.id().unwrap_or_default();
+    let now = Utc::now().to_rfc3339();
+    let tpl_summary = orbis_infra::repositories::template_catalog::sync_master_templates_for_org(
+        &state.db,
+        ctx.tenant_id,
+        actor_id,
+        &now,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    orbis_infra::repositories::report_catalog::provision_master_report_definitions(
+        &state.db,
+        ctx.tenant_id,
+        &now,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+    let reports_synced =
+        orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
+    let reports_synced =
+        orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
+
+    Ok(ok(SyncDefaultsDto {
+        templates_inserted: tpl_summary.templates_inserted,
+        templates_updated: tpl_summary.templates_updated,
+        templates_skipped_customized: tpl_summary.templates_skipped_customized,
+        reports_synced,
+    }))
+}

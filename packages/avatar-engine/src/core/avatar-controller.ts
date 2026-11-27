@@ -95,6 +95,21 @@ export class AvatarController {
     this.transitionTo("idle");
   }
 
+  /** Trigger a playful reaction when the user taps or clicks the avatar. */
+  tapReaction(): AvatarState {
+    const roll = Math.random();
+    let next: AvatarState;
+    if (roll < 0.2) next = "happy";
+    else if (roll < 0.4) next = "celebrating";
+    else if (roll < 0.6) next = "curious";
+    else if (roll < 0.75) next = "sleepy";
+    else if (roll < 0.9) next = "thinking";
+    else next = "blinking";
+
+    this.transitionTo(next);
+    return next;
+  }
+
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;

@@ -38,7 +38,15 @@ let {
   onreject: () => void;
 } = $props();
 
-function getOverrideTypeInfo(type: string) {
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function formatDisplayValue(val?: string | null): string {
+  if (!val) return "";
+  return UUID_RE.test(val.trim()) ? `${val.trim().slice(0, 8)}…` : val;
+}
+
+export function getOverrideTypeInfo(type: string) {
   switch (type) {
     case "admission_approval":
       return {
@@ -87,7 +95,7 @@ function getOverrideTypeInfo(type: string) {
   }
 }
 
-function statusBadgeVariant(status: string) {
+export function statusBadgeVariant(status: string) {
   switch (status) {
     case "approved":
     case "executed":
@@ -104,7 +112,7 @@ function statusBadgeVariant(status: string) {
   }
 }
 
-function statusLabel(status: string): string {
+export function statusLabel(status: string): string {
   switch (status) {
     case "pending":
       return m.notifications_popover_request_status_pending();
@@ -125,75 +133,78 @@ function statusLabel(status: string): string {
 
 const typeInfo = $derived(getOverrideTypeInfo(request.override_type));
 const TypeIcon = $derived(typeInfo.icon);
+const requesterDisplay = $derived(
+  request.requested_by_name || formatDisplayValue(request.requested_by),
+);
 </script>
 
-<Card class="overflow-hidden rounded-md border-border/60 bg-card shadow-2xs transition-colors hover:border-border">
-  <div class="flex flex-col gap-3 p-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <div class="flex flex-wrap items-center gap-1.5">
+<Card class="flex flex-col overflow-hidden rounded-md border-border/60 bg-card shadow-2xs">
+  <div class="flex flex-col gap-4 p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-border/50 pb-4">
+      <div class="flex flex-wrap items-center gap-2">
         <Badge
           variant={typeInfo.variant}
-          class="h-5 gap-1 rounded-full px-2 text-[11px] font-semibold"
+          class="h-6 gap-1.5 rounded-full px-2.5 text-xs font-semibold"
         >
-          <TypeIcon size={12} />
+          <TypeIcon size={13} />
           {typeInfo.label}
         </Badge>
         <Badge
           variant={statusBadgeVariant(request.status)}
-          class="h-5 rounded-full px-2 text-[10px] font-semibold"
+          class="h-6 rounded-full px-2.5 text-[11px] font-semibold"
         >
           {statusLabel(request.status)}
         </Badge>
       </div>
 
-      <div class="flex items-center gap-3 text-[11px] text-muted-foreground">
+      <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         {#if showRequester}
-          <span class="inline-flex items-center gap-1">
-            <User size={12} class="shrink-0" />
-            <span class="font-medium text-foreground">
-              {request.requested_by_name || request.requested_by}
-            </span>
+          <span class="inline-flex items-center gap-1.5" title={request.requested_by}>
+            <User size={13} class="shrink-0" />
+            <span class="font-medium text-foreground">{requesterDisplay}</span>
           </span>
         {/if}
-        <time datetime={request.created_at} class="font-mono">
+        <time datetime={request.created_at} class="font-mono text-[11px]">
           {formatDate(request.created_at)}
         </time>
       </div>
     </div>
 
-    <p class="text-xs font-medium leading-relaxed text-foreground sm:text-sm">
-      {request.reason}
-    </p>
+    <div class="space-y-1.5">
+      <p class="text-sm font-medium leading-relaxed text-foreground">
+        {request.reason}
+      </p>
+    </div>
 
     {#if request.field_name || request.old_value || request.new_value}
-      <div class="flex flex-wrap items-center gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 font-mono text-xs">
+      <div class="flex flex-wrap items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3.5 py-2.5 font-mono text-xs">
         {#if request.field_name}
-          <span class="font-sans font-medium text-muted-foreground">
+          <span class="font-sans font-semibold text-muted-foreground">
             {request.field_name}
           </span>
         {/if}
         {#if request.old_value}
-          <span class="break-all text-muted-foreground line-through">
-            {request.old_value}
+          <span class="break-all text-muted-foreground line-through" title={request.old_value}>
+            {formatDisplayValue(request.old_value)}
           </span>
         {/if}
         {#if request.old_value && request.new_value}
           <span aria-hidden="true" class="text-muted-foreground">→</span>
         {/if}
         {#if request.new_value}
-          <span class="break-all font-semibold text-foreground">
-            {request.new_value}
+          <span class="break-all font-semibold text-foreground" title={request.new_value}>
+            {formatDisplayValue(request.new_value)}
           </span>
         {/if}
       </div>
     {/if}
 
     {#if request.approval_chain.length > 0}
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div class="flex flex-wrap items-center gap-1.5 pt-1">
         {#each request.approval_chain as step, index (step.step_order)}
           <Badge
             variant={statusBadgeVariant(step.status)}
-            class="h-5 rounded-full px-2 text-[10px] font-medium"
+            class="h-5 rounded-full px-2.5 text-[11px] font-medium"
           >
             {step.approver_name || step.approver_role}
           </Badge>
@@ -205,11 +216,11 @@ const TypeIcon = $derived(typeInfo.icon);
     {/if}
 
     {#if request.resolution_notes}
-      <div class="rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs">
+      <div class="rounded-md border border-border/60 bg-muted/40 px-3.5 py-2.5 text-xs">
         <span class="font-semibold text-foreground">
           {m.ui_copy_resolution_371c8da4()}
         </span>
-        <span class="ms-1 text-muted-foreground">
+        <span class="ms-1.5 text-muted-foreground">
           {request.resolution_notes}
         </span>
       </div>
@@ -217,19 +228,29 @@ const TypeIcon = $derived(typeInfo.icon);
   </div>
 
   {#if canReview}
-    <div class="flex flex-col gap-2.5 border-t border-border/50 bg-muted/20 px-4 py-3 sm:flex-row sm:items-end">
+    <div class="flex flex-col gap-3 border-t border-border/60 bg-muted/30 p-4">
       <Textarea
         bind:value={() => actionNotes ?? "", (v) => (actionNotes = v)}
         placeholder={m.ui_copy_approval_notes_or_decision_reason_optional_a41d972b()}
-        rows={1}
+        rows={2}
         disabled={processing}
-        class="min-h-9 flex-1 bg-background text-xs"
+        class="min-h-16 bg-background text-xs"
       />
-      <div class="flex shrink-0 items-center gap-2">
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          class="h-8 gap-1.5 px-3.5 text-xs font-semibold"
+          disabled={processing}
+          onclick={onreject}
+        >
+          <XMark size={13} />
+          {m.common_approval_reject()}
+        </Button>
         <Button
           variant="lime"
           size="sm"
-          class="h-8 gap-1.5 px-3 text-xs font-semibold"
+          class="h-8 gap-1.5 px-4 text-xs font-semibold"
           disabled={processing}
           onclick={onapprove}
         >
@@ -239,16 +260,6 @@ const TypeIcon = $derived(typeInfo.icon);
             <CheckCircle size={13} />
           {/if}
           {m.ui_copy_approve_7da54ae0()}
-        </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          class="h-8 gap-1.5 px-3 text-xs font-semibold"
-          disabled={processing}
-          onclick={onreject}
-        >
-          <XMark size={13} />
-          {m.common_approval_reject()}
         </Button>
       </div>
     </div>

@@ -8,7 +8,13 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { createLedgerReport } from "./report-data.svelte";
 import { extractErrorMessage } from "$lib/api";
-import { exportReport, formatReportAmount, searchReportRows, statementRows, statementTotal } from "./report-view";
+import {
+  exportReport,
+  formatReportAmount,
+  searchReportRows,
+  statementRows,
+  statementTotal,
+} from "./report-view";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -22,13 +28,25 @@ let { orgId }: { orgId: string } = $props();
 let searchQuery = $state("");
 
 const report = createLedgerReport(() => orgId);
-const { accounts, activeCurrencies, baseCurrency, summaries, isLoading, queryError } = $derived(report);
+const {
+  accounts,
+  activeCurrencies,
+  baseCurrency,
+  summaries,
+  isLoading,
+  queryError,
+} = $derived(report);
 const { refetchAll } = report;
 
 const summaryKpis = $derived.by(() => {
   const code = baseCurrency;
   const summary = summaries.get(code)!;
-  return { code, revenue: summary.revenue, expense: summary.expense, netIncome: summary.netIncome };
+  return {
+    code,
+    revenue: summary.revenue,
+    expense: summary.expense,
+    netIncome: summary.netIncome,
+  };
 });
 
 const statementColumns = $derived.by((): OrbisColumnDef[] => [
@@ -96,11 +114,19 @@ const incomeStatementGroups = [
 const incomeStatementSource = $derived.by(() => {
   const rows = statementRows(accounts, incomeStatementGroups, summaries);
   if (!rows.length) return rows;
-  rows.push(statementTotal(m.finance_ui_net_income_label(), summaries, (summary) => summary.netIncome));
+  rows.push(
+    statementTotal(
+      m.finance_ui_net_income_label(),
+      summaries,
+      (summary) => summary.netIncome,
+    ),
+  );
   return rows;
 });
 
-const visibleRows = $derived(searchReportRows(incomeStatementSource, searchQuery));
+const visibleRows = $derived(
+  searchReportRows(incomeStatementSource, searchQuery),
+);
 
 function exportCurrentReport() {
   exportReport("income_statement", visibleRows, statementColumns);

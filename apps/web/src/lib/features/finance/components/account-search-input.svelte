@@ -201,12 +201,18 @@ function scrollHighlightedOptionIntoView() {
 
 function handleKeyDown(event: KeyboardEvent) {
   if (!(event.key === "Enter" && event.shiftKey)) {
-    if (isOpen && !isSearching && filteredResults.length > 0 && event.key === "ArrowDown") {
+    if (
+      isOpen &&
+      !isSearching &&
+      filteredResults.length > 0 &&
+      event.key === "ArrowDown"
+    ) {
       event.preventDefault();
       highlightedIndex = (highlightedIndex + 1) % filteredResults.length;
       scrollHighlightedOptionIntoView();
     } else if (
-      isOpen && !isSearching &&
+      isOpen &&
+      !isSearching &&
       filteredResults.length > 0 &&
       event.key === "ArrowUp"
     ) {
@@ -217,7 +223,9 @@ function handleKeyDown(event: KeyboardEvent) {
       scrollHighlightedOptionIntoView();
     } else if (isOpen && event.key === "Enter") {
       event.preventDefault();
-      const account = !isSearching ? filteredResults[Math.max(0, highlightedIndex)] : undefined;
+      const account = !isSearching
+        ? filteredResults[Math.max(0, highlightedIndex)]
+        : undefined;
       if (account) handleSelectAccount(account);
     } else if (isOpen && event.key === "Escape") {
       event.preventDefault();
@@ -237,7 +245,8 @@ function closeSearch() {
 
 function handleFocusOut(event: FocusEvent) {
   const next = event.relatedTarget;
-  if (!(next instanceof Node) || !containerElement?.contains(next)) closeSearch();
+  if (!(next instanceof Node) || !containerElement?.contains(next))
+    closeSearch();
 }
 </script>
 

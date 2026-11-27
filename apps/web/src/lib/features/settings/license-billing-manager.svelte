@@ -203,7 +203,9 @@ const hasLimits = $derived(
   Boolean(licenseStore.limits && licenseStore.limits.length > 0),
 );
 const hasFeatures = $derived(
-  Boolean(licenseStore.enabledFeatures && licenseStore.enabledFeatures.length > 0),
+  Boolean(
+    licenseStore.enabledFeatures && licenseStore.enabledFeatures.length > 0,
+  ),
 );
 </script>
 

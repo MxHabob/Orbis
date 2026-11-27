@@ -44,7 +44,6 @@ const integrationsQuery = createQuery(() => ({
 const connectedIntegrations = $derived(integrationsQuery.data ?? []);
 const isLoading = $derived(integrationsQuery.isLoading);
 
-
 async function loadData() {
   try {
     await integrationsQuery.refetch();

@@ -1,14 +1,15 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { useQueryClient } from "@tanstack/svelte-query";
 import {
   api,
   extractErrorMessage,
   queryKeys,
   type SectionDto,
-  type AcademicPeriodDto,
-  type EnrollmentDto,
+  type SectionSummaryItemDto,
 } from "$lib/api";
+import { createSectionsSummaryQuery } from "./queries";
+import { academicContext } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -31,119 +32,16 @@ import { confirmStore } from "$lib/stores";
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
 
-let userSelectedPeriodId = $state<string | null>(null);
-
-const classesQuery = createQuery(() => ({
-  queryKey: queryKeys.academic.classes(orgId),
-  queryFn: () => api.listSections(),
-  enabled: !!orgId,
-  staleTime: 3 * 60 * 1000,
-}));
-
-const periodsQuery = createQuery(() => ({
-  queryKey: ["classes-periods", orgId],
-  queryFn: () => api.listAcademicPeriods(),
-  enabled: !!orgId,
-  staleTime: 10 * 60 * 1000,
-}));
-
-const periods = $derived(
-  (periodsQuery.data as AcademicPeriodDto[] | undefined) ?? [],
+const summaryQuery = createSectionsSummaryQuery(
+  () => orgId,
+  () => academicContext.effectivePeriodId || undefined,
 );
 
-const activePeriodId = $derived(
-  userSelectedPeriodId ||
-    String(
-      periods.find((period) => period.status === "active")?.id ||
-        periods[0]?.id ||
-        "",
-    ),
-);
-
-const activeStudentsQuery = createQuery(() => ({
-  queryKey: [
-    ...queryKeys.student.all,
-    "active-students-in-period",
-    orgId,
-    activePeriodId,
-  ],
-  queryFn: async () => {
-    if (!activePeriodId) return [];
-
-    const students: Awaited<ReturnType<typeof api.listStudents>>["items"] = [];
-    let page = 1;
-    let result: Awaited<ReturnType<typeof api.listStudents>>;
-    do {
-      result = await api.listStudents({
-        period_id: activePeriodId,
-        status: "active",
-        page,
-        page_size: 100,
-      });
-      students.push(...result.items);
-      page += 1;
-    } while (result.page < result.total_pages);
-
-    return students;
-  },
-  enabled: !!orgId && !!activePeriodId,
-  staleTime: 3 * 60 * 1000,
-}));
-
-const enrollmentsQuery = createQuery(() => ({
-  queryKey: [
-    ...queryKeys.student.all,
-    "classes-enrollments",
-    orgId,
-    activePeriodId,
-  ],
-  queryFn: async () => {
-    if (!activePeriodId) return [];
-    const enrollments = [];
-    let page = 1;
-    let pageItems: Awaited<ReturnType<typeof api.listEnrollments>> = [];
-    do {
-      pageItems = await api.listEnrollments({
-        period_id: activePeriodId,
-        page,
-        page_size: 100,
-      });
-      enrollments.push(...pageItems);
-      page += 1;
-    } while (pageItems.length === 100);
-    return enrollments;
-  },
-  enabled: !!orgId,
-  staleTime: 3 * 60 * 1000,
-}));
-
-const classes = $derived((classesQuery.data as SectionDto[] | undefined) ?? []);
-const enrollments = $derived(
-  (enrollmentsQuery.data as EnrollmentDto[] | undefined) ?? [],
-);
-const currentEnrollments = $derived(
-  enrollments.filter(
-    (enrollment) =>
-      enrollment.status === "active" ||
-      enrollment.status === "pending_approval",
-  ),
-);
-const activeStudentIds = $derived(
-  new Set(
-    (activeStudentsQuery.data ?? []).map((detail) => String(detail.student.id)),
-  ),
-);
-const validCurrentEnrollments = $derived(
-  currentEnrollments.filter((enrollment) =>
-    activeStudentIds.has(String(enrollment.student_id)),
-  ),
-);
+const summary = $derived(summaryQuery.data);
+const sectionItems = $derived<SectionSummaryItemDto[]>(summary?.items ?? []);
+const classes = $derived(sectionItems.map((item) => item.section));
 const error = $derived(
-  classesQuery.error
-    ? extractErrorMessage(classesQuery.error)
-    : activeStudentsQuery.error
-      ? extractErrorMessage(activeStudentsQuery.error)
-      : null,
+  summaryQuery.error ? extractErrorMessage(summaryQuery.error) : null,
 );
 
 // Sheet trigger state
@@ -152,7 +50,9 @@ let editingSection = $state<SectionDto | null>(null);
 
 async function handleDeleteSection(cls: SectionDto) {
   const displayName =
-    l(cls.name_ar, cls.name) || cls.code || m.common_classes_value_unavailable();
+    l(cls.name_ar, cls.name) ||
+    cls.code ||
+    m.common_classes_value_unavailable();
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete(),
     description: m.academics_class_delete_confirm({ name: displayName }),
@@ -173,50 +73,36 @@ async function handleDeleteSection(cls: SectionDto) {
 }
 
 function refetchAll() {
-  classesQuery.refetch();
-  periodsQuery.refetch();
-  activeStudentsQuery.refetch();
-  enrollmentsQuery.refetch();
+  summaryQuery.refetch();
 }
 
-function getClassMetric(cls: SectionDto): {
+function getSectionMetric(item: SectionSummaryItemDto): {
   active_students: number;
   capacity: number;
   utilization_rate: number;
   attendance_rate: number;
   subject_count: number;
 } {
-  const count = new Set(
-    validCurrentEnrollments
-      .filter((e) => String(e.section_id) === String(cls.id))
-      .map((e) => String(e.student_id)),
-  ).size;
-  const capacity = Number(cls.capacity ?? 0);
+  const count = Number(item.active_students || 0);
+  const capacity = Number(item.section.capacity ?? 0);
   return {
     active_students: count,
     capacity,
     utilization_rate: capacity > 0 ? Math.round((count / capacity) * 100) : 0,
     attendance_rate: 0,
-    subject_count: 0,
+    subject_count: Number(item.subject_count || 0),
   };
 }
 
-// Compute statistics
-const totalClassesCount = $derived(classes.length);
+// Server-computed KPI statistics
+const totalClassesCount = $derived(
+  Number(summary?.total_sections ?? classes.length),
+);
 const totalStudentsCount = $derived(
-  new Set(validCurrentEnrollments.map((e) => String(e.student_id))).size,
+  Number(summary?.total_enrolled_students ?? 0),
 );
-const averageClassSize = $derived(
-  totalClassesCount > 0
-    ? Math.round(totalStudentsCount / totalClassesCount)
-    : 0,
-);
-const pageLoading = $derived(
-  classesQuery.isLoading ||
-    periodsQuery.isLoading ||
-    activeStudentsQuery.isLoading ||
-    enrollmentsQuery.isLoading,
-);
+const averageClassSize = $derived(Number(summary?.average_section_size ?? 0));
+const pageLoading = $derived(summaryQuery.isLoading);
 const classMenuActions = $derived([
   {
     id: "refresh",
@@ -399,8 +285,9 @@ const classMenuActions = $derived([
 				<div
 					class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]/workspace:grid-cols-2 @min-[46rem]/workspace:grid-cols-3 @min-[64rem]/workspace:grid-cols-4"
 				>
-					{#each classes as cls (cls.id)}
-						{@const metric = getClassMetric(cls)}
+					{#each sectionItems as item (item.section.id)}
+						{@const cls = item.section}
+						{@const metric = getSectionMetric(item)}
 						{@const displayName =
 							l(cls.name_ar, cls.name) ||
 							m.common_classes_value_unavailable()}

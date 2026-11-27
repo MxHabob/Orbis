@@ -119,7 +119,6 @@ const effectiveFilter = $derived.by<UniversalFilter>(() => {
   const conds = [...(activeFilter?.conditions || [])];
   if (selectedRole && selectedRole !== "all") {
     conds.push({
-
       field: "role",
       operator: "eq",
       value: selectedRole,
@@ -295,7 +294,7 @@ async function handleAction(event: GridActionEvent) {
     });
     if (confirmed) {
       try {
-        await api.updateUser(user.id, { is_active: false } as any);
+        await api.deleteUser(user.id);
         await queryClient.invalidateQueries({
           queryKey: ["users", orgId],
         });

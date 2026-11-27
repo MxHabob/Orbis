@@ -512,6 +512,15 @@ impl AcademicService {
         self.section_repo.list(org_id, filter).await
     }
 
+    /// Get sections directory with aggregated student and subject counts for a period
+    pub async fn get_sections_summary(
+        &self,
+        org_id: Uuid,
+        period_id: Option<Uuid>,
+    ) -> Result<crate::ports::repositories::SectionsSummary, DomainError> {
+        self.section_repo.get_summary(org_id, period_id).await
+    }
+
     /// Get Section by ID
     pub async fn get_section(&self, id: Uuid) -> Result<Option<Section>, DomainError> {
         self.section_repo.find_by_id(id).await

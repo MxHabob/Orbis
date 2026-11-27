@@ -224,7 +224,8 @@ class NotificationStore {
 
     try {
       const endpoint = baseUrl.replace(/\/+$/, "");
-      if (localStorage.getItem("orbis_connection_scope") !== `api:${endpoint}`) return;
+      if (localStorage.getItem("orbis_connection_scope") !== `api:${endpoint}`)
+        return;
       const token = localStorage.getItem("orbis_token");
       if (!token) return;
 

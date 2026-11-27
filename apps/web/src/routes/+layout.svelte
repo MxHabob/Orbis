@@ -32,11 +32,24 @@ $effect.pre(() => {
   }
 });
 
-// Add desktop class to html element for Tauri shell styling
+// Add desktop class to html element for Tauri shell styling and suppress browser context menu
 onMount(() => {
-  if (isDesktopApp) {
-    document.documentElement.classList.add("desktop");
-  }
+  if (!isDesktopApp) return;
+
+  document.documentElement.classList.add("desktop");
+
+  const handleContextMenu = (event: MouseEvent) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("input, textarea, select, [contenteditable='true']")) {
+      return;
+    }
+    event.preventDefault();
+  };
+
+  document.addEventListener("contextmenu", handleContextMenu, true);
+  return () => {
+    document.removeEventListener("contextmenu", handleContextMenu, true);
+  };
 });
 </script>
 

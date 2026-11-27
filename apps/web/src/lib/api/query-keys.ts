@@ -61,6 +61,12 @@ export const queryKeys = {
       [...queryKeys.academic.all, "subject", id] as const,
     classes: (orgId?: string) =>
       [...queryKeys.academic.all, "classes", orgId ?? "current"] as const,
+    sectionsSummary: (orgId?: string, periodId?: string) =>
+      [
+        ...queryKeys.academic.classes(orgId),
+        "summary",
+        periodId ?? "active",
+      ] as const,
     class: (id: string) => [...queryKeys.academic.all, "class", id] as const,
     SectionSubjects: (classId: string, periodId: string) =>
       [
@@ -211,10 +217,7 @@ export const queryKeys = {
   // ── Workflow & Overrides ────────────────────────────────────
   workflow: {
     all: ["workflow"] as const,
-    overrides: (
-      orgId?: string,
-      filter?: object,
-    ) => {
+    overrides: (orgId?: string, filter?: object) => {
       return [
         ...queryKeys.workflow.all,
         "overrides",
@@ -281,8 +284,10 @@ export const queryKeys = {
         "studentFeeSummary",
         orgId ?? "current",
       ] as const,
-    paymentsForOrg: (orgId: string) => [...queryKeys.finance.all, "payments", orgId] as const,
-    studentFeesForOrg: (orgId: string) => [...queryKeys.finance.all, "studentFees", orgId] as const,
+    paymentsForOrg: (orgId: string) =>
+      [...queryKeys.finance.all, "payments", orgId] as const,
+    studentFeesForOrg: (orgId: string) =>
+      [...queryKeys.finance.all, "studentFees", orgId] as const,
     payments: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
         return [

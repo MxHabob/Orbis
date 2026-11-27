@@ -789,6 +789,39 @@ pub async fn update_user(
     Ok(ApiResponse::ok(user_to_dto(user, person.as_ref(), roles)))
 }
 
+pub async fn delete_user(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    state
+        .permission_checker
+        .check(&ctx.0, Permission::UserWrite)
+        .await?;
+    let mut user = state
+        .user_repo
+        .find_by_id(id)
+        .await?
+        .filter(|u| u.org_id == ctx.tenant_id && !u.is_deleted)
+        .ok_or_else(|| ApiError::not_found(format!("User {} not found", id)))?;
+    let actor = ctx
+        .actor
+        .id()
+        .ok_or_else(|| ApiError::forbidden("User identity is required"))?;
+    if actor == id {
+        return Err(ApiError::bad_request("Cannot delete your own account"));
+    }
+    protect_administrator(state.permission_checker.as_ref(), &ctx, actor, id).await?;
+
+    user.is_deleted = true;
+    user.status = "inactive".to_string();
+    user.updated_at = chrono::Utc::now();
+    user.updated_by = Some(actor);
+    state.user_repo.save(&user).await?;
+
+    Ok(ApiResponse::ok_with_id((), ctx.request_id.clone()))
+}
+
 #[utoipa::path(
     post,
     path = "/api/v1/iam/users/{id}/reset-password",
@@ -1397,7 +1430,10 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/provision", post(provision_user))
-        .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
+        .route(
+            "/api/v1/iam/users/:id",
+            get(get_user).put(update_user).delete(delete_user),
+        )
         .route(
             "/api/v1/iam/users/:id/reset-password",
             post(reset_user_password),

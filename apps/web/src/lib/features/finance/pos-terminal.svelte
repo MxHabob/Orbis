@@ -88,13 +88,17 @@ let printReceiptContext = $state<Record<string, unknown>[]>([]);
 // ── Queries & Mutations ───────────────────────────────────────────────
 
 const settingsQuery = createCashierAssignmentQuery(() => orgId);
-const cashAssignment = $derived(settingsQuery.data && !settingsQuery.isError
-  ? settingsQuery.data[authStore.userId ?? ""] ?? null
-  : undefined);
+const cashAssignment = $derived(
+  settingsQuery.data && !settingsQuery.isError
+    ? (settingsQuery.data[authStore.userId ?? ""] ?? null)
+    : undefined,
+);
 const cashAccountsQuery = createCashAccountsQuery(() => orgId);
 
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
-const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? manualPaymentMethods());
+const availablePaymentMethods = $derived(
+  paymentMethodsQuery.data ?? manualPaymentMethods(),
+);
 const feeTemplatesQuery = createFeeTemplatesQuery(() => orgId);
 const feeTemplates = $derived(feeTemplatesQuery.data ?? []);
 const selectedPaymentMethodObj = $derived(
@@ -123,12 +127,29 @@ const activeStudentPayments = $derived(recentPaymentsQuery.data ?? []);
 const processPaymentMutation = createProcessPaymentMutation(() => orgId);
 let isPreparingPayment = $state(false);
 let paymentError = $state("");
-const isSubmittingPayment = $derived(isPreparingPayment || processPaymentMutation.isPending);
+const isSubmittingPayment = $derived(
+  isPreparingPayment || processPaymentMutation.isPending,
+);
 
-const feeTemplatesById = $derived(new Map(feeTemplates.map((template) => [template.id, template])));
-const linkedFee = $derived(activeStudentFees.find((fee) => fee.id === formFeeId));
-const feeCurrency = $derived(linkedFee ? feeTemplatesById.get(linkedFee.fee_template_id)?.currency : undefined);
-const cashAccounts = $derived(eligibleTreasuries(cashAccountsQuery.data ?? [], formMethod, cashAssignment, feeCurrency));
+const feeTemplatesById = $derived(
+  new Map(feeTemplates.map((template) => [template.id, template])),
+);
+const linkedFee = $derived(
+  activeStudentFees.find((fee) => fee.id === formFeeId),
+);
+const feeCurrency = $derived(
+  linkedFee
+    ? feeTemplatesById.get(linkedFee.fee_template_id)?.currency
+    : undefined,
+);
+const cashAccounts = $derived(
+  eligibleTreasuries(
+    cashAccountsQuery.data ?? [],
+    formMethod,
+    cashAssignment,
+    feeCurrency,
+  ),
+);
 const activeAccountId = $derived(resolveTreasury(cashAccounts, formAccountId));
 
 function getFeeTemplateName(feeTemplateId: string): string {
@@ -236,7 +257,10 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     return;
   }
 
-  if (!selectedPaymentMethodObj || (paymentMethodsQuery.isError && selectedPaymentMethodObj.is_digital_gateway)) {
+  if (
+    !selectedPaymentMethodObj ||
+    (paymentMethodsQuery.isError && selectedPaymentMethodObj.is_digital_gateway)
+  ) {
     paymentError = m.finance_ui_payment_method_unavailable();
     return;
   }
@@ -256,16 +280,22 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       reference: referenceNumber.trim() || undefined,
       receipt_number: voucherNumber.trim() || undefined,
       payment_date: voucherDate || undefined,
-      source: selectedPaymentMethodObj.requires_source_token ? sourceToken.trim() : undefined,
+      source: selectedPaymentMethodObj.requires_source_token
+        ? sourceToken.trim()
+        : undefined,
       payer_name:
         `${selectedStudent.first_name || ""} ${selectedStudent.last_name || ""}`.trim() ||
         undefined,
       notes: notes.trim() || undefined,
     };
     const fingerprint = await paymentRequestFingerprint(request);
-    const idempotencyKey = paymentAttempts.get(fingerprint) ?? crypto.randomUUID();
+    const idempotencyKey =
+      paymentAttempts.get(fingerprint) ?? crypto.randomUUID();
     paymentAttempts.set(fingerprint, idempotencyKey);
-    const payment = await processPaymentMutation.mutateAsync({ ...request, idempotency_key: idempotencyKey });
+    const payment = await processPaymentMutation.mutateAsync({
+      ...request,
+      idempotency_key: idempotencyKey,
+    });
     paymentAttempts.delete(fingerprint);
 
     toast.success(m.common_payment_toast_success());
@@ -291,11 +321,17 @@ async function handlePaymentSubmit(e: SubmitEvent) {
   }
 }
 
-function handlePrintReceipt(payment: PaymentDto, description = payment.reference || "") {
+function handlePrintReceipt(
+  payment: PaymentDto,
+  description = payment.reference || "",
+) {
   printReceiptPayment = payment;
-  const payer = payment.payer_name ||
+  const payer =
+    payment.payer_name ||
     (selectedStudent?.id === payment.student_id
-      ? [selectedStudent?.first_name, selectedStudent?.last_name].filter(Boolean).join(" ")
+      ? [selectedStudent?.first_name, selectedStudent?.last_name]
+          .filter(Boolean)
+          .join(" ")
       : "");
   printReceiptContext = [receiptPrintContext(payment, payer, description)];
   printReceiptOpen = true;

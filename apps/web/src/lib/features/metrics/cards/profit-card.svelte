@@ -9,11 +9,14 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import DragIndicator from "../components/drag-indicator.svelte";
 
-let { orgId, isEditing = false }: { orgId: string; isEditing?: boolean } = $props();
+let { orgId, isEditing = false }: { orgId: string; isEditing?: boolean } =
+  $props();
 
 const accountsQuery = createAccountsQuery(() => orgId);
 const currency = $derived(orgContext.baseCurrency);
-const netIncome = $derived(summarizeLedger(accountsQuery.data ?? [], currency).netIncome);
+const netIncome = $derived(
+  summarizeLedger(accountsQuery.data ?? [], currency).netIncome,
+);
 </script>
 
 <div class="card-tactile flex h-full min-h-[265px] flex-col justify-between border border-border/60 bg-card p-5 shadow-sm">

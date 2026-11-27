@@ -51,7 +51,10 @@ import {
   type SortSpec,
 } from "@orbis/svelte-grid";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
-import { buildInstallmentDates, hasOrderedInstallmentDates } from "./installment-schedule";
+import {
+  buildInstallmentDates,
+  hasOrderedInstallmentDates,
+} from "./installment-schedule";
 import { financeRecordColumn } from "./record-presentation";
 import FinanceRecordDialog from "./components/finance-record-dialog.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
@@ -89,7 +92,11 @@ let splitCount = $state(2);
 let splitDueDates = $state<string[]>([]);
 
 function setInstallmentCount(count: number) {
-  splitDueDates = buildInstallmentDates(formatDateKey(new Date()), count, splitDueDates);
+  splitDueDates = buildInstallmentDates(
+    formatDateKey(new Date()),
+    count,
+    splitDueDates,
+  );
   splitCount = count;
 }
 
@@ -154,14 +161,21 @@ const feesQuery = createInfiniteQuery(() => ({
 }));
 const refundPaymentsQuery = createPaymentsQuery(
   () => orgId,
-  () => selectedFeeForRefund ? { fee_id: selectedFeeForRefund.id } : undefined,
+  () =>
+    selectedFeeForRefund ? { fee_id: selectedFeeForRefund.id } : undefined,
   () => activeForm === "refund" && Boolean(selectedFeeForRefund),
 );
-const refundablePayments = $derived((refundPaymentsQuery.data ?? []).filter((payment) =>
-  ["cash", "bank_transfer", "check", "other"].includes(payment.method.toLowerCase())
-));
-const refundPayment = $derived(refundablePayments.find((payment) => payment.id === refundPaymentId)
-  ?? (refundablePayments.length === 1 ? refundablePayments[0] : undefined));
+const refundablePayments = $derived(
+  (refundPaymentsQuery.data ?? []).filter((payment) =>
+    ["cash", "bank_transfer", "check", "other"].includes(
+      payment.method.toLowerCase(),
+    ),
+  ),
+);
+const refundPayment = $derived(
+  refundablePayments.find((payment) => payment.id === refundPaymentId) ??
+    (refundablePayments.length === 1 ? refundablePayments[0] : undefined),
+);
 
 const feeSummaryQuery = createQuery(() => ({
   queryKey: queryKeys.finance.studentFeeSummary(orgId),
@@ -199,8 +213,7 @@ const fees = $derived(
 );
 const feeTotals = $derived(feeSummaryQuery.data ?? []);
 const gridLoading = $derived(
-  isLoading ||
-    (feesQuery.isLoading && !feesQuery.data),
+  isLoading || (feesQuery.isLoading && !feesQuery.data),
 );
 const studentsById = $derived(
   new Map(students.map((student) => [student.student_id, student])),
@@ -211,7 +224,9 @@ async function loadMoreFees() {
   if (result.isError) throw result.error;
 }
 
-const feeTemplatesById = $derived(new Map(feeTemplates.map((template) => [template.id, template])));
+const feeTemplatesById = $derived(
+  new Map(feeTemplates.map((template) => [template.id, template])),
+);
 
 function getFeeCurrency(fee: StudentFeeDto) {
   const template = feeTemplatesById.get(fee.fee_template_id);
@@ -241,8 +256,10 @@ async function loadAllStudentDetails(): Promise<StudentDetailDto[]> {
   const items = [...firstPage.items];
   for (let page = 2; page <= firstPage.total_pages; page += 5) {
     const pages = await Promise.all(
-      Array.from({ length: Math.min(5, firstPage.total_pages - page + 1) }, (_, index) =>
-        api.listStudents({ page: page + index, page_size: pageSize }),
+      Array.from(
+        { length: Math.min(5, firstPage.total_pages - page + 1) },
+        (_, index) =>
+          api.listStudents({ page: page + index, page_size: pageSize }),
       ),
     );
     items.push(...pages.flatMap((result) => result.items));
@@ -258,22 +275,23 @@ onMount(async () => {
 
 function refreshFeeData() {
   return Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.finance.studentFeesForOrg(orgId) }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.finance.studentFeeSummary(orgId) }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.studentFeesForOrg(orgId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.studentFeeSummary(orgId),
+    }),
   ]);
 }
 
 async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [templatesList, enrollmentsList, periodsList] =
-      await Promise.all([
-        api.listFeeTemplates(),
-        api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
-        api.listAcademicPeriods
-          ? api.listAcademicPeriods()
-          : Promise.resolve([]),
-      ]);
+    const [templatesList, enrollmentsList, periodsList] = await Promise.all([
+      api.listFeeTemplates(),
+      api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
+      api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
+    ]);
 
     feeTemplates = asArray(templatesList);
     enrollments = asArray(enrollmentsList);
@@ -354,7 +372,8 @@ async function handleCreateFee() {
     void refreshFeeData();
   } catch (err) {
     console.error("Failed to assign fee:", err);
-    formError = extractErrorMessage(err) || m.finance_ui_fee_assignment_failed();
+    formError =
+      extractErrorMessage(err) || m.finance_ui_fee_assignment_failed();
   } finally {
     isSubmitting = false;
   }
@@ -385,7 +404,8 @@ async function handleSplitInstallments() {
     void refreshFeeData();
   } catch (err) {
     console.error("Failed to split fee:", err);
-    formError = extractErrorMessage(err) || m.finance_ui_fee_installment_failed();
+    formError =
+      extractErrorMessage(err) || m.finance_ui_fee_installment_failed();
   } finally {
     isSubmitting = false;
   }
@@ -402,7 +422,12 @@ async function handleRefundFee() {
     formError = m.finance_ui_refund_payment_source();
     return;
   }
-  if (refundAmount == null || !Number.isFinite(refundAmount) || refundAmount <= 0 || refundAmount > Number(selectedFeeForRefund.paid_amount)) {
+  if (
+    refundAmount == null ||
+    !Number.isFinite(refundAmount) ||
+    refundAmount <= 0 ||
+    refundAmount > Number(selectedFeeForRefund.paid_amount)
+  ) {
     formError = m.finance_ui_refund_amount_invalid();
     return;
   }
@@ -472,7 +497,6 @@ const gridSource = $derived.by(() => {
   const today = formatDateKey(new Date());
   return fees.map((fee, index) => toFeeGridRow(fee, index, today));
 });
-
 
 const detailsColumn = $derived(financeRecordColumn());
 let detailsOpen = $state(false);

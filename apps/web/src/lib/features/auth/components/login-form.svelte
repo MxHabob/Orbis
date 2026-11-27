@@ -71,13 +71,13 @@ function handleForgotPassword() {
 		{#snippet children()}
 			<Input
 				id="email"
-				type="email"
+				type="text"
 				placeholder={m.auth_login_account_placeholder()}
 				bind:value={form.values.identifier}
 				onblur={() => form.markTouched("identifier")}
 				required
 				aria-invalid={Boolean(fieldError("identifier"))}
-				autocomplete="email"
+				autocomplete="username"
 				disabled={form.isSubmitting}
 				class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input"
 			/>

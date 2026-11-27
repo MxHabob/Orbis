@@ -4,13 +4,19 @@ import type { OnboardingFormModel } from "./types";
 type SetupRegion = (typeof setupRegions)[number];
 
 export { setupRegions };
-export const setupCurrencies = [...new Set(setupRegions.map((region) => region.currency)), "EUR"].sort();
+export const setupCurrencies = [
+  ...new Set(setupRegions.map((region) => region.currency)),
+  "EUR",
+].sort();
 
 export function regionName(region: SetupRegion, language: string): string {
   return language.startsWith("ar") ? region.name_ar : region.name;
 }
 
-export function applySetupRegion(form: OnboardingFormModel, code: string): void {
+export function applySetupRegion(
+  form: OnboardingFormModel,
+  code: string,
+): void {
   const region = setupRegions.find((entry) => entry.code === code);
   if (!region) return;
 

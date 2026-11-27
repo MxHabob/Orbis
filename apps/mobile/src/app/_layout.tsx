@@ -82,7 +82,9 @@ function StartupErrorFallback({
         onPress={resetErrorBoundary}
         className="mt-six rounded-md bg-primary px-five py-three"
       >
-        <Text className="font-semibold text-primary-foreground">{t("common_retry")}</Text>
+        <Text className="font-semibold text-primary-foreground">
+          {t("common_retry")}
+        </Text>
       </Pressable>
     </View>
   );

@@ -12,7 +12,10 @@ import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { AdjustmentsHorizontal } from "@orbis/icons";
-import { organizationBrandColor, resolveTemplateColor } from "../template-brand";
+import {
+  organizationBrandColor,
+  resolveTemplateColor,
+} from "../template-brand";
 
 let {
   value = "#000000",

@@ -80,7 +80,8 @@ let mounted = false;
 $effect(() => {
   if (store.selectedIds.length > 0) {
     isPropertiesOpen = true;
-    if (window.matchMedia("(max-width: 900px)").matches) store.activeRailPanel = null;
+    if (window.matchMedia("(max-width: 900px)").matches)
+      store.activeRailPanel = null;
   }
 });
 
@@ -180,11 +181,17 @@ async function saveTemplate(newName?: string) {
     };
     await api.updateTemplate(record.id, update);
     if (!mounted) return;
-    templateRecord = { ...record, name: update.name ?? record.name, name_ar: update.name_ar };
+    templateRecord = {
+      ...record,
+      name: update.name ?? record.name,
+      name_ar: update.name_ar,
+    };
     store.markSaved(snapshot);
     toast.success(m.ui_copy_template_saved_successfully_299be978());
   } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : m.shared_ui_template_save_failed());
+    toast.error(
+      e instanceof Error ? e.message : m.shared_ui_template_save_failed(),
+    );
   } finally {
     isSaving = false;
   }
@@ -206,14 +213,21 @@ async function generatePreview() {
       store.document.meta.locale ?? templateRecord?.locale ?? "ar",
     );
     if (!mounted) return;
-    const isPdf = pdfBytes[0] === 0x25 && pdfBytes[1] === 0x50 &&
-      pdfBytes[2] === 0x44 && pdfBytes[3] === 0x46;
+    const isPdf =
+      pdfBytes[0] === 0x25 &&
+      pdfBytes[1] === 0x50 &&
+      pdfBytes[2] === 0x44 &&
+      pdfBytes[3] === 0x46;
     if (!isPdf) throw new Error(m.shared_ui_template_preview_failed());
     closePreview();
-    previewPdfUrl = URL.createObjectURL(new Blob([Uint8Array.from(pdfBytes)], { type: "application/pdf" }));
+    previewPdfUrl = URL.createObjectURL(
+      new Blob([Uint8Array.from(pdfBytes)], { type: "application/pdf" }),
+    );
     store.editorMode = "preview";
   } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : m.shared_ui_template_preview_failed());
+    toast.error(
+      e instanceof Error ? e.message : m.shared_ui_template_preview_failed(),
+    );
   } finally {
     isPreviewLoading = false;
   }
@@ -223,8 +237,10 @@ async function generatePreview() {
 function handleKeydown(e: KeyboardEvent) {
   if (e.defaultPrevented) return;
   const isCtrl = e.ctrlKey || e.metaKey;
-  const isInputFocused = e.target instanceof HTMLElement &&
-    (e.target.isContentEditable || !!e.target.closest("input, textarea, select, [role=combobox]"));
+  const isInputFocused =
+    e.target instanceof HTMLElement &&
+    (e.target.isContentEditable ||
+      !!e.target.closest("input, textarea, select, [role=combobox]"));
 
   if (store.editorMode === "preview") {
     if (e.key === "Escape") closePreview();

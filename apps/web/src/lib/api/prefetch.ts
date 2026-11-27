@@ -17,7 +17,7 @@ export function prefetchRouteData(route: string, orgId: string) {
         staleTime: 2 * 60 * 1000,
       });
       queryClient.prefetchQuery({
-        queryKey: queryKeys.academic.classes(),
+        queryKey: queryKeys.academic.classes(orgId),
         queryFn: () => api.listSections(),
         staleTime: 5 * 60 * 1000,
       });
@@ -38,9 +38,14 @@ export function prefetchRouteData(route: string, orgId: string) {
 
     case "academics":
       queryClient.prefetchQuery({
-        queryKey: queryKeys.academic.classes(),
+        queryKey: queryKeys.academic.classes(orgId),
         queryFn: () => api.listSections(),
         staleTime: 5 * 60 * 1000,
+      });
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.academic.sectionsSummary(orgId),
+        queryFn: () => api.getSectionsSummary(),
+        staleTime: 3 * 60 * 1000,
       });
       break;
 

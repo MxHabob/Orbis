@@ -65,11 +65,14 @@ const dateFilter = $derived({
   to_date: dateRange.toDate,
   org_unit_id: orgUnitFilter,
 });
-const paymentsQuery = createPaymentsQuery(() => orgId, () => ({
-  ...dateFilter,
-  sort_by: "paid_at",
-  sort_dir: "desc",
-}));
+const paymentsQuery = createPaymentsQuery(
+  () => orgId,
+  () => ({
+    ...dateFilter,
+    sort_by: "paid_at",
+    sort_dir: "desc",
+  }),
+);
 const templatesQuery = createFeeTemplatesQuery(() => orgId);
 const feeSummaryQuery = createQuery(() => ({
   queryKey: [...queryKeys.finance.studentFeeSummary(orgId), dateFilter],
@@ -95,8 +98,10 @@ const availableCurrencies = $derived(
 const defaultCurrency = $derived(
   payments.some((payment) => payment.currency_code === orgContext.baseCurrency)
     ? orgContext.baseCurrency
-    : (payments.find((payment) => payment.currency_code)?.currency_code ||
-      orgContext.baseCurrency || availableCurrencies[0] || ""),
+    : payments.find((payment) => payment.currency_code)?.currency_code ||
+        orgContext.baseCurrency ||
+        availableCurrencies[0] ||
+        "",
 );
 const activeCurrency = $derived(
   availableCurrencies.includes(selectedCurrency)
@@ -241,9 +246,7 @@ const overdueDebtors = $derived.by(() => {
     const remaining = toAmount(fee.balance_due);
     if (Number.isNaN(dueDate) || remaining <= 0) continue;
 
-    const daysLate = Math.floor(
-      (today - dueDate) / 86_400_000,
-    );
+    const daysLate = Math.floor((today - dueDate) / 86_400_000);
     if (daysLate <= 0) continue;
 
     const enrollment = fee.enrollment_id
@@ -378,19 +381,17 @@ const lateStudents = $derived(
   })),
 );
 const recentPayments = $derived(
-  currencyPayments
-    .slice(0, 5)
-    .map((payment) => {
-      const enrollment = payment.enrollment_id
-        ? enrollmentsById.get(payment.enrollment_id)
-        : undefined;
-      return {
-        ...payment,
-        studentName:
-          payment.payer_name?.trim() || enrollment?.student_number || "—",
-        receiptNumber: payment.receipt_number || payment.id.slice(0, 8),
-      };
-    }),
+  currencyPayments.slice(0, 5).map((payment) => {
+    const enrollment = payment.enrollment_id
+      ? enrollmentsById.get(payment.enrollment_id)
+      : undefined;
+    return {
+      ...payment,
+      studentName:
+        payment.payer_name?.trim() || enrollment?.student_number || "—",
+      receiptNumber: payment.receipt_number || payment.id.slice(0, 8),
+    };
+  }),
 );
 const visibleTreasuries = $derived(
   activeCurrency

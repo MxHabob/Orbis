@@ -46,7 +46,10 @@ const ROUTE_TREE: RouteNode[] = [
         label: () => m.common_search_group_classes(),
         children: [
           { segment: "students", label: () => m.common_word_students() },
-          { segment: "curriculum", label: () => m.common_search_group_subjects() },
+          {
+            segment: "curriculum",
+            label: () => m.common_search_group_subjects(),
+          },
         ],
       },
       { segment: "classes", label: () => m.common_search_group_classes() },
@@ -62,7 +65,10 @@ const ROUTE_TREE: RouteNode[] = [
       { segment: "grades", label: () => m.common_breadcrumb_grades() },
       { segment: "attendance", label: () => m.common_nav_attendance() },
       { segment: "calendar", label: () => m.settings_nav_academic_calendars() },
-      { segment: "promotion", label: () => m.academics_overview_card_promotion_title() },
+      {
+        segment: "promotion",
+        label: () => m.academics_overview_card_promotion_title(),
+      },
       { segment: "reports", label: () => m.ui_page_academics_reports() },
       { segment: "results", label: () => m.academics_nav_results_review() },
     ],
@@ -73,8 +79,14 @@ const ROUTE_TREE: RouteNode[] = [
     children: [
       { segment: "fees", label: () => m.finance_layout_nav_fees() },
       { segment: "payments", label: () => m.finance_layout_nav_payments() },
-      { segment: "accounts", label: () => m.finance_layout_nav_cash_accounts() },
-      { segment: "disbursements", label: () => m.finance_layout_nav_disbursements() },
+      {
+        segment: "accounts",
+        label: () => m.finance_layout_nav_cash_accounts(),
+      },
+      {
+        segment: "disbursements",
+        label: () => m.finance_layout_nav_disbursements(),
+      },
       { segment: "journal-entries", label: () => m.common_je_title() },
       { segment: "statement", label: () => m.finance_layout_nav_ledger() },
       { segment: "ledger", label: () => m.finance_layout_nav_ledger() },
@@ -91,9 +103,18 @@ const ROUTE_TREE: RouteNode[] = [
       { segment: "groups", label: () => m.groups_nav_title() },
       { segment: "permissions", label: () => m.settings_nav_permissions() },
       { segment: "periods", label: () => m.settings_nav_cycles() },
-      { segment: "academic-calendars", label: () => m.settings_nav_academic_calendars() },
-      { segment: "academic-policy", label: () => m.common_nav_academic_policy() },
-      { segment: "assessment-schemes", label: () => m.settings_nav_assessment_schemes() },
+      {
+        segment: "academic-calendars",
+        label: () => m.settings_nav_academic_calendars(),
+      },
+      {
+        segment: "academic-policy",
+        label: () => m.common_nav_academic_policy(),
+      },
+      {
+        segment: "assessment-schemes",
+        label: () => m.settings_nav_assessment_schemes(),
+      },
       { segment: "units", label: () => m.settings_nav_units() },
       { segment: "branches", label: () => m.common_org_unit_branch() },
       { segment: "rooms", label: () => m.common_nav_rooms() },
@@ -102,18 +123,29 @@ const ROUTE_TREE: RouteNode[] = [
       {
         segment: "archive",
         label: () => m.settings_nav_archive(),
-        children: [{ segment: "trash", label: () => m.ui_page_settings_archive_trash() }],
+        children: [
+          { segment: "trash", label: () => m.ui_page_settings_archive_trash() },
+        ],
       },
       { segment: "currencies", label: () => m.settings_nav_currencies() },
       { segment: "ordering", label: () => m.common_nav_ordering() },
       { segment: "fee-templates", label: () => m.common_breadcrumb_fees() },
-      { segment: "discount-templates", label: () => m.common_form_summary_discount() },
+      {
+        segment: "discount-templates",
+        label: () => m.common_form_summary_discount(),
+      },
       { segment: "login-rules", label: () => m.settings_nav_login_rules() },
-      { segment: "registration", label: () => m.student_registration_policy_title() },
+      {
+        segment: "registration",
+        label: () => m.student_registration_policy_title(),
+      },
       { segment: "mulverse", label: () => m.settings_nav_orbis_mobile() },
       { segment: "database", label: () => m.settings_nav_database() },
       { segment: "bulk-input", label: () => m.settings_nav_import_export() },
-      { segment: "calculation-engine", label: () => m.settings_nav_calculation_engine() },
+      {
+        segment: "calculation-engine",
+        label: () => m.settings_nav_calculation_engine(),
+      },
     ],
   },
 ];
@@ -155,7 +187,9 @@ export function getRouteTitle(params: {
   let matched: RouteNode | undefined;
 
   for (const seg of segments) {
-    const node: RouteNode | undefined = currentNodes?.find((n) => n.segment === seg);
+    const node: RouteNode | undefined = currentNodes?.find(
+      (n) => n.segment === seg,
+    );
     if (!node) continue;
     matched = node;
     currentNodes = node.children;

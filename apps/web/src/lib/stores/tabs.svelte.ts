@@ -37,19 +37,28 @@ class TabsStore {
   }
 
   private hydrate(orgId: string) {
-    if (typeof sessionStorage === "undefined" || !orgId || this.hydratedOrgId === orgId) {
+    if (
+      typeof sessionStorage === "undefined" ||
+      !orgId ||
+      this.hydratedOrgId === orgId
+    ) {
       return;
     }
     this.hydratedOrgId = orgId;
     try {
       const raw = sessionStorage.getItem(`${STORAGE_KEY}:${orgId}`);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { tabs?: OpenTab[]; activeTabId?: string };
+      const parsed = JSON.parse(raw) as {
+        tabs?: OpenTab[];
+        activeTabId?: string;
+      };
       if (Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
         this.tabs = parsed.tabs.slice(0, MAX_TABS);
-        this.activeTabId = parsed.activeTabId && this.tabs.some((t) => t.id === parsed.activeTabId)
-          ? parsed.activeTabId
-          : this.tabs[0].id;
+        this.activeTabId =
+          parsed.activeTabId &&
+          this.tabs.some((t) => t.id === parsed.activeTabId)
+            ? parsed.activeTabId
+            : this.tabs[0].id;
       }
     } catch {
       // Ignore malformed state
@@ -83,9 +92,14 @@ class TabsStore {
         this.persist(orgId);
         return;
       }
-      const tab: OpenTab = { id: createId(), path: normalizedPath, title: safeTitle };
+      const tab: OpenTab = {
+        id: createId(),
+        path: normalizedPath,
+        title: safeTitle,
+      };
       const next = [...this.tabs, tab];
-      this.tabs = next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next;
+      this.tabs =
+        next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next;
       this.activeTabId = tab.id;
       this.persist(orgId);
       return;
@@ -103,7 +117,11 @@ class TabsStore {
 
     const current = this.tabs[activeIndex];
     if (current.path !== normalizedPath || current.title !== safeTitle) {
-      this.tabs[activeIndex] = { ...current, path: normalizedPath, title: safeTitle };
+      this.tabs[activeIndex] = {
+        ...current,
+        path: normalizedPath,
+        title: safeTitle,
+      };
       this.persist(orgId);
     }
   }
@@ -121,7 +139,8 @@ class TabsStore {
 
     const tab: OpenTab = { id: createId(), path: targetPath, title };
     const next = [...this.tabs, tab];
-    this.tabs = next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next;
+    this.tabs =
+      next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next;
     this.activeTabId = tab.id;
     this.pendingNavPath = targetPath;
     this.persist(orgId);

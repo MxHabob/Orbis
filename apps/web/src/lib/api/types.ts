@@ -49,6 +49,7 @@ import type {
   UpdatePeriodRequest,
   SubjectDto,
   SectionDto,
+  SectionsSummaryDto,
   SectionSubjectDto,
   CreateSectionRequest,
   UpdateSectionRequest,
@@ -711,7 +712,11 @@ export interface StatementFilterParams {
 }
 
 export interface ProcessDisbursementRequest {
-  additional_lines?: Array<{ beneficiary_account_id: string; amount: number | string; notes?: string }>;
+  additional_lines?: Array<{
+    beneficiary_account_id: string;
+    amount: number | string;
+    notes?: string;
+  }>;
   treasury_account_id: string;
   beneficiary_account_id: string;
   amount: number | string;
@@ -1905,6 +1910,7 @@ export interface OrbisApiClient {
   listUsers(): Promise<UserDto[]>;
   getUser(id: string): Promise<UserDto>;
   updateUser(id: string, req: UpdateUserRequest): Promise<UserDto>;
+  deleteUser(id: string): Promise<void>;
   resetUserPassword(userId: string): Promise<AccountProvisioningResultDto>;
   listRoles(): Promise<RoleDto[]>;
   saveRole(req: SaveRoleRequest): Promise<RoleDto>;
@@ -1957,7 +1963,10 @@ export interface OrbisApiClient {
   closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto>;
   openEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
   closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto>;
-  transitionAcademicPeriodState(id: string, state: string): Promise<AcademicPeriodDto>;
+  transitionAcademicPeriodState(
+    id: string,
+    state: string,
+  ): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
   listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
   applyCalendarTemplate(
@@ -1974,6 +1983,7 @@ export interface OrbisApiClient {
   createSection(req: CreateSectionRequest): Promise<SectionDto>;
   updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
   listSections(): Promise<SectionDto[]>;
+  getSectionsSummary(periodId?: string): Promise<SectionsSummaryDto>;
   getSection(id: string): Promise<SectionDto>;
   deleteSection(id: string): Promise<void>;
   assignSectionSubject(
@@ -2387,6 +2397,12 @@ export interface OrbisApiClient {
     locale?: string,
   ): Promise<Uint8Array>;
   validateTemplate(documentJson: string): Promise<ValidationResultDto>;
+  syncDefaultTemplates(): Promise<{
+    templates_inserted: number;
+    templates_updated: number;
+    templates_skipped_customized: number;
+    reports_synced: number;
+  }>;
 
   // ── Template Bindings ───────────────────────────────────────
   listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]>;

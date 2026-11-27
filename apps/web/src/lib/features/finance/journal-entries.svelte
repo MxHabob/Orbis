@@ -71,7 +71,6 @@ let notes = $state("");
 let searchQuery = $state("");
 let dateRange = $state(createDefaultDateRange());
 
-
 const journalAccounts = $derived(
   accounts.filter(
     (account) =>
@@ -98,7 +97,9 @@ async function loadData(reloadCatalogs = true) {
   try {
     const [entriesList, accountsList, currenciesList] = await Promise.all([
       api.listJournalEntries(),
-      reloadCatalogs ? queryClient.fetchQuery(accountQueryOptions(orgId)) : Promise.resolve(accounts),
+      reloadCatalogs
+        ? queryClient.fetchQuery(accountQueryOptions(orgId))
+        : Promise.resolve(accounts),
       reloadCatalogs
         ? queryClient.fetchQuery({
             queryKey: queryKeys.finance.currencies(),
@@ -142,7 +143,9 @@ function handleCurrencyChange(currency: string | undefined) {
     creditAccountId = "";
 }
 
-const accountsById = $derived(new Map(accounts.map((account) => [account.id, account])));
+const accountsById = $derived(
+  new Map(accounts.map((account) => [account.id, account])),
+);
 
 function getAccountName(id?: string | null): string {
   if (!id) return "—";
@@ -226,7 +229,8 @@ async function handleSaveNew() {
     await loadData(false);
   } catch (err) {
     console.error("Failed to post journal entry:", err);
-    formError = extractErrorMessage(err) || m.finance_ui_journal_entry_post_failed();
+    formError =
+      extractErrorMessage(err) || m.finance_ui_journal_entry_post_failed();
   } finally {
     isSubmitting = false;
   }
@@ -348,7 +352,6 @@ const journalPrintContexts = $derived(
 function handleJournalSelection(selection: SelectionSnapshot) {
   journalSelection = selection;
 }
-
 
 const detailsColumn = $derived(financeRecordColumn());
 let detailsOpen = $state(false);

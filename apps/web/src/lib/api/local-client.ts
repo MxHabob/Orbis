@@ -41,6 +41,7 @@ import type {
   CreateSubjectRequest,
   UpdateSubjectRequest,
   SectionDto,
+  SectionsSummaryDto,
   CreateSectionRequest,
   UpdateSectionRequest,
   AssignSectionSubjectRequest,
@@ -258,7 +259,9 @@ import type {
 } from "./types";
 
 type DesktopPayment = Omit<PaymentDto, "currency_code" | "updated_at"> &
-  Partial<Pick<PaymentDto, "currency_code" | "updated_at">> & { currency?: string };
+  Partial<Pick<PaymentDto, "currency_code" | "updated_at">> & {
+    currency?: string;
+  };
 
 function normalizeDesktopPayment(payment: DesktopPayment): PaymentDto {
   return {
@@ -331,6 +334,9 @@ export class LocalClient implements OrbisApiClient {
   }
   async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return unwrap(await invoke("iam_update_user", { id, request: req }));
+  }
+  async deleteUser(id: string): Promise<void> {
+    return unwrap(await invoke("iam_delete_user", { id }));
   }
   async resetUserPassword(
     userId: string,
@@ -474,7 +480,10 @@ export class LocalClient implements OrbisApiClient {
     state: string,
   ): Promise<AcademicPeriodDto> {
     return unwrap(
-      await invoke("calendar_transition_period_state", { id, targetState: state }),
+      await invoke("calendar_transition_period_state", {
+        id,
+        targetState: state,
+      }),
     );
   }
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
@@ -513,6 +522,14 @@ export class LocalClient implements OrbisApiClient {
   }
   async listSections(): Promise<SectionDto[]> {
     return unwrap(await invoke("academic_list_sections"));
+  }
+
+  async getSectionsSummary(periodId?: string): Promise<SectionsSummaryDto> {
+    return unwrap(
+      await invoke("academic_get_sections_summary", {
+        periodId: periodId ?? null,
+      }),
+    );
   }
 
   async getSection(id: string): Promise<SectionDto> {
@@ -1327,7 +1344,9 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("finance_delete_student_fee", { id }));
   }
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
-    const payment = unwrap<DesktopPayment>(await invoke("finance_process_payment", { request: req }));
+    const payment = unwrap<DesktopPayment>(
+      await invoke("finance_process_payment", { request: req }),
+    );
     return normalizeDesktopPayment(payment);
   }
   async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
@@ -1605,6 +1624,14 @@ export class LocalClient implements OrbisApiClient {
   }
   async validateTemplate(documentJson: string): Promise<ValidationResultDto> {
     return unwrap(await invoke("template_validate", { documentJson }));
+  }
+  async syncDefaultTemplates(): Promise<{
+    templates_inserted: number;
+    templates_updated: number;
+    templates_skipped_customized: number;
+    reports_synced: number;
+  }> {
+    return unwrap(await invoke("template_sync_defaults"));
   }
 
   // ── Template Bindings ───────────────────────────────────────

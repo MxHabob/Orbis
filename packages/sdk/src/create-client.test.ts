@@ -22,23 +22,38 @@ it("keeps institution endpoints, authorization, and abort signals per client", a
 
   const controller = new AbortController();
   await Promise.all([
-    first.getSystemHasOrgEndpoint({ signal: controller.signal, throwOnError: true }),
+    first.getSystemHasOrgEndpoint({
+      signal: controller.signal,
+      throwOnError: true,
+    }),
     second.getSystemHasOrgEndpoint({ throwOnError: true }),
   ]);
 
   assert.deepEqual(
-    requests.map((request) => [
-      new URL(request.url).origin,
-      new URL(request.url).pathname,
-      request.headers.get("Authorization"),
-    ]).sort(),
+    requests
+      .map((request) => [
+        new URL(request.url).origin,
+        new URL(request.url).pathname,
+        request.headers.get("Authorization"),
+      ])
+      .sort(),
     [
-      ["https://first.example", "/orbis/api/v1/system/has-organization", "Bearer first"],
-      ["https://second.example", "/api/v1/system/has-organization", "Bearer second"],
+      [
+        "https://first.example",
+        "/orbis/api/v1/system/has-organization",
+        "Bearer first",
+      ],
+      [
+        "https://second.example",
+        "/api/v1/system/has-organization",
+        "Bearer second",
+      ],
     ],
   );
   controller.abort();
-  const firstRequest = requests.find((request) => request.url.startsWith("https://first.example/"));
+  const firstRequest = requests.find((request) =>
+    request.url.startsWith("https://first.example/"),
+  );
   assert.equal(firstRequest?.signal.aborted, true);
 });
 

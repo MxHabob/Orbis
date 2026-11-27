@@ -23,7 +23,12 @@ import {
   resolveCellStep,
   detectEntryAxis,
 } from "./keyboard";
-import { countFrozenColumns, scrollForColumn, visibleVariableWindow, visibleWindow } from "./virtual";
+import {
+  countFrozenColumns,
+  scrollForColumn,
+  visibleVariableWindow,
+  visibleWindow,
+} from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
 import { queryClient } from "./query";
 import { autoscrollDelta, colFromOffset, rowFromOffset } from "./pointer";
@@ -380,16 +385,49 @@ describe("virtualization", () => {
     const widths = [40, 200, 120];
     expect(countFrozenColumns(widths, 260)).toBe(1);
     expect(countFrozenColumns(widths, 350)).toBe(2);
-    const cells = headerLayout(widths.map((width, index) => ({
-      id: String(index), width, group: "Students", pin: "colPinStart",
-    })), 1).cells.filter((cell) => cell.kind === "group");
-    expect(cells.map(({ colStart, colSpan }) => [colStart, colSpan])).toEqual([[0, 1], [1, 2]]);
+    const cells = headerLayout(
+      widths.map((width, index) => ({
+        id: String(index),
+        width,
+        group: "Students",
+        pin: "colPinStart",
+      })),
+      1,
+    ).cells.filter((cell) => cell.kind === "group");
+    expect(cells.map(({ colStart, colSpan }) => [colStart, colSpan])).toEqual([
+      [0, 1],
+      [1, 2],
+    ]);
   });
   test("reveals focused columns outside the pinned area in both directions", () => {
     const viewport = { viewportWidth: 400, frozenWidth: 150 };
-    expect(scrollForColumn({ ...viewport, columnStart: 300, columnWidth: 90, scrollLeft: -250, rtl: true })).toBe(-150);
-    expect(scrollForColumn({ ...viewport, columnStart: 500, columnWidth: 80, scrollLeft: 50, rtl: false })).toBe(180);
-    expect(scrollForColumn({ ...viewport, columnStart: 200, columnWidth: 300, scrollLeft: 0, rtl: false })).toBe(50);
+    expect(
+      scrollForColumn({
+        ...viewport,
+        columnStart: 300,
+        columnWidth: 90,
+        scrollLeft: -250,
+        rtl: true,
+      }),
+    ).toBe(-150);
+    expect(
+      scrollForColumn({
+        ...viewport,
+        columnStart: 500,
+        columnWidth: 80,
+        scrollLeft: 50,
+        rtl: false,
+      }),
+    ).toBe(180);
+    expect(
+      scrollForColumn({
+        ...viewport,
+        columnStart: 200,
+        columnWidth: 300,
+        scrollLeft: 0,
+        rtl: false,
+      }),
+    ).toBe(50);
   });
   test("window for 1e6 rows only visits overscan band", () => {
     const w = visibleWindow(40_000 * 32, 640, 32, 1_000_000, 8);
@@ -542,11 +580,16 @@ describe("performance", () => {
   });
 });
 
-
 describe("worksheet layout", () => {
   test("Excel paste keeps empty student rows and decimal commas", () => {
-    expect(parseClipboard('10,5\r\n\r\n12\r\n', "\t")).toEqual([["10,5"], [""], ["12"]]);
-    expect(parseClipboard(toTsv([["two\nlines", "5"]]))).toEqual([["two\nlines", "5"]]);
+    expect(parseClipboard("10,5\r\n\r\n12\r\n", "\t")).toEqual([
+      ["10,5"],
+      [""],
+      ["12"],
+    ]);
+    expect(parseClipboard(toTsv([["two\nlines", "5"]]))).toEqual([
+      ["two\nlines", "5"],
+    ]);
   });
 
   test("merges subject and term headers while spanning pinned identity columns", () => {
@@ -559,9 +602,18 @@ describe("worksheet layout", () => {
     ]);
     expect(rowCount).toBe(4);
     expect(cells.find((cell) => cell.colStart === 0)?.rowSpan).toBe(4);
-    expect(cells.filter((cell) => cell.kind === "group").map((cell) => [cell.label, cell.colSpan]))
-      .toEqual([["Math", 3], ["Term 1", 2], ["Term 2", 1]]);
-    expect(cells.filter((cell) => cell.kind === "sub").map((cell) => cell.label)).toEqual(["20", "30", "50"]);
+    expect(
+      cells
+        .filter((cell) => cell.kind === "group")
+        .map((cell) => [cell.label, cell.colSpan]),
+    ).toEqual([
+      ["Math", 3],
+      ["Term 1", 2],
+      ["Term 2", 1],
+    ]);
+    expect(
+      cells.filter((cell) => cell.kind === "sub").map((cell) => cell.label),
+    ).toEqual(["20", "30", "50"]);
   });
 
   test("grouped headers do not span the boundary between pinned and scrolling columns", () => {
@@ -571,8 +623,14 @@ describe("worksheet layout", () => {
       { id: "score", group: "Record" },
       { id: "notes", group: "Record" },
     ]);
-    expect(cells.filter((cell) => cell.kind === "group").map(({ colStart, colSpan }) => [colStart, colSpan]))
-      .toEqual([[0, 2], [2, 2]]);
+    expect(
+      cells
+        .filter((cell) => cell.kind === "group")
+        .map(({ colStart, colSpan }) => [colStart, colSpan]),
+    ).toEqual([
+      [0, 2],
+      [2, 2],
+    ]);
   });
 
   test("fixed rosters retain invalid target values and never append students", () => {

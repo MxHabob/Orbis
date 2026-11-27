@@ -95,7 +95,11 @@ function getTaskTypeLabel(type: string): string {
     case "year_activate":
       return m.common_phase_active();
     case "year_close":
-      return m.common_autopilot_task_period_lock?.() || m.autopilot_task_period_lock?.() || type;
+      return (
+        m.common_autopilot_task_period_lock?.() ||
+        m.autopilot_task_period_lock?.() ||
+        type
+      );
     case "generate_report":
     case "report_generation":
       return m.common_autopilot_task_report_generation();

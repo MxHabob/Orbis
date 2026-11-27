@@ -31,7 +31,10 @@ const enrollmentPct = $derived(
 );
 const teacherPct = $derived(
   stats && stats.total_employees > 0
-    ? Math.min(100, Math.round((stats.total_teachers / stats.total_employees) * 100))
+    ? Math.min(
+        100,
+        Math.round((stats.total_teachers / stats.total_employees) * 100),
+      )
     : 0,
 );
 const feeTotal = $derived(

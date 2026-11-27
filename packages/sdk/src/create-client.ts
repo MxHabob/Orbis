@@ -66,12 +66,13 @@ export const createOrbisClient = (options: OrbisClientOptions) => {
     }
 
     if (reqOptions.baseUrl !== client.getConfig().baseUrl) {
-      throw new Error("The Orbis API endpoint changed before this request was sent");
+      throw new Error(
+        "The Orbis API endpoint changed before this request was sent",
+      );
     }
 
     // Body handling for React Native fetch polyfill
-    const requestBody =
-      reqOptions.serializedBody ?? request.body;
+    const requestBody = reqOptions.serializedBody ?? request.body;
 
     return new Request(request.url, {
       method: request.method,

@@ -25,7 +25,9 @@ const { stats: statsQuery, access } = createDashboardStatsQuery(
 const stats = $derived(statsQuery.data ?? null);
 const isLoading = $derived(access.isLoading || statsQuery.isLoading);
 const error = $derived(
-  access.error || statsQuery.error ? extractErrorMessage(access.error ?? statsQuery.error) : null,
+  access.error || statsQuery.error
+    ? extractErrorMessage(access.error ?? statsQuery.error)
+    : null,
 );
 </script>
 
@@ -50,13 +52,5 @@ const error = $derived(
 </div>
 {#if !isLoading && !error}
 	<DesktopBanner />
-	<MulverseIntroDialog
-		{orgId}
-		hasOperationalActivity={Boolean(
-			stats &&
-				(stats.active_sections > 0 ||
-					stats.total_students > 0 ||
-					stats.total_employees > 0),
-		)}
-	/>
+	<MulverseIntroDialog {orgId} />
 {/if}

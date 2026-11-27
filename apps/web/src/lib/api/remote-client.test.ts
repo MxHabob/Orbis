@@ -50,7 +50,10 @@ it("uses the backend response envelope for startup and session authorization", a
   try {
     const client = new RemoteClient("https://orbis.example");
     assert.equal(await client.systemHasOrganization(), false);
-    const login = await client.login({ email: "example@example.test", password: "test" });
+    const login = await client.login({
+      email: "example@example.test",
+      password: "test",
+    });
     assert.equal(login.token, "issued-token");
     assert.equal((await client.getSession()).user.id, "signed-in-user");
   } finally {

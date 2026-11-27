@@ -295,7 +295,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
     // ── Reporting System Wiring ─────────────────────────────────
-    use orbis_app::ports::reporting::{DataProviderRegistry, RendererRegistry};
+    use orbis_app::ports::reporting::RendererRegistry;
     use orbis_infra::adapters::report_adapter::*;
     use orbis_infra::repositories::report_repos::*;
 
@@ -306,17 +306,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build data provider registry — register all available providers
     let mut provider_registry = InMemoryDataProviderRegistry::new();
-    provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(AnnualResultDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
-    provider_registry
-        .register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
-    provider_registry
-        .register_provider(Box::new(AcademicCertificateDataProvider { db: db.clone() }));
+    orbis_infra::adapters::report_adapter::register_default_providers(
+        &mut provider_registry,
+        db.clone(),
+    );
     let provider_registry = Arc::new(provider_registry);
 
     // Build renderer registry — register all available renderers

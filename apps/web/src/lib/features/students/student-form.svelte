@@ -48,7 +48,9 @@ $effect(() => {
     effectiveContext.activeClassId,
     academicContext.selectedClassId,
   ];
-  const defaultClassId = untrack(() => form.applyClassOptions(classes, contextualIds));
+  const defaultClassId = untrack(() =>
+    form.applyClassOptions(classes, contextualIds),
+  );
   if (defaultClassId) initialClassId = defaultClassId;
 });
 
@@ -65,10 +67,26 @@ onMount(() => {
 });
 
 const steps = [
-  { id: "profile", label: m.common_form_student_info, sections: [ProfileSection] },
-  { id: "contacts", label: m.student_registration_step_contacts, sections: [FamilySection, LocationSection] },
-  { id: "enrollment", label: m.student_registration_step_enrollment, sections: [EnrollmentSection, FinancialsSection] },
-  { id: "documents", label: m.student_registration_step_documents, sections: [DocumentsSection] },
+  {
+    id: "profile",
+    label: m.common_form_student_info,
+    sections: [ProfileSection],
+  },
+  {
+    id: "contacts",
+    label: m.student_registration_step_contacts,
+    sections: [FamilySection, LocationSection],
+  },
+  {
+    id: "enrollment",
+    label: m.student_registration_step_enrollment,
+    sections: [EnrollmentSection, FinancialsSection],
+  },
+  {
+    id: "documents",
+    label: m.student_registration_step_documents,
+    sections: [DocumentsSection],
+  },
   { id: "review", label: m.student_registration_step_review, sections: [] },
 ] as const;
 
@@ -87,7 +105,9 @@ async function openStep(step: StepId, fromReview = false) {
   returnToReview = fromReview;
   await tick();
   scrollArea?.scrollTo({ top: 0 });
-  stepPanels?.querySelector<HTMLElement>(`#registration-${step}-heading`)?.focus({ preventScroll: true });
+  stepPanels
+    ?.querySelector<HTMLElement>(`#registration-${step}-heading`)
+    ?.focus({ preventScroll: true });
 }
 
 function findField(id: string) {
@@ -95,7 +115,11 @@ function findField(id: string) {
 }
 
 function isFieldInStep(id: string, step: StepId) {
-  return findField(id)?.closest("[data-registration-step]")?.getAttribute("data-registration-step") === step;
+  return (
+    findField(id)
+      ?.closest("[data-registration-step]")
+      ?.getAttribute("data-registration-step") === step
+  );
 }
 
 const documentStats = $derived.by(() => {
@@ -195,7 +219,8 @@ function getFormSnapshot(): string {
 
 const isFormDirty = $derived(
   initialFormSnapshot !== null &&
-    (form.personal.classId !== initialClassId || getFormSnapshot() !== initialFormSnapshot),
+    (form.personal.classId !== initialClassId ||
+      getFormSnapshot() !== initialFormSnapshot),
 );
 
 const canSubmit = $derived(
@@ -209,7 +234,9 @@ const canSubmit = $derived(
       (form.admissionPolicy.registrationEnabled && !!currentPeriod)),
 );
 const canSaveDraft = $derived(
-  initialFormSnapshot !== null && !form.isInitializing && !form.initializationFailed,
+  initialFormSnapshot !== null &&
+    !form.isInitializing &&
+    !form.initializationFailed,
 );
 const isSavedDraft = $derived(
   form.isEditMode && form.originalStudent?.student?.status === "inactive",
@@ -219,8 +246,12 @@ type ValidationAttempt = { draft: boolean; step?: StepId };
 let attemptedSave = $state<ValidationAttempt | null>(null);
 
 function getValidationIssue({ draft, step }: ValidationAttempt) {
-  return form.getRequiredFieldIssue(draft, (id) => !step || isFieldInStep(id, step)) ??
-    form.getAdmissionIssue(draft, step);
+  return (
+    form.getRequiredFieldIssue(
+      draft,
+      (id) => !step || isFieldInStep(id, step),
+    ) ?? form.getAdmissionIssue(draft, step)
+  );
 }
 const requiredFieldIssue = $derived.by(() => {
   const attempt = attemptedSave;
@@ -233,11 +264,15 @@ async function focusFieldIssue(
   attempt: ValidationAttempt,
 ) {
   const panel = findField(issue.id)?.closest("[data-registration-step]");
-  const step = issue.step ??
-    steps.find((item) => item.id === panel?.getAttribute("data-registration-step"))?.id;
+  const step =
+    issue.step ??
+    steps.find(
+      (item) => item.id === panel?.getAttribute("data-registration-step"),
+    )?.id;
   if (step && step !== activeStep) await openStep(step, isReview);
   attemptedSave = attempt;
-  const field = findField(issue.id) ?? findField(`registration-${activeStep}-heading`);
+  const field =
+    findField(issue.id) ?? findField(`registration-${activeStep}-heading`);
   field?.focus({ preventScroll: true });
   field?.scrollIntoView({ block: "center", inline: "nearest" });
 }
@@ -265,20 +300,40 @@ async function handleSave(saveAsDraft = false) {
 }
 
 const reviewItems = $derived([
-  { step: steps[0], value: (form.personal.nameAr.trim() || form.personal.nameEn.trim()) },
-  { step: steps[1], value: [
-      form.guardian.linkedGuardians.map((guardian) => guardian.full_name.trim()).filter(Boolean).join(" ? "),
-      [form.personal.governorate, form.personal.district, form.personal.address].filter(Boolean).join(" ? "),
-    ].filter(Boolean).join("\n") },
-  { step: steps[2], value: [
+  {
+    step: steps[0],
+    value: form.personal.nameAr.trim() || form.personal.nameEn.trim(),
+  },
+  {
+    step: steps[1],
+    value: [
+      form.guardian.linkedGuardians
+        .map((guardian) => guardian.full_name.trim())
+        .filter(Boolean)
+        .join(" ? "),
+      [form.personal.governorate, form.personal.district, form.personal.address]
+        .filter(Boolean)
+        .join(" ? "),
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  },
+  {
+    step: steps[2],
+    value: [
       form.selectedClassName,
       l(currentPeriod?.name_ar, currentPeriod?.name),
-    ].filter(Boolean).join(" ? ") },
-  { step: steps[3], value: documentStats.total
+    ]
+      .filter(Boolean)
+      .join(" ? "),
+  },
+  {
+    step: steps[3],
+    value: documentStats.total
       ? `${documentStats.fulfilled} / ${documentStats.total}`
-      : m.ui_copy_no_document_requirements_configured_07292a9d() },
+      : m.ui_copy_no_document_requirements_configured_07292a9d(),
+  },
 ]);
-
 </script>
 
 <div class="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-background text-start text-foreground">

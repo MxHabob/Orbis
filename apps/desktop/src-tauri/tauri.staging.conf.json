@@ -1,6 +1,6 @@
 {
   "productName": "Orbis Staging",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "identifier": "com.mulverse.orbis.staging",
   "bundle": {
     "createUpdaterArtifacts": false,
@@ -15,9 +15,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": [
-          "orbis-staging"
-        ]
+        "schemes": ["orbis-staging"]
       }
     },
     "updater": {

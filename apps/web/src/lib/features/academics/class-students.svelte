@@ -276,7 +276,7 @@ async function deleteSelectedStudents() {
         <Button
           variant="outline"
           size="sm"
-          class="h-8 px-2.5 text-xs font-medium"
+          class="h-7 px-2.5 text-xs font-medium"
           onclick={() => {
             tabsStore.markNextNavigationAsNewTab();
             goto(localizeHref(`/${orgId}/students/${selectedId}`));

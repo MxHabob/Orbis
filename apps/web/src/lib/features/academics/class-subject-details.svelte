@@ -6,7 +6,10 @@
 -->
 <script lang="ts">
 import { periodOverrides } from "$lib/shared/utils/period-override.svelte";
-import { gradePeriodOverride, isGradePeriodOverrideable } from "$lib/api/period-override";
+import {
+  gradePeriodOverride,
+  isGradePeriodOverrideable,
+} from "$lib/api/period-override";
 
 import { LoadingIndicator } from "@orbis/ui";
 import { api, extractErrorMessage } from "$lib/api";
@@ -55,10 +58,17 @@ const selectedPeriod = $derived(
 const isPeriodLocked = $derived(Boolean(selectedPeriod?.is_locked));
 const isGradeEntryOpen = $derived(Boolean(selectedPeriod?.can_enter_grades));
 const canEnterGrades = $derived(
-  !isPeriodLocked && isGradeEntryOpen && !academicContext.isReadOnly && effectiveContext.hasPermission("grade:write"),
+  !isPeriodLocked &&
+    isGradeEntryOpen &&
+    !academicContext.isReadOnly &&
+    effectiveContext.hasPermission("grade:write"),
 );
-const canRequestOverride = $derived(!academicContext.isReadOnly && effectiveContext.hasPermission("grade:write")
-  && effectiveContext.hasPermission("workflow:write") && isGradePeriodOverrideable(selectedPeriod));
+const canRequestOverride = $derived(
+  !academicContext.isReadOnly &&
+    effectiveContext.hasPermission("grade:write") &&
+    effectiveContext.hasPermission("workflow:write") &&
+    isGradePeriodOverrideable(selectedPeriod),
+);
 
 const studentsQuery = createClassStudentsQuery(() => classId);
 const gradesQuery = createGradesQuery(() => SectionSubjectId);
@@ -94,13 +104,23 @@ function stateLabel(state: GradeState): string {
   if (state === "exempt") return m.academics_grade_state_exempt();
   return "";
 }
-function canonicalCell(cell: GradeCellState | null | undefined): GradeCellState | null {
+function canonicalCell(
+  cell: GradeCellState | null | undefined,
+): GradeCellState | null {
   if (!cell) return null;
-  if (cell.state === "present" && (cell.score === null || cell.score === undefined)) return null;
-  return { score: cell.state === "present" ? cell.score : (cell.score ?? 0), state: cell.state };
+  if (
+    cell.state === "present" &&
+    (cell.score === null || cell.score === undefined)
+  )
+    return null;
+  return {
+    score: cell.state === "present" ? cell.score : (cell.score ?? 0),
+    state: cell.state,
+  };
 }
 function sameCell(a: GradeCellState | null, b: GradeCellState | null): boolean {
-  const x = canonicalCell(a), y = canonicalCell(b);
+  const x = canonicalCell(a),
+    y = canonicalCell(b);
   if (!x && !y) return true;
   if (!x || !y) return false;
   return x.state === y.state && Number(x.score ?? 0) === Number(y.score ?? 0);
@@ -119,10 +139,51 @@ function parseCellInput(raw: unknown, maxScore: number): GradeCellState | null {
   const text = String(raw).trim();
   if (text === "") return null;
   const norm = text.toLowerCase();
-  if (["\u063a", "\u063a\u0627\u0626\u0628", "a", "abs", "absent", m.academics_grade_state_absent().toLowerCase()].includes(norm)) return { score: 0, state: "absent" };
-  if (["\u0645", "\u0645\u0639\u0630\u0648\u0631", "\u0639\u0630\u0631", "e", "exc", "excused", m.academics_grade_state_excused().toLowerCase()].includes(norm)) return { score: 0, state: "excused" };
-  if (["\u0645\u0639", "\u0645\u0639\u0641\u0649", "\u0645\u0639\u0627\u0641", "x", "ex", "exempt", m.academics_grade_state_exempt().toLowerCase()].includes(norm)) return { score: 0, state: "exempt" };
-  const digits = text.replace(/[\u0660-\u0669]/g, (d) => String("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(d))).replace(/\u066b/g, ".").replace(/,/g, ".");
+  if (
+    [
+      "\u063a",
+      "\u063a\u0627\u0626\u0628",
+      "a",
+      "abs",
+      "absent",
+      m.academics_grade_state_absent().toLowerCase(),
+    ].includes(norm)
+  )
+    return { score: 0, state: "absent" };
+  if (
+    [
+      "\u0645",
+      "\u0645\u0639\u0630\u0648\u0631",
+      "\u0639\u0630\u0631",
+      "e",
+      "exc",
+      "excused",
+      m.academics_grade_state_excused().toLowerCase(),
+    ].includes(norm)
+  )
+    return { score: 0, state: "excused" };
+  if (
+    [
+      "\u0645\u0639",
+      "\u0645\u0639\u0641\u0649",
+      "\u0645\u0639\u0627\u0641",
+      "x",
+      "ex",
+      "exempt",
+      m.academics_grade_state_exempt().toLowerCase(),
+    ].includes(norm)
+  )
+    return { score: 0, state: "exempt" };
+  const digits = text
+    .replace(/[\u0660-\u0669]/g, (d) =>
+      String(
+        "\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".indexOf(
+          d,
+        ),
+      ),
+    )
+    .replace(/\u066b/g, ".")
+    .replace(/,/g, ".");
   const n = Number(digits);
   if (!Number.isFinite(n)) return null;
   return { score: Math.max(0, Math.min(maxScore, n)), state: "present" };
@@ -131,16 +192,27 @@ function findOriginalGrade(studentId: string, key: string) {
   const grades = (gradesQuery.data ?? []) as any[];
   const hasScheme = schemeComponents.length > 0;
   const studentGrades = grades.filter(
-    (grade) => String(grade.student_id) === String(studentId) && String(grade.period_id) === String(selectedPeriodId),
+    (grade) =>
+      String(grade.student_id) === String(studentId) &&
+      String(grade.period_id) === String(selectedPeriodId),
   );
   if (hasScheme) {
     return (
-      studentGrades.find((item) => String(item.component_code ?? item.component_id ?? "") === key) ??
-      (["final", "written_test", "term_exam"].includes(key) ? studentGrades.find((item) => Boolean(item.is_final)) : null) ??
+      studentGrades.find(
+        (item) =>
+          String(item.component_code ?? item.component_id ?? "") === key,
+      ) ??
+      (["final", "written_test", "term_exam"].includes(key)
+        ? studentGrades.find((item) => Boolean(item.is_final))
+        : null) ??
       null
     );
   }
-  return studentGrades.find((item) => Boolean(item.is_final) === (key === "final")) ?? null;
+  return (
+    studentGrades.find(
+      (item) => Boolean(item.is_final) === (key === "final"),
+    ) ?? null
+  );
 }
 
 const matrixData = $derived.by((): GradeMatrixResponse => {
@@ -157,60 +229,87 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
         sort_order: comp.sort_order,
       }))
     : [
-        { code: "monthly", name: "Monthly", name_ar: "العملية", max: 20, sort_order: 1 },
-        { code: "final", name: "Final", name_ar: "الاختبار", max: 30, sort_order: 2 },
+        {
+          code: "monthly",
+          name: "Monthly",
+          name_ar: "العملية",
+          max: 20,
+          sort_order: 1,
+        },
+        {
+          code: "final",
+          name: "Final",
+          name_ar: "الاختبار",
+          max: 30,
+          sort_order: 2,
+        },
       ];
 
-  const students: GradeMatrixStudent[] = (roster as any[]).map((student: any) => {
-    const studentId = student.student?.id ?? student.id;
-    const studentGrades = (grades as any[]).filter(
-      (grade) => String(grade.student_id) === String(studentId) && String(grade.period_id) === String(selectedPeriodId),
-    );
-    const cells: GradeCell[] = assessmentConfigs.map(({ code, max }) => {
-      const grade = hasScheme
-        ? (studentGrades.find((item) => String(item.component_code ?? item.component_id ?? "") === code) ??
-          (["final", "written_test", "term_exam"].includes(code) ? studentGrades.find((item) => Boolean(item.is_final)) : null))
-        : studentGrades.find((item) => Boolean(item.is_final) === (code === "final"));
-      const gradeMax = Number(grade?.max_score);
-      return {
-        grade_id: grade?.id ?? null,
-        assessment_id: grade?.component_id ?? null,
-        exam_type: code,
-        score: grade ? Number(grade.score) : null,
-        max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
-        component_id: grade?.component_id ?? null,
-        component_code: grade?.component_code ?? null,
-      };
-    });
-    // Totals reflect numeric scores in cells as stored (display calc); state-aware adjustments handled in UI layer.
-    const total = cells.reduce((sum, cell) => sum + (cell.score || 0), 0);
-    const maxTotal = cells.reduce((sum, cell) => sum + cell.max_score, 0);
-    const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+  const students: GradeMatrixStudent[] = (roster as any[]).map(
+    (student: any) => {
+      const studentId = student.student?.id ?? student.id;
+      const studentGrades = (grades as any[]).filter(
+        (grade) =>
+          String(grade.student_id) === String(studentId) &&
+          String(grade.period_id) === String(selectedPeriodId),
+      );
+      const cells: GradeCell[] = assessmentConfigs.map(({ code, max }) => {
+        const grade = hasScheme
+          ? (studentGrades.find(
+              (item) =>
+                String(item.component_code ?? item.component_id ?? "") === code,
+            ) ??
+            (["final", "written_test", "term_exam"].includes(code)
+              ? studentGrades.find((item) => Boolean(item.is_final))
+              : null))
+          : studentGrades.find(
+              (item) => Boolean(item.is_final) === (code === "final"),
+            );
+        const gradeMax = Number(grade?.max_score);
+        return {
+          grade_id: grade?.id ?? null,
+          assessment_id: grade?.component_id ?? null,
+          exam_type: code,
+          score: grade ? Number(grade.score) : null,
+          max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
+          component_id: grade?.component_id ?? null,
+          component_code: grade?.component_code ?? null,
+        };
+      });
+      // Totals reflect numeric scores in cells as stored (display calc); state-aware adjustments handled in UI layer.
+      const total = cells.reduce((sum, cell) => sum + (cell.score || 0), 0);
+      const maxTotal = cells.reduce((sum, cell) => sum + cell.max_score, 0);
+      const percentage =
+        maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
 
-    return {
-      enrollment_id:
-        student.enrollment?.id ??
-        studentGrades.find((grade) => grade.enrollment_id)?.enrollment_id ??
-        "",
-      student_id: String(studentId),
-      student_name:
-        student.person?.full_name ||
-        student.person?.display_name ||
-        student.student?.student_number ||
-        "",
-      student_name_ar:
-        student.person?.full_name_ar ||
-        student.person?.full_name ||
-        student.person?.display_name ||
-        student.student?.student_number ||
-        null,
-      grades: cells,
-      total,
-      max_total: maxTotal,
-      percentage,
-      grade_letter: scoreToGradeLetter(percentage, academicContext.gradeScaleItems),
-    };
-  });
+      return {
+        enrollment_id:
+          student.enrollment?.id ??
+          studentGrades.find((grade) => grade.enrollment_id)?.enrollment_id ??
+          "",
+        student_id: String(studentId),
+        student_name:
+          student.person?.full_name ||
+          student.person?.display_name ||
+          student.student?.student_number ||
+          "",
+        student_name_ar:
+          student.person?.full_name_ar ||
+          student.person?.full_name ||
+          student.person?.display_name ||
+          student.student?.student_number ||
+          null,
+        grades: cells,
+        total,
+        max_total: maxTotal,
+        percentage,
+        grade_letter: scoreToGradeLetter(
+          percentage,
+          academicContext.gradeScaleItems,
+        ),
+      };
+    },
+  );
 
   return {
     period_id: selectedPeriodId,
@@ -231,7 +330,10 @@ function decorateRows(rows: Record<string, unknown>[]) {
     for (const key of assessmentKeys) {
       const g = findOriginalGrade(String(r.student_id), key) as any;
       const cell: GradeCellState | null = g
-        ? { score: Number.isFinite(Number(g.score)) ? Number(g.score) : null, state: gradeStateOf(g) }
+        ? {
+            score: Number.isFinite(Number(g.score)) ? Number(g.score) : null,
+            state: gradeStateOf(g),
+          }
         : null;
       r[`__cell_exam_${key}`] = cell;
       r[`exam_${key}`] = displayForCell(cell);
@@ -255,7 +357,11 @@ $effect(() => {
   if (isMatrixLoading) return;
   const key = `${selectedPeriodId}|${SectionSubjectId}|${matrixData.students.length}|${assessmentKeys.join(",")}`;
   if (key !== lastMatrixKey && !isDirty) {
-    const base = transformMatrixToSource(matrixData, getLocale(), academicContext.gradeScaleItems);
+    const base = transformMatrixToSource(
+      matrixData,
+      getLocale(),
+      academicContext.gradeScaleItems,
+    );
     const decorated = decorateRows(base);
     gridSource = decorated.map((r) => structuredClone(r));
     baselineSource = decorated.map((r) => structuredClone(r));
@@ -268,12 +374,19 @@ function recalcRowLocal(row: Record<string, unknown>) {
   let total = 0;
   let maxTotal = 0;
   for (const key of assessmentKeys) {
-    const meta = row[`__meta_exam_${key}`] as { max_score?: number } | undefined;
+    const meta = row[`__meta_exam_${key}`] as
+      | { max_score?: number }
+      | undefined;
     const max = Number(meta?.max_score) || 100;
     const cell = row[`__cell_exam_${key}`] as GradeCellState | null;
     if (cell?.state === "excused" || cell?.state === "exempt") continue;
     maxTotal += max;
-    if (cell && cell.state === "present" && cell.score !== null && cell.score !== undefined) {
+    if (
+      cell &&
+      cell.state === "present" &&
+      cell.score !== null &&
+      cell.score !== undefined
+    ) {
       const n = Number(cell.score);
       if (Number.isFinite(n)) total += n;
     }
@@ -282,16 +395,28 @@ function recalcRowLocal(row: Record<string, unknown>) {
   row.total = total;
   row.max_total = maxTotal;
   row.percentage = percentage;
-  row.grade_letter = scoreToGradeLetter(percentage, academicContext.gradeScaleItems, row.grade_letter as string);
+  row.grade_letter = scoreToGradeLetter(
+    percentage,
+    academicContext.gradeScaleItems,
+    row.grade_letter as string,
+  );
 }
 
 const gridColumns = $derived.by(() => {
-  const cols = buildGradeColumns(matrixData, { readonly: !canEnterGrades, locale: getLocale() });
+  const cols = buildGradeColumns(matrixData, {
+    readonly: !canEnterGrades,
+    locale: getLocale(),
+  });
   // Make assessment cells text-editable to support status tokens (غ/م/مع, A/E/X).
   return cols.map((c) => {
     const id = String((c as any).id || (c as any).prop || "");
     if (id.startsWith("exam_")) {
-      return { ...c, type: "text", align: "center", editor: !canEnterGrades ? undefined : "text" } as any;
+      return {
+        ...c,
+        type: "text",
+        align: "center",
+        editor: !canEnterGrades ? undefined : "text",
+      } as any;
     }
     return c;
   });
@@ -312,7 +437,9 @@ function handleCellEdit(event: CellEditEvent) {
   if (!String(field).startsWith("exam_")) return;
 
   const key = String(field).replace(/^exam_/, "");
-  const meta = (gridSource[rowIndex] as any)?.[`__meta_exam_${key}`] as { max_score?: number } | undefined;
+  const meta = (gridSource[rowIndex] as any)?.[`__meta_exam_${key}`] as
+    | { max_score?: number }
+    | undefined;
   const max = Number(meta?.max_score) || 100;
 
   const updatedSource = [...gridSource];
@@ -332,15 +459,21 @@ async function handleSaveAll() {
   isSaving = true;
 
   try {
-    const items: Array<Parameters<typeof api.batchRecordGrades>[0]["items"][number]> = [];
+    const items: Array<
+      Parameters<typeof api.batchRecordGrades>[0]["items"][number]
+    > = [];
     let clearedCount = 0;
 
     for (let i = 0; i < gridSource.length; i++) {
       const row = gridSource[i] as any;
       const base = (baselineSource[i] || {}) as any;
       for (const key of assessmentKeys) {
-        const current = canonicalCell(row[`__cell_exam_${key}`] as GradeCellState | null);
-        const original = canonicalCell(base[`__cell_exam_${key}`] as GradeCellState | null);
+        const current = canonicalCell(
+          row[`__cell_exam_${key}`] as GradeCellState | null,
+        );
+        const original = canonicalCell(
+          base[`__cell_exam_${key}`] as GradeCellState | null,
+        );
         if (sameCell(current, original)) continue;
         if (!current) {
           if (original) clearedCount++;
@@ -348,10 +481,16 @@ async function handleSaveAll() {
         }
 
         const meta = row[`__meta_exam_${key}`] as
-          | { max_score?: number; component_id?: string | null; component_code?: string | null }
+          | {
+              max_score?: number;
+              component_id?: string | null;
+              component_code?: string | null;
+            }
           | undefined;
         const compConfig = schemeComponents.find((c) => c.code === key);
-        const maxScore = Number(compConfig?.max_score ?? meta?.max_score ?? 100);
+        const maxScore = Number(
+          compConfig?.max_score ?? meta?.max_score ?? 100,
+        );
         const componentCode = meta?.component_code ?? compConfig?.code ?? key;
         const scoreNum = current.score ?? 0;
 
@@ -359,7 +498,9 @@ async function handleSaveAll() {
           student_id: String(row.student_id),
           period_id: selectedPeriodId,
           section_subject_id: SectionSubjectId,
-          enrollment_id: row.enrollment_id ? String(row.enrollment_id) : undefined,
+          enrollment_id: row.enrollment_id
+            ? String(row.enrollment_id)
+            : undefined,
           score: String(scoreNum),
           max_score: String(maxScore),
           notes: null,
@@ -390,7 +531,8 @@ async function handleSaveAll() {
     isDirty = false;
     gradesQuery.refetch();
   } catch (e: any) {
-    if (!periodOverrides.handleError(orgId, e)) toast.error(extractErrorMessage(e) || m.common_grades_save_error());
+    if (!periodOverrides.handleError(orgId, e))
+      toast.error(extractErrorMessage(e) || m.common_grades_save_error());
   } finally {
     isSaving = false;
   }

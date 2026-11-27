@@ -1,10 +1,12 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { COLOR_PRESETS, type OnboardingFormModel } from "../types";
 import {
-  COLOR_PRESETS,
-  type OnboardingFormModel,
-} from "../types";
-import { setupCurrencies, setupRegions, regionName, applySetupRegion } from "../setup-regions";
+  setupCurrencies,
+  setupRegions,
+  regionName,
+  applySetupRegion,
+} from "../setup-regions";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -28,7 +30,9 @@ let {
   errors?: Record<string, string>;
 } = $props();
 
-const country = $derived(setupRegions.find((region) => region.code === form.countryCode));
+const country = $derived(
+  setupRegions.find((region) => region.code === form.countryCode),
+);
 const language = $derived(getLocale());
 </script>
 

@@ -1,13 +1,11 @@
 <!--
   @component SettingsBottomBar
-  Floating bottom action bar that appears smoothly when settings are modified.
-  Reusable across AI Center Settings, General Settings, Academic Policies, and other configuration hubs.
+  Compact floating bottom action bar for dirty state & bulk selection actions.
 -->
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button, type ButtonVariant } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, ArrowPath, InfoCircle } from "@orbis/icons";
 
 interface Props {
   visible?: boolean;
@@ -37,7 +35,7 @@ let {
   showReset = true,
   saveVariant = "default",
   statusVariant = "amber",
-  maxWidthClass = "max-w-lg",
+  maxWidthClass = "",
   actions,
   onsave,
   onreset,
@@ -46,44 +44,37 @@ let {
 const displaySaveLabel = $derived(
   saveLabel || m.settings_action_save_changes(),
 );
-
 const displaySavingLabel = $derived(savingLabel || m.common_state_saving());
-
 const displayResetLabel = $derived(
   resetLabel || m.settings_action_discard_changes(),
 );
-
 const displayMessage = $derived(message || m.settings_unsaved_changes());
+
+const dotClass = $derived(
+  statusVariant === "rose"
+    ? "bg-destructive"
+    : statusVariant === "emerald"
+      ? "bg-emerald-500"
+      : statusVariant === "primary"
+        ? "bg-primary"
+        : "bg-amber-500",
+);
 </script>
 
 {#if visible && isDirty}
   <div
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] {maxWidthClass} pointer-events-auto select-none"
+    class="fixed bottom-9 left-1/2 -translate-x-1/2 z-50 w-fit max-w-[calc(100%-2rem)] {maxWidthClass} pointer-events-auto select-none"
   >
-    <div class="bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3">
-      <!-- Status Indicator & Message -->
-      <div class="flex min-w-0 items-center gap-2.5 text-start">
-        {#if statusVariant === "rose"}
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
-            <InfoCircle size={15} strokeWidth={2} />
-          </span>
-        {:else if statusVariant === "emerald"}
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-            <InfoCircle size={15} strokeWidth={2} />
-          </span>
-        {:else if statusVariant === "primary"}
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-            <InfoCircle size={15} strokeWidth={2} />
-          </span>
-        {:else}
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-500">
-            <InfoCircle size={15} strokeWidth={2} />
-          </span>
-        {/if}
-        <span class="truncate text-xs sm:text-sm font-medium text-foreground">
+    <div class="bg-card/95 backdrop-blur-md border border-border/70 shadow-lg rounded-lg px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Status Dot & Concise Message -->
+      <div class="flex min-w-0 items-center gap-2 ps-1 text-start">
+        <span class="size-2 shrink-0 rounded-full {dotClass}"></span>
+        <span class="whitespace-nowrap text-xs font-medium text-foreground">
           {displayMessage}
         </span>
       </div>
+
+      <div class="hidden sm:block h-4 w-px bg-border/60 shrink-0"></div>
 
       <!-- Action Buttons -->
       <div class="flex shrink-0 items-center gap-1.5">
@@ -94,8 +85,8 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              class="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+              size="xs"
+              class="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
               disabled={isSaving}
               onclick={onreset}
             >
@@ -107,13 +98,13 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
             <Button
               type="button"
               variant={saveVariant}
-              size="sm"
-              class="h-8 px-3 text-xs font-semibold shadow-xs cursor-pointer"
+              size="xs"
+              class="h-7 px-3 text-xs font-semibold shadow-2xs"
               disabled={isSaving}
               onclick={onsave}
             >
               {#if isSaving}
-                <LoadingIndicator class="me-1.5"  size={13} />
+                <LoadingIndicator class="me-1.5" size={12} />
                 <span>{displaySavingLabel}</span>
               {:else}
                 <span>{displaySaveLabel}</span>
@@ -122,7 +113,6 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
           {/if}
         {/if}
       </div>
-
     </div>
   </div>
 {/if}

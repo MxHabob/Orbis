@@ -20,7 +20,9 @@ let {
 const IconComponent = $derived(
   getReportDomainIcon(definition.domain, definition.category),
 );
-const title = $derived(l(definition.name_ar, definition.name) || definition.name);
+const title = $derived(
+  l(definition.name_ar, definition.name) || definition.name,
+);
 const description = $derived(
   l(definition.description_ar, definition.description) ||
     m.operations_ui_report_default_description(),

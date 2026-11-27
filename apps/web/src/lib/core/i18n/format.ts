@@ -48,8 +48,10 @@ function getFormattingTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-
-export function formatDateKey(date: Date, timeZone = getFormattingTimezone()): string {
+export function formatDateKey(
+  date: Date,
+  timeZone = getFormattingTimezone(),
+): string {
   return createDateKey(date, timeZone);
 }
 

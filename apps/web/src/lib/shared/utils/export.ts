@@ -39,10 +39,7 @@ export function exportToCsv<T>(
   // Prepend UTF-8 BOM (\uFEFF) to ensure Excel opens Arabic characters correctly
   const csvContent = "\uFEFF" + [headerRow, ...dataRows].join("\r\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  return downloadBlob(
-    blob,
-    `${filename}_${dateStamp}.csv`,
-  );
+  return downloadBlob(blob, `${filename}_${dateStamp}.csv`);
 }
 
 /**

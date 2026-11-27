@@ -172,10 +172,13 @@ const visibleCols = $derived.by(() => {
   for (const column of columns) {
     if (column.hidden) continue;
     const id = columnId(column);
-    const requested = pinOverrides[id] ?? (isColumnPinnedLeft(column) || (id === "__selected" && !column.pin));
-    const effective = requested === isColumnPinnedLeft(column)
-      ? column
-      : { ...column, pin: requested ? "colPinStart" as const : undefined };
+    const requested =
+      pinOverrides[id] ??
+      (isColumnPinnedLeft(column) || (id === "__selected" && !column.pin));
+    const effective =
+      requested === isColumnPinnedLeft(column)
+        ? column
+        : { ...column, pin: requested ? ("colPinStart" as const) : undefined };
     (requested ? pinned : scrolling).push(effective);
   }
   return [...pinned, ...scrolling];
@@ -488,9 +491,15 @@ function widthOf(col: OrbisColumnDef): number {
 const columnSizes = $derived(visibleCols.map((col) => widthOf(col)));
 const totalWidth = $derived(columnSizes.reduce((sum, width) => sum + width, 0));
 
-const configuredPinCount = $derived(visibleCols.findIndex((col) => !isColumnPinnedLeft(col)));
-const pinCount = $derived(configuredPinCount < 0 ? visibleCols.length : configuredPinCount);
-const frozenCount = $derived(countFrozenColumns(columnSizes.slice(0, pinCount), viewportW));
+const configuredPinCount = $derived(
+  visibleCols.findIndex((col) => !isColumnPinnedLeft(col)),
+);
+const pinCount = $derived(
+  configuredPinCount < 0 ? visibleCols.length : configuredPinCount,
+);
+const frozenCount = $derived(
+  countFrozenColumns(columnSizes.slice(0, pinCount), viewportW),
+);
 const columnOffsets = $derived.by(() => {
   let offset = 0;
   return columnSizes.map((width) => {
@@ -514,17 +523,29 @@ const rowWindow = $derived(
   ),
 );
 
-
 const scrollingSizes = $derived(columnSizes.slice(frozenCount));
-const colWindow = $derived(visibleCols.length < 24
-  ? { start: 0, end: scrollingSizes.length, offset: 0, count: scrollingSizes.length }
-  : visibleVariableWindow(Math.abs(scrollLeft), viewportW - frozenWidth, scrollingSizes, 4));
+const colWindow = $derived(
+  visibleCols.length < 24
+    ? {
+        start: 0,
+        end: scrollingSizes.length,
+        offset: 0,
+        count: scrollingSizes.length,
+      }
+    : visibleVariableWindow(
+        Math.abs(scrollLeft),
+        viewportW - frozenWidth,
+        scrollingSizes,
+        4,
+      ),
+);
 const firstScrollingColumn = $derived(frozenCount + colWindow.start);
 const lastScrollingColumn = $derived(frozenCount + colWindow.end);
 const scrollingColumnOffset = $derived(colWindow.offset);
 const windowedCols = $derived([
   ...visibleCols.slice(0, frozenCount).map((col, index) => ({ col, index })),
-  ...visibleCols.slice(firstScrollingColumn, lastScrollingColumn)
+  ...visibleCols
+    .slice(firstScrollingColumn, lastScrollingColumn)
     .map((col, index) => ({ col, index: firstScrollingColumn + index })),
 ]);
 
@@ -718,20 +739,34 @@ function moveActiveAfterEdit(
 
 function isGridRowSelected(row: GridRow, index: number) {
   const id = rowKey(row, index);
-  return selectedRowIds?.has(id) ??
-    (Object.hasOwn(row, "__selected") ? row.__selected === true : isRowSelected(selection, id, displayRows.length));
+  return (
+    selectedRowIds?.has(id) ??
+    (Object.hasOwn(row, "__selected")
+      ? row.__selected === true
+      : isRowSelected(selection, id, displayRows.length))
+  );
 }
 
-const hasSelectionColumn = $derived(visibleCols.some((column) => columnId(column) === "__selected"));
+const hasSelectionColumn = $derived(
+  visibleCols.some((column) => columnId(column) === "__selected"),
+);
 const headerSelection = $derived.by(() => {
-  if (!hasSelectionColumn || !displayRows.length) return { all: false, mixed: false };
+  if (!hasSelectionColumn || !displayRows.length)
+    return { all: false, mixed: false };
   const first = isGridRowSelected(displayRows[0]!, 0);
-  const mixed = displayRows.some((row, index) => isGridRowSelected(row, index) !== first);
+  const mixed = displayRows.some(
+    (row, index) => isGridRowSelected(row, index) !== first,
+  );
   return { all: first && !mixed, mixed };
 });
 
-function selectDisplayedRows(event: GridActionEvent["originalEvent"], selected: boolean) {
-  const controlled = selectedRowIds !== undefined || displayRows.some((row) => Object.hasOwn(row, "__selected"));
+function selectDisplayedRows(
+  event: GridActionEvent["originalEvent"],
+  selected: boolean,
+) {
+  const controlled =
+    selectedRowIds !== undefined ||
+    displayRows.some((row) => Object.hasOwn(row, "__selected"));
   if (!controlled) {
     selection = selected
       ? { ...selection, mode: "allMatching", ids: new Set() }
@@ -749,13 +784,24 @@ function selectDisplayedRows(event: GridActionEvent["originalEvent"], selected: 
   });
 }
 
-function toggleRowSelection(row: GridRow, index: number, event: GridActionEvent["originalEvent"]) {
+function toggleRowSelection(
+  row: GridRow,
+  index: number,
+  event: GridActionEvent["originalEvent"],
+) {
   const selected = !isGridRowSelected(row, index);
   if (selectedRowIds === undefined && !Object.hasOwn(row, "__selected")) {
     selection = toggleId(selection, rowKey(row, index));
     onselection?.(selection);
   }
-  onaction?.({ actionId: "toggle-select", row, rowIndex: index, prop: "__selected", originalEvent: event, selected });
+  onaction?.({
+    actionId: "toggle-select",
+    row,
+    rowIndex: index,
+    prop: "__selected",
+    originalEvent: event,
+    selected,
+  });
 }
 
 function measure() {
@@ -800,7 +846,8 @@ function requestMoreIfNeeded(force = false) {
     })
     .finally(() => {
       isLoadingMore = false;
-      if (!loadMoreError && safeSource.length > previousCount) requestAnimationFrame(() => requestMoreIfNeeded());
+      if (!loadMoreError && safeSource.length > previousCount)
+        requestAnimationFrame(() => requestMoreIfNeeded());
     });
 }
 
@@ -966,18 +1013,25 @@ function deleteSelectedRows() {
 function isGridControl(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
-    Boolean(target.closest('button,input,select,textarea,a,[role=checkbox],[contenteditable=true]'))
+    Boolean(
+      target.closest(
+        "button,input,select,textarea,a,[role=checkbox],[contenteditable=true]",
+      ),
+    )
   );
 }
 
 function startEdit(row: number, col: number, seed?: string) {
   const column = visibleCols[col];
-  if (!column || readonly || column.readonly || columnId(column) === "__selected") return;
-  const type = column.type;
   if (
-    type === "boolean" ||
-    column.editor === "checkbox"
-  ) {
+    !column ||
+    readonly ||
+    column.readonly ||
+    columnId(column) === "__selected"
+  )
+    return;
+  const type = column.type;
+  if (type === "boolean" || column.editor === "checkbox") {
     const current = displayRows[row]
       ? getCellValue(displayRows[row]!, column)
       : false;
@@ -1090,8 +1144,11 @@ function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
   const rect = bodyEl.getBoundingClientRect();
   const relY = e.clientY - rect.top + bodyEl.scrollTop;
   const left = rect.left + bodyEl.clientLeft;
-  const inlineX = rtl ? left + bodyEl.clientWidth - e.clientX : e.clientX - left;
-  const relX = inlineX < frozenWidth ? inlineX : inlineX + Math.abs(bodyEl.scrollLeft);
+  const inlineX = rtl
+    ? left + bodyEl.clientWidth - e.clientX
+    : e.clientX - left;
+  const relX =
+    inlineX < frozenWidth ? inlineX : inlineX + Math.abs(bodyEl.scrollLeft);
   return {
     row: rowFromOffset(relY, totalHeaderHeight, rowSize, displayRows.length),
     col: colFromOffset(relX, columnSizes),
@@ -1101,14 +1158,19 @@ function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
 function maybeAutoScroll(e: PointerEvent) {
   if (!bodyEl) return;
   const rect = bodyEl.getBoundingClientRect();
-  const dy = autoscrollDelta(e.clientY, rect.top + totalHeaderHeight, rect.bottom);
+  const dy = autoscrollDelta(
+    e.clientY,
+    rect.top + totalHeaderHeight,
+    rect.bottom,
+  );
   const dx = autoscrollDelta(e.clientX, rect.left, rect.right);
   if (dy) bodyEl.scrollTop += dy;
   if (dx) bodyEl.scrollLeft += rtl ? -dx : dx;
 }
 
 function handlePointer(row: number, col: number, e: PointerEvent) {
-  if (e.button !== 0 || e.pointerType === "touch" || isGridControl(e.target)) return;
+  if (e.button !== 0 || e.pointerType === "touch" || isGridControl(e.target))
+    return;
   e.preventDefault();
   root?.focus({ preventScroll: true });
   if (e.ctrlKey || e.metaKey) {
@@ -1149,7 +1211,11 @@ function handleDblClick(row: number, col: number, e: MouseEvent) {
 
 function handleRootKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented || isGridControl(event.target)) return;
-  if (event.target instanceof Element && event.target.closest(".orbis-grid-head")) return;
+  if (
+    event.target instanceof Element &&
+    event.target.closest(".orbis-grid-head")
+  )
+    return;
   if (
     event.target instanceof Element &&
     event.target.closest(".orbis-toolbar")
@@ -1162,8 +1228,13 @@ function handleRootKeydown(event: KeyboardEvent) {
 function handleKeydown(e: KeyboardEvent) {
   const active = selection.active ?? { row: 0, col: 0 };
   const row = displayRows[active.row];
-  if (row && !editing && visibleCols[active.col] &&
-      columnId(visibleCols[active.col]!) === "__selected" && (e.key === " " || e.key === "Enter")) {
+  if (
+    row &&
+    !editing &&
+    visibleCols[active.col] &&
+    columnId(visibleCols[active.col]!) === "__selected" &&
+    (e.key === " " || e.key === "Enter")
+  ) {
     e.preventDefault();
     toggleRowSelection(row, active.row, e);
     return;
@@ -1171,7 +1242,10 @@ function handleKeydown(e: KeyboardEvent) {
   const cmd = interpretKey(e, !!editing, rtl);
   if (cmd.action === "paste") return;
   if (cmd.preventDefault) e.preventDefault();
-  const page = Math.max(1, Math.floor((viewportH - totalHeaderHeight) / rowSize) - 1);
+  const page = Math.max(
+    1,
+    Math.floor((viewportH - totalHeaderHeight) / rowSize) - 1,
+  );
 
   switch (cmd.action) {
     case "move":
@@ -1453,7 +1527,10 @@ function onPointerMove(e: PointerEvent) {
   if (!dragging || !range || editing) return;
   maybeAutoScroll(e);
   const hit = hitFromEvent(e);
-  if (hit && (selection.active?.row !== hit.row || selection.active?.col !== hit.col)) {
+  if (
+    hit &&
+    (selection.active?.row !== hit.row || selection.active?.col !== hit.col)
+  ) {
     setActive(hit.row, hit.col, true, false);
   }
 }
@@ -1714,13 +1791,16 @@ const headerPanes = $derived.by(() => {
     { start: 0, end: frozenCount, pinned: true, offset: 0 },
     { start, end, pinned: false, offset: multi ? 0 : scrollingColumnOffset },
   ];
-  return panes.filter((pane) => pane.end > pane.start).map((pane) => ({
-    ...pane,
-    tracks: headerTracks.slice(pane.start, pane.end).join(" "),
-    cells: header.cells.filter((cell) => cell.colStart >= pane.start && cell.colStart < pane.end),
-  }));
+  return panes
+    .filter((pane) => pane.end > pane.start)
+    .map((pane) => ({
+      ...pane,
+      tracks: headerTracks.slice(pane.start, pane.end).join(" "),
+      cells: header.cells.filter(
+        (cell) => cell.colStart >= pane.start && cell.colStart < pane.end,
+      ),
+    }));
 });
-
 </script>
 
 <svelte:window

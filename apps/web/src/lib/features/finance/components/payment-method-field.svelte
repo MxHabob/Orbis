@@ -2,11 +2,22 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Label } from "@orbis/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import type { AvailablePaymentMethod } from "../queries";
 
 let {
-  methods, value, disabled = false, loading = false, loadFailed = false, onretry, onchange,
+  methods,
+  value,
+  disabled = false,
+  loading = false,
+  loadFailed = false,
+  onretry,
+  onchange,
 }: {
   methods: AvailablePaymentMethod[];
   value: string;
@@ -19,7 +30,9 @@ let {
 
 const id = $props.id();
 const manual = $derived(methods.filter((method) => !method.is_digital_gateway));
-const electronic = $derived(methods.filter((method) => method.is_digital_gateway));
+const electronic = $derived(
+  methods.filter((method) => method.is_digital_gateway),
+);
 const selected = $derived(methods.find((method) => method.id === value));
 </script>
 

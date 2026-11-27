@@ -63,8 +63,9 @@ let ministryName = $state("");
 let regionName = $state("");
 let organizationMetadata = $state<Record<string, unknown>>({});
 
-
-onMount(() => { void loadOrganization(); });
+onMount(() => {
+  void loadOrganization();
+});
 
 async function loadOrganization() {
   isLoading = true;
@@ -90,9 +91,7 @@ async function loadOrganization() {
     countryName =
       typeof metadata.country_name === "string" ? metadata.country_name : "";
     ministryName =
-      typeof metadata.ministry_name === "string"
-        ? metadata.ministry_name
-        : "";
+      typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
     regionName =
       typeof metadata.region_name === "string" ? metadata.region_name : "";
   } catch (err) {

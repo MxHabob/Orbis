@@ -1,13 +1,15 @@
 <script lang="ts">
-import { onDestroy } from "svelte";
+import { onDestroy, onMount } from "svelte";
 import { createSubscriber } from "svelte/reactivity";
 import { AvatarController } from "../core/avatar-controller.js";
+import type { AvatarState } from "../core/avatar-state-machine.js";
 import { getAvatarDrawing } from "../core/avatar-svg.js";
 import { type AvatarHat, resolveAvatarHat } from "../core/types.js";
 import AvatarDrawing from "./avatar-drawing.svelte";
 
 const {
   controller,
+  state: controlledState,
   hat = "random",
   width = "100%",
   height = "100%",
@@ -18,6 +20,7 @@ const {
   featureColor,
 }: {
   controller?: AvatarController;
+  state?: AvatarState;
   hat?: AvatarHat;
   width?: string;
   height?: string;
@@ -33,17 +36,41 @@ const activeController = $derived(controller ?? fallbackController);
 const subscribeToState = createSubscriber((update) =>
   activeController.subscribe(() => update()),
 );
-const state = $derived.by(() => {
+const currentState = $derived.by(() => {
   subscribeToState();
   return activeController.state;
 });
 const resolvedHat = $derived(resolveAvatarHat(hat));
 const drawing = $derived(
-  getAvatarDrawing({ hat: resolvedHat, state, faceColor, featureColor }),
+  getAvatarDrawing({
+    hat: resolvedHat,
+    state: currentState,
+    faceColor,
+    featureColor,
+  }),
 );
 
+let reduceMotion = $state(false);
+
+onMount(() => {
+  if (typeof window === "undefined" || !window.matchMedia) return;
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  reduceMotion = mq.matches;
+  const onChange = (event: MediaQueryListEvent) => {
+    reduceMotion = event.matches;
+  };
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+});
+
 $effect(() => {
-  if (!controller) fallbackController.setAutoBlink(autoBlink);
+  if (!controller) fallbackController.setAutoBlink(autoBlink && !reduceMotion);
+});
+
+$effect(() => {
+  if (controlledState && activeController.state !== controlledState) {
+    activeController.transitionTo(controlledState);
+  }
 });
 
 onDestroy(() => fallbackController.destroy());
@@ -55,7 +82,7 @@ onDestroy(() => fallbackController.destroy());
   style:height
   role="img"
   aria-label={label}
-  data-state={state}
+  data-state={currentState}
 >
   <svg
     xmlns="http://www.w3.org/2000/svg"

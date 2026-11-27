@@ -20,7 +20,6 @@ import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import { orgContext } from "$lib/stores/org-context.svelte";
 
 let { state }: { state: StudentFormState } = $props();
-
 </script>
 
 <section class="@container/profile w-full rounded-xl border border-border bg-card text-card-foreground">

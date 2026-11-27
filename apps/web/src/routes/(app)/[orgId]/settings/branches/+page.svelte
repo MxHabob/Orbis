@@ -415,7 +415,12 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       ...(currentSettings?.branch_policy || {}),
       default_branch_id: branch.id,
     };
-    await api.updateCurrentOrg({ metadata: { ...(currentOrg?.metadata as Record<string, unknown> | null), branch_policy: updatedPolicy } });
+    await api.updateCurrentOrg({
+      metadata: {
+        ...(currentOrg?.metadata as Record<string, unknown> | null),
+        branch_policy: updatedPolicy,
+      },
+    });
     toast.success(
       m.ui_branch_set_default_success({
         branchName: branch.name_ar || branch.name,

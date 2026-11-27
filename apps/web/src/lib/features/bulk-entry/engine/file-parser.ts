@@ -76,11 +76,17 @@ export async function parseSpreadsheetBytes(
   profile: BulkImportProfile<any, any>,
 ): Promise<ParsedFileResult> {
   const XLSX = await import("xlsx");
-  const workbook = XLSX.read(bytes, { type: "array", cellDates: true, raw: true });
+  const workbook = XLSX.read(bytes, {
+    type: "array",
+    cellDates: true,
+    raw: true,
+  });
 
-  const candidateSheets = workbook.SheetNames.filter((name, index) =>
-    !name.startsWith("_") && !name.toLowerCase().includes("instruction") &&
-    !workbook.Workbook?.Sheets?.[index]?.Hidden,
+  const candidateSheets = workbook.SheetNames.filter(
+    (name, index) =>
+      !name.startsWith("_") &&
+      !name.toLowerCase().includes("instruction") &&
+      !workbook.Workbook?.Sheets?.[index]?.Hidden,
   );
   const sheetName = candidateSheets.find((name) => {
     const sheet = workbook.Sheets[name];
@@ -89,10 +95,20 @@ export async function parseSpreadsheetBytes(
     const { s: start, e: end } = XLSX.utils.decode_range(range);
     for (let column = start.c; column <= end.c; column++) {
       const cell = sheet[XLSX.utils.encode_cell({ c: column, r: start.r })];
-      if (findSpreadsheetColumn(String(cell?.v ?? ""), profile.columnMetadata,
-        (meta) => getBulkEntryColumnHeader(profile.id, meta.id, meta.headerAr))) return true;
-      if ((profile.id === "students" || profile.id === "employees") &&
-          legacyNameColumns[normalizeSpreadsheetHeader(String(cell?.v ?? ""))]) return true;
+      if (
+        findSpreadsheetColumn(
+          String(cell?.v ?? ""),
+          profile.columnMetadata,
+          (meta) =>
+            getBulkEntryColumnHeader(profile.id, meta.id, meta.headerAr),
+        )
+      )
+        return true;
+      if (
+        (profile.id === "students" || profile.id === "employees") &&
+        legacyNameColumns[normalizeSpreadsheetHeader(String(cell?.v ?? ""))]
+      )
+        return true;
     }
     return false;
   });
@@ -101,9 +117,14 @@ export async function parseSpreadsheetBytes(
   const worksheet = workbook.Sheets[sheetName]!;
   const rowOffset = XLSX.utils.decode_range(worksheet["!ref"]!).s.r;
   const rawData: unknown[][] = XLSX.utils.sheet_to_json(worksheet, {
-    header: 1, defval: "", raw: false, dateNF: "YYYY-MM-DD",
+    header: 1,
+    defval: "",
+    raw: false,
+    dateNF: "YYYY-MM-DD",
   });
-  const rawHeaders = (rawData[0] ?? []).map((header) => String(header ?? "").trim());
+  const rawHeaders = (rawData[0] ?? []).map((header) =>
+    String(header ?? "").trim(),
+  );
   const columnMap: Record<number, string> = {};
 
   // Map header column indices to profile column metadata IDs
@@ -138,7 +159,11 @@ export async function parseSpreadsheetBytes(
 
   for (let r = 1; r < rawData.length; r++) {
     const line = rawData[r] as unknown[];
-    if (!line || mappedIndexes.every((index) => !String(line[index] ?? "").trim())) continue;
+    if (
+      !line ||
+      mappedIndexes.every((index) => !String(line[index] ?? "").trim())
+    )
+      continue;
     const excelRow = rowOffset + r + 1;
 
     const rowData: Record<string, unknown> = {

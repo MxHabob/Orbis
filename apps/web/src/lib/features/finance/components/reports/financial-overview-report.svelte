@@ -19,18 +19,20 @@ import {
 import { MetricProgress } from "@orbis/ui";
 import { FinanceSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
-import {
-  ArrowRight,
-  Clock,
-  CheckCircle,
-  InfoCircle,
-} from "@orbis/icons";
+import { ArrowRight, Clock, CheckCircle, InfoCircle } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let { orgId }: { orgId: string } = $props();
 
 const report = createLedgerReport(() => orgId);
-const { accounts, activeCurrencies, baseCurrency, summaries, isLoading, queryError } = $derived(report);
+const {
+  accounts,
+  activeCurrencies,
+  baseCurrency,
+  summaries,
+  isLoading,
+  queryError,
+} = $derived(report);
 const { refetchAll } = report;
 
 const overviewMetrics = $derived.by(() => {
@@ -50,7 +52,6 @@ const overviewMetrics = $derived.by(() => {
     }),
   };
 });
-
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide p-6 flex flex-col gap-6 font-sans">

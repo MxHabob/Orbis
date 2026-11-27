@@ -30,8 +30,10 @@ let {
 
 const isCurriculum = $derived(
   folder.folder_type === "curriculum" ||
-    (folder.metadata as Record<string, unknown> | null)?.knowledge_base === true ||
-    (folder.metadata as Record<string, unknown> | null)?.ai_agent_accessible === true,
+    (folder.metadata as Record<string, unknown> | null)?.knowledge_base ===
+      true ||
+    (folder.metadata as Record<string, unknown> | null)?.ai_agent_accessible ===
+      true,
 );
 
 const isStudent = $derived(

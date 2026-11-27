@@ -144,6 +144,22 @@ pub struct UpdateSectionInput {
 }
 
 #[derive(Serialize)]
+pub struct SectionSummaryItemDto {
+    pub section: SectionDto,
+    pub active_students: i64,
+    pub subject_count: i64,
+}
+
+#[derive(Serialize)]
+pub struct SectionsSummaryDto {
+    pub period_id: Option<String>,
+    pub total_sections: i64,
+    pub total_enrolled_students: i64,
+    pub average_section_size: i64,
+    pub items: Vec<SectionSummaryItemDto>,
+}
+
+#[derive(Serialize)]
 pub struct SectionSubjectDto {
     pub id: String,
     pub org_id: String,
@@ -481,6 +497,56 @@ pub async fn academic_list_sections(
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(items.items.into_iter().map(section_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn academic_get_sections_summary(
+    period_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<SectionsSummaryDto>, String> {
+    let ctx = make_ctx(&state);
+    let parsed_period_id = period_id
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(Uuid::parse_str)
+        .transpose()
+        .map_err(|_| "Invalid period_id".to_string())?;
+    let summary = state
+        .academic_service
+        .get_sections_summary(ctx.tenant_id, parsed_period_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    let total_sections = summary.items.len() as i64;
+    let total_enrolled_students = summary.total_enrolled_students as i64;
+    let average_section_size = if total_sections > 0 {
+        (total_enrolled_students as f64 / total_sections as f64).round() as i64
+    } else {
+        0
+    };
+    let items = summary
+        .items
+        .into_iter()
+        .map(|item| {
+            let mut dto = section_dto(item.section);
+            dto.period_id = summary
+                .period_id
+                .map(|id| id.to_string())
+                .unwrap_or_default();
+            dto.current_students = Some(item.active_students as i32);
+            SectionSummaryItemDto {
+                section: dto,
+                active_students: item.active_students as i64,
+                subject_count: item.subject_count as i64,
+            }
+        })
+        .collect();
+    Ok(ok(SectionsSummaryDto {
+        period_id: summary.period_id.map(|id| id.to_string()),
+        total_sections,
+        total_enrolled_students,
+        average_section_size,
+        items,
+    }))
 }
 
 #[tauri::command]

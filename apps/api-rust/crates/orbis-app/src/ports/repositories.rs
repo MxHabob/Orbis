@@ -478,6 +478,20 @@ pub trait SubjectRepository: Send + Sync {
     async fn save(&self, subject: &Subject) -> Result<(), DomainError>;
 }
 
+#[derive(Debug, Clone)]
+pub struct SectionSummaryItem {
+    pub section: Section,
+    pub active_students: u64,
+    pub subject_count: u64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SectionsSummary {
+    pub period_id: Option<Uuid>,
+    pub total_enrolled_students: u64,
+    pub items: Vec<SectionSummaryItem>,
+}
+
 #[async_trait]
 pub trait SectionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Section>, DomainError>;
@@ -488,6 +502,11 @@ pub trait SectionRepository: Send + Sync {
         org_id: Uuid,
         filter: orbis_domain::queries::filters::SectionFilter,
     ) -> Result<PaginatedList<Section>, DomainError>;
+    async fn get_summary(
+        &self,
+        org_id: Uuid,
+        period_id: Option<Uuid>,
+    ) -> Result<SectionsSummary, DomainError>;
     async fn save(&self, section: &Section) -> Result<(), DomainError>;
 }
 

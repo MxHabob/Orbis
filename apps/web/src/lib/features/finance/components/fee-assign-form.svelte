@@ -35,9 +35,10 @@ const form = new FormController({
   schema: feeAssignmentInputSchema,
 });
 
-const selectedTemplate = $derived(templates.find((item) => item.id === form.values.fee_template_id));
+const selectedTemplate = $derived(
+  templates.find((item) => item.id === form.values.fee_template_id),
+);
 let dueDate = $state(formatDateKey(new Date()));
-
 
 onMount(async () => {
   if (!orgId) return;
@@ -72,7 +73,9 @@ function handleTemplateChange(val: string | null) {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-    const enrollment = students.find((item) => item.id === payload.enrollment_id);
+    const enrollment = students.find(
+      (item) => item.id === payload.enrollment_id,
+    );
     if (!enrollment) {
       throw new Error(m.common_fee_label_student());
     }

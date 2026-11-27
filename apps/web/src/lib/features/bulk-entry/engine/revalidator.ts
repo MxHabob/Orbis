@@ -40,7 +40,8 @@ export function revalidateCellChange<T = Record<string, unknown>>(
   const affectedColumns =
     profile.id === "grades" && columnId === "max_score"
       ? ["max_score", "score"]
-      : profile.id === "grades" && ["is_absent", "is_excused", "is_exempt"].includes(columnId)
+      : profile.id === "grades" &&
+          ["is_absent", "is_excused", "is_exempt"].includes(columnId)
         ? [columnId, "score", "is_absent", "is_excused", "is_exempt"]
         : [columnId];
   const rowErrors = new Map<string, string>(targetRow.errors);

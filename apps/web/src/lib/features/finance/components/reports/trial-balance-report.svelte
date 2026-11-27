@@ -31,16 +31,23 @@ let searchQuery = $state("");
 let selectedTypeFilter = $state<string>("all");
 
 const report = createLedgerReport(() => orgId);
-const { accounts, activeCurrencies, summaries, isLoading, queryError } = $derived(report);
+const { accounts, activeCurrencies, summaries, isLoading, queryError } =
+  $derived(report);
 const { refetchAll } = report;
 
 const filteredAccounts = $derived(
-  accounts.filter((account) => selectedTypeFilter === "all" || account.account_type === selectedTypeFilter),
+  accounts.filter(
+    (account) =>
+      selectedTypeFilter === "all" ||
+      account.account_type === selectedTypeFilter,
+  ),
 );
-const isBalanced = $derived(activeCurrencies.every(({ code }) => {
-  const summary = summaries.get(code)!;
-  return balancesMatch(summary.debit, summary.credit, code);
-}));
+const isBalanced = $derived(
+  activeCurrencies.every(({ code }) => {
+    const summary = summaries.get(code)!;
+    return balancesMatch(summary.debit, summary.credit, code);
+  }),
+);
 
 const trialColumns = $derived.by((): OrbisColumnDef[] => [
   {
@@ -88,8 +95,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_debit`,
       prop: `${curr.code}_debit`,
-    type: "currency" as const,
-    currency: curr.code,
+      type: "currency" as const,
+      currency: curr.code,
       header: m.finance_ui_trial_debit_column({
         currency: curr.name || curr.code,
         code: curr.code,
@@ -108,8 +115,8 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_credit`,
       prop: `${curr.code}_credit`,
-    type: "currency" as const,
-    currency: curr.code,
+      type: "currency" as const,
+      currency: curr.code,
       header: m.finance_ui_trial_credit_column({
         currency: curr.name || curr.code,
         code: curr.code,
@@ -146,7 +153,10 @@ const trialSource = $derived(
       account_type: typeLabel,
     };
     for (const curr of activeCurrencies) {
-      const { debit, credit } = debitCredit(accountBalance(account, curr.code), account.account_type);
+      const { debit, credit } = debitCredit(
+        accountBalance(account, curr.code),
+        account.account_type,
+      );
       row[`${curr.code}_debit`] = debit || null;
       row[`${curr.code}_credit`] = credit || null;
     }
@@ -156,8 +166,11 @@ const trialSource = $derived(
 
 const visibleRows = $derived.by(() => {
   const rows = searchReportRows(trialSource, searchQuery);
-  if (!rows.length || searchQuery.trim() || selectedTypeFilter !== "all") return rows;
-  const total: Record<string, unknown> = { account_name: m.finance_report_balance_total() };
+  if (!rows.length || searchQuery.trim() || selectedTypeFilter !== "all")
+    return rows;
+  const total: Record<string, unknown> = {
+    account_name: m.finance_report_balance_total(),
+  };
   for (const { code } of activeCurrencies) {
     const { debit, credit } = summaries.get(code)!;
     total[`${code}_debit`] = debit;

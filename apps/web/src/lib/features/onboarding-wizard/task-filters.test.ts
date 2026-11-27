@@ -17,19 +17,25 @@ test("combines task status, category, and bilingual search", () => {
   const finance = { ...calendar, category: "finance" } as const;
   const tasks = [completedCalendar, blockedCalendar, calendar, finance];
 
-  expect(filterSetupTasks(tasks, {
-    category: "calendar",
-    status: "pending",
-    search: "  السنة ",
-  })).toEqual([calendar]);
-  expect(filterSetupTasks(tasks, {
-    category: "all",
-    status: "blocked",
-    search: "START DATE",
-  })).toEqual([blockedCalendar]);
-  expect(filterSetupTasks(tasks, {
-    category: "calendar",
-    status: "completed",
-    search: "",
-  })).toEqual([completedCalendar]);
+  expect(
+    filterSetupTasks(tasks, {
+      category: "calendar",
+      status: "pending",
+      search: "  السنة ",
+    }),
+  ).toEqual([calendar]);
+  expect(
+    filterSetupTasks(tasks, {
+      category: "all",
+      status: "blocked",
+      search: "START DATE",
+    }),
+  ).toEqual([blockedCalendar]);
+  expect(
+    filterSetupTasks(tasks, {
+      category: "calendar",
+      status: "completed",
+      search: "",
+    }),
+  ).toEqual([completedCalendar]);
 });

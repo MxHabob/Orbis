@@ -4,7 +4,10 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { isTauri } from "@tauri-apps/api/core";
 import { confirmStore } from "$lib/stores/confirm.svelte";
 import { useUnsavedGuard } from "$lib/stores/unsaved-guard.svelte";
-import { getActiveImportColumns, isImportColumnRequired } from "../engine/template-columns";
+import {
+  getActiveImportColumns,
+  isImportColumnRequired,
+} from "../engine/template-columns";
 import * as m from "$lib/paraglide/messages";
 import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { orgContext } from "$lib/stores/org-context.svelte";
@@ -70,9 +73,18 @@ const refData = $derived(refDataQuery.data ?? null);
 const referenceDataError = $derived(
   refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
 );
-const activeColumnMetadata = $derived(getActiveImportColumns(currentProfile, refData?.registrationFields));
-const requiredFields = $derived(activeColumnMetadata.filter((column) =>
-  isImportColumnRequired(selectedProfileId, column, refData?.registrationFields)));
+const activeColumnMetadata = $derived(
+  getActiveImportColumns(currentProfile, refData?.registrationFields),
+);
+const requiredFields = $derived(
+  activeColumnMetadata.filter((column) =>
+    isImportColumnRequired(
+      selectedProfileId,
+      column,
+      refData?.registrationFields,
+    ),
+  ),
+);
 const arabic = $derived(getLocale() === "ar");
 
 let fileName = $state<string | null>(null);
@@ -117,11 +129,18 @@ function confirmReplaceDraft() {
 
 // Switch profile handler (clears active staging rows without $effect)
 async function handleProfileChange(newProfileId: BulkProfileId) {
-  if (newProfileId === selectedProfileId || isBusy || !await confirmReplaceDraft()) return;
+  if (
+    newProfileId === selectedProfileId ||
+    isBusy ||
+    !(await confirmReplaceDraft())
+  )
+    return;
   handleReset();
   if (newProfileId === "grades" && orgContext.orgId) {
     await tick();
-    await goto(localizeHref("/" + orgContext.orgId + "/settings/bulk-input/grades"));
+    await goto(
+      localizeHref("/" + orgContext.orgId + "/settings/bulk-input/grades"),
+    );
     return;
   }
   selectedProfileId = newProfileId;
@@ -297,13 +316,15 @@ async function loadFile(read: () => ReturnType<typeof pickAndParseFile>) {
   if (!ready) return;
   isReading = true;
   try {
-    if (!await confirmReplaceDraft()) return;
+    if (!(await confirmReplaceDraft())) return;
     const result = await read();
     if (result) processLoadedRows(result.fileName, result.rows);
   } catch (error) {
-    toast.error(m.bulk_entry_toast_file_read_failed({
-      reason: error instanceof Error ? error.message : String(error),
-    }));
+    toast.error(
+      m.bulk_entry_toast_file_read_failed({
+        reason: error instanceof Error ? error.message : String(error),
+      }),
+    );
   } finally {
     isReading = false;
   }

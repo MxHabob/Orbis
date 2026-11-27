@@ -10,7 +10,12 @@ import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import { Logo } from "@orbis/icons";
 import { AboutDialog, SupportDialog } from "$lib/features/system";
-import type { Menu, MenuItemOptions, MenuOptions, SubmenuOptions } from "@tauri-apps/api/menu";
+import type {
+  Menu,
+  MenuItemOptions,
+  MenuOptions,
+  SubmenuOptions,
+} from "@tauri-apps/api/menu";
 import { onDestroy } from "svelte";
 
 type SubItem = MenuItemOptions | { item: "Separator" };
@@ -58,7 +63,9 @@ async function checkUpdates() {
 function openWebsite() {
   void import("@tauri-apps/plugin-opener")
     .then(({ openUrl }) => openUrl(MULVERSE_URLS.website))
-    .catch(() => window.open(MULVERSE_URLS.website, "_blank", "noopener,noreferrer"));
+    .catch(() =>
+      window.open(MULVERSE_URLS.website, "_blank", "noopener,noreferrer"),
+    );
 }
 
 function buildMenuItems(): NonNullable<MenuOptions["items"]> {
@@ -70,7 +77,8 @@ function buildMenuItems(): NonNullable<MenuOptions["items"]> {
           {
             text: m.titlebar_menu_new_tab(),
             accelerator: "CmdOrCtrl+T",
-            action: () => tabsStore.openNewTab(orgId, `/${orgId}`, m.common_nav_overview()),
+            action: () =>
+              tabsStore.openNewTab(orgId, `/${orgId}`, m.common_nav_overview()),
           },
           {
             text: m.titlebar_menu_new_window(),
@@ -87,35 +95,73 @@ function buildMenuItems(): NonNullable<MenuOptions["items"]> {
             text: m.titlebar_menu_close_tab(),
             accelerator: "CmdOrCtrl+W",
             action: () => {
-              if (tabsStore.activeTabId) tabsStore.closeTab(orgId, tabsStore.activeTabId);
+              if (tabsStore.activeTabId)
+                tabsStore.closeTab(orgId, tabsStore.activeTabId);
             },
           },
           SEP,
         ]
       : []),
-    { text: m.titlebar_menu_print(), accelerator: "CmdOrCtrl+P", action: () => window.print() },
+    {
+      text: m.titlebar_menu_print(),
+      accelerator: "CmdOrCtrl+P",
+      action: () => window.print(),
+    },
     SEP,
-    { text: m.titlebar_menu_check_updates(), action: () => void checkUpdates() },
-    ...(onCloseApp ? [SEP, { text: m.titlebar_menu_exit(), action: onCloseApp }] : []),
+    {
+      text: m.titlebar_menu_check_updates(),
+      action: () => void checkUpdates(),
+    },
+    ...(onCloseApp
+      ? [SEP, { text: m.titlebar_menu_exit(), action: onCloseApp }]
+      : []),
   ];
 
   const viewItems: SubItem[] = [
     ...(authed
       ? [
-          { text: m.common_header_search(), accelerator: "CmdOrCtrl+K", action: () => uiStore.setSearch(true) },
-          { text: m.shared_ui_ask_orbis(), accelerator: "CmdOrCtrl+/", action: () => uiStore.toggleAskOrbis() },
-          { text: m.common_titlebar_focus_mode(), action: () => uiStore.toggleFocusMode() },
+          {
+            text: m.common_header_search(),
+            accelerator: "CmdOrCtrl+K",
+            action: () => uiStore.setSearch(true),
+          },
+          {
+            text: m.shared_ui_ask_orbis(),
+            accelerator: "CmdOrCtrl+/",
+            action: () => uiStore.toggleAskOrbis(),
+          },
+          {
+            text: m.common_titlebar_focus_mode(),
+            action: () => uiStore.toggleFocusMode(),
+          },
           SEP,
         ]
       : []),
-    { text: m.common_titlebar_theme_toggle(), action: () => themeStore.toggle() },
-    { text: m.titlebar_menu_reload(), accelerator: "CmdOrCtrl+R", action: () => window.location.reload() },
+    {
+      text: m.common_titlebar_theme_toggle(),
+      action: () => themeStore.toggle(),
+    },
+    {
+      text: m.titlebar_menu_reload(),
+      accelerator: "CmdOrCtrl+R",
+      action: () => window.location.reload(),
+    },
   ];
 
   const historyItems: SubItem[] = [
-    { text: m.titlebar_menu_back(), accelerator: "Alt+Left", action: () => window.history.back() },
-    { text: m.titlebar_menu_forward(), accelerator: "Alt+Right", action: () => window.history.forward() },
-    ...(authed ? [SEP, { text: m.common_nav_overview(), action: () => go("") }] : []),
+    {
+      text: m.titlebar_menu_back(),
+      accelerator: "Alt+Left",
+      action: () => window.history.back(),
+    },
+    {
+      text: m.titlebar_menu_forward(),
+      accelerator: "Alt+Right",
+      action: () => window.history.forward(),
+    },
+    ...(authed
+      ? [SEP, { text: m.common_nav_overview(), action: () => go("") }]
+      : []),
   ];
 
   const submenus: SubmenuOptions[] = [
@@ -148,7 +194,10 @@ function buildMenuItems(): NonNullable<MenuOptions["items"]> {
     {
       text: m.titlebar_menu_help(),
       items: [
-        { text: m.ui_system_support_support_diagnostic_assistance(), action: () => (isSupportOpen = true) },
+        {
+          text: m.ui_system_support_support_diagnostic_assistance(),
+          action: () => (isSupportOpen = true),
+        },
         { text: m.mulverse_intro_visit_website(), action: openWebsite },
         SEP,
         { text: "Orbis", action: () => (isAboutOpen = true) },
@@ -158,7 +207,9 @@ function buildMenuItems(): NonNullable<MenuOptions["items"]> {
 }
 
 async function openNativeMenu(event: MouseEvent) {
-  const rect = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect();
+  const rect = (
+    event.currentTarget as HTMLElement | null
+  )?.getBoundingClientRect();
   try {
     const [{ Menu }, { LogicalPosition }] = await Promise.all([
       import("@tauri-apps/api/menu"),

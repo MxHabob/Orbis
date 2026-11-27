@@ -49,7 +49,9 @@ let { orgId, classId }: { orgId: string; classId: string } = $props();
 const periodId = $derived(academicContext.effectivePeriodId);
 const organizationQuery = createOrganizationQuery(() => orgId);
 const timezone = $derived(organizationQuery.data?.timezone);
-const today = $derived(timezone ? formatDateKey(new Date(), timezone) : undefined);
+const today = $derived(
+  timezone ? formatDateKey(new Date(), timezone) : undefined,
+);
 
 // ── Feature Queries ──────────────────────────────────────────────────────────
 const classQuery = createClassQuery(() => classId);
@@ -70,7 +72,10 @@ const classDisplayName = $derived.by(() => {
 
 const isLoading = $derived(classQuery.isLoading);
 const error = $derived(
-  classQuery.error || studentsQuery.error || organizationQuery.error || attendanceQuery.error,
+  classQuery.error ||
+    studentsQuery.error ||
+    organizationQuery.error ||
+    attendanceQuery.error,
 );
 
 // Attendance Calculations based on real attendance records

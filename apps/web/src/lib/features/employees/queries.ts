@@ -35,14 +35,12 @@ export async function listAllEmployees(
 
   const pageSize = firstPage.page_size || EMPLOYEE_SELECTOR_PAGE_SIZE;
   const remainingPages = await Promise.all(
-    Array.from(
-      { length: Math.max(0, firstPage.total_pages - 1) },
-      (_, index) =>
-        api.listEmployees({
-          ...filter,
-          page: index + 2,
-          page_size: pageSize,
-        }),
+    Array.from({ length: Math.max(0, firstPage.total_pages - 1) }, (_, index) =>
+      api.listEmployees({
+        ...filter,
+        page: index + 2,
+        page_size: pageSize,
+      }),
     ),
   );
 

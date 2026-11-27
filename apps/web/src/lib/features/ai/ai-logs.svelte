@@ -15,7 +15,10 @@ let { orgId }: { orgId: string } = $props();
 let searchQuery = $state("");
 let activeCategory = $state("all");
 
-const tasks = createAutopilotTasksQuery(() => orgId, () => ({ limit: 50 }));
+const tasks = createAutopilotTasksQuery(
+  () => orgId,
+  () => ({ limit: 50 }),
+);
 const sessions = createQuery(() => ({
   queryKey: ["ai", "stored-sessions", orgId],
   queryFn: () => api.aiLoadSessions(orgId),
@@ -71,32 +74,51 @@ const statusLabels: Record<string, () => string> = {
 
 const filteredLogs = $derived.by(() => {
   const logs: LogItem[] = [
-    ...(tasks.data ?? []).map((task): LogItem => ({
-      id: "task-" + task.id,
-      source: "autopilot",
-      title: task.task_type,
-      description: task.reason ?? "",
-      status: task.status,
-      timestamp: firstDate(task.executed_at, task.scheduled_at, task.created_at),
-      target: task.target_id ?? undefined,
-      attempts: task.attempts,
-      lastError: task.error_log,
-    })),
-    ...(sessions.data ?? []).map((session): LogItem => ({
-      id: "session-" + session.id,
-      source: "agent",
-      title: session.title || m.ai_ui_smart_processing_session(),
-      description: "",
-      timestamp: firstDate(session.updated_at, session.created_at),
-    })),
+    ...(tasks.data ?? []).map(
+      (task): LogItem => ({
+        id: "task-" + task.id,
+        source: "autopilot",
+        title: task.task_type,
+        description: task.reason ?? "",
+        status: task.status,
+        timestamp: firstDate(
+          task.executed_at,
+          task.scheduled_at,
+          task.created_at,
+        ),
+        target: task.target_id ?? undefined,
+        attempts: task.attempts,
+        lastError: task.error_log,
+      }),
+    ),
+    ...(sessions.data ?? []).map(
+      (session): LogItem => ({
+        id: "session-" + session.id,
+        source: "agent",
+        title: session.title || m.ai_ui_smart_processing_session(),
+        description: "",
+        timestamp: firstDate(session.updated_at, session.created_at),
+      }),
+    ),
   ];
   const query = searchQuery.trim().toLocaleLowerCase();
 
-  return logs.filter((log) => {
-    if (activeCategory !== "all" && log.source !== activeCategory && log.status !== activeCategory) return false;
-    return !query || [log.title, log.description, log.target]
-      .some((value) => value?.toLocaleLowerCase().includes(query));
-  }).sort((a, b) => (b.timestamp ?? -Infinity) - (a.timestamp ?? -Infinity));
+  return logs
+    .filter((log) => {
+      if (
+        activeCategory !== "all" &&
+        log.source !== activeCategory &&
+        log.status !== activeCategory
+      )
+        return false;
+      return (
+        !query ||
+        [log.title, log.description, log.target].some((value) =>
+          value?.toLocaleLowerCase().includes(query),
+        )
+      );
+    })
+    .sort((a, b) => (b.timestamp ?? -Infinity) - (a.timestamp ?? -Infinity));
 });
 </script>
 

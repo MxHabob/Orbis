@@ -1,13 +1,15 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
-    SectionRepository, SectionSubjectRepository, SubjectRepository,
+    SectionRepository, SectionSubjectRepository, SectionSummaryItem, SectionsSummary,
+    SubjectRepository,
 };
 use orbis_domain::entities::{section::Section, section_subject::SectionSubject, subject::Subject};
 use orbis_domain::errors::DomainError;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, Statement,
 };
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::models::{
@@ -18,6 +20,63 @@ use crate::models::{
 
 pub struct AcademicRepoImpl {
     pub db: DatabaseConnection,
+}
+
+impl AcademicRepoImpl {
+    async fn resolve_active_period_id(&self, org_id: Uuid) -> Result<Option<Uuid>, DomainError> {
+        let backend = self.db.get_database_backend();
+        let calendar = self
+            .db
+            .query_one(Statement::from_sql_and_values(
+                backend,
+                "SELECT id, current_period_id FROM academic_calendars WHERE org_id = $1 ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, created_at DESC LIMIT 1",
+                [org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        if let Some(cal) = calendar {
+            let current_period_id = cal
+                .try_get::<Option<Uuid>>("", "current_period_id")
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
+            if current_period_id.is_some() {
+                return Ok(current_period_id);
+            }
+            let calendar_id: Uuid = cal
+                .try_get("", "id")
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
+            let period = self
+                .db
+                .query_one(Statement::from_sql_and_values(
+                    backend,
+                    "SELECT id FROM academic_periods WHERE org_id = $1 AND calendar_id = $2 ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, sort_order ASC, created_at ASC LIMIT 1",
+                    [org_id.into(), calendar_id.into()],
+                ))
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
+            if let Some(row) = period {
+                return row
+                    .try_get("", "id")
+                    .map(Some)
+                    .map_err(|e| DomainError::Internal(e.to_string()));
+            }
+        }
+
+        let fallback = self
+            .db
+            .query_one(Statement::from_sql_and_values(
+                backend,
+                "SELECT id FROM academic_periods WHERE org_id = $1 ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, sort_order ASC, created_at ASC LIMIT 1",
+                [org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        fallback
+            .map(|row| row.try_get("", "id"))
+            .transpose()
+            .map_err(|e| DomainError::Internal(e.to_string()))
+    }
 }
 
 #[async_trait]
@@ -222,6 +281,139 @@ impl SectionRepository for AcademicRepoImpl {
             page,
             page_size,
         ))
+    }
+
+    async fn get_summary(
+        &self,
+        org_id: Uuid,
+        period_id: Option<Uuid>,
+    ) -> Result<SectionsSummary, DomainError> {
+        let resolved_period_id = match period_id {
+            Some(pid) => Some(pid),
+            None => self.resolve_active_period_id(org_id).await?,
+        };
+
+        let models = SectionEntity::find()
+            .filter(section::Column::OrgId.eq(org_id))
+            .filter(section::Column::IsDeleted.eq(false))
+            .order_by_asc(section::Column::Level)
+            .order_by_asc(section::Column::Track)
+            .order_by_asc(section::Column::Code)
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        if models.is_empty() {
+            return Ok(SectionsSummary {
+                period_id: resolved_period_id,
+                total_enrolled_students: 0,
+                items: Vec::new(),
+            });
+        }
+
+        let mut student_counts: HashMap<Uuid, u64> = HashMap::new();
+        let mut subject_counts: HashMap<Uuid, u64> = HashMap::new();
+        let mut total_enrolled_students: u64 = 0;
+
+        if let Some(pid) = resolved_period_id {
+            let backend = self.db.get_database_backend();
+            let student_counts_stmt = Statement::from_sql_and_values(
+                backend,
+                r#"
+                SELECT e.section_id, COUNT(DISTINCT e.student_id) AS cnt
+                FROM enrollments e
+                JOIN students s ON s.id = e.student_id
+                WHERE e.org_id = $1
+                  AND e.period_id = $2
+                  AND e.section_id IS NOT NULL
+                  AND e.status IN ('active', 'pending_approval')
+                  AND s.status = 'active'
+                  AND s.is_deleted = FALSE
+                GROUP BY e.section_id
+                "#,
+                [org_id.into(), pid.into()],
+            );
+            let subject_counts_stmt = Statement::from_sql_and_values(
+                backend,
+                r#"
+                SELECT section_id, COUNT(*) AS cnt
+                FROM section_subjects
+                WHERE org_id = $1
+                  AND period_id = $2
+                  AND is_active = TRUE
+                GROUP BY section_id
+                "#,
+                [org_id.into(), pid.into()],
+            );
+            let total_students_stmt = Statement::from_sql_and_values(
+                backend,
+                r#"
+                SELECT COUNT(DISTINCT e.student_id) AS cnt
+                FROM enrollments e
+                JOIN students s ON s.id = e.student_id
+                WHERE e.org_id = $1
+                  AND e.period_id = $2
+                  AND e.status IN ('active', 'pending_approval')
+                  AND s.status = 'active'
+                  AND s.is_deleted = FALSE
+                "#,
+                [org_id.into(), pid.into()],
+            );
+
+            let (student_rows, subject_rows, total_row) = tokio::try_join!(
+                self.db.query_all(student_counts_stmt),
+                self.db.query_all(subject_counts_stmt),
+                self.db.query_one(total_students_stmt),
+            )
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+            for row in student_rows {
+                let section_id: Uuid = row
+                    .try_get("", "section_id")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+                let cnt: i64 = row
+                    .try_get("", "cnt")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+                student_counts.insert(section_id, u64::try_from(cnt).unwrap_or(0));
+            }
+
+            for row in subject_rows {
+                let section_id: Uuid = row
+                    .try_get("", "section_id")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+                let cnt: i64 = row
+                    .try_get("", "cnt")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+                subject_counts.insert(section_id, u64::try_from(cnt).unwrap_or(0));
+            }
+
+            if let Some(row) = total_row {
+                let cnt: i64 = row
+                    .try_get("", "cnt")
+                    .map_err(|e| DomainError::Internal(e.to_string()))?;
+                total_enrolled_students = u64::try_from(cnt).unwrap_or(0);
+            }
+        }
+
+        let items = models
+            .into_iter()
+            .map(|model| {
+                let section = map_section_model_to_domain(model);
+                let active_students = student_counts.get(&section.id).copied().unwrap_or(0);
+                let subject_count = subject_counts.get(&section.id).copied().unwrap_or(0);
+                SectionSummaryItem {
+                    section,
+                    active_students,
+                    subject_count,
+                }
+            })
+            .collect();
+
+        Ok(SectionsSummary {
+            period_id: resolved_period_id,
+            total_enrolled_students,
+            items,
+        })
     }
 
     async fn save(&self, section: &Section) -> Result<(), DomainError> {

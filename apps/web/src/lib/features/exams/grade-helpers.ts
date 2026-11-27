@@ -191,9 +191,13 @@ export function buildGradeColumns(
       const max = sample?.max_score || (type === "final" ? 30 : 20);
       const displayName =
         type === "monthly"
-          ? m.exams_grade_work_label({ max }).replace(/\s*\([^)]*\)\s*$/, "") || m.exams_grade_work_label({ max })
+          ? m.exams_grade_work_label({ max }).replace(/\s*\([^)]*\)\s*$/, "") ||
+            m.exams_grade_work_label({ max })
           : type === "final"
-            ? m.exams_grade_exam_label({ max }).replace(/\s*\([^)]*\)\s*$/, "") || m.exams_grade_exam_label({ max })
+            ? m
+                .exams_grade_exam_label({ max })
+                .replace(/\s*\([^)]*\)\s*$/, "") ||
+              m.exams_grade_exam_label({ max })
             : String(type);
 
       cols.push({

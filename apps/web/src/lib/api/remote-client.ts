@@ -53,6 +53,7 @@ import type {
   CreateSubjectRequest,
   UpdateSubjectRequest,
   SectionDto,
+  SectionsSummaryDto,
   CreateSectionRequest,
   UpdateSectionRequest,
   AssignSectionSubjectRequest,
@@ -267,7 +268,10 @@ import type {
   ActivateKeyRequest,
 } from "./types";
 
-import { parsePeriodOverrideTargets, periodOverrideTargets } from "./period-override";
+import {
+  parsePeriodOverrideTargets,
+  periodOverrideTargets,
+} from "./period-override";
 
 export class ApiRequestError extends Error {
   constructor(
@@ -472,6 +476,14 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
+  async deleteUser(id: string): Promise<void> {
+    return this.call(
+      this.client.delete<{ 200: void }>({
+        url: `/api/v1/iam/users/${id}`,
+      }),
+    );
+  }
+
   async resetUserPassword(
     userId: string,
   ): Promise<AccountProvisioningResultDto> {
@@ -525,7 +537,11 @@ export class RemoteClient implements OrbisApiClient {
 
   async getDashboard(orgUnitId?: string): Promise<DashboardCountsDto> {
     const path = "/api/v1/organizations/current/dashboard";
-    return this.fetchApi(orgUnitId ? `${path}?${new URLSearchParams({ org_unit_id: orgUnitId })}` : path);
+    return this.fetchApi(
+      orgUnitId
+        ? `${path}?${new URLSearchParams({ org_unit_id: orgUnitId })}`
+        : path,
+    );
   }
 
   async getDashboardAccess(): Promise<DashboardAccessDto> {
@@ -669,19 +685,27 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async openGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/grade-entry/open`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/grade-entry/open`,
+    );
   }
 
   async closeGradeEntryWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/grade-entry/close`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/grade-entry/close`,
+    );
   }
 
   async openEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/enrollment/open`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/enrollment/open`,
+    );
   }
 
   async closeEnrollmentWindow(id: string): Promise<AcademicPeriodDto> {
-    return this.postPeriodAction(`/api/v1/academic-periods/${id}/enrollment/close`);
+    return this.postPeriodAction(
+      `/api/v1/academic-periods/${id}/enrollment/close`,
+    );
   }
 
   async transitionAcademicPeriodState(
@@ -750,6 +774,24 @@ export class RemoteClient implements OrbisApiClient {
   async listSections(orgId?: string): Promise<SectionDto[]> {
     const res = await this.call(sdk.listSections({ client: this.client }));
     return res ?? [];
+  }
+
+  async getSectionsSummary(periodId?: string): Promise<SectionsSummaryDto> {
+    const res = await this.call(
+      sdk.getSectionsSummary({
+        client: this.client,
+        query: periodId ? { period_id: periodId } : undefined,
+      }),
+    );
+    return (
+      res ?? {
+        period_id: periodId ?? null,
+        total_sections: 0,
+        total_enrolled_students: 0,
+        average_section_size: 0,
+        items: [],
+      }
+    );
   }
 
   async getSection(id: string): Promise<SectionDto> {
@@ -1902,9 +1944,7 @@ export class RemoteClient implements OrbisApiClient {
   async submitOverride(
     req: SubmitOverrideRequestInput,
   ): Promise<OverrideRequestDto> {
-    return this.call(
-      sdk.submitOverride({ client: this.client, body: req }),
-    );
+    return this.call(sdk.submitOverride({ client: this.client, body: req }));
   }
 
   async approveOverride(
@@ -1932,9 +1972,7 @@ export class RemoteClient implements OrbisApiClient {
   async listOverrides(
     params: OverrideRequestListParams = {},
   ): Promise<PaginatedList<OverrideRequestDto>> {
-    return this.call(
-      sdk.listOverrides({ client: this.client, query: params }),
-    );
+    return this.call(sdk.listOverrides({ client: this.client, query: params }));
   }
 
   async getOverride(id: string): Promise<OverrideRequestDto> {
@@ -2620,6 +2658,21 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
+  async syncDefaultTemplates() {
+    return this.call(
+      this.client.post<{
+        200: {
+          templates_inserted: number;
+          templates_updated: number;
+          templates_skipped_customized: number;
+          reports_synced: number;
+        };
+      }>({
+        url: "/api/v1/templates/sync-defaults",
+      }),
+    );
+  }
+
   // ── Template Bindings ───────────────────────────────────────
   async listTemplateBindings(
     definitionId: string,
@@ -3022,7 +3075,9 @@ export class RemoteClient implements OrbisApiClient {
         version: typeof body.version === "string" ? body.version : undefined,
         api_version:
           typeof body.api_version === "string" ? body.api_version : undefined,
-        error: ready ? undefined : "This endpoint did not return a ready Orbis API response",
+        error: ready
+          ? undefined
+          : "This endpoint did not return a ready Orbis API response",
       };
     } catch (error) {
       return {

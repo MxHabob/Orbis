@@ -173,9 +173,9 @@ async function handleSubmit(e: SubmitEvent) {
       values.relationship === "father"
         ? m.common_guardians_relationship_father({}, { locale: "ar" })
         : values.relationship === "mother"
-            ? m.common_guardians_relationship_mother({}, { locale: "ar" })
+          ? m.common_guardians_relationship_mother({}, { locale: "ar" })
           : values.relationship === "uncle"
-              ? m.students_family_uncle({}, { locale: "ar" })
+            ? m.students_family_uncle({}, { locale: "ar" })
             : "آخر/قريب";
 
     const request: AssignGuardianRequest = {

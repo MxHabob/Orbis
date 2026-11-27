@@ -135,7 +135,9 @@ let symbol = $state(initialCurrency?.symbol ?? "");
 let symbolPosition = $state(initialCurrency?.symbol_position ?? "after");
 let decimalPlaces = $state(initialCurrency?.decimal_places ?? 2);
 let exchangeRate = $state(Number(initialCurrency?.exchange_rate ?? 1));
-let isBase = $state(initialCurrency?.is_base === true || initialCurrency?.is_base === 1);
+let isBase = $state(
+  initialCurrency?.is_base === true || initialCurrency?.is_base === 1,
+);
 const form = new FormController({
   initialValues: {
     code: "",

@@ -39,7 +39,11 @@ import {
 } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, isAr, l } from "$lib/core/i18n";
-import { OrbisGrid, type GridActionEvent, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type GridActionEvent,
+  type OrbisColumnDef,
+} from "@orbis/svelte-grid";
 import { financeRecordColumn } from "./record-presentation";
 import AccountTree, {
   type AccountNode,
@@ -105,18 +109,39 @@ const accountSubtypes = [
   { id: "general", label: m.finance_ui_account_type_general },
   { id: "cash", category: "asset", label: m.finance_ui_cash_treasury },
   { id: "bank", category: "asset", label: m.finance_ui_account_type_bank },
-  { id: "gateway_clearing", category: "asset", label: m.finance_ui_account_type_gateway_clearing },
-  { id: "customer", category: "asset", label: m.finance_ui_account_type_customer_student },
-  { id: "supplier", category: "liability", label: m.finance_ui_account_type_supplier },
+  {
+    id: "gateway_clearing",
+    category: "asset",
+    label: m.finance_ui_account_type_gateway_clearing,
+  },
+  {
+    id: "customer",
+    category: "asset",
+    label: m.finance_ui_account_type_customer_student,
+  },
+  {
+    id: "supplier",
+    category: "liability",
+    label: m.finance_ui_account_type_supplier,
+  },
   { id: "employee", label: m.finance_ui_account_type_employee },
   { id: "owner", category: "equity", label: m.finance_ui_account_type_owner },
-  { id: "gateway_fee", category: "expense", label: m.finance_ui_account_type_gateway_fee },
+  {
+    id: "gateway_fee",
+    category: "expense",
+    label: m.finance_ui_account_type_gateway_fee,
+  },
 ];
-const availableSubtypes = $derived(accountSubtypes.filter((item) => !item.category || item.category === formAccountType));
+const availableSubtypes = $derived(
+  accountSubtypes.filter(
+    (item) => !item.category || item.category === formAccountType,
+  ),
+);
 
 function setAccountType(value: string) {
   formAccountType = value;
-  if (!availableSubtypes.some((item) => item.id === formSubType)) formSubType = "general";
+  if (!availableSubtypes.some((item) => item.id === formSubType))
+    formSubType = "general";
 }
 let formCurrency = $state(orgContext.baseCurrency || "");
 
@@ -228,7 +253,6 @@ function handleSelectAccount(account: AccountNode) {
   formAccountType = account.account_type.toLowerCase();
   formSubType = account.sub_type || "general";
   formCurrency = account.currency || baseCurrency;
-
 }
 
 function startAddSubAccount(
@@ -360,7 +384,9 @@ const leafAccounts = $derived(
 const treasurySource = $derived(
   leafAccounts.map((account, i) => {
     const bal = Number(
-      (account.balances as Record<string, number | string> | null)?.[account.currency || baseCurrency] || 0,
+      (account.balances as Record<string, number | string> | null)?.[
+        account.currency || baseCurrency
+      ] || 0,
     );
     return {
       ...account,
@@ -379,7 +405,11 @@ const treasurySource = $derived(
 const detailsColumn = $derived(financeRecordColumn());
 
 function handleAccountRow(event: GridActionEvent) {
-  if (isSubmitting || (event.actionId !== "dblclick" && event.actionId !== "view")) return;
+  if (
+    isSubmitting ||
+    (event.actionId !== "dblclick" && event.actionId !== "view")
+  )
+    return;
   const account = allAccounts.find((item) => item.id === event.row.id);
   if (!account) return;
   handleSelectAccount(account);

@@ -61,7 +61,9 @@ const planTheme = $derived.by(() => {
   };
 });
 
-function handlePointerMove(event: PointerEvent & { currentTarget: HTMLDivElement }) {
+function handlePointerMove(
+  event: PointerEvent & { currentTarget: HTMLDivElement },
+) {
   const rect = event.currentTarget.getBoundingClientRect();
   pointerX = event.clientX - rect.left;
   pointerY = event.clientY - rect.top;

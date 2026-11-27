@@ -48,6 +48,7 @@ import {
   createPeriodsQuery,
   createClassesQuery,
 } from "$lib/features/academics/queries";
+import { createStudentsQuery } from "$lib/features/students/queries";
 
 let { orgId, reportId }: { orgId: string; reportId?: string } = $props();
 
@@ -59,6 +60,10 @@ let searchQuery = $state<string>("");
 const defsQuery = createReportDefinitionsQuery(() => orgId);
 const periodsQuery = createPeriodsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
+const studentsQuery = createStudentsQuery(
+  () => orgId,
+  () => ({ page_size: 200 }),
+);
 const generateMutation = createGenerateReportMutation();
 
 const reportDefinitions = $derived(
@@ -68,6 +73,7 @@ const reportDefinitions = $derived(
 );
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
+const students = $derived(studentsQuery.data?.items ?? []);
 const isLoading = $derived(
   defsQuery.isLoading || periodsQuery.isLoading || classesQuery.isLoading,
 );
@@ -77,6 +83,7 @@ let isSheetOpen = $state(false);
 let selectedFormat = $state<"PDF" | "HTML">("PDF");
 let selectedPeriodId = $state<string>("");
 let selectedClassId = $state<string>("");
+let selectedStudentId = $state<string>("");
 let dateFrom = $state<string>("");
 let dateTo = $state<string>("");
 let isGenerating = $state(false);
@@ -150,6 +157,7 @@ async function handleExecuteReport() {
     const params: Record<string, unknown> = {
       period_id: selectedPeriodId || undefined,
       class_id: selectedClassId || undefined,
+      student_id: selectedStudentId || undefined,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
       org_id: orgId,
@@ -362,9 +370,11 @@ function handleDownloadCurrent() {
     {selectedDefinition}
     {periods}
     {classes}
+    {students}
     bind:selectedFormat
     bind:selectedPeriodId
     bind:selectedClassId
+    bind:selectedStudentId
     bind:dateFrom
     bind:dateTo
     {isGenerating}

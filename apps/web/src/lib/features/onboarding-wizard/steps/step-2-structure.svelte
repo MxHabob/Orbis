@@ -56,7 +56,6 @@ const ROOM_TYPES = [
   { value: "other", label: m.onboarding_room_type_other() },
 ];
 
-
 function applyBranchPreset() {
   unitCode = `BR-${String(orgUnits.length + 1).padStart(2, "0")}`;
   unitType = "branch";
@@ -139,7 +138,7 @@ async function handleCreateRoom() {
       name_ar: roomNameAr.trim() || undefined,
       room_type: roomType,
       is_exam_hall: isExamHall,
-      capacity: Math.max(0, roomCapacity)
+      capacity: Math.max(0, roomCapacity),
     });
 
     rooms = [...rooms, newRoom];

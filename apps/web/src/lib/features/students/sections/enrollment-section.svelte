@@ -3,7 +3,12 @@ import * as m from "$lib/paraglide/messages";
 import { BookOpen } from "@orbis/icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Label } from "@orbis/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { ClassSelect } from "$lib/features/academics";
 import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 import type { StudentFormState } from "../form-state.svelte";

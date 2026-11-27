@@ -77,9 +77,16 @@ export function createPaymentsQuery(
     const key = queryKeys.finance.payments(orgId(), params);
     return {
       queryKey: limit === undefined ? key : [...key, "recent", limit],
-      queryFn: async () => limit === undefined
-        ? api.listPayments(params)
-        : (await api.listPaymentsPaginated({ ...params, page: 1, page_size: limit })).items,
+      queryFn: async () =>
+        limit === undefined
+          ? api.listPayments(params)
+          : (
+              await api.listPaymentsPaginated({
+                ...params,
+                page: 1,
+                page_size: limit,
+              })
+            ).items,
       enabled: Boolean(orgId()) && enabled(),
       staleTime: 2 * 60 * 1000,
     };
@@ -230,12 +237,23 @@ export function createGenerateFeeMutation() {
 }
 
 /** Process payment mutation */
-export async function refreshPaymentData(client: ReturnType<typeof useQueryClient>, orgId: string) {
+export async function refreshPaymentData(
+  client: ReturnType<typeof useQueryClient>,
+  orgId: string,
+) {
   await Promise.all([
-    client.invalidateQueries({ queryKey: queryKeys.finance.paymentsForOrg(orgId) }),
-    client.invalidateQueries({ queryKey: queryKeys.finance.studentFeesForOrg(orgId) }),
-    client.invalidateQueries({ queryKey: queryKeys.finance.studentFeeSummary(orgId) }),
-    client.invalidateQueries({ queryKey: queryKeys.finance.journalEntries(orgId) }),
+    client.invalidateQueries({
+      queryKey: queryKeys.finance.paymentsForOrg(orgId),
+    }),
+    client.invalidateQueries({
+      queryKey: queryKeys.finance.studentFeesForOrg(orgId),
+    }),
+    client.invalidateQueries({
+      queryKey: queryKeys.finance.studentFeeSummary(orgId),
+    }),
+    client.invalidateQueries({
+      queryKey: queryKeys.finance.journalEntries(orgId),
+    }),
     client.invalidateQueries({ queryKey: queryKeys.finance.accounts(orgId) }),
   ]);
 }
@@ -244,7 +262,9 @@ export function createProcessPaymentMutation(orgId: () => string) {
   const queryClient = useQueryClient();
   return createMutation(() => ({
     mutationFn: (req: ProcessPaymentRequest) => api.processPayment(req),
-    onSuccess: () => { void refreshPaymentData(queryClient, orgId()); },
+    onSuccess: () => {
+      void refreshPaymentData(queryClient, orgId());
+    },
   }));
 }
 
@@ -270,9 +290,24 @@ export interface AvailablePaymentMethod {
 
 export function manualPaymentMethods(): AvailablePaymentMethod[] {
   return [
-    { id: "cash", name: m.finance_ui_payment_method_cash(), is_digital_gateway: false, requires_source_token: false },
-    { id: "bank_transfer", name: m.finance_ui_payment_method_bank_transfer(), is_digital_gateway: false, requires_source_token: false },
-    { id: "check", name: m.finance_ui_payment_method_bank_check(), is_digital_gateway: false, requires_source_token: false },
+    {
+      id: "cash",
+      name: m.finance_ui_payment_method_cash(),
+      is_digital_gateway: false,
+      requires_source_token: false,
+    },
+    {
+      id: "bank_transfer",
+      name: m.finance_ui_payment_method_bank_transfer(),
+      is_digital_gateway: false,
+      requires_source_token: false,
+    },
+    {
+      id: "check",
+      name: m.finance_ui_payment_method_bank_check(),
+      is_digital_gateway: false,
+      requires_source_token: false,
+    },
   ];
 }
 
@@ -284,25 +319,41 @@ export function createAvailablePaymentMethodsQuery(orgId: () => string) {
     staleTime: 5 * 60 * 1000,
     select: (integrations): AvailablePaymentMethod[] => {
       const manual = manualPaymentMethods();
-      const gateway = integrations.find((item) =>
-        item.category === "payment-gateway" && item.is_enabled && item.provider_name === "moyasar",
+      const gateway = integrations.find(
+        (item) =>
+          item.category === "payment-gateway" &&
+          item.is_enabled &&
+          item.provider_name === "moyasar",
       );
       if (!gateway) return manual;
 
-      const settings = gateway.settings as { supported_methods?: unknown } | null;
+      const settings = gateway.settings as {
+        supported_methods?: unknown;
+      } | null;
       const allowed = settings?.supported_methods ?? "all";
-      const methods: AvailablePaymentMethod[] = [...manual, {
-        id: "mada", name: m.finance_ui_payment_method_mada_moyasar(),
-        is_digital_gateway: true, requires_source_token: true,
-      }];
-      if (allowed === "all") methods.push({
-        id: "credit_card", name: m.finance_ui_payment_method_credit_card_moyasar(),
-        is_digital_gateway: true, requires_source_token: true,
-      });
-      if (allowed === "all" || allowed === "mada_apple_pay") methods.push({
-        id: "apple_pay", name: m.finance_ui_payment_moyasar_apple_pay(),
-        is_digital_gateway: true, requires_source_token: true,
-      });
+      const methods: AvailablePaymentMethod[] = [
+        ...manual,
+        {
+          id: "mada",
+          name: m.finance_ui_payment_method_mada_moyasar(),
+          is_digital_gateway: true,
+          requires_source_token: true,
+        },
+      ];
+      if (allowed === "all")
+        methods.push({
+          id: "credit_card",
+          name: m.finance_ui_payment_method_credit_card_moyasar(),
+          is_digital_gateway: true,
+          requires_source_token: true,
+        });
+      if (allowed === "all" || allowed === "mada_apple_pay")
+        methods.push({
+          id: "apple_pay",
+          name: m.finance_ui_payment_moyasar_apple_pay(),
+          is_digital_gateway: true,
+          requires_source_token: true,
+        });
       return methods;
     },
   }));

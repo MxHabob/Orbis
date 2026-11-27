@@ -587,13 +587,12 @@ async function saveStudentDetails(e?: Event) {
       } else if (!activeEnrollment) {
         const periodId = academicContext.effectivePeriodId;
         if (periodId) {
-          await api
-            .enrollStudent({
-              period_id: periodId,
-              student_id: targetStudentId,
-              section_id: classId,
-              student_number: studentNumber || targetStudentId.slice(0, 8),
-            });
+          await api.enrollStudent({
+            period_id: periodId,
+            student_id: targetStudentId,
+            section_id: classId,
+            student_number: studentNumber || targetStudentId.slice(0, 8),
+          });
         }
       }
     }

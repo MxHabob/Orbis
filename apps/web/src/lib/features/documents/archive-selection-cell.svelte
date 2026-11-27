@@ -3,7 +3,9 @@ import * as m from "$lib/paraglide/messages";
 import { Checkbox } from "@orbis/ui/checkbox";
 
 let { row }: Record<string, unknown> = $props();
-const record = $derived(row && typeof row === "object" ? row as Record<string, unknown> : {});
+const record = $derived(
+  row && typeof row === "object" ? (row as Record<string, unknown>) : {},
+);
 
 const id = $derived(String(record.id ?? ""));
 const name = $derived(String(record.name ?? ""));

@@ -22,6 +22,7 @@ import AppSidebar from "./app-sidebar.svelte";
 import StatusBar from "./status-bar.svelte";
 import { licenseStore, uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
+import { slide } from "svelte/transition";
 import { page } from "$app/state";
 import { useQueryClient } from "@tanstack/svelte-query";
 import LicenseFeatureGate from "./license-feature-gate.svelte";
@@ -126,7 +127,7 @@ function handleKeyDown(e: KeyboardEvent) {
 >
 <div class="flex h-full min-w-0 max-w-full bg-background">
 	{#if !standalone && !uiStore.focusMode}
-		<div class="overflow-hidden h-full flex shrink-0">
+		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}

@@ -2,7 +2,7 @@
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -113,6 +113,27 @@ pub struct SectionDto {
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct SectionSummaryItemDto {
+    pub section: SectionDto,
+    pub active_students: i64,
+    pub subject_count: i64,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct SectionsSummaryDto {
+    pub period_id: Option<Uuid>,
+    pub total_sections: i64,
+    pub total_enrolled_students: i64,
+    pub average_section_size: i64,
+    pub items: Vec<SectionSummaryItemDto>,
+}
+
+#[derive(Deserialize, utoipa::IntoParams)]
+pub struct SectionsSummaryQuery {
+    pub period_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -467,6 +488,49 @@ async fn list_sections(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[utoipa::path(get, path = "/api/v1/sections/summary",
+    params(SectionsSummaryQuery),
+    responses((status = 200, body = SectionsSummaryDto)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn get_sections_summary(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Query(q): Query<SectionsSummaryQuery>,
+) -> Result<Json<ApiResponse<SectionsSummaryDto>>, ApiError> {
+    let summary = state
+        .academic_service
+        .get_sections_summary(ctx.tenant_id, q.period_id)
+        .await?;
+    let total_sections = summary.items.len() as i64;
+    let total_enrolled_students = summary.total_enrolled_students as i64;
+    let average_section_size = if total_sections > 0 {
+        (total_enrolled_students as f64 / total_sections as f64).round() as i64
+    } else {
+        0
+    };
+    let items = summary
+        .items
+        .into_iter()
+        .map(|item| {
+            let mut dto = section_to_dto(item.section);
+            dto.period_id = summary.period_id;
+            dto.current_students = Some(item.active_students as i32);
+            SectionSummaryItemDto {
+                section: dto,
+                active_students: item.active_students as i64,
+                subject_count: item.subject_count as i64,
+            }
+        })
+        .collect();
+    Ok(ApiResponse::ok(SectionsSummaryDto {
+        period_id: summary.period_id,
+        total_sections,
+        total_enrolled_students,
+        average_section_size,
+        items,
+    }))
+}
+
 #[utoipa::path(get, path = "/api/v1/sections/{id}",
     params(("id" = Uuid, Path, description = "Section ID")),
     responses((status = 200, body = SectionDto)),
@@ -617,6 +681,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/subjects", post(create_subject).get(list_subjects))
         .route("/api/v1/subjects/:id", get(get_subject).put(update_subject))
         .route("/api/v1/sections", post(create_section).get(list_sections))
+        .route("/api/v1/sections/summary", get(get_sections_summary))
         .route(
             "/api/v1/sections/:id",
             get(get_section).put(update_section).delete(delete_section),

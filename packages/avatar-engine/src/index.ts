@@ -21,5 +21,8 @@ export {
 export {
   ALL_AVATAR_HATS,
   type AvatarHat,
+  type InteractiveAvatarHat,
+  pickNextAvatarHat,
+  type ResolvedAvatarHat,
   resolveAvatarHat,
 } from "./core/types.js";

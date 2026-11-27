@@ -183,6 +183,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         iam_cmds::iam_list_users,
         iam_cmds::iam_get_user,
         iam_cmds::iam_update_user,
+        iam_cmds::iam_delete_user,
         iam_cmds::iam_reset_user_password,
         iam_cmds::iam_list_roles,
         iam_cmds::iam_save_role,
@@ -236,6 +237,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         academic_cmds::academic_create_section,
         academic_cmds::academic_update_section,
         academic_cmds::academic_list_sections,
+        academic_cmds::academic_get_sections_summary,
         academic_cmds::academic_get_section,
         academic_cmds::academic_delete_section,
         academic_cmds::academic_assign_section_subject,
@@ -487,6 +489,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         template_cmds::template_create_binding,
         template_cmds::template_preview,
         template_cmds::template_validate,
+        template_cmds::template_sync_defaults,
         // ── Report Definitions (read-only) ──────────────────────
         template_cmds::report_list_definitions,
         template_cmds::report_get_definition,
