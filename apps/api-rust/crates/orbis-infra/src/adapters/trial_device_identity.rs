@@ -417,6 +417,7 @@ fn is_keyring_unavailable(error: &KeyringError) -> bool {
 
 #[cfg(target_os = "linux")]
 fn write_restricted_secret_file(path: &Path, contents: &str) -> Result<(), String> {
+    use std::io::Write;
     use std::os::unix::fs::OpenOptionsExt;
 
     if let Some(parent) = path
