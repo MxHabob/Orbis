@@ -159,7 +159,7 @@ async function initEditor() {
 
 async function saveTemplate(newName?: string) {
   if (!templateRecord || isSaving) return;
-  const name = newName?.trim();
+  const name = typeof newName === "string" ? newName.trim() : undefined;
   const arabic = getLocale() === "ar";
   const record = templateRecord;
   const renamed = !!name && name !== l(record.name_ar, record.name);
@@ -378,7 +378,7 @@ onMount(() => {
           ontoggleproperties={toggleProperties}
           templateName={templateRecord ? (l(templateRecord.name_ar, templateRecord.name) ?? undefined) : "..."}
           onback={goBack}
-          onsave={saveTemplate}
+          onsave={() => void saveTemplate()}
           onpreview={generatePreview}
           onrename={(name) => {
             const value = name.trim();
