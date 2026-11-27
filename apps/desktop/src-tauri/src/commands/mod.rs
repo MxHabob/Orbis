@@ -488,6 +488,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         template_cmds::template_create_binding,
         template_cmds::template_preview,
         template_cmds::template_validate,
+        template_cmds::template_sync_defaults,
         // ── Report Definitions (read-only) ──────────────────────
         template_cmds::report_list_definitions,
         template_cmds::report_get_definition,

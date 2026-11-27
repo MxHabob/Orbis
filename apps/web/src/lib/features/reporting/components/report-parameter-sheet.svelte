@@ -21,6 +21,7 @@ import type {
   AcademicPeriodDto,
   ClassDto,
   ReportDefinitionDto,
+  StudentDetailDto,
 } from "$lib/api";
 
 interface Props {
@@ -28,9 +29,11 @@ interface Props {
   selectedDefinition: ReportDefinitionDto | null;
   periods: AcademicPeriodDto[];
   classes: ClassDto[];
+  students?: StudentDetailDto[];
   selectedFormat: "PDF" | "HTML";
   selectedPeriodId: string;
   selectedClassId: string;
+  selectedStudentId?: string;
   dateFrom: string;
   dateTo: string;
   isGenerating: boolean;
@@ -43,15 +46,28 @@ let {
   selectedDefinition,
   periods,
   classes,
+  students = [],
   selectedFormat = $bindable<"PDF" | "HTML">("PDF"),
   selectedPeriodId = $bindable(""),
   selectedClassId = $bindable(""),
+  selectedStudentId = $bindable(""),
   dateFrom = $bindable(""),
   dateTo = $bindable(""),
   isGenerating,
   jobStatus,
   onExecute,
 }: Props = $props();
+
+const domain = $derived((selectedDefinition?.domain ?? "").toLowerCase());
+const needsAcademicFilters = $derived(
+  ["academic", "student", "students", "exam", "exams", "attendance", "behavior"].includes(domain),
+);
+const supportsStudentFilter = $derived(
+  ["academic", "student", "students", "attendance", "behavior", "finance"].includes(domain),
+);
+const needsDateRange = $derived(
+  ["attendance", "behavior", "finance", "administration", "system"].includes(domain),
+);
 </script>
 
 <Sheet bind:open>
@@ -69,57 +85,89 @@ let {
 
       <div class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide">
         <div class="space-y-5">
-          <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">{m.operations_ui_academic_term()}</Label>
-            <Select type="single" value={selectedPeriodId} onValueChange={(v) => (selectedPeriodId = v)}>
-              <SelectTrigger class="h-9 text-xs">
-                <span>
-                  {periods.find((p) => p.id === selectedPeriodId)
-                    ? l(periods.find((p) => p.id === selectedPeriodId)?.name_ar, periods.find((p) => p.id === selectedPeriodId)?.name)
-                    : m.operations_ui_select_academic_term()}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                {#each periods as p (p.id)}
-                  <SelectItem value={p.id}>
-                    {l(p.name_ar, p.name) || p.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">{m.operations_ui_filter_by_class_optional()}</Label>
-            <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
-              <SelectTrigger class="h-9 text-xs">
-                <span>
-                  {classes.find((c) => String(c.id) === selectedClassId)
-                    ? l(classes.find((c) => String(c.id) === selectedClassId)?.name_ar, classes.find((c) => String(c.id) === selectedClassId)?.name)
-                    : m.operations_ui_all_classes_sections()}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{m.operations_ui_all_classes_sections()}</SelectItem>
-                {#each classes as c (c.id)}
-                  <SelectItem value={String(c.id)}>
-                    {l(c.name_ar, c.name) || c.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
+          {#if needsAcademicFilters}
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold">{m.operations_ui_date_from()}</Label>
-              <Input type="date" bind:value={dateFrom} class="h-9 text-xs" />
+              <Label class="text-xs font-semibold">{m.operations_ui_academic_term()}</Label>
+              <Select type="single" value={selectedPeriodId} onValueChange={(v) => (selectedPeriodId = v)}>
+                <SelectTrigger class="h-9 text-xs">
+                  <span>
+                    {periods.find((p) => p.id === selectedPeriodId)
+                      ? l(periods.find((p) => p.id === selectedPeriodId)?.name_ar, periods.find((p) => p.id === selectedPeriodId)?.name)
+                      : m.operations_ui_select_academic_term()}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {#each periods as p (p.id)}
+                    <SelectItem value={p.id}>
+                      {l(p.name_ar, p.name) || p.name}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             </div>
+
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold">{m.operations_ui_date_to()}</Label>
-              <Input type="date" bind:value={dateTo} class="h-9 text-xs" />
+              <Label class="text-xs font-semibold">{m.operations_ui_filter_by_class_optional()}</Label>
+              <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
+                <SelectTrigger class="h-9 text-xs">
+                  <span>
+                    {classes.find((c) => String(c.id) === selectedClassId)
+                      ? l(classes.find((c) => String(c.id) === selectedClassId)?.name_ar, classes.find((c) => String(c.id) === selectedClassId)?.name)
+                      : m.operations_ui_all_classes_sections()}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{m.operations_ui_all_classes_sections()}</SelectItem>
+                  {#each classes as c (c.id)}
+                    <SelectItem value={String(c.id)}>
+                      {l(c.name_ar, c.name) || c.name}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
+          {/if}
+
+          {#if supportsStudentFilter && students.length > 0}
+            <div class="space-y-1.5">
+              <Label class="text-xs font-semibold">{m.operations_ui_filter_by_student_optional()}</Label>
+              <Select type="single" value={selectedStudentId} onValueChange={(v) => (selectedStudentId = v)}>
+                <SelectTrigger class="h-9 text-xs">
+                  <span>
+                    {students.find((s) => s.student.id === selectedStudentId)
+                      ? l(
+                          students.find((s) => s.student.id === selectedStudentId)?.person.full_name_ar,
+                          students.find((s) => s.student.id === selectedStudentId)?.person.display_name ||
+                            students.find((s) => s.student.id === selectedStudentId)?.person.full_name,
+                        )
+                      : m.operations_ui_all_students_general_report()}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{m.operations_ui_all_students_general_report()}</SelectItem>
+                  {#each students as s (s.student.id)}
+                    <SelectItem value={s.student.id}>
+                      {l(s.person.full_name_ar, s.person.display_name || s.person.full_name) ||
+                        s.student.student_number}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+          {/if}
+
+          {#if needsDateRange}
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <Label class="text-xs font-semibold">{m.operations_ui_date_from()}</Label>
+                <Input type="date" bind:value={dateFrom} class="h-9 text-xs" />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-semibold">{m.operations_ui_date_to()}</Label>
+                <Input type="date" bind:value={dateTo} class="h-9 text-xs" />
+              </div>
+            </div>
+          {/if}
 
           <div class="space-y-1.5">
             <Label class="text-xs font-semibold">{m.operations_ui_file_format()}</Label>

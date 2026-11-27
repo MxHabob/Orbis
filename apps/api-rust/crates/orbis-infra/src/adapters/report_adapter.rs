@@ -663,6 +663,19 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("is_rtl", &is_rtl);
         context.insert("org_name", &dataset.org.name);
         context.insert("org_name_ar", &dataset.org.name_ar);
+        context.insert("country_name", &dataset.org.country_name);
+        context.insert("ministry_name", &dataset.org.ministry_name);
+        context.insert("region_name", &dataset.org.region_name);
+        static EMBLEM_URI: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+        let emblem_uri = EMBLEM_URI.get_or_init(|| {
+            let emblem_b64 = base64::Engine::encode(
+                &base64::engine::general_purpose::STANDARD,
+                include_bytes!("../../../orbis-app/src/defaults/assest/The Public Slogan.png"),
+            );
+            format!("data:image/png;base64,{emblem_b64}")
+        });
+        context.insert("state_emblem_uri", emblem_uri);
+        context.insert("total_count", &dataset.total_count);
         context.insert("org_type", &"");
         context.insert("org_type_ar", &"");
         context.insert("currency", &dataset.org.currency_code);
@@ -961,6 +974,83 @@ impl OrgContextResolver for DbOrgContextResolver {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SHARED PARAMETER & SQL HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+fn parse_uuid_param(
+    parameters: &HashMap<String, ParamValue>,
+    key: &str,
+) -> Result<Option<Uuid>, DomainError> {
+    let Some(raw) = parameters.get(key).and_then(|v| v.as_str()) else {
+        return Ok(None);
+    };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    Uuid::parse_str(trimmed)
+        .map(Some)
+        .map_err(|_| DomainError::Validation(format!("Invalid UUID for parameter '{key}'")))
+}
+
+fn decimal_to_f64(row: &sea_orm::QueryResult, col: &str) -> f64 {
+    use rust_decimal::prelude::ToPrimitive;
+    if let Ok(Some(d)) = row.try_get::<Option<rust_decimal::Decimal>>("", col) {
+        return d.to_f64().unwrap_or(0.0);
+    }
+    if let Ok(d) = row.try_get::<rust_decimal::Decimal>("", col) {
+        return d.to_f64().unwrap_or(0.0);
+    }
+    if let Ok(v) = row.try_get::<f64>("", col) {
+        return v;
+    }
+    if let Ok(v) = row.try_get::<i64>("", col) {
+        return v as f64;
+    }
+    0.0
+}
+
+fn date_str(row: &sea_orm::QueryResult, col: &str) -> String {
+    if let Ok(Some(d)) = row.try_get::<Option<chrono::NaiveDate>>("", col) {
+        return d.format("%Y-%m-%d").to_string();
+    }
+    if let Ok(d) = row.try_get::<chrono::NaiveDate>("", col) {
+        return d.format("%Y-%m-%d").to_string();
+    }
+    if let Ok(Some(dt)) = row.try_get::<Option<chrono::DateTime<chrono::Utc>>>("", col) {
+        return dt.format("%Y-%m-%d").to_string();
+    }
+    if let Ok(dt) = row.try_get::<chrono::DateTime<chrono::Utc>>("", col) {
+        return dt.format("%Y-%m-%d").to_string();
+    }
+    row.try_get::<Option<String>>("", col)
+        .ok()
+        .flatten()
+        .unwrap_or_default()
+}
+
+fn col_def(
+    key: &str,
+    header: &str,
+    header_ar: &str,
+    data_type: ColumnDataType,
+    width: &str,
+    align: Option<ColumnAlign>,
+) -> ColumnDef {
+    ColumnDef {
+        key: key.into(),
+        header: header.into(),
+        header_ar: header_ar.into(),
+        data_type,
+        width: Some(width.into()),
+        align,
+        format: None,
+        visible: true,
+        total_type: None,
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SAMPLE DATA PROVIDER (finance.fee_collection)
 // ═══════════════════════════════════════════════════════════════
 
@@ -1175,105 +1265,112 @@ pub struct StudentListDataProvider {
 #[async_trait]
 impl ReportDataProvider for StudentListDataProvider {
     fn provider_key(&self) -> &str {
-        "academic.student_list"
+        "students.student_list"
     }
 
     async fn fetch_data(
         &self,
         org_id: Uuid,
         org_context: &OrgReportContext,
-        _parameters: &HashMap<String, ParamValue>,
+        parameters: &HashMap<String, ParamValue>,
         _locale: &ReportLocale,
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
+        let class_filter = parse_uuid_param(parameters, "class_id")?;
         let order_by = student_sort_clause(&org_context.student_sort, "s");
-        let rows_result = self
-            .db
-            .query_all(Statement::from_sql_and_values(
-                self.db.get_database_backend(),
-                &format!(r#"SELECT
+        let mut sql = format!(
+            r#"SELECT
                     e.id, e.status,
+                    COALESCE(s.student_number, '') as student_number,
                     COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
                     COALESCE(sec.name, '') as class_name
                 FROM enrollments e
                 LEFT JOIN students s ON e.student_id = s.id
                 LEFT JOIN persons p ON s.person_id = p.id
                 LEFT JOIN sections sec ON e.section_id = sec.id
-                WHERE e.org_id = $1
-                ORDER BY sec.name, {order_by}"#),
-                vec![org_id.to_string().into()],
+                WHERE e.org_id = $1"#
+        );
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
+        if let Some(cid) = class_filter {
+            sql.push_str(" AND e.section_id = $2");
+            values.push(cid.into());
+        }
+        sql.push_str(&format!(" ORDER BY sec.name, {order_by}"));
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Student list query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
-                    "status": row.try_get::<String>("", "status").unwrap_or_default(),
-                }));
-            }
+        for row in &rows {
+            seq += 1;
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "student_number": row.try_get::<String>("", "student_number").unwrap_or_default(),
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
+                "status": row.try_get::<String>("", "status").unwrap_or_default(),
+            }));
         }
 
         let total_count = data_rows.len() as u64;
 
         Ok(ReportDataset {
-            report_code: "academic.student_list".into(),
+            report_code: "students.student_list".into(),
             report_name: "Student List".into(),
             report_name_ar: "قائمة الطلاب".into(),
             org: org_context.clone(),
             parameter_summary: vec![],
             columns: vec![
-                ColumnDef {
-                    key: "seq".into(),
-                    header: "#".into(),
-                    header_ar: "#".into(),
-                    data_type: ColumnDataType::Sequence,
-                    width: Some("8%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "student_name".into(),
-                    header: "Student Name".into(),
-                    header_ar: "اسم الطالب".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("40%".into()),
-                    align: None,
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "class_name".into(),
-                    header: "Class".into(),
-                    header_ar: "الصف".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("30%".into()),
-                    align: None,
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "status".into(),
-                    header: "Status".into(),
-                    header_ar: "الحالة".into(),
-                    data_type: ColumnDataType::Status,
-                    width: Some("22%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "6%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "student_number",
+                    "Student #",
+                    "الرقم الأكاديمي",
+                    ColumnDataType::Text,
+                    "18%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "student_name",
+                    "Student Name",
+                    "اسم الطالب",
+                    ColumnDataType::Text,
+                    "36%",
+                    None,
+                ),
+                col_def(
+                    "class_name",
+                    "Class",
+                    "الصف",
+                    ColumnDataType::Text,
+                    "24%",
+                    None,
+                ),
+                col_def(
+                    "status",
+                    "Status",
+                    "الحالة",
+                    ColumnDataType::Status,
+                    "16%",
+                    Some(ColumnAlign::Center),
+                ),
             ],
             rows: data_rows,
             groups: None,
@@ -1308,15 +1405,17 @@ impl ReportDataProvider for TermResultDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
-        let period_filter = parameters.get("period_id").and_then(|v| v.as_str());
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
+        let period_filter = parse_uuid_param(parameters, "period_id")?;
+        let class_filter = parse_uuid_param(parameters, "class_id")?;
+        let is_general_mode = student_filter.is_none();
         let student_order = student_sort_clause(&org_context.student_sort, "st");
 
         let mut sql = r#"SELECT
-            g.id, g.score, g.max_score,
+            g.id, g.score, COALESCE(g.max_score, 100) as max_score,
             COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-            s.name as subject_name,
-            s.code as subject_code,
+            COALESCE(s.name, '') as subject_name,
+            COALESCE(s.code, '') as subject_code,
             COALESCE(c.name, '') as class_name,
             COALESCE(ap.name, '') as period_name
         FROM grades g
@@ -1329,58 +1428,128 @@ impl ReportDataProvider for TermResultDataProvider {
         WHERE g.org_id = $1"#
             .to_string();
 
-        let mut values = vec![org_id.to_string().into()];
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
 
         if let Some(sid) = student_filter {
-            sql.push_str(" AND g.student_id = $2");
-            values.push(sid.to_string().into());
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND g.student_id = ${idx}"));
+            values.push(sid.into());
         }
         if let Some(pid) = period_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND g.period_id = ${}", idx));
-            values.push(pid.to_string().into());
+            sql.push_str(&format!(" AND g.period_id = ${idx}"));
+            values.push(pid.into());
+        }
+        if let Some(cid) = class_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND cs.section_id = ${idx}"));
+            values.push(cid.into());
         }
 
-        sql.push_str(&format!(" ORDER BY s.name, {student_order}"));
+        sql.push_str(&format!(" ORDER BY c.name, {student_order}, s.name"));
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 &sql,
                 values,
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Term result query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
         let mut total_score = 0.0f64;
         let mut max_total = 0.0f64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                let score: f64 = row.try_get::<f64>("", "score").unwrap_or(0.0);
-                let max: f64 = row.try_get::<f64>("", "max_score").unwrap_or(100.0);
-                total_score += score;
-                max_total += max;
+        for row in &rows {
+            seq += 1;
+            let score = decimal_to_f64(row, "score");
+            let max = decimal_to_f64(row, "max_score");
+            let max = if max > 0.0 { max } else { 100.0 };
+            total_score += score;
+            max_total += max;
 
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
-                    "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
-                    "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
-                    "period_name": row.try_get::<String>("", "period_name").unwrap_or_default(),
-                    "score": score,
-                    "max_score": max,
-                    "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
-                    "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
-                }));
-            }
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
+                "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
+                "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
+                "period_name": row.try_get::<String>("", "period_name").unwrap_or_default(),
+                "score": score,
+                "max_score": max,
+                "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
+                "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
+            }));
         }
 
         let total_count = data_rows.len() as u64;
+        let mut columns = vec![col_def(
+            "seq",
+            "#",
+            "#",
+            ColumnDataType::Sequence,
+            "5%",
+            Some(ColumnAlign::Center),
+        )];
+        if is_general_mode {
+            columns.push(col_def(
+                "student_name",
+                "Student",
+                "الطالب",
+                ColumnDataType::Text,
+                "24%",
+                None,
+            ));
+            columns.push(col_def(
+                "class_name",
+                "Class",
+                "الصف",
+                ColumnDataType::Text,
+                "14%",
+                None,
+            ));
+        }
+        columns.push(col_def(
+            "subject_name",
+            "Subject",
+            "المادة",
+            ColumnDataType::Text,
+            if is_general_mode { "22%" } else { "35%" },
+            None,
+        ));
+        columns.push(ColumnDef {
+            key: "score".into(),
+            header: "Score".into(),
+            header_ar: "الدرجة".into(),
+            data_type: ColumnDataType::Decimal,
+            width: Some(if is_general_mode { "12%" } else { "20%" }.into()),
+            align: Some(ColumnAlign::End),
+            format: Some("number:2".into()),
+            visible: true,
+            total_type: Some(AggregationType::Sum),
+        });
+        columns.push(ColumnDef {
+            key: "max_score".into(),
+            header: "Max".into(),
+            header_ar: "العظمى".into(),
+            data_type: ColumnDataType::Decimal,
+            width: Some(if is_general_mode { "11%" } else { "20%" }.into()),
+            align: Some(ColumnAlign::End),
+            format: Some("number:2".into()),
+            visible: true,
+            total_type: Some(AggregationType::Sum),
+        });
+        columns.push(col_def(
+            "status",
+            "Result",
+            "النتيجة",
+            ColumnDataType::Status,
+            if is_general_mode { "12%" } else { "20%" },
+            Some(ColumnAlign::Center),
+        ));
 
         Ok(ReportDataset {
             report_code: "academic.term_result".into(),
@@ -1388,63 +1557,7 @@ impl ReportDataProvider for TermResultDataProvider {
             report_name_ar: "شهادة نتائج الفصل الدراسي".into(),
             org: org_context.clone(),
             parameter_summary: vec![],
-            columns: vec![
-                ColumnDef {
-                    key: "seq".into(),
-                    header: "#".into(),
-                    header_ar: "#".into(),
-                    data_type: ColumnDataType::Sequence,
-                    width: Some("5%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "subject_name".into(),
-                    header: "Subject".into(),
-                    header_ar: "المادة".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("35%".into()),
-                    align: None,
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "score".into(),
-                    header: "Score".into(),
-                    header_ar: "الدرجة".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("20%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "max_score".into(),
-                    header: "Max".into(),
-                    header_ar: "العظمى".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("20%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "status".into(),
-                    header: "Result".into(),
-                    header_ar: "النتيجة".into(),
-                    data_type: ColumnDataType::Status,
-                    width: Some("20%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-            ],
+            columns,
             rows: data_rows,
             groups: None,
             aggregations: if total_count > 0 {
@@ -1491,15 +1604,15 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 r#"SELECT
                     sn.id, sn.seating_number,
                     COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-                    r.name as room_name,
-                    es.name as session_name
+                    COALESCE(r.name, '') as room_name,
+                    COALESCE(es.name, '') as session_name
                 FROM seating_numbers sn
                 LEFT JOIN students st ON sn.student_id = st.id
                 LEFT JOIN persons p ON st.person_id = p.id
@@ -1507,24 +1620,23 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
                 LEFT JOIN exam_sessions es ON sn.exam_session_id = es.id
                 WHERE es.org_id = $1
                 ORDER BY r.name, sn.seating_number"#,
-                vec![org_id.to_string().into()],
+                vec![org_id.into()],
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Exam seating plan query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "seating_number": row.try_get::<String>("", "seating_number").unwrap_or_default(),
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "room_name": row.try_get::<String>("", "room_name").unwrap_or_default(),
-                    "session_name": row.try_get::<String>("", "session_name").unwrap_or_default(),
-                }));
-            }
+        for row in &rows {
+            seq += 1;
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "seating_number": row.try_get::<String>("", "seating_number").unwrap_or_default(),
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "room_name": row.try_get::<String>("", "room_name").unwrap_or_default(),
+                "session_name": row.try_get::<String>("", "session_name").unwrap_or_default(),
+            }));
         }
 
         let total_count = data_rows.len() as u64;
@@ -1614,12 +1726,13 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let payment_filter = parameters.get("payment_id").and_then(|v| v.as_str());
+        let payment_filter = parse_uuid_param(parameters, "payment_id")?;
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
 
         let mut sql = r#"SELECT
-            py.id, py.receipt_number, py.amount, py.currency_code, py.payment_method, py.payment_date, py.notes,
+            py.id, py.receipt_number, py.amount, py.currency_code, py.payment_method, py.payment_date, COALESCE(py.notes, '') as notes,
             COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-            ft.name as fee_name
+            COALESCE(ft.name, '') as fee_name
         FROM payments py
         LEFT JOIN student_fees sf ON py.fee_id = sf.id
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
@@ -1628,43 +1741,48 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
         WHERE sf.org_id = $1"#
             .to_string();
 
-        let mut values = vec![org_id.to_string().into()];
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
 
         if let Some(pid) = payment_filter {
-            sql.push_str(" AND py.id = $2");
-            values.push(pid.to_string().into());
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND py.id = ${idx}"));
+            values.push(pid.into());
+        }
+        if let Some(sid) = student_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND sf.student_id = ${idx}"));
+            values.push(sid.into());
         }
 
         sql.push_str(" ORDER BY py.payment_date DESC");
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 &sql,
                 values,
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Payment receipt query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "receipt_number": row.try_get::<String>("", "receipt_number").unwrap_or_default(),
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "fee_name": row.try_get::<String>("", "fee_name").unwrap_or_default(),
-                    "amount": row.try_get::<f64>("", "amount").unwrap_or(0.0),
-                    "currency": row.try_get::<Option<String>>("", "currency_code").ok().flatten()
-                        .or_else(|| org_context.currency_code.clone()).unwrap_or_default(),
-                    "payment_method": row.try_get::<String>("", "payment_method").unwrap_or_default(),
-                    "payment_date": row.try_get::<String>("", "payment_date").unwrap_or_default(),
-                    "notes": row.try_get::<String>("", "notes").unwrap_or_default(),
-                }));
-            }
+        for row in &rows {
+            seq += 1;
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "receipt_number": row.try_get::<String>("", "receipt_number").unwrap_or_default(),
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "fee_name": row.try_get::<String>("", "fee_name").unwrap_or_default(),
+                "amount": decimal_to_f64(row, "amount"),
+                "currency": row.try_get::<Option<String>>("", "currency_code").ok().flatten()
+                    .or_else(|| org_context.currency_code.clone()).unwrap_or_default(),
+                "payment_method": row.try_get::<String>("", "payment_method").unwrap_or_default(),
+                "payment_date": date_str(row, "payment_date"),
+                "notes": row.try_get::<String>("", "notes").unwrap_or_default(),
+            }));
         }
 
         let total_count = data_rows.len() as u64;
@@ -1765,14 +1883,16 @@ impl ReportDataProvider for AnnualResultDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
+        let class_filter = parse_uuid_param(parameters, "class_id")?;
+        let is_general_mode = student_filter.is_none();
         let student_order = student_sort_clause(&org_context.student_sort, "st");
 
         let mut sql = r#"SELECT
-            g.id, g.score, g.max_score,
+            g.id, g.score, COALESCE(g.max_score, 100) as max_score,
             COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-            s.name as subject_name,
-            s.code as subject_code,
+            COALESCE(s.name, '') as subject_name,
+            COALESCE(s.code, '') as subject_code,
             COALESCE(c.name, '') as class_name,
             COALESCE(ay.name, '') as year_name
         FROM grades g
@@ -1786,53 +1906,123 @@ impl ReportDataProvider for AnnualResultDataProvider {
         WHERE g.org_id = $1"#
             .to_string();
 
-        let mut values = vec![org_id.to_string().into()];
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
 
         if let Some(sid) = student_filter {
-            sql.push_str(" AND g.student_id = $2");
-            values.push(sid.to_string().into());
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND g.student_id = ${idx}"));
+            values.push(sid.into());
+        }
+        if let Some(cid) = class_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND cs.section_id = ${idx}"));
+            values.push(cid.into());
         }
 
-        sql.push_str(&format!(" ORDER BY s.name, {student_order}"));
+        sql.push_str(&format!(" ORDER BY c.name, {student_order}, s.name"));
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 &sql,
                 values,
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Annual result query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
         let mut total_score = 0.0f64;
         let mut max_total = 0.0f64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                let score: f64 = row.try_get::<f64>("", "score").unwrap_or(0.0);
-                let max: f64 = row.try_get::<f64>("", "max_score").unwrap_or(100.0);
-                total_score += score;
-                max_total += max;
+        for row in &rows {
+            seq += 1;
+            let score = decimal_to_f64(row, "score");
+            let max = decimal_to_f64(row, "max_score");
+            let max = if max > 0.0 { max } else { 100.0 };
+            total_score += score;
+            max_total += max;
 
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
-                    "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
-                    "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
-                    "year_name": row.try_get::<String>("", "year_name").unwrap_or_default(),
-                    "score": score,
-                    "max_score": max,
-                    "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
-                    "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
-                }));
-            }
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
+                "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
+                "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
+                "year_name": row.try_get::<String>("", "year_name").unwrap_or_default(),
+                "score": score,
+                "max_score": max,
+                "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
+                "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
+            }));
         }
 
         let total_count = data_rows.len() as u64;
+        let mut columns = vec![col_def(
+            "seq",
+            "#",
+            "#",
+            ColumnDataType::Sequence,
+            "5%",
+            Some(ColumnAlign::Center),
+        )];
+        if is_general_mode {
+            columns.push(col_def(
+                "student_name",
+                "Student",
+                "الطالب",
+                ColumnDataType::Text,
+                "24%",
+                None,
+            ));
+            columns.push(col_def(
+                "class_name",
+                "Class",
+                "الصف",
+                ColumnDataType::Text,
+                "14%",
+                None,
+            ));
+        }
+        columns.push(col_def(
+            "subject_name",
+            "Subject",
+            "المادة الدراسية",
+            ColumnDataType::Text,
+            if is_general_mode { "22%" } else { "35%" },
+            None,
+        ));
+        columns.push(ColumnDef {
+            key: "score".into(),
+            header: "Annual Total".into(),
+            header_ar: "المجموع السنوي".into(),
+            data_type: ColumnDataType::Decimal,
+            width: Some(if is_general_mode { "12%" } else { "20%" }.into()),
+            align: Some(ColumnAlign::End),
+            format: Some("number:2".into()),
+            visible: true,
+            total_type: Some(AggregationType::Sum),
+        });
+        columns.push(ColumnDef {
+            key: "max_score".into(),
+            header: "Max".into(),
+            header_ar: "العظمى".into(),
+            data_type: ColumnDataType::Decimal,
+            width: Some(if is_general_mode { "11%" } else { "20%" }.into()),
+            align: Some(ColumnAlign::End),
+            format: Some("number:2".into()),
+            visible: true,
+            total_type: Some(AggregationType::Sum),
+        });
+        columns.push(col_def(
+            "status",
+            "Result",
+            "النتيجة",
+            ColumnDataType::Status,
+            if is_general_mode { "12%" } else { "20%" },
+            Some(ColumnAlign::Center),
+        ));
 
         Ok(ReportDataset {
             report_code: "academic.annual_result".into(),
@@ -1840,63 +2030,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
             report_name_ar: "الشهادة السنوية العامة للنتائج".into(),
             org: org_context.clone(),
             parameter_summary: vec![],
-            columns: vec![
-                ColumnDef {
-                    key: "seq".into(),
-                    header: "#".into(),
-                    header_ar: "#".into(),
-                    data_type: ColumnDataType::Sequence,
-                    width: Some("5%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "subject_name".into(),
-                    header: "Subject".into(),
-                    header_ar: "المادة الدراسية".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("35%".into()),
-                    align: None,
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "score".into(),
-                    header: "Annual Total".into(),
-                    header_ar: "المجموع السنوي".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("20%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "max_score".into(),
-                    header: "Max".into(),
-                    header_ar: "العظمى".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("20%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "status".into(),
-                    header: "Result".into(),
-                    header_ar: "النتيجة".into(),
-                    data_type: ColumnDataType::Status,
-                    width: Some("20%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-            ],
+            columns,
             rows: data_rows,
             groups: None,
             aggregations: if total_count > 0 {
@@ -1943,24 +2077,30 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
-        let class_filter = parameters.get("class_id").and_then(|v| v.as_str());
-        let year_filter = parameters.get("year_id").and_then(|v| v.as_str());
-        let period_filter = parameters.get("period_id").and_then(|v| v.as_str());
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
+        let class_filter = parse_uuid_param(parameters, "class_id")?;
+        let year_filter = parse_uuid_param(parameters, "year_id")?;
+        let period_filter = parse_uuid_param(parameters, "period_id")?;
+        let is_general_mode = student_filter.is_none();
         let student_order = student_sort_clause(&org_context.student_sort, "st");
 
         let mut sql = r#"SELECT
-            g.id, g.score, g.max_score,
+            g.id, g.score, COALESCE(g.max_score, 100) as max_score,
             COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-            p.national_id as national_id,
-            s.name as subject_name,
-            s.code as subject_code,
+            COALESCE(sn_agg.seating_number, '') as seat_number,
+            COALESCE(s.name, '') as subject_name,
+            COALESCE(s.code, '') as subject_code,
             COALESCE(c.name, '') as class_name,
             COALESCE(ay.name, '') as year_name,
             COALESCE(ap.name, '') as period_name
         FROM grades g
         LEFT JOIN students st ON g.student_id = st.id
         LEFT JOIN persons p ON st.person_id = p.id
+        LEFT JOIN (
+            SELECT sn.student_id, MAX(sn.seating_number) as seating_number
+            FROM seating_numbers sn
+            GROUP BY sn.student_id
+        ) sn_agg ON sn_agg.student_id = st.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
         LEFT JOIN sections c ON cs.section_id = c.id
@@ -1969,39 +2109,42 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         WHERE g.org_id = $1"#
             .to_string();
 
-        let mut values = vec![org_id.to_string().into()];
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
 
         if let Some(sid) = student_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND g.student_id = ${}", idx));
-            values.push(sid.to_string().into());
+            sql.push_str(&format!(" AND g.student_id = ${idx}"));
+            values.push(sid.into());
         }
         if let Some(cid) = class_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND cs.section_id = ${}", idx));
-            values.push(cid.to_string().into());
+            sql.push_str(&format!(" AND cs.section_id = ${idx}"));
+            values.push(cid.into());
         }
         if let Some(yid) = year_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND ap.year_id = ${}", idx));
-            values.push(yid.to_string().into());
+            sql.push_str(&format!(" AND ap.calendar_id = ${idx}"));
+            values.push(yid.into());
         }
         if let Some(pid) = period_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND g.period_id = ${}", idx));
-            values.push(pid.to_string().into());
+            sql.push_str(&format!(" AND g.period_id = ${idx}"));
+            values.push(pid.into());
         }
 
-        sql.push_str(&format!(" ORDER BY s.name, {student_order}"));
+        sql.push_str(&format!(" ORDER BY c.name, {student_order}, s.name"));
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 &sql,
                 values,
             ))
-            .await;
+            .await
+            .map_err(|e| {
+                DomainError::Internal(format!("Academic certificate query failed: {e}"))
+            })?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
@@ -2014,81 +2157,81 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         let mut year_name = String::new();
         let mut seat_number = String::new();
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                let score: f64 = row.try_get::<f64>("", "score").unwrap_or(0.0);
-                let max: f64 = row.try_get::<f64>("", "max_score").unwrap_or(100.0);
-                let min = max * 0.5;
+        for row in &rows {
+            seq += 1;
+            let score = decimal_to_f64(row, "score");
+            let max = decimal_to_f64(row, "max_score");
+            let max = if max > 0.0 { max } else { 100.0 };
+            let min = max * 0.5;
 
-                total_score += score;
-                max_total += max;
-                min_total += min;
+            total_score += score;
+            max_total += max;
+            min_total += min;
 
-                let s_name = row
-                    .try_get::<String>("", "student_name")
-                    .unwrap_or_default();
-                if student_name.is_empty() && !s_name.is_empty() {
-                    student_name = s_name.clone();
-                }
-
-                let c_name = row.try_get::<String>("", "class_name").unwrap_or_default();
-                if class_name.is_empty() && !c_name.is_empty() {
-                    class_name = c_name;
-                }
-
-                let y_name = row.try_get::<String>("", "year_name").unwrap_or_default();
-                if year_name.is_empty() && !y_name.is_empty() {
-                    year_name = y_name;
-                }
-
-                let nat_id = row.try_get::<String>("", "national_id").unwrap_or_default();
-                if seat_number.is_empty() && !nat_id.is_empty() {
-                    seat_number = nat_id;
-                }
-
-                let t1_cw = (score * 0.3).round();
-                let t1_ex = score - t1_cw;
-                let pct = if max > 0.0 {
-                    (score / max) * 100.0
-                } else {
-                    0.0
-                };
-
-                let appreciation = if pct >= 90.0 {
-                    "ممتاز / Excellent"
-                } else if pct >= 80.0 {
-                    "جيد جداً / Very Good"
-                } else if pct >= 65.0 {
-                    "جيد / Good"
-                } else if pct >= 50.0 {
-                    "مقبول / Pass"
-                } else {
-                    "ضعيف / Fail"
-                };
-
-                let status = if score >= min { "ناجح" } else { "راسب" };
-
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "student_name": s_name,
-                    "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
-                    "subject_name_ar": row.try_get::<String>("", "subject_name").unwrap_or_default(),
-                    "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
-                    "max_score": max,
-                    "min_score": min,
-                    "t1_coursework": t1_cw,
-                    "t1_exam": t1_ex,
-                    "t1_total": score,
-                    "t2_coursework": t1_cw,
-                    "t2_exam": t1_ex,
-                    "t2_total": score,
-                    "annual_total": score,
-                    "percentage": format!("{:.1}%", pct),
-                    "appreciation": appreciation,
-                    "status": status,
-                }));
+            let s_name = row
+                .try_get::<String>("", "student_name")
+                .unwrap_or_default();
+            if student_name.is_empty() && !s_name.is_empty() {
+                student_name = s_name.clone();
             }
+
+            let c_name = row.try_get::<String>("", "class_name").unwrap_or_default();
+            if class_name.is_empty() && !c_name.is_empty() {
+                class_name = c_name.clone();
+            }
+
+            let y_name = row.try_get::<String>("", "year_name").unwrap_or_default();
+            if year_name.is_empty() && !y_name.is_empty() {
+                year_name = y_name;
+            }
+
+            let sn_val = row.try_get::<String>("", "seat_number").unwrap_or_default();
+            if seat_number.is_empty() && !sn_val.is_empty() {
+                seat_number = sn_val;
+            }
+
+            let t1_cw = (score * 0.3).round();
+            let t1_ex = score - t1_cw;
+            let pct = if max > 0.0 {
+                (score / max) * 100.0
+            } else {
+                0.0
+            };
+
+            let appreciation = if pct >= 90.0 {
+                "ممتاز / Excellent"
+            } else if pct >= 80.0 {
+                "جيد جداً / Very Good"
+            } else if pct >= 65.0 {
+                "جيد / Good"
+            } else if pct >= 50.0 {
+                "مقبول / Pass"
+            } else {
+                "ضعيف / Fail"
+            };
+
+            let status = if score >= min { "ناجح" } else { "راسب" };
+
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "student_name": s_name,
+                "class_name": c_name,
+                "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
+                "subject_name_ar": row.try_get::<String>("", "subject_name").unwrap_or_default(),
+                "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
+                "max_score": max,
+                "min_score": min,
+                "t1_coursework": t1_cw,
+                "t1_exam": t1_ex,
+                "t1_total": score,
+                "t2_coursework": t1_cw,
+                "t2_exam": t1_ex,
+                "t2_total": score,
+                "annual_total": score,
+                "percentage": format!("{:.1}%", pct),
+                "appreciation": appreciation,
+                "status": status,
+            }));
         }
 
         let total_count = data_rows.len() as u64;
@@ -2124,107 +2267,94 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
             report_name_ar: "شهادة درجات الطالب المعتمدة".into(),
             org: org_context.clone(),
             parameter_summary: vec![],
-            columns: vec![
-                ColumnDef {
-                    key: "seq".into(),
-                    header: "م".into(),
-                    header_ar: "م".into(),
-                    data_type: ColumnDataType::Sequence,
-                    width: Some("5%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "subject_name".into(),
-                    header: "Subject / المادة".into(),
-                    header_ar: "المادة الدراسية".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("25%".into()),
-                    align: None,
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "max_score".into(),
-                    header: "Max / الكبرى".into(),
-                    header_ar: "النهاية الكبرى".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("10%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: Some("number:0".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "min_score".into(),
-                    header: "Min / الصغرى".into(),
-                    header_ar: "النهاية الصغرى".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("10%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: Some("number:0".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "t1_coursework".into(),
-                    header: "محصلة ف1".into(),
-                    header_ar: "محصلة ف1".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("10%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: Some("number:0".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "t1_exam".into(),
-                    header: "اختبار ف1".into(),
-                    header_ar: "اختبار ف1".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("10%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: Some("number:0".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "annual_total".into(),
-                    header: "المجموع".into(),
-                    header_ar: "المجموع السنوي".into(),
-                    data_type: ColumnDataType::Decimal,
-                    width: Some("12%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: Some("number:0".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "appreciation".into(),
-                    header: "التقدير".into(),
-                    header_ar: "التقدير".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("10%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "status".into(),
-                    header: "النتيجة".into(),
-                    header_ar: "النتيجة".into(),
-                    data_type: ColumnDataType::Status,
-                    width: Some("8%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-            ],
+            columns: {
+                let mut cols = vec![col_def(
+                    "seq",
+                    "م",
+                    "م",
+                    ColumnDataType::Sequence,
+                    "5%",
+                    Some(ColumnAlign::Center),
+                )];
+                if is_general_mode {
+                    cols.push(col_def(
+                        "student_name",
+                        "Student",
+                        "الطالب",
+                        ColumnDataType::Text,
+                        "20%",
+                        None,
+                    ));
+                    cols.push(col_def(
+                        "class_name",
+                        "Class",
+                        "الصف",
+                        ColumnDataType::Text,
+                        "11%",
+                        None,
+                    ));
+                }
+                cols.extend([
+                    col_def(
+                        "subject_name",
+                        "Subject / المادة",
+                        "المادة الدراسية",
+                        ColumnDataType::Text,
+                        if is_general_mode { "18%" } else { "25%" },
+                        None,
+                    ),
+                    ColumnDef {
+                        key: "max_score".into(),
+                        header: "Max / الكبرى".into(),
+                        header_ar: "النهاية الكبرى".into(),
+                        data_type: ColumnDataType::Decimal,
+                        width: Some("9%".into()),
+                        align: Some(ColumnAlign::Center),
+                        format: Some("number:0".into()),
+                        visible: true,
+                        total_type: Some(AggregationType::Sum),
+                    },
+                    ColumnDef {
+                        key: "min_score".into(),
+                        header: "Min / الصغرى".into(),
+                        header_ar: "النهاية الصغرى".into(),
+                        data_type: ColumnDataType::Decimal,
+                        width: Some("9%".into()),
+                        align: Some(ColumnAlign::Center),
+                        format: Some("number:0".into()),
+                        visible: true,
+                        total_type: Some(AggregationType::Sum),
+                    },
+                    ColumnDef {
+                        key: "annual_total".into(),
+                        header: "المجموع".into(),
+                        header_ar: "المجموع السنوي".into(),
+                        data_type: ColumnDataType::Decimal,
+                        width: Some("10%".into()),
+                        align: Some(ColumnAlign::Center),
+                        format: Some("number:0".into()),
+                        visible: true,
+                        total_type: Some(AggregationType::Sum),
+                    },
+                    col_def(
+                        "appreciation",
+                        "التقدير",
+                        "التقدير",
+                        ColumnDataType::Text,
+                        "10%",
+                        Some(ColumnAlign::Center),
+                    ),
+                    col_def(
+                        "status",
+                        "النتيجة",
+                        "النتيجة",
+                        ColumnDataType::Status,
+                        "8%",
+                        Some(ColumnAlign::Center),
+                    ),
+                ]);
+                cols
+            },
             rows: data_rows,
             groups: None,
             aggregations: Some(Aggregations {
@@ -2277,7 +2407,7 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
@@ -2285,36 +2415,40 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
                     sn.id, sn.seating_number,
                     COALESCE(sec.secret_number, '-') as secret_number,
                     COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-                    r.name as room_name,
-                    es.name as session_name
+                    COALESCE(r.name, '') as room_name,
+                    COALESCE(es.name, '') as session_name
                 FROM seating_numbers sn
                 LEFT JOIN students st ON sn.student_id = st.id
                 LEFT JOIN persons p ON st.person_id = p.id
                 LEFT JOIN rooms r ON sn.room_id = r.id
                 LEFT JOIN exam_sessions es ON sn.exam_session_id = es.id
-                LEFT JOIN secret_numbers sec ON sn.student_id = sec.student_id
+                LEFT JOIN (
+                    SELECT sch.exam_session_id, sec_num.student_id, MAX(sec_num.secret_number) as secret_number
+                    FROM secret_numbers sec_num
+                    INNER JOIN exam_schedules sch ON sec_num.exam_schedule_id = sch.id
+                    GROUP BY sch.exam_session_id, sec_num.student_id
+                ) sec ON sec.exam_session_id = sn.exam_session_id AND sec.student_id = sn.student_id
                 WHERE es.org_id = $1
                 ORDER BY r.name, sn.seating_number"#,
-                vec![org_id.to_string().into()],
+                vec![org_id.into()],
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Exam attendance sheet query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "seating_number": row.try_get::<String>("", "seating_number").unwrap_or_default(),
-                    "secret_number": row.try_get::<String>("", "secret_number").unwrap_or_default(),
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "room_name": row.try_get::<String>("", "room_name").unwrap_or_default(),
-                    "session_name": row.try_get::<String>("", "session_name").unwrap_or_default(),
-                    "signature": "_______________",
-                }));
-            }
+        for row in &rows {
+            seq += 1;
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "seating_number": row.try_get::<String>("", "seating_number").unwrap_or_default(),
+                "secret_number": row.try_get::<String>("", "secret_number").unwrap_or_default(),
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "room_name": row.try_get::<String>("", "room_name").unwrap_or_default(),
+                "session_name": row.try_get::<String>("", "session_name").unwrap_or_default(),
+                "signature": "_______________",
+            }));
         }
 
         let total_count = data_rows.len() as u64;
@@ -2415,64 +2549,134 @@ impl ReportDataProvider for StudentStatementDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
-        let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
+        let is_general_mode = student_filter.is_none();
 
         let mut sql = r#"SELECT
             sf.id, sf.net_amount as fee_amount, sf.status, sf.due_date,
-            ft.name as fee_name,
+            COALESCE(ft.name, '') as fee_name,
             COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
-            COALESCE((SELECT SUM(amount) FROM payments py WHERE py.fee_id = sf.id), 0.0) as paid_amount
+            COALESCE((SELECT SUM(amount) FROM payments py WHERE py.fee_id = sf.id), 0) as paid_amount
         FROM student_fees sf
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
         LEFT JOIN students st ON sf.student_id = st.id
         LEFT JOIN persons p ON st.person_id = p.id
         WHERE sf.org_id = $1"#.to_string();
 
-        let mut values = vec![org_id.to_string().into()];
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
 
         if let Some(sid) = student_filter {
             sql.push_str(" AND sf.student_id = $2");
-            values.push(sid.to_string().into());
+            values.push(sid.into());
         }
 
         sql.push_str(" ORDER BY sf.due_date");
 
-        let rows_result = self
+        let rows = self
             .db
             .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 &sql,
                 values,
             ))
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(format!("Student statement query failed: {e}")))?;
 
         let mut data_rows = Vec::new();
         let mut seq = 0u64;
         let mut total_due = 0.0f64;
         let mut total_paid = 0.0f64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                let due: f64 = row.try_get::<f64>("", "fee_amount").unwrap_or(0.0);
-                let paid: f64 = row.try_get::<f64>("", "paid_amount").unwrap_or(0.0);
-                let balance = due - paid;
-                total_due += due;
-                total_paid += paid;
+        for row in &rows {
+            seq += 1;
+            let due = decimal_to_f64(row, "fee_amount");
+            let paid = decimal_to_f64(row, "paid_amount");
+            let balance = due - paid;
+            total_due += due;
+            total_paid += paid;
 
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "fee_name": row.try_get::<String>("", "fee_name").unwrap_or_default(),
-                    "due_date": row.try_get::<String>("", "due_date").unwrap_or_default(),
-                    "fee_amount": due,
-                    "paid_amount": paid,
-                    "balance": balance,
-                    "status": row.try_get::<String>("", "status").unwrap_or_default(),
-                }));
-            }
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "fee_name": row.try_get::<String>("", "fee_name").unwrap_or_default(),
+                "due_date": date_str(row, "due_date"),
+                "fee_amount": due,
+                "paid_amount": paid,
+                "balance": balance,
+                "status": row.try_get::<String>("", "status").unwrap_or_default(),
+            }));
         }
 
         let total_count = data_rows.len() as u64;
+        let mut columns = vec![col_def(
+            "seq",
+            "#",
+            "#",
+            ColumnDataType::Sequence,
+            "5%",
+            Some(ColumnAlign::Center),
+        )];
+        if is_general_mode {
+            columns.push(col_def(
+                "student_name",
+                "Student",
+                "الطالب",
+                ColumnDataType::Text,
+                "22%",
+                None,
+            ));
+        }
+        columns.push(col_def(
+            "fee_name",
+            "Fee / Description",
+            "البيان / الرسم",
+            ColumnDataType::Text,
+            if is_general_mode { "23%" } else { "35%" },
+            None,
+        ));
+        columns.extend([
+            ColumnDef {
+                key: "fee_amount".into(),
+                header: "Due Amount".into(),
+                header_ar: "المطلوب".into(),
+                data_type: ColumnDataType::Currency,
+                width: Some("13%".into()),
+                align: Some(ColumnAlign::End),
+                format: Some("number:2".into()),
+                visible: true,
+                total_type: Some(AggregationType::Sum),
+            },
+            ColumnDef {
+                key: "paid_amount".into(),
+                header: "Paid Amount".into(),
+                header_ar: "المدفوع".into(),
+                data_type: ColumnDataType::Currency,
+                width: Some("13%".into()),
+                align: Some(ColumnAlign::End),
+                format: Some("number:2".into()),
+                visible: true,
+                total_type: Some(AggregationType::Sum),
+            },
+            ColumnDef {
+                key: "balance".into(),
+                header: "Remaining Balance".into(),
+                header_ar: "المتبقي".into(),
+                data_type: ColumnDataType::Currency,
+                width: Some("12%".into()),
+                align: Some(ColumnAlign::End),
+                format: Some("number:2".into()),
+                visible: true,
+                total_type: Some(AggregationType::Sum),
+            },
+            col_def(
+                "status",
+                "Status",
+                "الحالة",
+                ColumnDataType::Status,
+                "12%",
+                Some(ColumnAlign::Center),
+            ),
+        ]);
 
         Ok(ReportDataset {
             report_code: "finance.student_statement".into(),
@@ -2480,74 +2684,7 @@ impl ReportDataProvider for StudentStatementDataProvider {
             report_name_ar: "كشف حساب الطالب المالي".into(),
             org: org_context.clone(),
             parameter_summary: vec![],
-            columns: vec![
-                ColumnDef {
-                    key: "seq".into(),
-                    header: "#".into(),
-                    header_ar: "#".into(),
-                    data_type: ColumnDataType::Sequence,
-                    width: Some("5%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "fee_name".into(),
-                    header: "Fee / Description".into(),
-                    header_ar: "البيان / الرسم".into(),
-                    data_type: ColumnDataType::Text,
-                    width: Some("35%".into()),
-                    align: None,
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-                ColumnDef {
-                    key: "fee_amount".into(),
-                    header: "Due Amount".into(),
-                    header_ar: "المطلوب".into(),
-                    data_type: ColumnDataType::Currency,
-                    width: Some("15%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "paid_amount".into(),
-                    header: "Paid Amount".into(),
-                    header_ar: "المدفوع".into(),
-                    data_type: ColumnDataType::Currency,
-                    width: Some("15%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "balance".into(),
-                    header: "Remaining Balance".into(),
-                    header_ar: "المتبقي".into(),
-                    data_type: ColumnDataType::Currency,
-                    width: Some("15%".into()),
-                    align: Some(ColumnAlign::End),
-                    format: Some("number:2".into()),
-                    visible: true,
-                    total_type: Some(AggregationType::Sum),
-                },
-                ColumnDef {
-                    key: "status".into(),
-                    header: "Status".into(),
-                    header_ar: "الحالة".into(),
-                    data_type: ColumnDataType::Status,
-                    width: Some("15%".into()),
-                    align: Some(ColumnAlign::Center),
-                    format: None,
-                    visible: true,
-                    total_type: None,
-                },
-            ],
+            columns,
             rows: data_rows,
             groups: None,
             aggregations: if total_count > 0 {
@@ -2570,4 +2707,920 @@ impl ReportDataProvider for StudentStatementDataProvider {
             generated_by: None,
         })
     }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ATTENDANCE REPORTS DATA PROVIDER
+// ═══════════════════════════════════════════════════════════════
+
+pub struct AttendanceReportDataProvider {
+    pub db: DatabaseConnection,
+    pub key: &'static str,
+}
+
+#[async_trait]
+impl ReportDataProvider for AttendanceReportDataProvider {
+    fn provider_key(&self) -> &str {
+        self.key
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let class_filter = parse_uuid_param(parameters, "class_id")?;
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
+        let order_by = student_sort_clause(&org_context.student_sort, "s");
+
+        let (title_en, title_ar, sql_filter) = match self.key {
+            "attendance.daily_absence" => (
+                "Daily Absence Report",
+                "تقرير الغياب والتأخر اليومي",
+                " AND a.status IN ('absent', 'late', 'sick', 'excused')",
+            ),
+            "attendance.chronic_truancy" => (
+                "Chronic Truancy & At-Risk Students",
+                "تقرير الغياب المتكرر والإنذار المبكر",
+                " AND a.status = 'absent'",
+            ),
+            "attendance.teacher_log" => (
+                "Attendance Marking Compliance Log",
+                "سجل رصد الحضور والغياب",
+                "",
+            ),
+            _ => (
+                "Monthly Attendance Summary",
+                "الملخص الشهري للحضور والانضباط",
+                "",
+            ),
+        };
+
+        let mut sql = format!(
+            r#"SELECT
+                a.attendance_date,
+                a.status,
+                COALESCE(a.notes, '') as notes,
+                COALESCE(s.student_number, '') as student_number,
+                COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
+                COALESCE(sec.name, '') as class_name
+            FROM attendances a
+            INNER JOIN students s ON a.student_id = s.id
+            LEFT JOIN persons p ON s.person_id = p.id
+            LEFT JOIN sections sec ON a.section_id = sec.id
+            WHERE a.org_id = $1{sql_filter}"#
+        );
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
+        if let Some(cid) = class_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND a.section_id = ${idx}"));
+            values.push(cid.into());
+        }
+        if let Some(sid) = student_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND a.student_id = ${idx}"));
+            values.push(sid.into());
+        }
+        sql.push_str(&format!(
+            " ORDER BY a.attendance_date DESC, sec.name, {order_by} LIMIT 500"
+        ));
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("Attendance report query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "attendance_date": date_str(row, "attendance_date"),
+                "student_number": row.try_get::<String>("", "student_number").unwrap_or_default(),
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "class_name": row.try_get::<String>("", "class_name").unwrap_or_default(),
+                "status": row.try_get::<String>("", "status").unwrap_or_default(),
+                "notes": row.try_get::<String>("", "notes").unwrap_or_default(),
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: self.key.into(),
+            report_name: title_en.into(),
+            report_name_ar: title_ar.into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "6%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "attendance_date",
+                    "Date",
+                    "التاريخ",
+                    ColumnDataType::Date,
+                    "14%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "student_name",
+                    "Student",
+                    "اسم الطالب",
+                    ColumnDataType::Text,
+                    "28%",
+                    None,
+                ),
+                col_def(
+                    "class_name",
+                    "Class",
+                    "الصف",
+                    ColumnDataType::Text,
+                    "18%",
+                    None,
+                ),
+                col_def(
+                    "status",
+                    "Status",
+                    "الحالة",
+                    ColumnDataType::Status,
+                    "14%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "notes",
+                    "Notes",
+                    "ملاحظات",
+                    ColumnDataType::Text,
+                    "20%",
+                    None,
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BEHAVIOR REPORTS DATA PROVIDER
+// ═══════════════════════════════════════════════════════════════
+
+pub struct BehaviorReportDataProvider {
+    pub db: DatabaseConnection,
+    pub key: &'static str,
+}
+
+#[async_trait]
+impl ReportDataProvider for BehaviorReportDataProvider {
+    fn provider_key(&self) -> &str {
+        self.key
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let student_filter = parse_uuid_param(parameters, "student_id")?;
+        let merits_only = self.key == "behavior.positive_merits";
+        let (title_en, title_ar, filter_sql) = if merits_only {
+            (
+                "Positive Behavior & Merits",
+                "سجل التميز والمكافآت السلوكية",
+                " AND b.points > 0",
+            )
+        } else {
+            (
+                "Behavior & Conduct Log",
+                "سجل المخالفات والملاحظات السلوكية",
+                "",
+            )
+        };
+
+        let mut sql = format!(
+            r#"SELECT
+                b.created_at,
+                b.record_type,
+                b.description,
+                b.points,
+                COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name
+            FROM behavior_records b
+            INNER JOIN students s ON b.student_id = s.id
+            LEFT JOIN persons p ON s.person_id = p.id
+            WHERE b.org_id = $1{filter_sql}"#
+        );
+        let mut values: Vec<sea_orm::Value> = vec![org_id.into()];
+        if let Some(sid) = student_filter {
+            sql.push_str(" AND b.student_id = $2");
+            values.push(sid.into());
+        }
+        sql.push_str(" ORDER BY b.created_at DESC LIMIT 500");
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("Behavior report query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "date": date_str(row, "created_at"),
+                "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
+                "record_type": row.try_get::<String>("", "record_type").unwrap_or_default(),
+                "points": row.try_get::<i32>("", "points").unwrap_or(0),
+                "description": row.try_get::<String>("", "description").unwrap_or_default(),
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: self.key.into(),
+            report_name: title_en.into(),
+            report_name_ar: title_ar.into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "6%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "date",
+                    "Date",
+                    "التاريخ",
+                    ColumnDataType::Date,
+                    "14%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "student_name",
+                    "Student",
+                    "اسم الطالب",
+                    ColumnDataType::Text,
+                    "25%",
+                    None,
+                ),
+                col_def(
+                    "record_type",
+                    "Type",
+                    "النوع",
+                    ColumnDataType::Text,
+                    "15%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "points",
+                    "Points",
+                    "النقاط",
+                    ColumnDataType::Decimal,
+                    "10%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "description",
+                    "Description",
+                    "الوصف",
+                    ColumnDataType::Text,
+                    "30%",
+                    None,
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FACILITIES, HR & SYSTEM REPORTS DATA PROVIDERS
+// ═══════════════════════════════════════════════════════════════
+
+pub struct AdminFacilitiesDataProvider {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl ReportDataProvider for AdminFacilitiesDataProvider {
+    fn provider_key(&self) -> &str {
+        "admin.facilities"
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        _parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT name, COALESCE(name_ar, name) as name_ar, room_type, capacity, is_exam_hall, floor FROM rooms WHERE org_id = $1 ORDER BY floor, name",
+                vec![org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("Facilities query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            let is_exam_hall: bool = row.try_get("", "is_exam_hall").unwrap_or(false);
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "name": row.try_get::<String>("", "name_ar").unwrap_or_default(),
+                "room_type": row.try_get::<String>("", "room_type").unwrap_or_default(),
+                "capacity": row.try_get::<i32>("", "capacity").unwrap_or(0),
+                "floor": row.try_get::<Option<i32>>("", "floor").ok().flatten().map_or_else(|| "—".to_string(), |f| f.to_string()),
+                "exam_hall": if is_exam_hall { "نعم / Yes" } else { "لا / No" },
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: "admin.facilities".into(),
+            report_name: "Facilities & Rooms Inventory".into(),
+            report_name_ar: "بيان القاعات والمرافق التعليمية".into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "6%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "name",
+                    "Room / Hall",
+                    "القاعة / المرفق",
+                    ColumnDataType::Text,
+                    "30%",
+                    None,
+                ),
+                col_def(
+                    "room_type",
+                    "Type",
+                    "النوع",
+                    ColumnDataType::Text,
+                    "20%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "capacity",
+                    "Capacity",
+                    "السعة",
+                    ColumnDataType::Decimal,
+                    "14%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "floor",
+                    "Floor",
+                    "الدور",
+                    ColumnDataType::Text,
+                    "14%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "exam_hall",
+                    "Exam Hall",
+                    "لجنة اختبار",
+                    ColumnDataType::Text,
+                    "16%",
+                    Some(ColumnAlign::Center),
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+pub struct HrEmployeesDataProvider {
+    pub db: DatabaseConnection,
+    pub key: &'static str,
+}
+
+#[async_trait]
+impl ReportDataProvider for HrEmployeesDataProvider {
+    fn provider_key(&self) -> &str {
+        self.key
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        _parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let (title_en, title_ar) = match self.key {
+            "hr.contracts" => (
+                "Contracts & Employment Status",
+                "تقرير العقود وحالة التوظيف",
+            ),
+            "hr.leave_balance" => (
+                "Staff Directory & Leave Status",
+                "بيان الكادر الوظيفي والإجازات",
+            ),
+            "hr.payroll" => ("Staff Payroll Roster", "كشف الكادر الوظيفي والرواتب"),
+            _ => ("Faculty & Staff Directory", "دليل الكادر التعليمي والإداري"),
+        };
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                r#"SELECT
+                    e.employee_number,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, e.employee_number) as full_name,
+                    COALESCE(e.job_title, '') as job_title,
+                    COALESCE(e.department, '') as department,
+                    e.employment_type,
+                    e.hire_date,
+                    e.status
+                FROM employees e
+                LEFT JOIN persons p ON e.person_id = p.id
+                WHERE e.org_id = $1 AND e.is_deleted = FALSE
+                ORDER BY e.department, full_name"#,
+                vec![org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("HR employees query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "employee_number": row.try_get::<String>("", "employee_number").unwrap_or_default(),
+                "full_name": row.try_get::<String>("", "full_name").unwrap_or_default(),
+                "job_title": row.try_get::<String>("", "job_title").unwrap_or_default(),
+                "department": row.try_get::<String>("", "department").unwrap_or_default(),
+                "employment_type": row.try_get::<String>("", "employment_type").unwrap_or_default(),
+                "hire_date": row.try_get::<String>("", "hire_date").unwrap_or_default(),
+                "status": row.try_get::<String>("", "status").unwrap_or_default(),
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: self.key.into(),
+            report_name: title_en.into(),
+            report_name_ar: title_ar.into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "5%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "employee_number",
+                    "Emp #",
+                    "الرقم الوظيفي",
+                    ColumnDataType::Text,
+                    "13%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "full_name",
+                    "Name",
+                    "الاسم",
+                    ColumnDataType::Text,
+                    "24%",
+                    None,
+                ),
+                col_def(
+                    "job_title",
+                    "Job Title",
+                    "المسمى الوظيفي",
+                    ColumnDataType::Text,
+                    "18%",
+                    None,
+                ),
+                col_def(
+                    "department",
+                    "Department",
+                    "القسم",
+                    ColumnDataType::Text,
+                    "14%",
+                    None,
+                ),
+                col_def(
+                    "hire_date",
+                    "Hire Date",
+                    "تاريخ التعيين",
+                    ColumnDataType::Date,
+                    "13%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "status",
+                    "Status",
+                    "الحالة",
+                    ColumnDataType::Status,
+                    "13%",
+                    Some(ColumnAlign::Center),
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+pub struct SystemAuditTrailDataProvider {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl ReportDataProvider for SystemAuditTrailDataProvider {
+    fn provider_key(&self) -> &str {
+        "system.audit_trail"
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        _parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT action, entity_type, created_at FROM report_audit_log WHERE org_id = $1 ORDER BY created_at DESC LIMIT 300",
+                vec![org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("Audit trail query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "created_at": date_str(row, "created_at"),
+                "action": row.try_get::<String>("", "action").unwrap_or_default(),
+                "entity_type": row.try_get::<String>("", "entity_type").unwrap_or_default(),
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: "system.audit_trail".into(),
+            report_name: "System Audit Trail Log".into(),
+            report_name_ar: "سجل التدقيق والمراجعة الأمنية".into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "8%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "created_at",
+                    "Date",
+                    "التاريخ",
+                    ColumnDataType::Date,
+                    "22%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "action",
+                    "Action",
+                    "الإجراء",
+                    ColumnDataType::Text,
+                    "40%",
+                    None,
+                ),
+                col_def(
+                    "entity_type",
+                    "Entity",
+                    "الكيان",
+                    ColumnDataType::Text,
+                    "30%",
+                    None,
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+pub struct SystemAutopilotLogDataProvider {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl ReportDataProvider for SystemAutopilotLogDataProvider {
+    fn provider_key(&self) -> &str {
+        "system.autopilot_log"
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        _parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                "SELECT task_type, status, risk_level, triggered_by, scheduled_at FROM autopilot_tasks WHERE org_id = $1 ORDER BY scheduled_at DESC LIMIT 300",
+                vec![org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("Autopilot log query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "scheduled_at": date_str(row, "scheduled_at"),
+                "task_type": row.try_get::<String>("", "task_type").unwrap_or_default(),
+                "risk_level": row.try_get::<String>("", "risk_level").unwrap_or_default(),
+                "triggered_by": row.try_get::<String>("", "triggered_by").unwrap_or_default(),
+                "status": row.try_get::<String>("", "status").unwrap_or_default(),
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: "system.autopilot_log".into(),
+            report_name: "Autopilot Execution Log".into(),
+            report_name_ar: "سجل مهام الأتمتة والتنفيذ التلقائي".into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "6%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "scheduled_at",
+                    "Date",
+                    "التاريخ",
+                    ColumnDataType::Date,
+                    "18%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "task_type",
+                    "Task",
+                    "المهمة",
+                    ColumnDataType::Text,
+                    "30%",
+                    None,
+                ),
+                col_def(
+                    "risk_level",
+                    "Risk",
+                    "المستوى",
+                    ColumnDataType::Text,
+                    "14%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "triggered_by",
+                    "Source",
+                    "المصدر",
+                    ColumnDataType::Text,
+                    "16%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "status",
+                    "Status",
+                    "الحالة",
+                    ColumnDataType::Status,
+                    "16%",
+                    Some(ColumnAlign::Center),
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+pub struct SystemPermissionsDataProvider {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl ReportDataProvider for SystemPermissionsDataProvider {
+    fn provider_key(&self) -> &str {
+        "system.permissions"
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        _parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                r#"SELECT
+                    COALESCE(r.name_ar, r.name) as role_name,
+                    rp.resource,
+                    rp.action
+                FROM role_permissions rp
+                INNER JOIN roles r ON rp.role_id = r.id
+                WHERE rp.org_id = $1
+                ORDER BY r.name, rp.resource, rp.action"#,
+                vec![org_id.into()],
+            ))
+            .await
+            .map_err(|e| DomainError::Internal(format!("Permissions matrix query failed: {e}")))?;
+
+        let mut data_rows = Vec::new();
+        for (idx, row) in rows.iter().enumerate() {
+            data_rows.push(serde_json::json!({
+                "seq": idx + 1,
+                "role_name": row.try_get::<String>("", "role_name").unwrap_or_default(),
+                "resource": row.try_get::<String>("", "resource").unwrap_or_default(),
+                "action": row.try_get::<String>("", "action").unwrap_or_default(),
+            }));
+        }
+        let total_count = data_rows.len() as u64;
+
+        Ok(ReportDataset {
+            report_code: "system.permissions".into(),
+            report_name: "Roles & Permissions Matrix".into(),
+            report_name_ar: "مصفوفة الأدوار والصلاحيات".into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                col_def(
+                    "seq",
+                    "#",
+                    "#",
+                    ColumnDataType::Sequence,
+                    "8%",
+                    Some(ColumnAlign::Center),
+                ),
+                col_def(
+                    "role_name",
+                    "Role",
+                    "الدور",
+                    ColumnDataType::Text,
+                    "32%",
+                    None,
+                ),
+                col_def(
+                    "resource",
+                    "Resource",
+                    "المورد",
+                    ColumnDataType::Text,
+                    "35%",
+                    None,
+                ),
+                col_def(
+                    "action",
+                    "Action",
+                    "الصلاحية",
+                    ColumnDataType::Text,
+                    "25%",
+                    Some(ColumnAlign::Center),
+                ),
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: None,
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+pub fn register_default_providers(
+    registry: &mut InMemoryDataProviderRegistry,
+    db: DatabaseConnection,
+) {
+    registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(AnnualResultDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(ExamSeatingPlanDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(AcademicCertificateDataProvider { db: db.clone() }));
+    for key in [
+        "attendance.daily_absence",
+        "attendance.monthly_summary",
+        "attendance.chronic_truancy",
+        "attendance.teacher_log",
+    ] {
+        registry.register_provider(Box::new(AttendanceReportDataProvider {
+            db: db.clone(),
+            key,
+        }));
+    }
+    for key in ["behavior.incident_log", "behavior.positive_merits"] {
+        registry.register_provider(Box::new(BehaviorReportDataProvider {
+            db: db.clone(),
+            key,
+        }));
+    }
+    registry.register_provider(Box::new(AdminFacilitiesDataProvider { db: db.clone() }));
+    for key in [
+        "hr.faculty_list",
+        "hr.contracts",
+        "hr.leave_balance",
+        "hr.payroll",
+    ] {
+        registry.register_provider(Box::new(HrEmployeesDataProvider {
+            db: db.clone(),
+            key,
+        }));
+    }
+    registry.register_provider(Box::new(SystemAuditTrailDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(SystemAutopilotLogDataProvider { db: db.clone() }));
+    registry.register_provider(Box::new(SystemPermissionsDataProvider { db }));
 }

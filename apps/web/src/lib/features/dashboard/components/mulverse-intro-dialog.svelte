@@ -15,7 +15,7 @@ import { FormField, toast } from "@orbis/ui";
 import { GlobeAlt } from "@orbis/icons";
 import { MULVERSE_URLS } from "@orbis/utils";
 import { l } from "$lib/core/i18n";
-import { IAM_DOMAINS, Permissions } from "$lib/core/iam/permissions";
+import { IAM_DOMAINS } from "$lib/core/iam/permissions";
 import { authStore, effectiveContext } from "$lib/stores";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import SmoothImage from "$lib/shared/components/smooth-image.svelte";
@@ -34,23 +34,18 @@ const queryClient = useQueryClient();
 
 let open = $state(false);
 let step = $state<"intro" | "create">("intro");
-let mounted = $state(false);
-let dismissed = $state(true);
 
 let fullName = $state("");
 let email = $state("");
 let isSubmitting = $state(false);
+let isSyncingDefaults = $state(false);
 let formError = $state<string | null>(null);
 
 let credentialModalOpen = $state(false);
 let provisioningResult = $state<AccountProvisioningResultDto | null>(null);
 let createdUserName = $state("");
 
-const canProvisionSafeAdmin = $derived(
-  effectiveContext.hasPermission("*") ||
-    (effectiveContext.hasPermission(Permissions.UserWrite) &&
-      effectiveContext.hasPermission(Permissions.UserRoleWrite)),
-);
+const isAdminUser = $derived(effectiveContext.hasPermission("*"));
 
 const userFirstName = $derived.by(() => {
   const full =
@@ -61,11 +56,10 @@ const userFirstName = $derived.by(() => {
 });
 
 function storageKey(): string {
-  return `${STORAGE_KEY_PREFIX}${orgId}`;
+  return `${STORAGE_KEY_PREFIX}${orgId}_${authStore.userId || "admin"}`;
 }
 
 function markDismissed() {
-  dismissed = true;
   open = false;
   if (typeof localStorage !== "undefined" && orgId) {
     localStorage.setItem(storageKey(), "true");
@@ -73,24 +67,39 @@ function markDismissed() {
 }
 
 onMount(() => {
-  if (!orgId) return;
-  dismissed = localStorage.getItem(storageKey()) === "true";
-  mounted = true;
-});
-
-$effect(() => {
-  if (!mounted || dismissed || !hasOperationalActivity || !canProvisionSafeAdmin) {
-    return;
-  }
+  if (!orgId || !hasOperationalActivity || !isAdminUser) return;
+  if (localStorage.getItem(storageKey()) === "true") return;
 
   const timer = setTimeout(() => {
-    if (!dismissed) {
-      open = true;
-    }
+    localStorage.setItem(storageKey(), "true");
+    open = true;
   }, 1200);
 
   return () => clearTimeout(timer);
 });
+
+async function handleSyncDefaults() {
+  if (isSyncingDefaults) return;
+  isSyncingDefaults = true;
+  try {
+    const res = await api.syncDefaultTemplates();
+    toast.success(
+      m.mulverse_intro_sync_success({
+        updated: res.templates_updated,
+        inserted: res.templates_inserted,
+        reports: res.reports_synced,
+      }),
+    );
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["templates"] }),
+      queryClient.invalidateQueries({ queryKey: ["report-definitions"] }),
+    ]);
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isSyncingDefaults = false;
+  }
+}
 
 function buildSafeAdminPermissions(): Record<string, string[]> {
   const perms: Record<string, string[]> = {};
@@ -185,7 +194,7 @@ function handleOpenChange(nextOpen: boolean) {
           {m.mulverse_intro_description()}
         </p>
 
-        <div class="flex items-center justify-between gap-2 pt-3 mt-1">
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 mt-1">
           <a
             href={MULVERSE_URLS.website}
             target="_blank"
@@ -195,7 +204,7 @@ function handleOpenChange(nextOpen: boolean) {
             <GlobeAlt size={14} />
             <span>{m.mulverse_intro_visit_website()}</span>
           </a>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="ghost"
@@ -203,6 +212,15 @@ function handleOpenChange(nextOpen: boolean) {
               onclick={markDismissed}
             >
               {m.mulverse_intro_later()}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isSyncingDefaults}
+              onclick={handleSyncDefaults}
+            >
+              {isSyncingDefaults ? m.mulverse_intro_syncing_defaults() : m.mulverse_intro_sync_defaults()}
             </Button>
             <Button
               type="button"

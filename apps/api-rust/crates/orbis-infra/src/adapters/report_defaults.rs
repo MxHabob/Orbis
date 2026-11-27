@@ -12,11 +12,16 @@ pub const MASTER_TEMPLATE_HTML: &str = r##"
 * { box-sizing: border-box; }
 body { margin: 0; color: #0f172a; background: #f4f6f8; font: 10.5pt/1.55 "Noto Sans Arabic", Tahoma, "Segoe UI", sans-serif; }
 .report { max-width: 235mm; margin: 24px auto; padding: 24px; background: #fff; }
-.master-header { padding-block-end: 14px; margin-block-end: 18px; border-block-end: 2px solid {{ brand_color | default(value="#334155") }}; }
-.org-name { color: #475569; margin: 0 0 5px; }
-h1 { margin: 0; font-size: 18pt; line-height: 1.25; overflow-wrap: anywhere; }
+.master-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding-block-end: 12px; margin-block-end: 16px; border-block-end: 3px double #0f172a; }
+.header-identity { text-align: center; font-size: 9.5pt; font-weight: 700; color: #0f172a; line-height: 1.5; }
+.header-identity p { margin: 0; }
+.header-emblem { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.header-bismillah { font-size: 9pt; font-weight: 700; color: #0f172a; margin: 0; }
+.header-emblem img { width: 54px; height: 50px; object-fit: contain; }
+.header-report-meta { text-align: center; }
+h1 { margin: 0; font-size: 13.5pt; line-height: 1.3; overflow-wrap: anywhere; color: #0f172a; }
 .meta, .master-footer { color: #475569; font-size: 9pt; }
-.meta { margin: 7px 0 0; }
+.meta { margin: 5px 0 0; }
 .parameters { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 0; margin: 0 0 12px; border-block-end: 1px solid #d8e0e7; }
 .parameters div { display: flex; flex-wrap: wrap; gap: 4px 6px; }
 .parameters dt { font-weight: 600; }
@@ -41,9 +46,20 @@ tr { break-inside: avoid; }
 <body>
   <article class="report">
     <header class="master-header">
-      <p class="org-name">{% if is_rtl and org_name_ar %}{{ org_name_ar }}{% else %}{{ org_name }}{% endif %}</p>
-      <h1>{% if is_rtl and report_name_ar %}{{ report_name_ar }}{% else %}{{ report_name }}{% endif %}</h1>
-      <p class="meta"><bdi>{{ generated_at }}</bdi></p>
+      <div class="header-identity">
+        {% if country_name %}<p>{{ country_name }}</p>{% endif %}
+        {% if ministry_name %}<p>{{ ministry_name }}</p>{% endif %}
+        {% if region_name %}<p>{{ region_name }}</p>{% endif %}
+        <p>{% if is_rtl and org_name_ar %}{{ org_name_ar }}{% else %}{{ org_name }}{% endif %}</p>
+      </div>
+      <div class="header-emblem">
+        {% if is_rtl %}<p class="header-bismillah">بسم الله الرحمن الرحيم</p>{% endif %}
+        {% if state_emblem_uri %}<img src="{{ state_emblem_uri }}" alt="" />{% endif %}
+      </div>
+      <div class="header-report-meta">
+        <h1>{% if is_rtl and report_name_ar %}{{ report_name_ar }}{% else %}{{ report_name }}{% endif %}</h1>
+        <p class="meta"><bdi>{{ generated_at }}</bdi>{% if total_count %} · {% if is_rtl %}السجلات{% else %}Records{% endif %}: {{ total_count }}{% endif %}</p>
+      </div>
     </header>
     {% if has_parameters %}
     <dl class="parameters">
@@ -92,17 +108,18 @@ pub const TABULAR_REPORT_HTML: &str = r##"
 
 pub const PAYMENT_RECEIPT_HTML: &str = r##"
 <style>
-.receipt-box { max-width: 760px; margin: 0 auto; padding: 30px; border: 1px solid #d8e2eb; border-radius: 16px; background: #fff; color: #172033; font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif; }
-.r-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 1px solid #e5ebf1; }
-.r-org { color: #475569; font-size: 12px; font-weight: 600; }
-.r-title { margin: 4px 0 0; color: {{ primary_color | default(value="#0f766e") }}; font-size: 22px; font-weight: 800; }
-.r-number { padding: 8px 12px; border: 1px solid #d8e2eb; border-radius: 8px; color: #334155; font-size: 12px; white-space: nowrap; }
-.r-amount { margin: 20px 0; padding: 18px; border: 1px solid #cce9e3; border-radius: 12px; background: #f0fdfa; color: #0f766e; text-align: center; font-size: 26px; font-weight: 800; }
-.r-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.r-item { min-width: 0; padding: 12px 14px; border: 1px solid #e5ebf1; border-radius: 9px; overflow-wrap: anywhere; }
+@page { size: A5 landscape; margin: 8mm; }
+.receipt-box { max-width: 210mm; margin: 0 auto; padding: 18px 22px; border: 1px solid #cbd5e1; border-top: 4px solid {{ primary_color | default(value="#0f172a") }}; border-radius: 10px; background: #fff; color: #0f172a; font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif; }
+.r-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
+.r-org { color: #475569; font-size: 11px; font-weight: 700; }
+.r-title { margin: 3px 0 0; color: #0f172a; font-size: 19px; font-weight: 800; }
+.r-number { padding: 7px 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; color: #334155; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.r-amount { margin: 14px 0; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f1f5f9; color: #0f172a; text-align: center; font-size: 22px; font-weight: 800; }
+.r-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.r-item { min-width: 0; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; overflow-wrap: anywhere; }
 .r-item-wide { grid-column: 1 / -1; }
-.r-item strong { display: block; margin-bottom: 4px; color: #64748b; font-size: 11px; font-weight: 600; }
-.r-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; padding-top: 16px; border-top: 1px dashed #cbd5e1; color: #64748b; font-size: 11px; }
+.r-item strong { display: block; margin-bottom: 2px; color: #64748b; font-size: 10px; font-weight: 600; }
+.r-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #cbd5e1; color: #64748b; font-size: 10.5px; }
 @media print { .receipt-box { max-width: none; border-radius: 0; box-shadow: none; } }
 </style>
 <div class="receipt-box" dir="{% if is_rtl %}rtl{% else %}ltr{% endif %}">

@@ -1,3 +1,4 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use docforge_engine::model::document::TemplateDocument;
 use orbis_domain::{
     entities::report::{ColumnAlign, ColumnDataType, ReportDataset, ReportLocale},
@@ -7,6 +8,16 @@ use serde_json::{Map, Value, json};
 
 const FONT: &str = "Noto Sans Arabic";
 const MAX_COLUMNS: usize = 9;
+
+fn state_emblem_data_uri() -> &'static str {
+    static EMBLEM: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    EMBLEM.get_or_init(|| {
+        let encoded = STANDARD.encode(include_bytes!(
+            "../../../orbis-app/src/defaults/assest/The Public Slogan.png"
+        ));
+        format!("data:image/png;base64,{encoded}")
+    })
+}
 
 pub(super) fn build(
     dataset: &ReportDataset,
@@ -47,15 +58,38 @@ pub(super) fn build(
     };
     let page_count = row_pages * panels;
     let mut context = Map::new();
+    let emblem_uri = state_emblem_data_uri();
+    let org_lines: Vec<String> = [
+        dataset.org.country_name.as_deref(),
+        dataset.org.ministry_name.as_deref(),
+        dataset.org.region_name.as_deref(),
+        Some(org),
+    ]
+    .into_iter()
+    .flatten()
+    .map(str::trim)
+    .filter(|line| !line.is_empty())
+    .map(str::to_string)
+    .collect();
+    let org_identity = org_lines.join("\n");
+
     context.insert(
         "report".into(),
-        json!({ "title": title, "organization": org }),
+        json!({ "title": title, "organization": org, "identity": org_identity }),
     );
     context.insert(
         "org".into(),
-        json!({ "primary_color": dataset.org.primary_color }),
+        json!({ "primary_color": dataset.org.primary_color, "emblem": emblem_uri }),
     );
     let mut children = Vec::new();
+
+    let side_w: f64 = (content_width * 0.36_f64).min(78.0_f64);
+    let center_w = 46.0;
+    let center_x = (width - center_w) / 2.0;
+    let right_x = width - 14.0 - side_w;
+    let left_x = 14.0;
+    let identity_x = if rtl { right_x } else { left_x };
+    let meta_x = if rtl { left_x } else { right_x };
 
     for page in 0..row_pages {
         let start = page * rows_per_page;
@@ -68,69 +102,122 @@ pub(super) fn build(
             if index > 1 {
                 children.push(json!({ "type": "PageBreak", "id": format!("break-{index}") }));
             }
-            let mut text = |id: &str, content: &str, y: f64, size: f64, bold: bool, align: &str| {
-                children.push(json!({
+            let text = |id: &str,
+                        content: &str,
+                        x: f64,
+                        y: f64,
+                        w: f64,
+                        h: f64,
+                        size: f64,
+                        bold: bool,
+                        align: &str| {
+                json!({
                     "type": "Text", "id": format!("{id}-{index}"),
                     "props": {
                         "content": content, "fontFamily": FONT, "fontSize": size,
                         "direction": if id == "page" { "ltr" } else { direction },
                         "fontWeight": if bold { "bold" } else { "normal" }, "textAlign": align,
+                        "lineHeight": 1.35,
                         "color": if bold { "#0f172a" } else { "#475569" }
                     },
-                    "position": { "x": 14, "y": y, "width": content_width, "height": 11 }
-                }));
+                    "position": { "x": x, "y": y, "width": w, "height": h }
+                })
             };
-            text(
+            // Official 3-Column Letterhead Header
+            children.push(text(
                 "organization",
-                "{{report.organization}}",
-                12.0,
-                10.0,
-                false,
-                leading,
-            );
-            text("title", "{{report.title}}", 23.0, 16.0, true, leading);
+                "{{report.identity}}",
+                identity_x,
+                10.5,
+                side_w,
+                25.0,
+                8.5,
+                true,
+                "center",
+            ));
+            if rtl {
+                children.push(text(
+                    "bismillah",
+                    "بسم الله الرحمن الرحيم",
+                    center_x,
+                    9.5,
+                    center_w,
+                    5.0,
+                    8.0,
+                    true,
+                    "center",
+                ));
+            }
+            children.push(json!({
+                "type": "Image",
+                "id": format!("state-emblem-{index}"),
+                "props": { "src": "{{org.emblem}}", "fit": "contain" },
+                "position": { "x": (width - 18.0) / 2.0, "y": if rtl { 15.5 } else { 11.0 }, "width": 18.0, "height": 17.0 }
+            }));
+            children.push(text(
+                "title",
+                "{{report.title}}",
+                meta_x,
+                11.0,
+                side_w,
+                13.0,
+                10.5,
+                true,
+                "center",
+            ));
             let count = if rtl {
                 format!(
-                    "عدد السجلات: {}   |   {}",
-                    dataset.total_count,
-                    dataset.generated_at.format("%Y-%m-%d")
+                    "التاريخ: {}  |  السجلات: {}",
+                    dataset.generated_at.format("%Y-%m-%d"),
+                    dataset.total_count
                 )
             } else {
                 format!(
-                    "Records: {}   |   {}",
-                    dataset.total_count,
-                    dataset.generated_at.format("%Y-%m-%d")
+                    "Date: {}  |  Records: {}",
+                    dataset.generated_at.format("%Y-%m-%d"),
+                    dataset.total_count
                 )
             };
-            text("meta", &count, 35.0, 9.0, false, leading);
-            text(
+            children.push(text(
+                "meta", &count, meta_x, 25.0, side_w, 8.0, 8.0, false, "center",
+            ));
+            children.push(text(
                 "page",
                 &format!("{index} / {page_count}"),
+                14.0,
                 height - 19.0,
+                content_width,
+                8.0,
                 9.0,
                 false,
                 if rtl { leading } else { trailing },
-            );
+            ));
+            children.push(json!({
+                "type": "Separator", "id": format!("header-rule-{index}"),
+                "props": { "direction": "horizontal", "color": "#0f172a", "thickness": 1.1 },
+                "position": { "x": 14, "y": 37.5, "width": content_width, "height": 1 }
+            }));
+            children.push(json!({
+                "type": "Separator", "id": format!("header-rule-sub-{index}"),
+                "props": { "direction": "horizontal", "color": "#64748b", "thickness": 0.4 },
+                "position": { "x": 14, "y": 39.2, "width": content_width, "height": 0.5 }
+            }));
             if empty {
-                text(
+                children.push(text(
                     "empty",
                     if rtl {
                         "لا توجد بيانات لعرضها"
                     } else {
                         "No data to display"
                     },
-                    52.0,
+                    14.0,
+                    50.0,
+                    content_width,
+                    11.0,
                     11.0,
                     false,
-                    leading,
-                );
-            }
-            children.push(json!({
-                "type": "Separator", "id": format!("header-rule-{index}"),
-                "props": { "direction": "horizontal", "color": "org-primary", "thickness": 0.8 },
-                "position": { "x": 14, "y": 43, "width": content_width, "height": 1 }
-            }));
-            if empty {
+                    "center",
+                ));
                 continue;
             }
 
@@ -186,7 +273,7 @@ pub(super) fn build(
                         "altRowBgColor": "#f8fafc", "rowHeight": 28, "padding": 4
                     }
                 },
-                "position": { "x": 14, "y": 47, "width": content_width, "height": height - 69.0 }
+                "position": { "x": 14, "y": 43, "width": content_width, "height": height - 65.0 }
             }));
         }
     }

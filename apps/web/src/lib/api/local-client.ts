@@ -1615,6 +1615,14 @@ export class LocalClient implements OrbisApiClient {
   async validateTemplate(documentJson: string): Promise<ValidationResultDto> {
     return unwrap(await invoke("template_validate", { documentJson }));
   }
+  async syncDefaultTemplates(): Promise<{
+    templates_inserted: number;
+    templates_updated: number;
+    templates_skipped_customized: number;
+    reports_synced: number;
+  }> {
+    return unwrap(await invoke("template_sync_defaults"));
+  }
 
   // ── Template Bindings ───────────────────────────────────────
   async listTemplateBindings(

@@ -5,6 +5,104 @@ use serde_json::json;
 use tracing::info;
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct SyncDefaultsSummary {
+    pub templates_inserted: u64,
+    pub templates_updated: u64,
+    pub templates_skipped_customized: u64,
+}
+
+/// Safely synchronizes stock templates for an organization:
+/// - Inserts any missing stock templates.
+/// - Updates only untouched stock templates (`is_system = TRUE`, `version = 1`,
+///   `published_version = 1`, `updated_at = created_at`, `deleted_at IS NULL`).
+/// - Never touches user-created templates or user-edited stock templates.
+pub async fn sync_master_templates_for_org<C: ConnectionTrait>(
+    db: &C,
+    org_id: Uuid,
+    admin_id: Uuid,
+    now: &str,
+) -> Result<SyncDefaultsSummary, DomainError> {
+    let templates = get_master_template_definitions();
+    let mut summary = SyncDefaultsSummary::default();
+
+    for (code, name_en, name_ar, entity, r_type, page_sz, page_or, doc_json) in &templates {
+        let doc_str = doc_json.to_string();
+        let margins = doc_json["meta"]["pageSetup"]["margins"].to_string();
+
+        let existing = db
+            .query_one(Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "SELECT id, is_system, status, version, published_version, (updated_at = created_at) AS is_untouched, (deleted_at IS NOT NULL) AS is_deleted \
+                 FROM report_templates WHERE org_id = $1 AND code = $2 LIMIT 1",
+                vec![org_id.into(), (*code).into()],
+            ))
+            .await
+            .map_err(|error| DomainError::Internal(format!("Failed to check template {code}: {error}")))?;
+
+        match existing {
+            None => {
+                let tid = Uuid::new_v4();
+                db.execute(Statement::from_sql_and_values(
+                    db.get_database_backend(),
+                    "INSERT INTO report_templates (id, org_id, code, name, name_ar, description, description_ar, document_type, entity_type, master_template_id, status, version, published_version, published_at, published_by, page_size, orientation, margins_json, document_json, locale, tags, is_system, is_default, created_by, deleted_at, created_at, updated_at) \
+                     SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, $12, $13, 'ar', '[\"templates\"]', TRUE, \
+                     NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND document_type = $6 AND entity_type = $7 AND is_default = TRUE AND deleted_at IS NULL), \
+                     $9, NULL, $8, $8",
+                    vec![
+                        tid.into(), org_id.into(), (*code).into(),
+                        (*name_en).into(), (*name_ar).into(),
+                        (*r_type).into(), (*entity).into(),
+                        now.to_string().into(), admin_id.into(),
+                        (*page_sz).into(), (*page_or).into(),
+                        margins.into(), doc_str.into(),
+                    ],
+                ))
+                .await
+                .map_err(|error| DomainError::Internal(format!("Failed to insert template {code}: {error}")))?;
+                summary.templates_inserted += 1;
+            }
+            Some(row) => {
+                let is_system: bool = row.try_get("", "is_system").unwrap_or(false);
+                let status: String = row.try_get("", "status").unwrap_or_default();
+                let version: i32 = row.try_get("", "version").unwrap_or(0);
+                let published_version: Option<i32> =
+                    row.try_get("", "published_version").ok().flatten();
+                let is_untouched: bool = row.try_get("", "is_untouched").unwrap_or(false);
+                let is_deleted: bool = row.try_get("", "is_deleted").unwrap_or(false);
+
+                if is_system
+                    && !is_deleted
+                    && status == "published"
+                    && version == 1
+                    && published_version == Some(1)
+                    && is_untouched
+                {
+                    db.execute(Statement::from_sql_and_values(
+                        db.get_database_backend(),
+                        "UPDATE report_templates \
+                         SET name = $3, name_ar = $4, page_size = $5, orientation = $6, margins_json = $7, document_json = $8 \
+                         WHERE org_id = $1 AND code = $2 AND is_system = TRUE AND status = 'published' AND version = 1 AND published_version = 1 AND updated_at = created_at AND deleted_at IS NULL",
+                        vec![
+                            org_id.into(), (*code).into(),
+                            (*name_en).into(), (*name_ar).into(),
+                            (*page_sz).into(), (*page_or).into(),
+                            margins.into(), doc_str.into(),
+                        ],
+                    ))
+                    .await
+                    .map_err(|error| DomainError::Internal(format!("Failed to update template {code}: {error}")))?;
+                    summary.templates_updated += 1;
+                } else {
+                    summary.templates_skipped_customized += 1;
+                }
+            }
+        }
+    }
+
+    Ok(summary)
+}
+
 pub async fn provision_master_templates<C: ConnectionTrait>(
     db: &C,
     org_id: Uuid,
@@ -588,14 +686,15 @@ pub fn get_master_template_definitions() -> Vec<(
             "finance",
             "RECEIPT",
         ),
+        // ── 6. Student Exam Admission & Seating Card (ID_CARD Landscape 85.6mm x 54mm) ─
         (
             "examinations.student-exam-card",
             "Student Exam Admission & Seating Card",
             "بطاقة دخول الاختبار ورقم الجلوس المعتمد",
             "student",
             "EXAM_CARD",
-            "A5",
-            "portrait",
+            "ID_CARD",
+            "landscape",
             json!({
                 "version": "2.0",
                 "meta": {
@@ -604,7 +703,7 @@ pub fn get_master_template_definitions() -> Vec<(
                     "documentType": "EXAM_CARD",
                     "entityType": "student",
                     "locale": "ar",
-                    "pageSetup": { "size": "A5", "orientation": "portrait", "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 }, "unit": "mm" }
+                    "pageSetup": { "size": "ID_CARD", "orientation": "landscape", "margins": { "top": 0, "bottom": 0, "left": 0, "right": 0 }, "unit": "mm" }
                 },
                 "variables": {
                     "student.name": { "source": "student.name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
@@ -619,89 +718,81 @@ pub fn get_master_template_definitions() -> Vec<(
                     "children": [
                         {
                             "type": "Shape",
-                            "id": "exam-card-bg",
-                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1, "borderRadius": 3 },
-                            "position": { "x": 6, "y": 6, "width": 136, "height": 198 }
+                            "id": "bg-exam-card",
+                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.4, "borderRadius": 3 },
+                            "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                        },
+                        {
+                            "type": "Shape",
+                            "id": "exam-accent",
+                            "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2.5 },
+                            "position": { "x": 1, "y": 1, "width": 83.6, "height": 10.5 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-header",
-                            "props": { "content": "{{$org.name_ar}}\nلجنة الكنترول والامتحانات العامة", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.4 },
-                            "position": { "x": 20, "y": 10, "width": 108, "height": 10 }
+                            "props": { "content": "{{$org.name_ar | default:$org.name}}", "fontSize": 7.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 4, "y": 2, "width": 77.6, "height": 4 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-sub",
-                            "props": { "content": "بطاقة دخول لجان الاختبارات ورقم الجلوس", "fontSize": 11, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#dc2626", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 10, "y": 22, "width": 128, "height": 6 }
+                            "props": { "content": "بطاقة رقم الجلوس ودخول الاختبار", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#e2e8f0", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 4, "y": 6.5, "width": 77.6, "height": 3.5 }
                         },
-                        // Seating Number Box
                         {
                             "type": "Shape",
                             "id": "seat-box",
-                            "props": { "shapeType": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
-                            "position": { "x": 12, "y": 30, "width": 124, "height": 18 }
+                            "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#0f172a", "strokeWidth": 0.5, "borderRadius": 2 },
+                            "position": { "x": 4.5, "y": 14, "width": 24, "height": 17.5 }
                         },
                         {
                             "type": "Text",
                             "id": "seat-title",
-                            "props": { "content": "رقم الجلوس الرسمي", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#991b1b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 15, "y": 32, "width": 118, "height": 4 }
+                            "props": { "content": "رقم الجلوس", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 5.5, "y": 15.5, "width": 22, "height": 3.5 }
                         },
                         {
                             "type": "Text",
                             "id": "seat-val",
-                            "props": { "content": "{{exam.seatingNumber}}", "fontSize": 16, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#991b1b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 15, "y": 37, "width": 118, "height": 9 }
+                            "props": { "content": "{{exam.seatingNumber | default:'—'}}", "fontSize": 11.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "ltr" },
+                            "position": { "x": 5.5, "y": 20.5, "width": 22, "height": 8 }
                         },
-                        // Details
                         {
                             "type": "Text",
                             "id": "exam-student-name",
-                            "props": { "content": "اسم الطالب: {{student.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 12, "y": 52, "width": 124, "height": 5 }
+                            "props": { "content": "{{student.name | default:'—'}}", "fontSize": 8.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 31, "y": 14, "width": 50, "height": 5 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-hall-info",
-                            "props": { "content": "مقر اللجنة / القاعة: {{exam.hallName}} | المقعد: {{exam.deskNumber}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 12, "y": 58, "width": 124, "height": 5 }
+                            "props": { "content": "القاعة: {{exam.hallName | default:'—'}}", "fontSize": 6.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 31, "y": 20.5, "width": 50, "height": 4 }
                         },
-                        // Timetable
                         {
-                            "type": "Table",
-                            "id": "exam-schedule-table",
-                            "props": {
-                                "dataSource": "examSchedules",
-                                "columns": [
-                                    { "header": "اليوم والتاريخ", "headerAr": "اليوم والتاريخ", "field": "examDate", "width": "35%" },
-                                    { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "40%" },
-                                    { "header": "الفترة", "headerAr": "الفترة", "field": "timeSlot", "width": "25%" }
-                                ],
-                                "showHeader": true,
-                                "showGrid": true,
-                                "direction": "rtl"
-                            },
-                            "position": { "x": 12, "y": 66, "width": 124, "height": 85 }
+                            "type": "Text",
+                            "id": "exam-session-info",
+                            "props": { "content": "الدورة: {{exam.sessionName | default:'—'}}", "fontSize": 6.2, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 31, "y": 25.5, "width": 50, "height": 4 }
                         },
-                        // Barcode & Warning
+                        {
+                            "type": "Separator",
+                            "id": "exam-sep",
+                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.4 },
+                            "position": { "x": 4.5, "y": 34, "width": 76.6, "height": 0.5 }
+                        },
                         {
                             "type": "Barcode",
                             "id": "exam-barcode",
-                            "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 14.0 },
-                            "position": { "x": 25, "y": 155, "width": 98, "height": 14 }
+                            "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 9.0 },
+                            "position": { "x": 16, "y": 36.5, "width": 53.6, "height": 9 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-rules",
-                            "props": { "content": "تنبيه: يُمنع اصطحاب الهواتف الذكية أو المذكرات داخل لجان الامتحانات، ويجب إبراز هذه البطاقة عند الدخول.", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#b91c1c", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
-                            "position": { "x": 12, "y": 174, "width": 124, "height": 10 }
-                        },
-                        {
-                            "type": "Text",
-                            "id": "sig-control",
-                            "props": { "content": "رئيس لجنة الكنترول\n_______________", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 40, "y": 186, "width": 68, "height": 12 }
+                            "props": { "content": "تُبرز البطاقة عند دخول اللجنة ويُمنع اصطحاب الهواتف", "fontSize": 4.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 4, "y": 47, "width": 77.6, "height": 3 }
                         }
                     ]
                 }]
@@ -930,37 +1021,86 @@ fn finance_document(
     let receipt = document_type == "RECEIPT";
     let namespace = if receipt { "receipt" } else { "voucher" };
     let mut variables = serde_json::Map::new();
-    let text = |id: &str, content: &str, y: f64, size: f64, bold: bool, align: &str| {
+    let text_box = |id: &str,
+                    content: &str,
+                    x: f64,
+                    y: f64,
+                    width: f64,
+                    height: f64,
+                    size: f64,
+                    bold: bool,
+                    align: &str,
+                    dir: &str,
+                    color: &str| {
         json!({
-            "type": "Text", "id": id, "props": {
-                "content": content, "fontFamily": "Noto Sans Arabic", "fontSize": size,
+            "type": "Text",
+            "id": id,
+            "props": {
+                "content": content,
+                "fontFamily": "Noto Sans Arabic",
+                "fontSize": size,
                 "fontWeight": if bold { "bold" } else { "normal" },
-                "direction": if id == "amount" { "ltr" } else { "rtl" }, "textAlign": align, "lineHeight": 1.25,
-                "color": if bold { "#0f172a" } else { "#475569" }
+                "direction": dir,
+                "textAlign": align,
+                "lineHeight": 1.25,
+                "color": color
             },
-            "position": { "x": 12, "y": y, "width": 124, "height": 10 }
+            "position": { "x": x, "y": y, "width": width, "height": height }
         })
     };
     let divider = |id: &str, y: f64| {
         json!({
-            "type": "Separator", "id": id,
-            "props": { "direction": "horizontal", "color": "#d8e0e7", "thickness": 0.65 },
-            "position": { "x": 12, "y": y, "width": 124, "height": 1 }
+            "type": "Separator",
+            "id": id,
+            "props": { "direction": "horizontal", "color": "#d8e0e7", "thickness": 0.6 },
+            "position": { "x": 12, "y": y, "width": 186, "height": 1 }
         })
     };
+
     let mut children = vec![
-        text(
+        // Outer subtle frame & top accent bar (A5 Landscape: 210mm x 148mm)
+        json!({
+            "type": "Shape",
+            "id": "bg-voucher",
+            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 3 },
+            "position": { "x": 6, "y": 6, "width": 198, "height": 136 }
+        }),
+        json!({
+            "type": "Shape",
+            "id": "voucher-accent",
+            "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeWidth": 0, "borderRadius": 1.5 },
+            "position": { "x": 6, "y": 6, "width": 198, "height": 2.5 }
+        }),
+        // Header Right: Organization + Voucher Title
+        text_box(
             "organization",
             "{{$org.name_ar | default:$org.name}}",
-            12.0,
-            11.0,
+            106.0,
+            11.5,
+            92.0,
+            6.0,
+            10.0,
             true,
             "start",
+            "rtl",
+            "#475569",
         ),
-        text("title-ar", name_ar, 25.0, 17.0, true, "start"),
-        text("title-en", name, 35.0, 9.0, false, "start"),
-        divider("header-divider", 46.0),
+        text_box(
+            "title-ar", name_ar, 106.0, 18.5, 92.0, 8.0, 15.0, true, "start", "rtl", "#0f172a",
+        ),
+        text_box(
+            "title-en", name, 106.0, 27.5, 92.0, 5.0, 8.5, false, "start", "rtl", "#64748b",
+        ),
+        // Header Left: Metadata Pill (Number & Date)
+        json!({
+            "type": "Shape",
+            "id": "meta-box",
+            "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#e2e8f0", "strokeWidth": 0.45, "borderRadius": 2 },
+            "position": { "x": 12, "y": 12, "width": 78, "height": 19 }
+        }),
+        divider("header-divider", 35.0),
     ];
+
     let fields: &[(&str, &str, &str)] = if receipt {
         &[
             ("number", "Receipt number", "رقم السند"),
@@ -996,71 +1136,158 @@ fn finance_document(
             ("description", "Description", "البيان"),
         ]
     };
+
     for (index, &(field, label, label_ar)) in fields.iter().enumerate() {
         let key = format!("{namespace}.{field}");
         variables.insert(
             key.clone(),
             json!({ "source": key, "type": "string", "label": label, "labelAr": label_ar }),
         );
-        let y = if index < 2 {
-            51.0 + index as f64 * 10.0
-        } else {
-            98.0 + (index - 2) as f64 * 10.0
-        };
         let value_format = if field == "date" {
             " | date:'yyyy/MM/dd'"
         } else {
             ""
         };
-        children.push(text(
-            field,
-            &format!("{label_ar}: {{{{{key}{value_format} | default:'—'}}}}"),
-            y,
-            10.0,
-            false,
-            "start",
-        ));
+        let content = format!("{label_ar}: {{{{{key}{value_format} | default:'—'}}}}");
+
+        if index == 0 {
+            children.push(text_box(
+                field, &content, 15.0, 14.0, 72.0, 6.0, 9.5, true, "start", "rtl", "#0f172a",
+            ));
+        } else if index == 1 {
+            children.push(text_box(
+                field, &content, 15.0, 22.0, 72.0, 6.0, 8.8, false, "start", "rtl", "#475569",
+            ));
+        } else {
+            let body_idx = index - 2;
+            let is_last_desc = field == "description";
+            if is_last_desc {
+                let row = body_idx / 2;
+                let y = 60.5 + row as f64 * 12.5;
+                children.push(text_box(
+                    field, &content, 12.0, y, 186.0, 11.0, 9.5, false, "start", "rtl", "#1e293b",
+                ));
+            } else {
+                let row = body_idx / 2;
+                let col = body_idx % 2;
+                let x = if col == 0 { 108.0 } else { 12.0 };
+                let y = 60.5 + row as f64 * 12.5;
+                children.push(text_box(
+                    field, &content, x, y, 90.0, 8.0, 9.5, false, "start", "rtl", "#1e293b",
+                ));
+            }
+        }
     }
+
     let amount_key = format!("{namespace}.amount");
     let currency_key = format!("{namespace}.currency");
     variables.insert(
         amount_key.clone(),
         json!({ "source": amount_key, "type": "number", "label": "Amount", "labelAr": "المبلغ" }),
     );
-    variables.insert(currency_key.clone(), json!({ "source": currency_key, "type": "string", "label": "Currency", "labelAr": "العملة" }));
+    variables.insert(
+        currency_key.clone(),
+        json!({ "source": currency_key, "type": "string", "label": "Currency", "labelAr": "العملة" }),
+    );
+
     children.extend([
         json!({
-            "type": "Shape", "id": "amount-background",
-            "props": { "shapeType": "rectangle", "fillColor": "#eaf0f5", "strokeWidth": 0, "borderRadius": 2 },
-            "position": { "x": 12, "y": 73, "width": 124, "height": 18 }
+            "type": "Shape",
+            "id": "amount-background",
+            "props": { "shapeType": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.4, "borderRadius": 2.5 },
+            "position": { "x": 12, "y": 39, "width": 186, "height": 16.5 }
         }),
-        text("amount", &format!("{{{{{amount_key} | default:'—'}}}}  {{{{{currency_key} | default:$org.currency}}}}"), 77.0, 16.0, true, "center"),
-        divider("footer-divider", 155.0),
+        text_box(
+            "amount-label",
+            "المبلغ الإجمالي",
+            152.0,
+            44.0,
+            40.0,
+            6.0,
+            9.5,
+            false,
+            "start",
+            "rtl",
+            "#475569",
+        ),
+        text_box(
+            "amount",
+            &format!("{{{{{amount_key} | default:'—'}}}}  {{{{{currency_key} | default:$org.currency}}}}"),
+            16.0,
+            42.5,
+            132.0,
+            9.5,
+            15.5,
+            true,
+            "center",
+            "ltr",
+            "#0f172a",
+        ),
+        divider("footer-divider", 107.0),
     ]);
+
     if receipt {
         children.push(json!({
-            "type": "QRCode", "id": "receipt-reference-code",
-            "props": { "data": "{{receipt.number}}", "size": 22, "errorCorrection": "M" },
-            "position": { "x": 12, "y": 166, "width": 22, "height": 22 }
+            "type": "QRCode",
+            "id": "receipt-reference-code",
+            "props": { "data": "{{receipt.number}}", "size": 20, "errorCorrection": "M" },
+            "position": { "x": 14, "y": 112, "width": 20, "height": 20 }
         }));
-        children.push(text(
+        children.push(text_box(
+            "electronic-note",
+            "سند قبض مالي معتمد إلكترونياً",
+            38.0,
+            119.5,
+            68.0,
+            6.0,
+            8.0,
+            false,
+            "start",
+            "rtl",
+            "#64748b",
+        ));
+        children.push(text_box(
             "signature",
-            "توقيع أمين الصندوق  __________________",
-            174.0,
+            "توقيع أمين الصندوق:  _______________________",
+            112.0,
+            119.0,
+            86.0,
+            7.0,
             9.0,
             false,
             "start",
+            "rtl",
+            "#334155",
         ));
     } else {
-        children.push(text(
+        children.push(text_box(
             "signature",
-            "المحاسب  __________________     الاعتماد  __________________",
-            170.0,
+            "المحاسب:  _______________________",
+            112.0,
+            119.0,
+            86.0,
+            7.0,
             9.0,
             false,
-            "center",
+            "start",
+            "rtl",
+            "#334155",
+        ));
+        children.push(text_box(
+            "signature-approval",
+            "الاعتماد:  _______________________",
+            14.0,
+            119.0,
+            86.0,
+            7.0,
+            9.0,
+            false,
+            "start",
+            "rtl",
+            "#334155",
         ));
     }
+
     (
         code,
         name,
@@ -1068,17 +1295,24 @@ fn finance_document(
         entity,
         document_type,
         "A5",
-        "portrait",
+        "landscape",
         json!({
             "version": "2.0",
             "meta": {
-                "name": name, "nameAr": name_ar, "documentType": document_type, "entityType": entity, "locale": "ar",
+                "name": name,
+                "nameAr": name_ar,
+                "documentType": document_type,
+                "entityType": entity,
+                "locale": "ar",
                 "pageSetup": {
-                    "size": "A5", "orientation": "portrait", "unit": "mm",
-                    "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 }
+                    "size": "A5",
+                    "orientation": "landscape",
+                    "unit": "mm",
+                    "margins": { "top": 8, "bottom": 8, "left": 10, "right": 10 }
                 }
             },
-            "variables": variables, "pages": [{ "type": "Page", "id": "p1", "children": children }]
+            "variables": variables,
+            "pages": [{ "type": "Page", "id": "p1", "children": children }]
         }),
     )
 }
@@ -1105,7 +1339,7 @@ fn financial_master_templates_render_as_single_a5_pages() {
         "voucher": { "number": "V-125", "amount": 825, "date": "2026-11-25" }
     });
     let mut checked = 0;
-    for (code, _, _, _, _, size, _, definition) in get_master_template_definitions() {
+    for (code, _, _, _, _, size, orientation, definition) in get_master_template_definitions() {
         let document: TemplateDocument =
             serde_json::from_value(definition).unwrap_or_else(|error| panic!("{code}: {error}"));
         if !matches!(
@@ -1115,6 +1349,7 @@ fn financial_master_templates_render_as_single_a5_pages() {
             continue;
         }
         assert_eq!(size, "A5");
+        assert_eq!(orientation, "landscape");
         let layout = engine.layout(&document, &context).unwrap();
         assert_eq!(layout.pages.len(), 1);
         let page = &layout.pages[0];
@@ -1133,8 +1368,8 @@ fn financial_master_templates_render_as_single_a5_pages() {
                 .unwrap();
             }
         }
-        assert!((page.width_pt - 419.53).abs() < 0.2);
-        assert!((page.height_pt - 595.28).abs() < 0.2);
+        assert!((page.width_pt - 595.28).abs() < 0.2);
+        assert!((page.height_pt - 419.53).abs() < 0.2);
         assert!(page.elements.iter().any(
             |element| matches!(element, PositionedElement::Text(text) if text.content.contains("825") && text.content.contains("SAR"))
         ));
@@ -1269,11 +1504,11 @@ fn default_grade_certificate_templates() -> Vec<(
                     "props": {
                         "dataSource": "grades",
                         "columns": [
-                            { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "30%", "alignment": "right", "total": "label", "totalLabel": "المجموع الكلي" },
+                            { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "32%", "alignment": "right", "total": "label", "totalLabel": "المجموع الكلي" },
                             { "header": "أعمال الفصل", "headerAr": "أعمال الفصل", "field": "courseworkScore", "width": "17%", "alignment": "center", "total": "sum" },
                             { "header": "الاختبار", "headerAr": "الاختبار", "field": "examScore", "width": "17%", "alignment": "center", "total": "sum" },
-                            { "header": "المجموع", "headerAr": "المجموع", "field": "totalScore", "width": "18%", "alignment": "center", "total": "sum" },
-                            { "header": "التقدير", "headerAr": "التقدير", "field": "gradeLetter", "width": "18%", "alignment": "center" }
+                            { "header": "المجموع", "headerAr": "المجموع", "field": "totalScore", "width": "17%", "alignment": "center", "total": "sum" },
+                            { "header": "التقدير", "headerAr": "التقدير", "field": "gradeLetter", "width": "17%", "alignment": "center" }
                         ],
                         "showHeader": true,
                         "showTotals": true,
@@ -1281,14 +1516,15 @@ fn default_grade_certificate_templates() -> Vec<(
                         "showBorder": true,
                         "direction": "rtl",
                         "style": {
-                            "headerBgColor": "#0f172a",
-                            "headerTextColor": "#ffffff",
+                            "headerBgColor": "#eaf0f5",
+                            "headerTextColor": "#0f172a",
                             "alternateRowBgColor": "#f8fafc",
-                            "borderColor": "#cbd5e1",
-                            "borderWidth": 0.75,
-                            "headerFontSize": 8.0,
+                            "borderColor": "#94a3b8",
+                            "borderWidth": 0.6,
+                            "headerFontSize": 8.5,
                             "fontSize": 8.0,
-                            "rowHeight": 18.0
+                            "rowHeight": 19.0,
+                            "padding": 4
                         }
                     },
                     "position": { "x": 45, "y": 64, "width": 155, "height": 62 }
@@ -1403,22 +1639,66 @@ fn default_letterhead_template() -> (
                 "id": "p1",
                 "children": [
                     {
-                        "type": "Image",
-                        "id": "organization-logo",
-                        "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
-                        "position": { "x": 96, "y": 12, "width": 18, "height": 18 }
+                        "type": "Text",
+                        "id": "header-right-identity",
+                        "props": {
+                            "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar | default:$org.name}}",
+                            "fontSize": 9,
+                            "fontFamily": "Noto Sans Arabic",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl",
+                            "lineHeight": 1.45
+                        },
+                        "position": { "x": 132, "y": 11, "width": 64, "height": 26 }
                     },
                     {
                         "type": "Text",
-                        "id": "organization-identity-header",
-                        "props": { "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar}}", "fontSize": 12, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl", "lineHeight": 1.5 },
-                        "position": { "x": 35, "y": 32, "width": 140, "height": 30 }
+                        "id": "header-bismillah",
+                        "props": {
+                            "content": "بسم الله الرحمن الرحيم",
+                            "fontSize": 8.5,
+                            "fontFamily": "Noto Sans Arabic",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 76, "y": 9, "width": 58, "height": 5 }
+                    },
+                    {
+                        "type": "Image",
+                        "id": "organization-logo",
+                        "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                        "position": { "x": 94, "y": 16, "width": 22, "height": 20 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "header-left-meta",
+                        "props": {
+                            "content": "{{$org.name}}\nالتاريخ: {{issueDate}}\nالمرجع: {{referenceNumber}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Noto Sans Arabic",
+                            "fontWeight": "normal",
+                            "color": "#334155",
+                            "textAlign": "center",
+                            "direction": "rtl",
+                            "lineHeight": 1.45
+                        },
+                        "position": { "x": 14, "y": 12, "width": 62, "height": 24 }
                     },
                     {
                         "type": "Separator",
                         "id": "header-divider",
-                        "props": { "direction": "horizontal", "color": "#cbd5e1", "thickness": 0.6 },
-                        "position": { "x": 15, "y": 67, "width": 180, "height": 1 }
+                        "props": { "direction": "horizontal", "color": "#0f172a", "thickness": 1.1 },
+                        "position": { "x": 14, "y": 39, "width": 182, "height": 1 }
+                    },
+                    {
+                        "type": "Separator",
+                        "id": "header-divider-thin",
+                        "props": { "direction": "horizontal", "color": "#64748b", "thickness": 0.4 },
+                        "position": { "x": 14, "y": 40.8, "width": 182, "height": 0.5 }
                     }
                 ]
             }]
@@ -1640,15 +1920,15 @@ fn default_yemeni_academic_certificate_template() -> (
                             "dataSource": "subjects",
                             "columns": [
                                 { "field": "seq", "header": "No", "headerAr": "م", "width": "5%", "alignment": "center" },
-                                { "field": "subject_name", "header": "Subject", "headerAr": "المادة الدراسية", "width": "23%", "alignment": "right", "total": "label", "totalLabel": "المجموع العام / Total" },
-                                { "field": "max_score", "header": "Max", "headerAr": "الكبرى", "width": "9%", "alignment": "center", "total": "sum" },
-                                { "field": "min_score", "header": "Min", "headerAr": "الصغرى", "width": "9%", "alignment": "center", "total": "sum" },
-                                { "field": "t1_coursework", "header": "S1 CW", "headerAr": "محصلة ف1", "width": "9%", "alignment": "center", "total": "sum" },
-                                { "field": "t1_exam", "header": "S1 Ex", "headerAr": "اختبار ف1", "width": "9%", "alignment": "center", "total": "sum" },
-                                { "field": "t2_coursework", "header": "S2 CW", "headerAr": "محصلة ف2", "width": "9%", "alignment": "center", "total": "sum" },
-                                { "field": "t2_exam", "header": "S2 Ex", "headerAr": "اختبار ف2", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "subject_name", "header": "Subject", "headerAr": "المادة الدراسية", "width": "25%", "alignment": "right", "total": "label", "totalLabel": "المجموع العام / Total" },
+                                { "field": "max_score", "header": "Max", "headerAr": "الكبرى", "width": "8.5%", "alignment": "center", "total": "sum" },
+                                { "field": "min_score", "header": "Min", "headerAr": "الصغرى", "width": "8.5%", "alignment": "center", "total": "sum" },
+                                { "field": "t1_coursework", "header": "S1 CW", "headerAr": "محصلة ف1", "width": "8.5%", "alignment": "center", "total": "sum" },
+                                { "field": "t1_exam", "header": "S1 Ex", "headerAr": "اختبار ف1", "width": "8.5%", "alignment": "center", "total": "sum" },
+                                { "field": "t2_coursework", "header": "S2 CW", "headerAr": "محصلة ف2", "width": "8.5%", "alignment": "center", "total": "sum" },
+                                { "field": "t2_exam", "header": "S2 Ex", "headerAr": "اختبار ف2", "width": "8.5%", "alignment": "center", "total": "sum" },
                                 { "field": "annual_total", "header": "Total", "headerAr": "المجموع", "width": "9%", "alignment": "center", "total": "sum" },
-                                { "field": "appreciation", "header": "Grade", "headerAr": "التقدير", "width": "9%", "alignment": "center" }
+                                { "field": "appreciation", "header": "Grade", "headerAr": "التقدير", "width": "10%", "alignment": "center" }
                             ],
                             "showHeader": true,
                             "showTotals": true,
@@ -1656,14 +1936,15 @@ fn default_yemeni_academic_certificate_template() -> (
                             "showBorder": true,
                             "direction": "rtl",
                             "style": {
-                                "headerBgColor": "#0f172a",
-                                "headerTextColor": "#ffffff",
+                                "headerBgColor": "#eaf0f5",
+                                "headerTextColor": "#0f172a",
                                 "alternateRowBgColor": "#f8fafc",
-                                "borderColor": "#334155",
-                                "borderWidth": 0.75,
+                                "borderColor": "#94a3b8",
+                                "borderWidth": 0.6,
                                 "headerFontSize": 7.5,
                                 "fontSize": 7.5,
-                                "rowHeight": 18.0
+                                "rowHeight": 19.0,
+                                "padding": 3.5
                             }
                         },
                         "position": { "x": 14, "y": 82, "width": 182, "height": 120 }
@@ -1996,8 +2277,8 @@ fn default_exam_hall_seating_card_template() -> (
         "بطاقة رقم الجلوس ودخول قاعات الاختبار",
         "exam",
         "EXAM_CARD",
-        "A5",
-        "portrait",
+        "ID_CARD",
+        "landscape",
         json!({
             "version": "2.0",
             "meta": {
@@ -2006,7 +2287,7 @@ fn default_exam_hall_seating_card_template() -> (
                 "documentType": "EXAM_CARD",
                 "entityType": "exam",
                 "locale": "ar",
-                "pageSetup": { "size": "A5", "orientation": "portrait", "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 }, "unit": "mm" }
+                "pageSetup": { "size": "ID_CARD", "orientation": "landscape", "margins": { "top": 0, "bottom": 0, "left": 0, "right": 0 }, "unit": "mm" }
             },
             "variables": {
                 "student.name": { "source": "student.name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
@@ -2022,85 +2303,75 @@ fn default_exam_hall_seating_card_template() -> (
                 "children": [
                     {
                         "type": "Shape",
-                        "id": "exam-card-bg",
-                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1.0, "borderRadius": 3 },
-                        "position": { "x": 6, "y": 6, "width": 136, "height": 198 }
+                        "id": "bg-seating-card",
+                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.4, "borderRadius": 3 },
+                        "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "seating-accent",
+                        "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2.5 },
+                        "position": { "x": 1, "y": 1, "width": 83.6, "height": 10.5 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-header",
-                        "props": { "content": "{{$org.name_ar}}\nلجنة الكنترول والامتحانات العامة", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.4 },
-                        "position": { "x": 20, "y": 10, "width": 108, "height": 10 }
+                        "props": { "content": "{{$org.name_ar | default:$org.name}}", "fontSize": 7.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 4, "y": 2, "width": 77.6, "height": 4 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-sub",
-                        "props": { "content": "بطاقة دخول لجان الاختبارات ورقم الجلوس المعتمد", "fontSize": 10.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#dc2626", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 10, "y": 22, "width": 128, "height": 6 }
+                        "props": { "content": "بطاقة رقم الجلوس — {{exam.sessionName | default:'الاختبارات'}}", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#e2e8f0", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 4, "y": 6.5, "width": 77.6, "height": 3.5 }
                     },
                     {
                         "type": "Shape",
                         "id": "seat-box",
-                        "props": { "shapeType": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
-                        "position": { "x": 12, "y": 30, "width": 124, "height": 18 }
+                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#0f172a", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 4.5, "y": 14, "width": 24, "height": 17.5 }
                     },
                     {
                         "type": "Text",
                         "id": "seat-title",
-                        "props": { "content": "رقم الجلوس الرسمي", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#991b1b", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 15, "y": 32, "width": 118, "height": 4 }
+                        "props": { "content": "رقم الجلوس", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 5.5, "y": 15.5, "width": 22, "height": 3.5 }
                     },
                     {
                         "type": "Text",
                         "id": "seat-val",
-                        "props": { "content": "{{exam.seatingNumber}}", "fontSize": 16.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#991b1b", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 15, "y": 37, "width": 118, "height": 9 }
+                        "props": { "content": "{{exam.seatingNumber | default:'—'}}", "fontSize": 11.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "ltr" },
+                        "position": { "x": 5.5, "y": 20.5, "width": 22, "height": 8 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-student-name",
-                        "props": { "content": "اسم الطالب: {{student.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 12, "y": 52, "width": 124, "height": 5 }
+                        "props": { "content": "{{student.name | default:'—'}}", "fontSize": 8.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 31, "y": 14, "width": 50, "height": 5 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-hall-info",
-                        "props": { "content": "مقر اللجنة / القاعة: {{exam.hallName}} | المقعد: {{exam.deskNumber}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 12, "y": 58, "width": 124, "height": 5 }
+                        "props": { "content": "القاعة: {{exam.hallName | default:'—'}}  |  المقعد: {{exam.deskNumber | default:'—'}}", "fontSize": 6.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 31, "y": 21, "width": 50, "height": 4.5 }
                     },
                     {
-                        "type": "Table",
-                        "id": "exam-schedule-table",
-                        "props": {
-                            "dataSource": "examSchedules",
-                            "columns": [
-                                { "header": "اليوم والتاريخ", "headerAr": "اليوم والتاريخ", "field": "examDate", "width": "35%" },
-                                { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "40%" },
-                                { "header": "الفترة", "headerAr": "الفترة", "field": "timeSlot", "width": "25%" }
-                            ],
-                            "showHeader": true,
-                            "showGrid": true,
-                            "direction": "rtl"
-                        },
-                        "position": { "x": 12, "y": 66, "width": 124, "height": 85 }
+                        "type": "Separator",
+                        "id": "seating-sep",
+                        "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.4 },
+                        "position": { "x": 4.5, "y": 34, "width": 76.6, "height": 0.5 }
                     },
                     {
                         "type": "Barcode",
                         "id": "exam-barcode",
-                        "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 14.0 },
-                        "position": { "x": 25, "y": 155, "width": 98, "height": 14 }
+                        "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 9.0 },
+                        "position": { "x": 16, "y": 36.5, "width": 53.6, "height": 9 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-rules",
-                        "props": { "content": "تنبيه: يُمنع اصطحاب الهواتف الذكية أو المذكرات داخل لجان الامتحانات، ويجب إبراز هذه البطاقة عند الدخول.", "fontSize": 7.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#b91c1c", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
-                        "position": { "x": 12, "y": 174, "width": 124, "height": 10 }
-                    },
-                    {
-                        "type": "Text",
-                        "id": "sig-control",
-                        "props": { "content": "رئيس لجنة الكنترول\n_______________", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 40, "y": 186, "width": 68, "height": 12 }
+                        "props": { "content": "يُرجى إبراز البطاقة عند دخول قاعة الاختبار", "fontSize": 4.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 4, "y": 47, "width": 77.6, "height": 3 }
                     }
                 ]
             }]
@@ -2679,7 +2950,8 @@ mod tests {
             .expect("exam hall seating card template");
         assert_eq!(seating_card.3, "exam");
         assert_eq!(seating_card.4, "EXAM_CARD");
-        assert_eq!(seating_card.5, "A5");
+        assert_eq!(seating_card.5, "ID_CARD");
+        assert_eq!(seating_card.6, "landscape");
 
         let user_card = templates
             .iter()

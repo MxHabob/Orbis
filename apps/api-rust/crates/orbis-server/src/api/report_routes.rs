@@ -1744,6 +1744,72 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/reports/batch-print", post(batch_print))
         .route("/api/v1/reports/schema/:key", get(get_provider_schema))
         .route("/api/v1/reports/audit-logs", get(list_audit_logs))
+        .route(
+            "/api/v1/templates/sync-defaults",
+            post(sync_default_templates),
+        )
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct SyncDefaultsResponse {
+    pub templates_inserted: u64,
+    pub templates_updated: u64,
+    pub templates_skipped_customized: u64,
+    pub reports_synced: u64,
+}
+
+pub async fn sync_default_templates(
+    State(state): State<AppState>,
+    auth: AuthContext,
+) -> Result<Json<ApiResponse<SyncDefaultsResponse>>, ApiError> {
+    let ctx = auth.0;
+    if state
+        .permission_checker
+        .check(&ctx, Permission::TemplateWrite)
+        .await
+        .is_err()
+        && state
+            .permission_checker
+            .check(&ctx, Permission::TemplatePublish)
+            .await
+            .is_err()
+    {
+        return Err(ApiError::forbidden(
+            "Missing permission to sync default templates and reports",
+        ));
+    }
+
+    let actor_id = ctx.actor.id().unwrap_or_default();
+    let now = Utc::now().to_rfc3339();
+    let tpl_summary = orbis_infra::repositories::template_catalog::sync_master_templates_for_org(
+        &state.db,
+        ctx.tenant_id,
+        actor_id,
+        &now,
+    )
+    .await
+    .map_err(|e| ApiError::internal(e.to_string()))?;
+
+    orbis_infra::repositories::report_catalog::provision_master_report_definitions(
+        &state.db,
+        ctx.tenant_id,
+        &now,
+    )
+    .await
+    .map_err(|e| ApiError::internal(e.to_string()))?;
+    let reports_synced =
+        orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
+    let reports_synced = orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
+
+    Ok(ApiResponse::ok_with_id(
+        SyncDefaultsResponse {
+            templates_inserted: tpl_summary.templates_inserted,
+            templates_updated: tpl_summary.templates_updated,
+            templates_skipped_customized: tpl_summary.templates_skipped_customized,
+            reports_synced,
+        },
+        ctx.request_id,
+    ))
 }
 
 #[cfg(test)]

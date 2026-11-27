@@ -2639,6 +2639,21 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
+  async syncDefaultTemplates() {
+    return this.call(
+      this.client.post<{
+        200: {
+          templates_inserted: number;
+          templates_updated: number;
+          templates_skipped_customized: number;
+          reports_synced: number;
+        };
+      }>({
+        url: "/api/v1/templates/sync-defaults",
+      }),
+    );
+  }
+
   // ── Template Bindings ───────────────────────────────────────
   async listTemplateBindings(
     definitionId: string,

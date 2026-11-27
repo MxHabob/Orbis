@@ -2389,6 +2389,12 @@ export interface OrbisApiClient {
     locale?: string,
   ): Promise<Uint8Array>;
   validateTemplate(documentJson: string): Promise<ValidationResultDto>;
+  syncDefaultTemplates(): Promise<{
+    templates_inserted: number;
+    templates_updated: number;
+    templates_skipped_customized: number;
+    reports_synced: number;
+  }>;
 
   // ── Template Bindings ───────────────────────────────────────
   listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]>;
