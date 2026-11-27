@@ -404,8 +404,7 @@ fn resolve_or_generate_installation_id(app_data_dir: &Path) -> Result<String, St
 
 #[cfg(target_os = "linux")]
 fn has_linux_secret_service() -> bool {
-    std::env::var_os("DBUS_SESSION_BUS_ADDRESS")
-        .is_some_and(|value| !value.is_empty())
+    std::env::var_os("DBUS_SESSION_BUS_ADDRESS").is_some_and(|value| !value.is_empty())
 }
 
 #[cfg(target_os = "linux")]
@@ -420,7 +419,10 @@ fn is_keyring_unavailable(error: &KeyringError) -> bool {
 fn write_restricted_secret_file(path: &Path, contents: &str) -> Result<(), String> {
     use std::os::unix::fs::OpenOptionsExt;
 
-    if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
         fs::create_dir_all(parent)
             .map_err(|error| format!("Failed to create identity directory: {error}"))?;
     }

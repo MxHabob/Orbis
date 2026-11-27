@@ -6,6 +6,7 @@ import {
   AppNotification,
   ArrowUpCircle,
   BuildingOffice,
+  CheckCircle,
   ChevronLeft,
   ChevronRight,
   Cog6,
@@ -51,7 +52,7 @@ const roleKeys: Record<string, TranslationKey> = {
 type ProfileMenuItem = {
   id: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   icon: React.ReactNode;
   trailingText?: string;
   busy?: boolean;
@@ -169,7 +170,6 @@ export default function ProfileScreen() {
     {
       id: "institutions",
       title: t("auth_institution_linked"),
-      subtitle: t("auth_institution_linked_description"),
       icon: <BuildingOffice size={20} color={theme.mutedForeground} />,
       trailingText: String(linkedInstitutionCount),
       onPress: () => router.push("/(app)/profile/institutions"),
@@ -177,7 +177,6 @@ export default function ProfileScreen() {
     {
       id: "security",
       title: t("profile_menu_security"),
-      subtitle: t("profile_security_description"),
       icon: <LockClosed size={20} color={theme.mutedForeground} />,
       onPress: () => router.push("/(app)/profile/security"),
     },
@@ -186,7 +185,6 @@ export default function ProfileScreen() {
     {
       id: "preferences",
       title: t("profile_menu_preferences"),
-      subtitle: t("profile_preferences_description"),
       icon: <Cog6 size={20} color={theme.mutedForeground} />,
       trailingText: locale === "ar" ? "العربية" : "English",
       onPress: () => router.push("/(app)/profile/preferences"),
@@ -194,30 +192,32 @@ export default function ProfileScreen() {
     {
       id: "notifications",
       title: t("pref_notifications"),
-      subtitle: t("home_notifications_description"),
       icon: <AppNotification size={20} color={theme.mutedForeground} />,
       onPress: () => router.push("/(app)/notifications"),
+    },
+    {
+      id: "approvals",
+      title: t("approvals_title"),
+      icon: <CheckCircle size={20} color={theme.mutedForeground} />,
+      onPress: () => router.push("/(app)/approvals"),
     },
   ];
   const helpItems: ProfileMenuItem[] = [
     {
       id: "support",
       title: t("profile_help_title"),
-      subtitle: t("profile_help_description"),
       icon: <Headphone size={20} color={theme.mutedForeground} />,
       onPress: () => setIsSupportDrawerVisible(true),
     },
     {
       id: "about",
       title: t("profile_about_title"),
-      subtitle: t("app_tagline"),
       icon: <InfoCircle size={20} color={theme.mutedForeground} />,
       onPress: () => openWebViewer({ page: "about" }),
     },
     {
       id: "mulverse",
       title: t("profile_about_mulverse"),
-      subtitle: t("profile_about_mulverse_description"),
       icon: <GlobeAlt size={20} color={theme.mutedForeground} />,
       onPress: () => openWebViewer({ page: "mulverse" }),
     },
@@ -226,7 +226,6 @@ export default function ProfileScreen() {
     helpItems.push({
       id: "organization-website",
       title: t("profile_organization_website"),
-      subtitle: t("profile_organization_website_description"),
       icon: <GlobeAlt size={20} color={theme.mutedForeground} />,
       onPress: openOrganizationWebsite,
     });
@@ -234,9 +233,7 @@ export default function ProfileScreen() {
   helpItems.push({
     id: "updates",
     title: t("updates_app_version"),
-    subtitle: isCheckingUpdates
-      ? t("updates_checking")
-      : t("updates_check_button"),
+    subtitle: isCheckingUpdates ? t("updates_checking") : undefined,
     icon: <ArrowUpCircle size={20} color={theme.mutedForeground} />,
     trailingText: appVersion,
     busy: isCheckingUpdates,
@@ -427,7 +424,9 @@ function ProfileMenuGroup({
             ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${item.title}. ${item.subtitle}`}
+              accessibilityLabel={
+                item.subtitle ? `${item.title}. ${item.subtitle}` : item.title
+              }
               accessibilityState={{
                 busy: Boolean(item.busy),
                 disabled: Boolean(item.busy),
@@ -449,12 +448,14 @@ function ProfileMenuGroup({
                   >
                     {item.title}
                   </Text>
-                  <Text
-                    numberOfLines={2}
-                    className="text-xs leading-4 text-muted-foreground"
-                  >
-                    {item.subtitle}
-                  </Text>
+                  {item.subtitle ? (
+                    <Text
+                      numberOfLines={2}
+                      className="text-xs leading-4 text-muted-foreground"
+                    >
+                      {item.subtitle}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
               <View className="flex-row items-center gap-two">

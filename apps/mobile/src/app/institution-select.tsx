@@ -2,7 +2,7 @@ import { BuildingOffice, CheckCircle, Plus, Search } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Platform, StyleSheet, View } from "react-native";
+import { FlatList, Platform, RefreshControl, StyleSheet, View } from "react-native";
 import type { ListRenderItemInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
@@ -305,8 +305,15 @@ export default function InstitutionSelectScreen() {
             keyboardDismissMode="on-drag"
             automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
-            refreshing={directoryQuery.isRefetching}
-            onRefresh={() => void directoryQuery.refetch()}
+            refreshControl={
+              <RefreshControl
+                refreshing={directoryQuery.isRefetching}
+                onRefresh={() => void directoryQuery.refetch()}
+                tintColor={theme.primary}
+                colors={[theme.primary]}
+                progressBackgroundColor={theme.backgroundElement}
+              />
+            }
             initialNumToRender={8}
             maxToRenderPerBatch={8}
             windowSize={7}

@@ -19,12 +19,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerTransparent: true,
-        headerStatusBarHeight: 0,
         headerShadowVisible: false,
-        headerStyle: {
-          backgroundColor: "transparent",
-        },
         header: ({ route }) => (
           <Header
             title={t(

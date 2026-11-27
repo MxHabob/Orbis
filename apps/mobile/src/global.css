@@ -33,7 +33,7 @@
     --accent-foreground: 29 29 29;
 
     /* States */
-    --destructive: 222 78 75;
+    --destructive: 216 0 30;
     --destructive-foreground: 255 255 255;
 
     /* Inputs */
@@ -146,7 +146,7 @@
       --accent-foreground: 228 228 228;
 
       /* States */
-      --destructive: 236 91 87;
+      --destructive: 216 0 30;
       --destructive-foreground: 255 255 255;
 
       /* Inputs */

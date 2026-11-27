@@ -63,7 +63,7 @@ export const Input = React.memo<InputProps>(
 
         {/* Sunken Recessed Input Container */}
         <View
-          className={`min-h-11 flex-row items-center rounded-md border px-3 ${error ? "border-error" : isFocused ? "border-primary" : "border-border"} ${isDark ? "bg-background-element" : "bg-background"}`}
+          className={`min-h-12 flex-row items-center rounded-md border px-3.5 ${error ? "border-error" : isFocused ? "border-primary" : "border-border"} ${isDark ? "bg-background-element" : "bg-background"}`}
           style={[
             {
               shadowColor: isFocused ? theme.primary : "#000000",
@@ -79,7 +79,7 @@ export const Input = React.memo<InputProps>(
           )}
 
           <TextInput
-            className="flex-1 py-2 text-sm leading-5 text-foreground"
+            className="flex-1 py-2.5 text-[15px] leading-5 text-foreground"
             style={[
               {
                 backgroundColor: "transparent",

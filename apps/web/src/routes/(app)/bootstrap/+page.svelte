@@ -8,7 +8,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { licenseStore, uiStore } from "$lib/stores";
-import { LoadingIndicator } from "@orbis/ui";
+import StatusStage from "$lib/shared/components/status-stage.svelte";
 import { BootstrapWizard } from "$lib/features/bootstrap";
 
 let licenseReady = $state(false);
@@ -27,7 +27,7 @@ onMount(async () => {
   <BootstrapWizard />
 {:else}
   <div class="flex h-full w-full items-center justify-center bg-background">
-    <LoadingIndicator size="lg" label={m.onboarding_state_loading()} />
+    <StatusStage status="preparing" phases={[m.onboarding_state_loading()]} />
   </div>
 {/if}
 

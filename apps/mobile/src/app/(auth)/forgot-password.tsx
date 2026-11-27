@@ -1,147 +1,157 @@
 /**
  * @module @orbis/mobile/app/(auth)/forgot-password
  *
- * Minimalist, elegant Password Recovery screen directly inspired by Reference Image 3.
+ * Minimal password recovery screen aligned with Orbis S.C.R.A.P.S. surfaces.
  */
 
 import React, { useState } from "react";
-import { View, Pressable, TextInput } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useI18n } from "@/lib/i18n";
-import { useTheme } from "@/hooks/use-theme";
-import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
 import { ArrowLeft, ArrowRight, CheckCircle } from "@orbis/icons/native";
+import { Screen } from "@/components/layout/screen";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { Text } from "@/components/ui/text";
+import { useFormValidation } from "@/hooks/use-form-validation";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t, isArabic } = useI18n();
 
-  const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const {
+    values,
+    errors,
+    formError,
+    setFormError,
+    setValue,
+    markTouched,
+    validateAll,
+  } = useFormValidation({
+    initialValues: { email: "" },
+    validators: {
+      email: (value) => {
+        const trimmed = value.trim();
+        if (!trimmed || !trimmed.includes("@")) {
+          return t("auth_error_required");
+        }
+        return null;
+      },
+    },
+  });
 
   const handleSend = async () => {
-    setErrorMsg(null);
-    const trimmed = email.trim();
-    if (!trimmed || !trimmed.includes("@")) {
-      setErrorMsg(t("auth_error_required"));
+    if (!validateAll()) {
       return;
     }
 
     setIsLoading(true);
+    setFormError(null);
     try {
       await new Promise((resolve) => setTimeout(resolve, 600));
       setIsSubmitted(true);
     } catch {
-      setErrorMsg(t("auth_error_failed"));
+      setFormError(t("auth_error_failed"));
     } finally {
       setIsLoading(false);
     }
   };
 
   const BackIcon = isArabic ? ArrowRight : ArrowLeft;
-  const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
 
   return (
-    <View className="flex-1 bg-background">
+    <Screen edges={["top", "bottom", "left", "right"]}>
       <KeyboardAwareView
         style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "space-between",
-          paddingHorizontal: 24,
-          paddingTop: insets.top + 16,
-          paddingBottom: Math.max(insets.bottom, 16) + 8,
-        }}
+        contentContainerStyle={{ flexGrow: 1 }}
       >
-        <View className="mb-6 flex-row items-center">
-          <Pressable
-            onPress={() => router.back()}
-            className="h-11 w-11 items-center justify-center"
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <BackIcon size={20} color={theme.foreground} />
-          </Pressable>
-        </View>
+        <View className="flex-1 justify-between px-five pb-four pt-two">
+          <View className="flex-row items-center">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("auth_back_to_sign_in")}
+              onPress={() => router.back()}
+              className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
+              hitSlop={10}
+            >
+              <BackIcon size={22} color={theme.foreground} />
+            </Pressable>
+          </View>
 
-        {!isSubmitted ? (
-          <View className="flex-1 justify-center">
-            <View className="mb-6">
-              <Text className="font-sans text-[28px] leading-9 font-semibold tracking-tight text-foreground">
+          {!isSubmitted ? (
+            <View className="flex-1 justify-center gap-four">
+              <Text className="text-[28px] leading-9 font-semibold tracking-tight text-foreground">
                 {t("auth_forgot_title")}
               </Text>
-              <Text className="mt-one font-sans text-sm leading-5 text-muted-foreground">
-                {t("auth_forgot_subtitle")}
-              </Text>
-            </View>
 
-            {errorMsg ? (
-              <View className="mb-four rounded-lg border border-destructive bg-destructive/10 px-three py-two">
-                <Text className="font-sans text-xs leading-4 font-semibold text-destructive">
-                  {errorMsg}
-                </Text>
+              <Card padding="four" className="gap-three">
+                <Input
+                  label={t("auth_email_placeholder")}
+                  placeholder={t("auth_email_placeholder")}
+                  value={values.email}
+                  onChangeText={(value) => setValue("email", value)}
+                  onBlur={() => markTouched("email")}
+                  error={errors.email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoFocus
+                  onSubmitEditing={() => void handleSend()}
+                  returnKeyType="go"
+                />
+
+                {formError ? (
+                  <Text
+                    accessibilityRole="alert"
+                    className="text-start text-xs leading-4 font-medium text-destructive"
+                  >
+                    {formError}
+                  </Text>
+                ) : null}
+
+                <Button
+                  title={t("auth_forgot_title")}
+                  onPress={() => void handleSend()}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  fullWidth
+                  size="lg"
+                />
+              </Card>
+            </View>
+          ) : (
+            <View className="flex-1 items-center justify-center gap-four px-four">
+              <View className="h-14 w-14 items-center justify-center rounded-full bg-success/10">
+                <CheckCircle size={32} color={theme.success} />
               </View>
-            ) : null}
 
-            <View className="min-h-12 flex-row items-center rounded-xl border border-border bg-card px-four">
-              <TextInput
-                className="flex-1 px-two font-sans text-base text-foreground"
-                style={{
-                  textAlign: isArabic ? "right" : "left",
-                }}
-                placeholder={t("auth_email_placeholder")}
-                placeholderTextColor={theme.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoFocus
-                onSubmitEditing={handleSend}
-                returnKeyType="go"
-              />
+              <Text className="text-center text-2xl leading-8 font-semibold text-foreground">
+                {t("auth_forgot_success_title")}
+              </Text>
 
-              <IconButton
-                icon={<ArrowIcon size={16} color={theme.primaryForeground} />}
-                onPress={() => void handleSend()}
-                accessibilityLabel={t("auth_forgot_title")}
-                disabled={isLoading}
-                loading={isLoading}
-                size="md"
-              />
+              <Text className="text-center text-sm leading-5 text-muted-foreground">
+                {t("auth_forgot_success_msg")}
+              </Text>
+
+              <View className="w-full pt-two">
+                <Button
+                  title={t("auth_back_to_sign_in")}
+                  onPress={() => router.replace("/(auth)/sign-in")}
+                  fullWidth
+                  size="lg"
+                />
+              </View>
             </View>
-          </View>
-        ) : (
-          <View className="flex-1 items-center justify-center px-4">
-            <View className="mb-five h-16 w-16 items-center justify-center rounded-full bg-success/10">
-              <CheckCircle size={44} color={theme.success} />
-            </View>
-
-            <Text className="mb-two text-center font-sans text-2xl leading-7.5 font-extrabold text-foreground">
-              {t("auth_forgot_success_title")}
-            </Text>
-
-            <Text className="mb-eight text-center font-sans text-sm leading-5.5 text-muted-foreground">
-              {t("auth_forgot_success_msg")}
-            </Text>
-
-            <View className="w-full">
-              <Button
-                title={t("auth_back_to_sign_in")}
-                onPress={() => router.replace("/(auth)/sign-in")}
-                fullWidth
-                size="lg"
-              />
-            </View>
-          </View>
-        )}
+          )}
+        </View>
       </KeyboardAwareView>
-    </View>
+    </Screen>
   );
 }

@@ -17,9 +17,31 @@ import type {
 } from "./types";
 
 function extractData<T>(response: unknown): T {
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "error" in response &&
+    response.error !== undefined &&
+    response.error !== null
+  ) {
+    const err = response.error;
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "object" && "message" in err && typeof err.message === "string"
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : "Notification request failed.";
+    throw new Error(message);
+  }
+
   let data = response;
   while (typeof data === "object" && data !== null && "data" in data) {
     data = (data as Record<string, unknown>).data;
+  }
+  if (data === undefined || data === null) {
+    throw new Error("Notification response did not include data.");
   }
   return data as T;
 }
@@ -44,7 +66,11 @@ export async function fetchUnreadCount(): Promise<number> {
   const res = await api.client.get<ApiResponse<UnreadCountDto>>({
     url: "/api/v1/notifications/unread-count",
   });
-  return extractData<UnreadCountDto>(res).count;
+  const payload = extractData<UnreadCountDto>(res);
+  if (typeof payload.count !== "number") {
+    throw new Error("Invalid unread notification count response.");
+  }
+  return payload.count;
 }
 
 export async function markNotificationRead(id: string): Promise<void> {

@@ -84,6 +84,7 @@ export default function NotificationPreferencesScreen() {
   const [prefs, setPrefs] = useState<PrefsMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
@@ -102,13 +103,15 @@ export default function NotificationPreferencesScreen() {
         }
         setPrefs(map);
         setIsError(false);
+        setErrorMessage(null);
       })
       .catch((error: unknown) => {
         if (!active) return;
-        console.error(
+        console.warn(
           "[Notifications] Failed to load notification preferences.",
           error,
         );
+        setErrorMessage(error instanceof Error ? error.message : null);
         setIsError(true);
       })
       .finally(() => {
@@ -165,6 +168,11 @@ export default function NotificationPreferencesScreen() {
           <Text className="mt-three mb-two text-center text-base font-semibold text-foreground">
             {t("notifications_error_title")}
           </Text>
+          {errorMessage ? (
+            <Text className="mb-three text-center text-xs leading-4 text-muted-foreground">
+              {errorMessage}
+            </Text>
+          ) : null}
           <Button
             title={t("notifications_error_retry")}
             variant="outline"
@@ -172,6 +180,7 @@ export default function NotificationPreferencesScreen() {
             onPress={() => {
               setIsLoading(true);
               setIsError(false);
+              setErrorMessage(null);
               setReloadCount((count) => count + 1);
             }}
           />

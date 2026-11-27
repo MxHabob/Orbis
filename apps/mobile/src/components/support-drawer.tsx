@@ -1,10 +1,8 @@
-import { CheckCircle } from "@orbis/icons/native";
 import Constants from "expo-constants";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Linking,
   Platform,
-  Pressable,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -13,20 +11,17 @@ import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerScrollView,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import {
-  DrawerFormField,
-  DrawerSubmitButton,
-} from "@/components/ui/drawer-form-primitives";
-import { useTheme } from "@/hooks/use-theme";
+import { DrawerFormField } from "@/components/ui/drawer-form-primitives";
+import { Select } from "@/components/ui/select";
+import { Text } from "@/components/ui/text";
+import { useFormValidation } from "@/hooks/use-form-validation";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { Text } from "@/components/ui/text";
 
 type SupportCategory =
   | "technical_support"
@@ -37,6 +32,8 @@ type SupportCategory =
   | "other";
 
 const SUPPORT_EMAIL = "support@mulverse.com";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const SUPPORT_CATEGORIES: {
   value: SupportCategory;
   labelKey:
@@ -61,31 +58,56 @@ export interface SupportDrawerProps {
 }
 
 export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
-  const theme = useTheme();
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const { height } = useWindowDimensions();
   const [category, setCategory] =
     useState<SupportCategory>("technical_support");
-  const [subject, setSubject] = useState("");
-  const [contactEmail, setContactEmail] = useState(user?.email ?? "");
-  const [message, setMessage] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+
+  const {
+    values,
+    errors,
+    formError,
+    setFormError,
+    setValue,
+    markTouched,
+    validateAll,
+    reset,
+  } = useFormValidation({
+    initialValues: {
+      subject: "",
+      contactEmail: user?.email ?? "",
+      message: "",
+    },
+    validators: {
+      subject: (value) =>
+        !value.trim() ? t("support_required_fields") : null,
+      contactEmail: (value) => {
+        const trimmed = value.trim();
+        if (trimmed && !EMAIL_REGEX.test(trimmed)) {
+          return t("support_invalid_email");
+        }
+        return null;
+      },
+      message: (value) =>
+        !value.trim() ? t("support_required_fields") : null,
+    },
+  });
+
+  useEffect(() => {
+    if (visible && user?.email && !values.contactEmail) {
+      setValue("contactEmail", user.email);
+    }
+  }, [setValue, user?.email, values.contactEmail, visible]);
 
   const submitSupportRequest = () => {
-    const trimmedSubject = subject.trim();
-    const trimmedMessage = message.trim();
-    if (!trimmedSubject || !trimmedMessage) {
-      setFormError(t("support_required_fields"));
+    if (!validateAll()) {
       return;
     }
-    if (
-      contactEmail.trim() &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())
-    ) {
-      setFormError(t("support_invalid_email"));
-      return;
-    }
+
+    const trimmedSubject = values.subject.trim();
+    const trimmedEmail = values.contactEmail.trim();
+    const trimmedMessage = values.message.trim();
 
     setFormError(null);
     const selectedCategory = SUPPORT_CATEGORIES.find(
@@ -99,7 +121,7 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
     ].join("\n");
     const body = [
       `${t("support_category_label")}: ${selectedCategory ? t(selectedCategory.labelKey) : t("support_category_other")}`,
-      `${t("support_contact_email")}: ${contactEmail.trim() || "—"}`,
+      `${t("support_contact_email")}: ${trimmedEmail || "—"}`,
       "",
       `${t("support_details_label")}:`,
       trimmedMessage,
@@ -111,8 +133,11 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
     void Linking.openURL(mailto)
       .then(() => {
         onClose();
-        setSubject("");
-        setMessage("");
+        reset({
+          subject: "",
+          contactEmail: user?.email ?? "",
+          message: "",
+        });
         setCategory("technical_support");
       })
       .catch((error: unknown) => {
@@ -127,95 +152,90 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
   return (
     <Drawer visible={visible} onClose={onClose}>
       <DrawerContent>
-        <View style={{ height: height * 0.86 }}>
+        <View style={{ height: height * 0.82 }}>
           <DrawerHeader>
             <DrawerTitle>{t("profile_help_title")}</DrawerTitle>
-            <DrawerDescription>
-              {t("profile_support_page_description")}
-            </DrawerDescription>
           </DrawerHeader>
+
           <DrawerScrollView
-            contentContainerStyle={{ gap: 16, paddingBottom: 16 }}
+            contentContainerStyle={{ gap: 16, paddingTop: 16, paddingBottom: 16 }}
             style={{ flex: 1, minHeight: 0 }}
           >
-            <View className="gap-two px-five">
-              <Text className="text-start text-xs font-semibold text-foreground">
-                {t("support_category_label")}
-              </Text>
-              <View className="gap-one">
-                {SUPPORT_CATEGORIES.map((option) => {
-                  const selected = category === option.value;
-                  return (
-                    <Pressable
-                      key={option.value}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected }}
-                      onPress={() => setCategory(option.value)}
-                      className={`min-h-11 flex-row items-center justify-between rounded-md border px-three ${
-                        selected
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-background"
-                      }`}
-                    >
-                      <Text className="text-start text-sm text-foreground">
-                        {t(option.labelKey)}
-                      </Text>
-                      {selected ? (
-                        <CheckCircle size={18} color={theme.primary} />
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <View className="px-five">
+              <Select
+                label={t("support_category_label")}
+                value={category}
+                options={SUPPORT_CATEGORIES.map((option) => ({
+                  value: option.value,
+                  label: t(option.labelKey),
+                }))}
+                onValueChange={setCategory}
+              />
             </View>
+
             <DrawerFormField
               label={t("support_subject_label")}
-              value={subject}
-              onChangeText={setSubject}
+              value={values.subject}
+              onChangeText={(value) => setValue("subject", value)}
+              onBlur={() => markTouched("subject")}
+              error={errors.subject ?? undefined}
               placeholder={t("support_subject_placeholder")}
               returnKeyType="next"
               autoCapitalize="sentences"
             />
+
             <DrawerFormField
               label={t("support_contact_email")}
-              value={contactEmail}
-              onChangeText={setContactEmail}
+              value={values.contactEmail}
+              onChangeText={(value) => setValue("contactEmail", value)}
+              onBlur={() => markTouched("contactEmail")}
+              error={errors.contactEmail ?? undefined}
               placeholder={t("profile_email")}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
             />
+
             <DrawerFormField
               label={t("support_details_label")}
-              value={message}
-              onChangeText={setMessage}
+              value={values.message}
+              onChangeText={(value) => setValue("message", value)}
+              onBlur={() => markTouched("message")}
+              error={errors.message ?? undefined}
               placeholder={t("support_details_placeholder")}
               multiline
               textAlignVertical="top"
               style={{ minHeight: 108 }}
               autoCapitalize="sentences"
             />
+
             {formError ? (
-              <Text className="px-five text-start text-xs font-medium text-error">
+              <Text
+                accessibilityRole="alert"
+                className="px-five text-start text-xs font-medium text-destructive"
+              >
                 {formError}
               </Text>
             ) : null}
+
             <Text className="px-five text-start text-xs leading-4 text-muted-foreground">
               {t("support_mail_review_note")}
             </Text>
           </DrawerScrollView>
+
           <DrawerFooter>
             <View className="gap-two">
-              <DrawerSubmitButton
-                label={t("support_send_report")}
+              <Button
+                title={t("support_send_report")}
                 onPress={submitSupportRequest}
-                disabled={!subject.trim() || !message.trim()}
+                size="lg"
+                fullWidth
               />
               <Button
                 title={t("common_cancel")}
                 onPress={onClose}
                 variant="outline"
-                size="default"
+                size="lg"
                 fullWidth
               />
             </View>

@@ -20,11 +20,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { ChartBar, Document, Grid } from "@orbis/icons/native";
+import { ChartBar, Document, Grid, Sparkles } from "@orbis/icons/native";
 import type { BottomTabBarProps } from "expo-router/tabs";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { useSystemSettingsQuery } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 import { Text } from "@/components/ui/text";
@@ -59,6 +61,8 @@ export function FloatingTabBar({
   const router = useRouter();
   const { t, isArabic } = useI18n();
   const reduceMotion = useReducedMotion();
+  const { data: systemSettings } = useSystemSettingsQuery();
+  const isAiChatEnabled = Boolean(systemSettings?.ai?.mobile_chat_enabled);
 
   const translateY = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -138,11 +142,29 @@ export function FloatingTabBar({
   const analyticsLabel = t("tab_behavior_ai");
 
   return (
-    <Animated.View
-      pointerEvents="box-none"
-      className="absolute left-five right-five flex-row items-center justify-between z-50 min-h-14"
-      style={[{ bottom }, barAnimatedStyle]}
-    >
+    <>
+      {isAiChatEnabled ? (
+        <Animated.View
+          pointerEvents="box-none"
+          className="absolute inset-x-0 z-50"
+          style={[{ bottom: bottom + 68 }, barAnimatedStyle]}
+        >
+          <FloatingActionButton
+            icon={<Sparkles size={22} color={theme.primaryForeground} />}
+            accessibilityLabel={t("ai_chat_title")}
+            position={isArabic ? "bottom-left" : "bottom-right"}
+            offsetBottom={0}
+            offsetHorizontal={20}
+            onPress={() => router.push("/(app)/ai-chat")}
+          />
+        </Animated.View>
+      ) : null}
+
+      <Animated.View
+        pointerEvents="box-none"
+        className="absolute left-five right-five flex-row items-center justify-between z-50 min-h-14"
+        style={[{ bottom }, barAnimatedStyle]}
+      >
       {/* LEFT — Apps (Home) with NEW badge synchronized with desktop badge-brand-lime */}
       <View className="w-14 h-14 relative items-center justify-center shrink-0">
         <View
@@ -197,6 +219,7 @@ export function FloatingTabBar({
         <ChartBar size={21} color={theme.foreground} strokeWidth={1.8} />
       </Pressable>
     </Animated.View>
+    </>
   );
 }
 

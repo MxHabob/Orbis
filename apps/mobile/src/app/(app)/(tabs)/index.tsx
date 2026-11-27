@@ -8,8 +8,6 @@ import {
 } from "@orbis/icons/native/Illustrations";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { HEADER_CONTENT_OFFSET } from "@/components/header";
 import { HomeHero } from "@/components/home/home-hero";
 import {
   HomeSection,
@@ -46,7 +44,6 @@ function getRoleMode(role: string): RoleMode | null {
 
 export default function HomeTabScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t, isArabic, l } = useI18n();
   const {
@@ -296,6 +293,12 @@ export default function HomeTabScreen() {
                   ]
                 : []),
               {
+                id: "approvals",
+                title: t("approvals_title"),
+                icon: <AssignmentChecklist size={28} />,
+                onPress: () => router.push("/(app)/approvals"),
+              },
+              {
                 id: "notifications",
                 title: t("home_notifications"),
                 icon: <ChatBubbles size={28} color={theme.primary} />,
@@ -314,11 +317,8 @@ export default function HomeTabScreen() {
         colors: [theme.primary],
         progressBackgroundColor: theme.backgroundElement,
       }}
-      contentContainerStyle={{
-        paddingTop: insets.top + HEADER_CONTENT_OFFSET + 12,
-      }}
       scrollViewProps={{
-        contentContainerClassName: "gap-six px-four pb-[130px]",
+        contentContainerClassName: "gap-six px-four pt-three pb-[130px]",
       }}
     >
       <HomeHero firstName={firstName} />

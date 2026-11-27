@@ -157,12 +157,12 @@ function RootLayoutContent() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <ToastProvider>
-        <ThemedStatusBar />
-        <View
-          className={isDark ? "flex-1 dark" : "flex-1"}
-          style={{ direction: isArabic ? "rtl" : "ltr" }}
-        >
+      <ThemedStatusBar />
+      <View
+        className={isDark ? "flex-1 dark" : "flex-1"}
+        style={{ direction: isArabic ? "rtl" : "ltr" }}
+      >
+        <ToastProvider>
           <OfflineStatusBanner visible={isOffline} />
           <Stack
             screenOptions={{
@@ -196,8 +196,8 @@ function RootLayoutContent() {
               options={{ title: "Oops!", headerShown: true }}
             />
           </Stack>
-        </View>
-      </ToastProvider>
+        </ToastProvider>
+      </View>
     </ThemeProvider>
   );
 }

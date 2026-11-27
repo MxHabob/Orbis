@@ -127,6 +127,7 @@ export default function NotificationsScreen() {
     data: notifications,
     isLoading,
     isError,
+    error,
     refetch,
     isRefetching,
   } = useNotificationsQuery(filter);
@@ -229,6 +230,11 @@ export default function NotificationsScreen() {
           <Text className="mb-two text-center text-base font-semibold text-foreground">
             {t("notifications_error_title")}
           </Text>
+          {error instanceof Error && error.message ? (
+            <Text className="mb-two text-center text-xs leading-4 text-muted-foreground">
+              {error.message}
+            </Text>
+          ) : null}
           <Text className="text-center text-sm text-muted-foreground">
             {t("notifications_error_retry")}
           </Text>
