@@ -44,7 +44,7 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
     if (!scrollable) {
       return (
         <KeyboardAvoidingView
-          behavior="padding"
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           automaticOffset
           keyboardVerticalOffset={defaultOffset}
           className="flex-1"
@@ -63,19 +63,17 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
     }
 
     return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAwareScrollView
-          className="flex-1"
-          style={style}
-          contentContainerStyle={contentContainerStyle}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-          bottomOffset={defaultOffset}
-        >
-          {children}
-        </KeyboardAwareScrollView>
-      </TouchableWithoutFeedback>
+      <KeyboardAwareScrollView
+        className="flex-1"
+        style={style}
+        contentContainerStyle={contentContainerStyle}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={defaultOffset}
+      >
+        {children}
+      </KeyboardAwareScrollView>
     );
   },
 );

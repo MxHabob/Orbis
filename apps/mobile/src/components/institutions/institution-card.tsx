@@ -75,23 +75,19 @@ export const InstitutionCard = memo(function InstitutionCard({
       ]}
     >
       <Card
-        variant={isLauncher ? "flat" : "default"}
+        variant="default"
         padding={isFeatured ? "four" : isLauncher ? "four" : "three"}
         className={`relative flex-row items-center ${
-          isLauncher
-            ? isCurrent
-              ? "min-h-[84px] rounded-2xl bg-primary/10"
-              : "min-h-[84px] rounded-2xl bg-card"
-            : isCurrent
-              ? "rounded-2xl border-primary/40 bg-primary/5"
-              : "rounded-2xl border-border bg-card"
-        } ${isFeatured ? "min-h-[112px]" : isLauncher ? "" : "min-h-[84px]"}`}
+          isCurrent
+            ? "border-primary/40 bg-primary/5"
+            : "border-border bg-card"
+        } ${isFeatured ? "min-h-[112px]" : "min-h-[84px]"}`}
       >
         {isLauncher ? (
           <View className="me-4 h-3 w-3 rounded-full bg-success" />
         ) : (
           <View
-            className={`items-center justify-center overflow-hidden rounded-2xl bg-background-element ${
+            className={`items-center justify-center overflow-hidden rounded-md bg-background-element ${
               isFeatured ? "me-4 h-16 w-16" : "me-3 h-14 w-14"
             }`}
           >

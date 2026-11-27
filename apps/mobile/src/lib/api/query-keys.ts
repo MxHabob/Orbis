@@ -174,4 +174,13 @@ export const queryKeys = {
       [...queryKeys.notifications.all, "unread-count"] as const,
     preferences: () => [...queryKeys.notifications.all, "preferences"] as const,
   },
+
+  // ── Workflow & Approvals ────────────────────────────────────
+  workflow: {
+    all: ["workflow"] as const,
+    overrides: (
+      orgId?: string,
+      filter?: { status?: string; mine?: boolean; search?: string },
+    ) => [...queryKeys.workflow.all, "overrides", orgId ?? "", filter ?? {}] as const,
+  },
 };

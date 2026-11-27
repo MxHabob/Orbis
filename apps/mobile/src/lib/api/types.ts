@@ -13,6 +13,11 @@ import type {
 
 export type {
   AcademicContextResponse,
+  AiChatRequest,
+  AiChatResponse,
+  AiMessage,
+  AiProposedAction,
+  AiToolResult,
   AttendanceDto,
   BatchMarkAttendanceRequest,
   BatchRecordGradesRequest,
@@ -27,6 +32,8 @@ export type {
   MarkAttendanceRequest,
   OrganizationSettingsDto,
   OrgDto,
+  OverrideRequestDto,
+  PaginatedOverrideRequestsDto,
   RecordGradeItemRequest,
   RecordGradeRequest,
   ScheduledLessonDto,

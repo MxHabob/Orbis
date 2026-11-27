@@ -1,7 +1,7 @@
 /**
  * @module @orbis/mobile/components/ui/toast
  *
- * S.C.R.A.P.S. Tactile Notification Toast for Orbis Mobile.
+ * S.C.R.A.P.S. Notification Toast for Orbis Mobile.
  * Features variant icons, theme reactivity, and safe-area placement.
  */
 
@@ -14,13 +14,6 @@ import React, {
   useState,
 } from "react";
 import { View } from "react-native";
-import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle, InfoCircle, Sparkles } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
@@ -75,9 +68,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = useState<ToastItem | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(4);
-
   useEffect(
     () => () => {
       if (timeoutRef.current) {
@@ -87,58 +77,29 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const dismiss = useCallback(() => {
-    translateY.set(
-      withTiming(4, {
-        duration: 120,
-        easing: Easing.out(Easing.ease),
-      }),
-    );
-    opacity.set(
-      withTiming(0, { duration: 120, easing: Easing.out(Easing.ease) }, () => {
-        runOnJS(setCurrent)(null);
-      }),
-    );
-  }, [opacity, translateY]);
+  const showToast = useCallback((payload: string | ToastPayload) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
-  const showToast = useCallback(
-    (payload: string | ToastPayload) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+    const message = typeof payload === "string" ? payload : payload.message;
+    const variant =
+      typeof payload === "string" ? "default" : payload.variant || "default";
+    const duration =
+      typeof payload === "string" ? 2600 : (payload.duration ?? 2600);
 
-      const message = typeof payload === "string" ? payload : payload.message;
-      const variant =
-        typeof payload === "string" ? "default" : payload.variant || "default";
-      const duration =
-        typeof payload === "string" ? 2600 : (payload.duration ?? 2600);
+    setCurrent({
+      id: Date.now().toString(),
+      message,
+      variant,
+    });
 
-      setCurrent({
-        id: Date.now().toString(),
-        message,
-        variant,
-      });
-
-      opacity.set(
-        withTiming(1, {
-          duration: 140,
-          easing: Easing.out(Easing.ease),
-        }),
-      );
-      translateY.set(
-        withTiming(0, {
-          duration: 140,
-          easing: Easing.out(Easing.ease),
-        }),
-      );
-
-      timeoutRef.current = setTimeout(() => {
-        dismiss();
-      }, duration);
-    },
-    [opacity, translateY, dismiss],
-  );
+    timeoutRef.current = setTimeout(() => {
+      setCurrent(null);
+      timeoutRef.current = null;
+    }, duration);
+  }, []);
 
   const toastHandler = React.useMemo(() => {
     const handler = (payload: string | ToastPayload) => showToast(payload);
@@ -155,11 +116,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         showToast({ message, variant: "info", duration }),
     });
   }, [showToast]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
 
   const getVariantIcon = (variant: ToastVariant) => {
     switch (variant) {
@@ -205,21 +161,32 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               TOAST_TAB_BAR_GAP,
           }}
         >
-          <Animated.View
+          <View
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
-            className="w-full max-w-[420px] flex-row items-center gap-three rounded-2xl border border-card-border bg-card-elevated px-four py-three"
-            style={animatedStyle}
+            className="w-full max-w-[420px] flex-row items-center gap-three rounded-md border px-four py-three"
+            style={{
+              backgroundColor: theme.cardElevated,
+              borderColor: theme.cardBorder,
+              shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.16,
+              shadowRadius: 12,
+              elevation: 6,
+            }}
           >
             <View
-              className={`h-9 w-9 shrink-0 items-center justify-center rounded-xl ${getVariantIconBackground(current.variant)}`}
+              className={`h-9 w-9 shrink-0 items-center justify-center rounded-md ${getVariantIconBackground(current.variant)}`}
             >
               {getVariantIcon(current.variant)}
             </View>
-            <Text className="shrink font-sans text-sm leading-5 font-medium text-card-foreground">
+            <Text
+              className="flex-1 font-sans text-sm leading-5 font-medium"
+              style={{ color: theme.cardForeground }}
+            >
               {current.message}
             </Text>
-          </Animated.View>
+          </View>
         </View>
       )}
     </ToastContext.Provider>

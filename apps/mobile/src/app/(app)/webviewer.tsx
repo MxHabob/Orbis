@@ -35,12 +35,13 @@ export default function WebViewerScreen() {
   const page = getParam(params.page);
   const requestedUrl = getParam(params.url);
   const requestedTitle = getParam(params.title);
+  const urlOptions = { allowHttp: __DEV__ };
   const url = requestedUrl
-    ? normalizeWebUrl(requestedUrl)
+    ? normalizeWebUrl(requestedUrl, urlOptions)
     : page === "about"
-      ? normalizeWebUrl(ORBIS_LAB_URL)
+      ? normalizeWebUrl(ORBIS_LAB_URL, urlOptions)
       : page === "mulverse"
-        ? normalizeWebUrl(ORBIS_WEB_URL)
+        ? normalizeWebUrl(ORBIS_WEB_URL, urlOptions)
         : null;
   const isInvalidUrl =
     (Boolean(requestedUrl) || page === "about" || page === "mulverse") && !url;
@@ -69,6 +70,8 @@ export default function WebViewerScreen() {
           <WebView
             key={`${url}:${retryKey}`}
             source={{ uri: url }}
+            originWhitelist={__DEV__ ? ["https://*", "http://*"] : ["https://*"]}
+            mixedContentMode="never"
             onLoadStart={() => {
               setIsLoading(true);
               setLoadProgress(0.05);
@@ -94,7 +97,7 @@ export default function WebViewerScreen() {
               }
             }}
             onShouldStartLoadWithRequest={(request) =>
-              normalizeWebUrl(request.url) !== null
+              normalizeWebUrl(request.url, urlOptions) !== null
             }
             className="flex-1 bg-background"
             style={{ backgroundColor: theme.background }}

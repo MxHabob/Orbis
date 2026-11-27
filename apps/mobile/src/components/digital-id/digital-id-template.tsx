@@ -97,6 +97,19 @@ function getPosition(
   };
 }
 
+function sortNodesForRender(nodes: TemplateNode[]): TemplateNode[] {
+  return [...nodes].sort((left, right) => {
+    const leftProps = getProps(left);
+    const rightProps = getProps(right);
+    const leftLayer = left.type === "Image" && leftProps.layer === "background" ? -1 : 0;
+    const rightLayer = right.type === "Image" && rightProps.layer === "background" ? -1 : 0;
+    if (leftLayer !== rightLayer) {
+      return leftLayer - rightLayer;
+    }
+    return (left.zIndex ?? 0) - (right.zIndex ?? 0);
+  });
+}
+
 function renderNode(
   node: TemplateNode,
   document: TemplateDocument,
@@ -153,7 +166,7 @@ function renderNode(
       : (node.elseChildren ?? []);
     return (
       <G key={node.id} transform={transform} opacity={opacity}>
-        {branches.map((child) =>
+        {sortNodesForRender(branches).map((child) =>
           renderNode(
             child,
             document,
@@ -238,7 +251,9 @@ function renderNode(
       opacity={opacity}
     >
       {node.type === "Shape" ? (
-        props.shapeType === "circle" || props.shape === "circle" ? (
+        props.shapeType === "circle" ||
+        props.shape === "circle" ||
+        props.shapeType === "ellipse" ? (
           <Ellipse
             cx={width / 2}
             cy={height / 2}
@@ -269,54 +284,76 @@ function renderNode(
         )
       ) : null}
       {node.type === "Text" ? (
-        <SvgText
-          x={
-            textAnchor(props, context) === "middle"
-              ? width / 2
-              : textAnchor(props, context) === "end"
-                ? width
-                : 0
-          }
-          y={Math.min(height, Number(props.fontSize ?? 12) * 0.36)}
-          fill={String(props.color ?? "#111827")}
-          fontFamily={String(props.fontFamily ?? "Rubik")}
-          fontSize={Number(props.fontSize ?? 12) * 0.3528}
-          fontWeight={String(props.fontWeight ?? "normal")}
-          fontStyle={props.fontStyle === "italic" ? "italic" : "normal"}
-          textAnchor={textAnchor(props, context)}
-          textDecoration={
-            props.textDecoration === "underline" ||
-            props.textDecoration === "line-through"
-              ? props.textDecoration
-              : "none"
-          }
-        >
-          {interpolate(String(props.content ?? ""), context)}
-        </SvgText>
+        <>
+          {props.backgroundColor ? (
+            <Rect
+              width={width}
+              height={height}
+              fill={String(props.backgroundColor)}
+              rx={Number(props.borderRadius ?? 0)}
+            />
+          ) : null}
+          <SvgText
+            x={
+              textAnchor(props, context) === "middle"
+                ? width / 2
+                : textAnchor(props, context) === "end"
+                  ? width
+                  : 0
+            }
+            y={Math.min(height, Number(props.fontSize ?? 12) * 0.36)}
+            fill={String(props.color ?? "#111827")}
+            fontFamily={String(props.fontFamily ?? "Rubik")}
+            fontSize={Number(props.fontSize ?? 12) * 0.3528}
+            fontWeight={String(props.fontWeight ?? "normal")}
+            fontStyle={props.fontStyle === "italic" ? "italic" : "normal"}
+            textAnchor={textAnchor(props, context)}
+            textDecoration={
+              props.textDecoration === "underline" ||
+              props.textDecoration === "line-through"
+                ? props.textDecoration
+                : "none"
+            }
+          >
+            {(() => {
+              const rawText = interpolate(String(props.content ?? ""), context);
+              if (props.textTransform === "uppercase") {
+                return rawText.toUpperCase();
+              }
+              if (props.textTransform === "lowercase") {
+                return rawText.toLowerCase();
+              }
+              return rawText;
+            })()}
+          </SvgText>
+        </>
       ) : null}
-      {node.type === "Image" &&
-      (props.src || props.expression || props.assetRef) ? (
-        <SvgImage
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          href={{
-            uri:
+      {node.type === "Image"
+        ? (() => {
+            const resolvedUri =
               (typeof props.assetRef === "string"
                 ? assets[props.assetRef]
                 : undefined) ||
-              interpolate(String(props.expression ?? props.src ?? ""), context),
-          }}
-          preserveAspectRatio={
-            props.fit === "cover"
-              ? "xMidYMid slice"
-              : props.fit === "fill"
-                ? "none"
-                : "xMidYMid meet"
-          }
-        />
-      ) : null}
+              interpolate(String(props.expression ?? props.src ?? ""), context);
+            if (!resolvedUri) return null;
+            return (
+              <SvgImage
+                x={0}
+                y={0}
+                width={width}
+                height={height}
+                href={{ uri: resolvedUri }}
+                preserveAspectRatio={
+                  props.fit === "cover"
+                    ? "xMidYMid slice"
+                    : props.fit === "fill"
+                      ? "none"
+                      : "xMidYMid meet"
+                }
+              />
+            );
+          })()
+        : null}
       {node.type === "Separator" ? (
         <Line
           x1={0}
@@ -459,6 +496,9 @@ export const DigitalIdTemplate = memo(function DigitalIdTemplate({
           : student.display_name || student.full_name,
         name_ar: student.name_ar || student.full_name,
         avatar: student.avatar_url ?? "",
+        avatarUrl: student.avatar_url ?? "",
+        studentNumber: student.student_number ?? "",
+        nationalId: student.national_id ?? "",
       },
       org,
       organization: org,
@@ -482,22 +522,7 @@ export const DigitalIdTemplate = memo(function DigitalIdTemplate({
     resolvedAssets,
     student,
   ]);
-  const qrOverlays: QrOverlay[] = [];
   const pages = getPages(document);
-  const page = pages[0];
-  const svgNodes = page
-    ? page.children.map((node) =>
-        renderNode(
-          node,
-          document,
-          context,
-          dimensions.width,
-          dimensions.height,
-          qrOverlays,
-          resolvedAssets,
-        ),
-      )
-    : [];
   const unsupportedNodeCount = pages.reduce(
     (count, currentPage) =>
       count + collectUnsupportedNodes(currentPage.children),
@@ -506,89 +531,111 @@ export const DigitalIdTemplate = memo(function DigitalIdTemplate({
   const assetLoadFailed = assetQueries.some(
     (query: { isError: boolean }) => query.isError,
   );
-  const pageProps =
-    page && "props" in page
-      ? (page.props as Record<string, unknown> | undefined)
-      : undefined;
-  const backgroundColor = String(
-    pageProps?.backgroundColor ?? document.theme?.secondaryColor ?? "#ffffff",
-  );
 
   return (
-    <View
-      accessibilityLabel={
-        isArabic ? template.name_ar || template.name : template.name
-      }
-      className="overflow-hidden rounded-xl border border-border bg-card"
-      style={{
-        width: cardWidth,
-        height: cardHeight,
-        maxWidth: "100%",
-      }}
-    >
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-        preserveAspectRatio="none"
-      >
-        <Rect
-          width={dimensions.width}
-          height={dimensions.height}
-          fill={backgroundColor}
-        />
-        {svgNodes}
-      </Svg>
-      {qrOverlays.map((qr) => {
-        const qrSize = Math.max(
-          1,
-          Math.round(
-            cardWidth *
-              Math.min(
-                qr.width / dimensions.width,
-                qr.height / dimensions.height,
-              ),
+    <View className="w-full items-center gap-four">
+      {pages.map((page, pageIndex) => {
+        const qrOverlays: QrOverlay[] = [];
+        const svgNodes = sortNodesForRender(page.children).map((node) =>
+          renderNode(
+            node,
+            document,
+            context,
+            dimensions.width,
+            dimensions.height,
+            qrOverlays,
+            resolvedAssets,
           ),
         );
+        const pageProps =
+          "props" in page
+            ? (page.props as Record<string, unknown> | undefined)
+            : undefined;
+        const backgroundColor = String(
+          pageProps?.backgroundColor ??
+            document.theme?.secondaryColor ??
+            "#ffffff",
+        );
+
         return (
           <View
-            key={qr.id}
-            pointerEvents="none"
+            key={page.id ?? `page-${pageIndex}`}
+            accessibilityLabel={
+              isArabic ? template.name_ar || template.name : template.name
+            }
+            className="overflow-hidden rounded-xl border border-border bg-card"
             style={{
-              position: "absolute",
-              left: `${(qr.x / dimensions.width) * 100}%`,
-              top: `${(qr.y / dimensions.height) * 100}%`,
-              width: `${(qr.width / dimensions.width) * 100}%`,
-              height: `${(qr.height / dimensions.height) * 100}%`,
-              alignItems: "center",
-              justifyContent: "center",
+              width: cardWidth,
+              height: cardHeight,
+              maxWidth: "100%",
             }}
           >
-            <QRCode
-              value={qr.value}
-              size={qrSize}
-              color={qr.color}
-              backgroundColor={qr.backgroundColor}
-              ecl={qr.errorCorrection}
-              quietZone={qr.quietZone}
-              logo={qr.logoUrl ? { uri: qr.logoUrl } : undefined}
-            />
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+              preserveAspectRatio="none"
+            >
+              <Rect
+                width={dimensions.width}
+                height={dimensions.height}
+                fill={backgroundColor}
+              />
+              {svgNodes}
+            </Svg>
+            {qrOverlays.map((qr) => {
+              const qrSize = Math.max(
+                1,
+                Math.round(
+                  cardWidth *
+                    Math.min(
+                      qr.width / dimensions.width,
+                      qr.height / dimensions.height,
+                    ),
+                ),
+              );
+              return (
+                <View
+                  key={qr.id}
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: `${(qr.x / dimensions.width) * 100}%`,
+                    top: `${(qr.y / dimensions.height) * 100}%`,
+                    width: `${(qr.width / dimensions.width) * 100}%`,
+                    height: `${(qr.height / dimensions.height) * 100}%`,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <QRCode
+                    value={qr.value}
+                    size={qrSize}
+                    color={qr.color}
+                    backgroundColor={qr.backgroundColor}
+                    ecl={qr.errorCorrection}
+                    quietZone={qr.quietZone}
+                    logo={qr.logoUrl ? { uri: qr.logoUrl } : undefined}
+                  />
+                </View>
+              );
+            })}
+            {pageIndex === 0 && assetLoadFailed ? (
+              <View className="absolute inset-x-0 bottom-0 bg-background/90 px-two py-one">
+                <Text className="text-center text-[10px] text-destructive">
+                  {t("digital_id_assets_error")}
+                </Text>
+              </View>
+            ) : pageIndex === 0 && unsupportedNodeCount > 0 ? (
+              <View className="absolute inset-x-0 bottom-0 bg-background/90 px-two py-one">
+                <Text className="text-center text-[10px] text-muted-foreground">
+                  {t("digital_id_unsupported_elements")}
+                </Text>
+              </View>
+            ) : null}
           </View>
         );
       })}
-      {assetLoadFailed ? (
-        <View className="absolute inset-x-0 bottom-0 bg-background/90 px-two py-one">
-          <Text className="text-center text-[10px] text-destructive">
-            {t("digital_id_assets_error")}
-          </Text>
-        </View>
-      ) : unsupportedNodeCount > 0 ? (
-        <View className="absolute inset-x-0 bottom-0 bg-background/90 px-two py-one">
-          <Text className="text-center text-[10px] text-muted-foreground">
-            {t("digital_id_unsupported_elements")}
-          </Text>
-        </View>
-      ) : null}
     </View>
   );
 });

@@ -203,16 +203,15 @@ export function Header({
                     {
                       backgroundColor: theme.cardElevated,
                       borderColor: theme.cardBorder,
-                      opacity: 0.76,
                     },
                   ]}
                 />
               ) : null}
               {showBack ? (
                 isArabic ? (
-                  <ChevronRight size={21} color={theme.foreground} />
+                  <ChevronRight size={26} color={theme.foreground} />
                 ) : (
-                  <ChevronLeft size={21} color={theme.foreground} />
+                  <ChevronLeft size={26} color={theme.foreground} />
                 )
               ) : (
                 <Avatar
@@ -222,7 +221,7 @@ export function Header({
                       : user?.full_name
                   }
                   imageUrl={user?.avatar_url}
-                  size={32}
+                  size={42}
                 />
               )}
             </Pressable>
@@ -280,12 +279,14 @@ export function Header({
                   flexShrink: 0,
                   borderRadius: sideSize / 2,
                   backgroundColor: theme.cardElevated,
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderColor: theme.cardBorder,
                 },
                 pressed && styles.pressed,
               ]}
               className="items-center justify-center"
             >
-              <AppNotification size={20} color={theme.foreground} />
+              <AppNotification size={22} color={theme.foreground} />
               {(unreadCount ?? 0) > 0 && (
                 <View
                   style={{
@@ -351,7 +352,7 @@ export function Header({
 const styles = StyleSheet.create({
   glassSurface: {
     borderRadius: 9999,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
   floatingSurface: {
     alignItems: "center",

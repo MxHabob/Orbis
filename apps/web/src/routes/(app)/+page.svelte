@@ -11,11 +11,12 @@ import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { resolveStartupPhase, type StartupState } from "$lib/core/startup";
+import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { LoadingIndicator } from "@orbis/ui";
+import StatusStage from "$lib/shared/components/status-stage.svelte";
 
 let startupState: StartupState | null = $state(null);
-let statusText = $state("Initializing...");
+let statusText = $state<string>(m.ui_onboarding_setup_getting_everything_ready());
 
 onMount(async () => {
   statusText = "Checking connection...";
@@ -62,7 +63,7 @@ onMount(async () => {
 
 <div class="loading-root">
 	<div class="loading-content">
-		<LoadingIndicator size="lg" label={statusText} />
+		<StatusStage status="preparing" phases={[statusText]} />
 	</div>
 </div>
 

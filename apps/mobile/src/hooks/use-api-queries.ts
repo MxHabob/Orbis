@@ -6,7 +6,12 @@
  * background revalidation, and type-safe query results.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useAuth } from "@/lib/api";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/api/query-keys";
@@ -21,6 +26,8 @@ import { useEffectiveContext } from "@/providers/effective-context";
 import {
   ApiRequestError,
   type AcademicContextResponse,
+  type AiChatRequest,
+  type AiChatResponse,
   type AttendanceDto,
   type BatchMarkAttendanceRequest,
   type BatchRecordGradesRequest,
@@ -35,6 +42,8 @@ import {
   type MarkAttendanceRequest,
   type OrganizationSettingsDto,
   type OrgDto,
+  type OverrideRequestDto,
+  type PaginatedOverrideRequestsDto,
   type RecordGradeRequest,
   type ScheduledLessonDto,
   type SectionSubjectDto,
@@ -1219,6 +1228,9 @@ export function useUnreadCountQuery() {
     queryFn: fetchUnreadCount,
     staleTime: NOTIFICATION_STALE_TIME,
     refetchInterval: 1000 * 60 * 2, // Poll every 2 minutes for badge
+    retry: (failureCount, error) =>
+      !(error instanceof Error && error.message.toLowerCase().includes("license")) &&
+      failureCount < 2,
   });
 }
 
@@ -1254,6 +1266,104 @@ export function useDismissNotificationMutation() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all,
       });
+    },
+  });
+}
+
+export interface OverrideRequestFilter {
+  status?: string;
+  mine?: boolean;
+  search?: string;
+}
+
+const APPROVALS_PAGE_SIZE = 30;
+
+export function useOverrideRequestsQuery(filter: OverrideRequestFilter) {
+  const { selectedInstitution } = useAuth();
+  const orgId = selectedInstitution?.deployment_id ?? "";
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.workflow.overrides(orgId, filter),
+    queryFn: async ({ pageParam }): Promise<PaginatedOverrideRequestsDto> => {
+      const response = await api.listOverrides({
+        query: {
+          status: filter.status,
+          mine: filter.mine,
+          search: filter.search || undefined,
+          page: pageParam,
+          page_size: APPROVALS_PAGE_SIZE,
+        },
+        throwOnError: true,
+      });
+      const payload = extractData<PaginatedOverrideRequestsDto>(response);
+      return {
+        items: Array.isArray(payload?.items) ? payload.items : [],
+        page: payload?.page ?? pageParam,
+        page_size: payload?.page_size ?? APPROVALS_PAGE_SIZE,
+        total_count: payload?.total_count ?? 0,
+        total_pages: payload?.total_pages ?? 1,
+      };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+    enabled: Boolean(orgId),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useApproveOverrideMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; notes?: string }) => {
+      const response = await api.approveOverride({
+        path: { id: input.id },
+        body: { notes: input.notes || undefined },
+        throwOnError: true,
+      });
+      return extractData<OverrideRequestDto>(response);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workflow.all,
+      });
+    },
+  });
+}
+
+export function useRejectOverrideMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; notes?: string }) => {
+      const response = await api.rejectOverride({
+        path: { id: input.id },
+        body: { notes: input.notes || undefined },
+        throwOnError: true,
+      });
+      return extractData<OverrideRequestDto>(response);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workflow.all,
+      });
+    },
+  });
+}
+
+export function useAiChatMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (req: AiChatRequest): Promise<AiChatResponse> => {
+      const response = await api.chat({
+        body: req,
+        throwOnError: true,
+      });
+      return extractData<AiChatResponse>(response);
+    },
+    onSuccess: (data) => {
+      if (data.executed_tools?.length) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      }
     },
   });
 }

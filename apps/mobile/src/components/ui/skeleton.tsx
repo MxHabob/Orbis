@@ -8,11 +8,13 @@
 import React, { useEffect } from "react";
 import { View, type ViewStyle } from "react-native";
 import Animated, {
-  useSharedValue,
+  cancelAnimation,
+  Easing,
   useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
   withRepeat,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
 
 export interface SkeletonProps {
@@ -32,15 +34,24 @@ export function Skeleton({
   className,
   children,
 }: SkeletonProps) {
+  const reduceMotion = useReducedMotion();
   const opacity = useSharedValue(0.35);
 
   useEffect(() => {
+    cancelAnimation(opacity);
+    if (reduceMotion) {
+      opacity.value = 0.55;
+      return;
+    }
+
     opacity.value = withRepeat(
       withTiming(0.8, { duration: 750, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, [opacity]);
+
+    return () => cancelAnimation(opacity);
+  }, [opacity, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

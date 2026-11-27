@@ -1,4 +1,11 @@
-export function normalizeWebUrl(value: unknown): string | null {
+export interface NormalizeWebUrlOptions {
+  allowHttp?: boolean;
+}
+
+export function normalizeWebUrl(
+  value: unknown,
+  { allowHttp = true }: NormalizeWebUrlOptions = {},
+): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
 
   const candidate = value.trim();
@@ -8,12 +15,9 @@ export function normalizeWebUrl(value: unknown): string | null {
 
   try {
     const url = new URL(withProtocol);
-    if (
-      (url.protocol !== "https:" && url.protocol !== "http:") ||
-      !url.hostname ||
-      url.username ||
-      url.password
-    ) {
+    const isAllowedProtocol =
+      url.protocol === "https:" || (allowHttp && url.protocol === "http:");
+    if (!isAllowedProtocol || !url.hostname || url.username || url.password) {
       return null;
     }
     return url.toString();

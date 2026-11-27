@@ -95,55 +95,65 @@ export async function deleteSecureItem(key: string): Promise<void> {
   memoryFallback.delete(key);
 }
 
+function isValidInstitutionSession(
+  value: unknown,
+): value is InstitutionSessionSnapshot {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "token" in value &&
+    typeof value.token === "string" &&
+    "user" in value &&
+    typeof value.user === "string" &&
+    "effectiveContext" in value &&
+    (typeof value.effectiveContext === "string" ||
+      value.effectiveContext === null) &&
+    "setupComplete" in value &&
+    (typeof value.setupComplete === "string" || value.setupComplete === null)
+  );
+}
+
+async function readInstitutionSessions(): Promise<
+  Record<string, InstitutionSessionSnapshot>
+> {
+  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+  if (!stored) return {};
+
+  try {
+    const parsed: unknown = JSON.parse(stored);
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return {};
+    }
+
+    const valid: Record<string, InstitutionSessionSnapshot> = {};
+    for (const [id, snapshot] of Object.entries(parsed)) {
+      if (isValidInstitutionSession(snapshot)) {
+        valid[id] = snapshot;
+      }
+    }
+    return valid;
+  } catch (err) {
+    console.warn("[SecureStore] Corrupted institution sessions cache:", err);
+    return {};
+  }
+}
+
 export async function getInstitutionSession(
   institutionId: string,
 ): Promise<InstitutionSessionSnapshot | null> {
-  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
-  if (!stored) return null;
-
-  const sessions: unknown = JSON.parse(stored);
-  if (
-    typeof sessions !== "object" ||
-    sessions === null ||
-    Array.isArray(sessions)
-  ) {
-    throw new Error("Saved institution sessions have an invalid format.");
-  }
-
-  const session = (sessions as Record<string, unknown>)[institutionId];
-  if (
-    typeof session !== "object" ||
-    session === null ||
-    !("token" in session) ||
-    typeof session.token !== "string" ||
-    !("user" in session) ||
-    typeof session.user !== "string" ||
-    !("effectiveContext" in session) ||
-    (typeof session.effectiveContext !== "string" &&
-      session.effectiveContext !== null) ||
-    !("setupComplete" in session) ||
-    (typeof session.setupComplete !== "string" &&
-      session.setupComplete !== null)
-  ) {
-    return null;
-  }
-
-  return {
-    token: session.token,
-    user: session.user,
-    effectiveContext: session.effectiveContext,
-    setupComplete: session.setupComplete,
-  };
+  const sessions = await readInstitutionSessions();
+  return sessions[institutionId] ?? null;
 }
 
 export async function setInstitutionSession(
   institutionId: string,
   snapshot: InstitutionSessionSnapshot,
 ): Promise<void> {
-  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
-  const current: Record<string, InstitutionSessionSnapshot> = stored
-    ? JSON.parse(stored)
-    : {};
+  const current = await readInstitutionSessions();
   await setSecureItem(
     STORAGE_KEYS.INSTITUTION_SESSIONS,
     JSON.stringify({ ...current, [institutionId]: snapshot }),
@@ -153,11 +163,9 @@ export async function setInstitutionSession(
 export async function deleteInstitutionSession(
   institutionId: string,
 ): Promise<void> {
-  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
-  if (!stored) return;
+  const current = await readInstitutionSessions();
+  if (!(institutionId in current)) return;
 
-  const current: Record<string, InstitutionSessionSnapshot> =
-    JSON.parse(stored);
   delete current[institutionId];
   await setSecureItem(
     STORAGE_KEYS.INSTITUTION_SESSIONS,

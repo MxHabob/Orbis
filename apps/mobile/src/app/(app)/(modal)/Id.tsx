@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, View } from "react-native";
 import { DigitalIdTemplate } from "@/components/digital-id/digital-id-template";
+import { Screen } from "@/components/layout/screen";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,8 +67,8 @@ export default function DigitalIdModalScreen() {
     }
   }, [template]);
   return (
-    <View className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-five pb-two pt-six">
+    <Screen edges={["top", "bottom", "left", "right"]}>
+      <View className="flex-row items-center justify-between px-five pb-two pt-three">
         <Text className="text-lg font-bold text-foreground">
           {t("tab_digital_id")}
         </Text>
@@ -83,7 +84,7 @@ export default function DigitalIdModalScreen() {
       </View>
 
       <ScreenScrollView
-        edges={["bottom", "left", "right"]}
+        edges={["left", "right"]}
         scrollViewProps={{
           contentContainerClassName:
             "items-center gap-five px-five pb-ten pt-two",
@@ -162,6 +163,6 @@ export default function DigitalIdModalScreen() {
           />
         )}
       </ScreenScrollView>
-    </View>
+    </Screen>
   );
 }

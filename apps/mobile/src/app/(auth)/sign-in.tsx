@@ -5,13 +5,17 @@
  */
 
 import React, { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
 import { Redirect, useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Screen } from "@/components/layout/screen";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { LanguageToggle } from "@/components/ui/language-toggle";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useFormValidation } from "@/hooks/use-form-validation";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Text } from "@/components/ui/text";
@@ -39,31 +43,44 @@ function getMfaUserId(response: unknown): string | undefined {
 
 export default function SignInScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const { t, locale, setLocale, isArabic } = useI18n();
   const { login, loginWithGoogle, selectedInstitution, institutions } =
     useAuth();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const {
+    values,
+    errors,
+    formError,
+    setFormError,
+    setValue,
+    markTouched,
+    validateAll,
+  } = useFormValidation({
+    initialValues: { email: "", password: "" },
+    validators: {
+      email: (value) => (!value.trim() ? t("auth_error_required") : null),
+      password: (value) => (!value ? t("auth_error_required") : null),
+    },
+  });
 
   if (!selectedInstitution) {
     return <Redirect href="/institution-select" />;
   }
 
   const handleSignIn = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setErrorMessage(t("auth_error_required"));
+    if (!validateAll()) {
       return;
     }
 
+    const trimmedEmail = values.email.trim();
     setIsSubmitting(true);
-    setErrorMessage(null);
+    setFormError(null);
     try {
-      const response = await login(trimmedEmail, password);
+      const response = await login(trimmedEmail, values.password);
       const mfaUserId = getMfaUserId(response);
       if (mfaUserId) {
         router.push({
@@ -77,7 +94,7 @@ export default function SignInScreen() {
         err instanceof Error
           ? err.message
           : t("auth_error_invalid_credentials");
-      setErrorMessage(message);
+      setFormError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -85,13 +102,13 @@ export default function SignInScreen() {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    setErrorMessage(null);
+    setFormError(null);
     try {
       await loginWithGoogle("google-token");
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : t("auth_error_google");
-      setErrorMessage(message);
+      setFormError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -102,21 +119,31 @@ export default function SignInScreen() {
   };
 
   return (
-    <View
-      className="flex-1 bg-background"
-      style={{ direction: isArabic ? "rtl" : "ltr" }}
-    >
-      <KeyboardAwareView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
+    <View className="flex-1 bg-background">
+      <Image
+        source={require("../../../assets/dreamy-historic-campus.png")}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: isDark
+              ? "rgba(18, 18, 18, 0.78)"
+              : "rgba(252, 252, 252, 0.78)",
+          },
+        ]}
+      />
+      <Screen
+        backgroundColor="transparent"
+        edges={["top", "bottom", "left", "right"]}
       >
-        <View
-          className="flex-1 gap-5 px-5"
-          style={{
-            paddingTop: insets.top + 8,
-            paddingBottom: Math.max(insets.bottom, 12) + 8,
-          }}
+        <KeyboardAwareView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
         >
+        <View className="flex-1 gap-four px-five pb-three pt-two">
           <View className="flex-row justify-end">
             <LanguageToggle
               accessibilityLabel={
@@ -127,16 +154,13 @@ export default function SignInScreen() {
             />
           </View>
 
-          <View className="flex-1 justify-end gap-2 pb-1">
+          <View className="flex-1 justify-end pb-two">
             <Text className="text-[28px] leading-9 font-semibold tracking-tight text-foreground">
               {t("auth_sign_in")}
             </Text>
-            <Text className="text-sm leading-5 text-muted-foreground">
-              {t("visitor_description")}
-            </Text>
           </View>
 
-          <View className="gap-3 rounded-2xl border border-border bg-card p-4">
+          <Card padding="four" className="gap-three">
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/institution-select")}
@@ -151,23 +175,22 @@ export default function SignInScreen() {
             </Pressable>
 
             <Input
+              label={t("auth_username_or_email")}
               placeholder={t("auth_username_or_email")}
-              value={email}
-              onChangeText={(value) => {
-                setEmail(value);
-                setErrorMessage(null);
-              }}
+              value={values.email}
+              onChangeText={(value) => setValue("email", value)}
+              onBlur={() => markTouched("email")}
+              error={errors.email}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               textContentType="username"
               returnKeyType="next"
-              style={{ minHeight: 32, fontSize: 12 }}
             />
 
             <View>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-semibold text-foreground">
+              <View className="mb-one flex-row items-center justify-between">
+                <Text className="text-sm font-medium text-foreground">
                   {t("auth_password")}
                 </Text>
                 <Pressable
@@ -183,26 +206,24 @@ export default function SignInScreen() {
               </View>
               <Input
                 placeholder="••••••••"
-                value={password}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  setErrorMessage(null);
-                }}
+                value={values.password}
+                onChangeText={(value) => setValue("password", value)}
+                onBlur={() => markTouched("password")}
+                error={errors.password}
                 secureTextEntry
                 autoComplete="current-password"
                 textContentType="password"
                 returnKeyType="go"
                 onSubmitEditing={() => void handleSignIn()}
-                style={{ minHeight: 32, fontSize: 12 }}
               />
             </View>
 
-            {errorMessage ? (
+            {formError ? (
               <Text
                 accessibilityRole="alert"
                 className="text-start text-xs leading-4 font-medium text-destructive"
               >
-                {errorMessage}
+                {formError}
               </Text>
             ) : null}
 
@@ -212,10 +233,10 @@ export default function SignInScreen() {
               disabled={isSubmitting}
               loading={isSubmitting}
               fullWidth
-              size="md"
+              size="lg"
             />
 
-            <View className="flex-row items-center gap-3">
+            <View className="flex-row items-center gap-three">
               <View className="h-px flex-1 bg-border" />
               <Text className="text-sm text-muted-foreground">
                 {t("auth_or_divider")}
@@ -230,10 +251,10 @@ export default function SignInScreen() {
               loading={isSubmitting}
               variant="outline"
               fullWidth
-              size="md"
+              size="lg"
             />
 
-            <View className="items-center pt-1">
+            <View className="items-center pt-one">
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push("/(auth)/explore")}
@@ -245,9 +266,10 @@ export default function SignInScreen() {
                 </Text>
               </Pressable>
             </View>
-          </View>
+          </Card>
         </View>
       </KeyboardAwareView>
+    </Screen>
     </View>
   );
 }

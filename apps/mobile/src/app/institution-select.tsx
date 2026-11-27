@@ -2,7 +2,7 @@ import { BuildingOffice, CheckCircle, Plus, Search } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Platform, Pressable, StyleSheet, View } from "react-native";
+import { FlatList, Platform, RefreshControl, StyleSheet, View } from "react-native";
 import type { ListRenderItemInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
@@ -33,11 +33,6 @@ export default function InstitutionSelectScreen() {
     institutionQr?: string;
   }>();
   const insets = useSafeAreaInsets();
-  const topInset =
-    Platform.OS === "ios" ||
-    (Platform.OS === "android" && Number(Platform.Version) >= 35)
-      ? insets.top
-      : 0;
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
   const {
@@ -202,9 +197,10 @@ export default function InstitutionSelectScreen() {
   }, [directoryError, directoryQuery, search, t]);
 
   return (
-    <Screen edges={[]}>
-      <View className="flex-1" style={{ paddingTop: topInset }}>
+    <Screen edges={["top", "left", "right"]}>
+      <View className="flex-1">
         <InstitutionPickerHeader
+          title={t("auth_institution_search_title")}
           languageLabel={locale === "ar" ? "English" : "العربية"}
           accessibilityLabel={
             locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
@@ -230,26 +226,32 @@ export default function InstitutionSelectScreen() {
                 ) : null}
 
                 {Platform.OS !== "web" && !isLocalDiscoveryAvailable ? (
-                  <View className="min-h-[68px] flex-row items-center gap-3 rounded-2xl bg-card px-4">
+                  <Card
+                    variant="default"
+                    padding="four"
+                    className="min-h-[60px] flex-row items-center gap-three"
+                  >
                     <View className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
                     <Text className="flex-1 text-start text-sm leading-5 text-muted-foreground">
                       {t("auth_institution_lan_build_required")}
                     </Text>
-                  </View>
+                  </Card>
                 ) : null}
 
                 {Platform.OS !== "web" ? (
-                  <Pressable
+                  <Card
+                    variant="interactive"
+                    padding="four"
                     accessibilityRole="button"
                     accessibilityLabel={t("auth_institution_local_scan")}
                     onPress={() => router.push("/institution-scan")}
-                    className="min-h-[68px] flex-row items-center gap-3 rounded-2xl bg-card px-4"
+                    className="min-h-[60px] flex-row items-center gap-three"
                   >
-                    <Plus size={20} color={theme.info} />
-                    <Text className="text-start text-sm font-medium text-info">
+                    <Plus size={20} color={theme.primary} />
+                    <Text className="text-start text-sm font-semibold text-primary">
                       {t("auth_institution_local_scan")}
                     </Text>
-                  </Pressable>
+                  </Card>
                 ) : null}
 
                 <Text className="pt-6 text-start text-xs font-medium tracking-[1px] text-muted-foreground">
@@ -303,8 +305,15 @@ export default function InstitutionSelectScreen() {
             keyboardDismissMode="on-drag"
             automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
-            refreshing={directoryQuery.isRefetching}
-            onRefresh={() => void directoryQuery.refetch()}
+            refreshControl={
+              <RefreshControl
+                refreshing={directoryQuery.isRefetching}
+                onRefresh={() => void directoryQuery.refetch()}
+                tintColor={theme.primary}
+                colors={[theme.primary]}
+                progressBackgroundColor={theme.backgroundElement}
+              />
+            }
             initialNumToRender={8}
             maxToRenderPerBatch={8}
             windowSize={7}

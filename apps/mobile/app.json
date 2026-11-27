@@ -2,14 +2,16 @@
   "expo": {
     "name": "Orbis",
     "slug": "Orbis",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "orbis",
     "userInterfaceStyle": "automatic",
     "android": {
-      "versionCode": 21,
-      "permissions": ["android.permission.ACCESS_LOCAL_NETWORK"],
+      "versionCode": 22,
+      "permissions": [
+        "android.permission.ACCESS_LOCAL_NETWORK"
+      ],
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
@@ -22,7 +24,9 @@
     "ios": {
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Orbis connects to your school server on the local network.",
-        "NSBonjourServices": ["_orbis-api._tcp"],
+        "NSBonjourServices": [
+          "_orbis-api._tcp"
+        ],
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -51,7 +55,7 @@
           "image": "./assets/images/splash-icon-light.png",
           "imageWidth": 120,
           "dark": {
-            "backgroundColor": "#111111",
+            "backgroundColor": "#1F1F1F",
             "image": "./assets/images/android-icon-foreground.png"
           }
         }
@@ -71,14 +75,19 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["ar", "en"],
-            "android": ["ar", "en"]
+            "ios": [
+              "ar",
+              "en"
+            ],
+            "android": [
+              "ar",
+              "en"
+            ]
           },
           "supportsRTL": true
         }
       ],
       "expo-web-browser",
-      "expo-updates",
       "./plugins/with-android-cleartext-traffic.cjs",
       "./plugins/with-android-window-layout.cjs",
       "./plugins/with-android-release-signing.cjs",

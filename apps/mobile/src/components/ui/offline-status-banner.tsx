@@ -1,6 +1,10 @@
 import React from "react";
 import { View } from "react-native";
-import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeOutDown,
+  useReducedMotion,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Cloud } from "@orbis/icons/native";
 import { useI18n } from "@/lib/i18n";
@@ -15,7 +19,10 @@ export function OfflineStatusBanner({ visible }: OfflineStatusBannerProps) {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const reduceMotion = useReducedMotion();
+
   if (!visible) return null;
+
   const title = t("network_offline_title");
   const description = t("network_offline_description");
 
@@ -24,36 +31,21 @@ export function OfflineStatusBanner({ visible }: OfflineStatusBannerProps) {
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
       accessibilityLabel={`${title}. ${description}`}
-      entering={FadeInDown.duration(180)}
-      exiting={FadeOutUp.duration(150)}
+      entering={reduceMotion ? undefined : FadeInDown.duration(180)}
+      exiting={reduceMotion ? undefined : FadeOutDown.duration(150)}
       pointerEvents="none"
-      className="flex-row items-center gap-3 rounded-2xl px-3 py-2"
+      className="w-full flex-row items-center justify-center gap-two bg-foreground px-four pt-two"
       style={{
-        position: "absolute",
-        top: insets.top + 8,
-        left: 16,
-        right: 16,
-        zIndex: 1000,
-        elevation: 1000,
-        backgroundColor: theme.backgroundElement,
-        shadowColor: theme.foreground,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        paddingBottom: Math.max(insets.bottom, 8),
       }}
     >
-      <View className="size-9 items-center justify-center rounded-full bg-primary/10">
-        <Cloud size={19} strokeWidth={1.8} color={theme.primary} />
-      </View>
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text className="text-[13px] font-semibold leading-4 text-foreground">
-          {title}
-        </Text>
+      <View className="flex-row items-center gap-two">
+        <Cloud size={15} strokeWidth={2} color={theme.background} />
         <Text
           numberOfLines={1}
-          className="text-xs leading-4 text-muted-foreground"
+          className="text-xs font-medium leading-4 text-background"
         >
-          {description}
+          {title}
         </Text>
       </View>
     </Animated.View>
