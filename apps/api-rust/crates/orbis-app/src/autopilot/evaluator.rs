@@ -4,7 +4,8 @@ use uuid::Uuid;
 
 use crate::context::RequestContext;
 use crate::ports::repositories::{
-    AcademicCalendarRepository, AcademicPeriodRepository, StudentFeeRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, ExamSessionRepository,
+    StudentFeeRepository,
 };
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
 use orbis_domain::entities::academic_calendar::AcademicCalendarStatus;
@@ -18,6 +19,7 @@ pub struct AutopilotEvaluator {
     pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub fee_repo: Option<Arc<dyn StudentFeeRepository>>,
+    pub exam_session_repo: Option<Arc<dyn ExamSessionRepository>>,
 }
 
 impl AutopilotEvaluator {
@@ -29,11 +31,20 @@ impl AutopilotEvaluator {
             year_repo,
             period_repo,
             fee_repo: None,
+            exam_session_repo: None,
         }
     }
 
     pub fn with_fee_repo(mut self, fee_repo: Arc<dyn StudentFeeRepository>) -> Self {
         self.fee_repo = Some(fee_repo);
+        self
+    }
+
+    pub fn with_exam_session_repo(
+        mut self,
+        exam_session_repo: Arc<dyn ExamSessionRepository>,
+    ) -> Self {
+        self.exam_session_repo = Some(exam_session_repo);
         self
     }
 
@@ -336,6 +347,36 @@ impl AutopilotEvaluator {
                                 period.name
                             )),
                             grade_end,
+                        ),
+                    );
+                }
+            }
+
+            // Auto-create draft ExamSession for upcoming/active Examination periods
+            if settings.autopilot.auto_exam_scheduling
+                && period.period_kind == PeriodKind::Examination
+                && period.start_date - chrono::Duration::days(14) <= now
+                && now <= period.end_date
+            {
+                let has_session = if let Some(repo) = &self.exam_session_repo {
+                    !repo.find_by_period(org_id, period.id).await?.is_empty()
+                } else {
+                    false
+                };
+                if !has_session {
+                    push_task(
+                        &mut tasks,
+                        AutopilotTask::new(
+                            org_id,
+                            TaskType::CreateExamSession,
+                            Some(period.id),
+                            Some("academic_period".to_string()),
+                            RiskLevel::Low,
+                            Some(format!(
+                                "Prepare exam session for examination period '{}'",
+                                period.name
+                            )),
+                            period.start_date - chrono::Duration::days(14),
                         ),
                     );
                 }

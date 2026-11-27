@@ -4,14 +4,15 @@ use tracing::{error, info};
 
 use crate::context::RequestContext;
 use crate::ports::repositories::{
-    AutopilotTaskRepository, EmployeeRepository, PolicyRepository, SectionSubjectRepository,
-    StudentFeeRepository, StudentRepository, UserRepository,
+    AutopilotTaskRepository, EmployeeRepository, ExamSessionRepository, PolicyRepository,
+    SectionSubjectRepository, StudentFeeRepository, StudentRepository, UserRepository,
 };
 use crate::services::{
     calendar_service::CalendarService,
     notification_service::{CreateNotificationInput, NotificationService},
     progression_service::ProgressionService,
     report_service::{GenerateReportInput, ReportService},
+    scheduling_service::SchedulingService,
 };
 use orbis_domain::autopilot::task::{AutopilotTask, TaskStatus, TaskType};
 use orbis_domain::entities::academic_period::{AcademicPeriodState, PeriodKind};
@@ -31,6 +32,8 @@ pub struct AutopilotEngine {
     pub fee_repo: Option<Arc<dyn StudentFeeRepository>>,
     pub section_subject_repo: Option<Arc<dyn SectionSubjectRepository>>,
     pub employee_repo: Option<Arc<dyn EmployeeRepository>>,
+    pub scheduling_service: Option<Arc<SchedulingService>>,
+    pub exam_session_repo: Option<Arc<dyn ExamSessionRepository>>,
 }
 
 impl AutopilotEngine {
@@ -53,7 +56,19 @@ impl AutopilotEngine {
             fee_repo: None,
             section_subject_repo: None,
             employee_repo: None,
+            scheduling_service: None,
+            exam_session_repo: None,
         }
+    }
+
+    pub fn with_scheduling_service(
+        mut self,
+        scheduling_service: Arc<SchedulingService>,
+        exam_session_repo: Arc<dyn ExamSessionRepository>,
+    ) -> Self {
+        self.scheduling_service = Some(scheduling_service);
+        self.exam_session_repo = Some(exam_session_repo);
+        self
     }
 
     pub fn with_smart_services(
@@ -332,6 +347,41 @@ impl AutopilotEngine {
                     template_id: None,
                 };
                 self.report_service.generate_report(ctx, input).await?;
+            }
+            TaskType::CreateExamSession => {
+                let period_id = target()?;
+                let Some(scheduling) = &self.scheduling_service else {
+                    return Ok(());
+                };
+                if let Some(repo) = &self.exam_session_repo {
+                    if !repo
+                        .find_by_period(task.org_id, period_id)
+                        .await?
+                        .is_empty()
+                    {
+                        return Ok(());
+                    }
+                }
+                let period = self
+                    .calendar_service
+                    .period_repo
+                    .find_by_id(period_id)
+                    .await?
+                    .ok_or_else(|| {
+                        DomainError::NotFound(format!("Academic period {} not found", period_id))
+                    })?;
+                scheduling
+                    .create_exam_session(
+                        ctx,
+                        task.org_id,
+                        period.id,
+                        period.name,
+                        period.name_ar,
+                        "final".to_string(),
+                        period.start_date.date_naive(),
+                        period.end_date.date_naive(),
+                    )
+                    .await?;
             }
             TaskType::SendDelayNotification => {
                 let period_id = target()?;

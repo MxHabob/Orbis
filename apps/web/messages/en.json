@@ -5918,5 +5918,6 @@
   "student_grades_no_certificate_templates": "No active certificate templates found",
   "student_grades_preview_and_print": "Preview & Print",
   "student_grades_cumulative": "Cumulative",
-  "student_grades_min_pass": "Min Pass"
+  "student_grades_min_pass": "Min Pass",
+  "operations_ui_attendance_quick_mark": "Quick Mark"
 }

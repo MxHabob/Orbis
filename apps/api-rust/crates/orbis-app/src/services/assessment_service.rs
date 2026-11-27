@@ -1510,6 +1510,9 @@ impl AssessmentService {
             ));
         }
 
+        let valid_period_ids = self
+            .resolve_period_and_ancestors(section_subject.period_id)
+            .await?;
         let enrollment_repo = self.enrollment_repo.as_ref().ok_or_else(|| {
             DomainError::Internal("Enrollment repository is not configured".into())
         })?;
@@ -1519,8 +1522,11 @@ impl AssessmentService {
             .into_iter()
             .filter(|enrollment| {
                 enrollment.org_id == org_id
-                    && enrollment.period_id == section_subject.period_id
-                    && enrollment.status == EnrollmentStatus::Active
+                    && valid_period_ids.contains(&enrollment.period_id)
+                    && matches!(
+                        enrollment.status,
+                        EnrollmentStatus::Active | EnrollmentStatus::PendingApproval
+                    )
             })
             .map(|enrollment| enrollment.student_id)
             .collect();
@@ -1537,6 +1543,30 @@ impl AssessmentService {
             .await?;
 
         Ok(())
+    }
+
+    async fn resolve_period_and_ancestors(
+        &self,
+        period_id: Uuid,
+    ) -> Result<std::collections::HashSet<Uuid>, DomainError> {
+        let mut ids = std::collections::HashSet::from([period_id]);
+        let Some(pr) = &self.period_repo else {
+            return Ok(ids);
+        };
+        let Some(period) = pr.find_by_id(period_id).await? else {
+            return Ok(ids);
+        };
+        let year_periods = pr.find_by_year(period.year_id).await?;
+        let parent_map: HashMap<Uuid, Option<Uuid>> =
+            year_periods.into_iter().map(|p| (p.id, p.parent_id)).collect();
+        let mut current = period.parent_id;
+        while let Some(pid) = current {
+            if !ids.insert(pid) {
+                break;
+            }
+            current = parent_map.get(&pid).copied().flatten();
+        }
+        Ok(ids)
     }
 
     async fn teacher_employee(
@@ -2549,8 +2579,22 @@ impl AssessmentService {
 
         let policy = self.resolve_policy(org_id, policy).await;
 
+        let valid_period_ids = self.resolve_period_and_ancestors(period_id).await?;
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_section(section_id).await?
+            let mut seen_students = std::collections::HashSet::new();
+            er.find_by_section(section_id)
+                .await?
+                .into_iter()
+                .filter(|en| {
+                    en.org_id == org_id
+                        && valid_period_ids.contains(&en.period_id)
+                        && matches!(
+                            en.status,
+                            EnrollmentStatus::Active | EnrollmentStatus::PendingApproval
+                        )
+                        && seen_students.insert(en.student_id)
+                })
+                .collect()
         } else {
             vec![]
         };
@@ -2652,16 +2696,12 @@ impl AssessmentService {
         let mut cards = Vec::with_capacity(enrollments.len());
         for en in &enrollments {
             let (student_name, student_number) = if let Some(sr) = &self.student_repo {
-                if let Some(detail) = sr.find_detail_by_id(en.student_id).await? {
-                    (
+                match sr.find_detail_by_id(en.student_id).await? {
+                    Some(detail) if !detail.student.is_deleted => (
                         detail.person.full_name(),
                         Some(detail.student.student_number),
-                    )
-                } else {
-                    (
-                        format!("Student {}", &en.student_id.to_string()[..8]),
-                        Some(en.student_number.clone()),
-                    )
+                    ),
+                    _ => continue,
                 }
             } else {
                 ("Student".to_string(), Some(en.student_number.clone()))
@@ -2889,14 +2929,42 @@ impl AssessmentService {
 
         let policy = self.resolve_policy(org_id, policy).await;
 
+        let year_period_ids: std::collections::HashSet<Uuid> = if let Some(pr) = &self.period_repo {
+            pr.find_by_year(calendar_id)
+                .await?
+                .into_iter()
+                .map(|p| p.id)
+                .collect()
+        } else {
+            std::collections::HashSet::new()
+        };
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_section(section_id).await?
+            let mut seen_students = std::collections::HashSet::new();
+            er.find_by_section(section_id)
+                .await?
+                .into_iter()
+                .filter(|en| {
+                    en.org_id == org_id
+                        && (year_period_ids.is_empty() || year_period_ids.contains(&en.period_id))
+                        && matches!(
+                            en.status,
+                            EnrollmentStatus::Active | EnrollmentStatus::PendingApproval
+                        )
+                        && seen_students.insert(en.student_id)
+                })
+                .collect()
         } else {
             vec![]
         };
 
         let mut cards = Vec::with_capacity(enrollments.len());
         for en in &enrollments {
+            if let Some(sr) = &self.student_repo {
+                match sr.find_detail_by_id(en.student_id).await? {
+                    Some(detail) if !detail.student.is_deleted => {}
+                    _ => continue,
+                }
+            }
             let card = self
                 .calculate_student_annual_report_card(
                     ctx,

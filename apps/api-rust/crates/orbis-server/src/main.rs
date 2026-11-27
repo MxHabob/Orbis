@@ -549,7 +549,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             finance_repo.clone(),
             academic_repo.clone(),
             employee_repo.clone(),
-        ),
+        )
+        .with_scheduling_service(scheduling_service.clone(), exam_repo.clone()),
     );
 
     let autopilot_evaluator = Arc::new(
@@ -557,7 +558,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             calendar_repo.clone(),
             calendar_repo.clone(),
         )
-        .with_fee_repo(finance_repo.clone()),
+        .with_fee_repo(finance_repo.clone())
+        .with_exam_session_repo(exam_repo.clone()),
     );
 
     let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(

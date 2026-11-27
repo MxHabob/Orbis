@@ -2292,7 +2292,7 @@ const headerPanes = $derived.by(() => {
                           {#if !action.visible || action.visible(row)}
                             <button
                               type="button"
-                              class="orbis-action-btn orbis-action-{action.variant || 'ghost'}"
+                              class="orbis-action-btn orbis-action-{action.variant || 'ghost'} {!action.icon && action.label ? 'orbis-action-labeled' : ''}"
                               disabled={action.disabled?.(row)}
                               title={action.label || action.id}
                               onclick={(e) => {
@@ -2326,6 +2326,8 @@ const headerPanes = $derived.by(() => {
                                 <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
                               {:else if action.icon === "MoreHorizontal" || action.icon === "Ellipsis"}
                                 <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                              {:else if !action.icon && action.label}
+                                <span>{action.label}</span>
                               {:else}
                                 <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                               {/if}
@@ -2935,6 +2937,22 @@ const headerPanes = $derived.by(() => {
   .orbis-action-btn.orbis-action-lime:hover:not(:disabled) {
     background: color-mix(in oklab, var(--brand-lime) 18%, transparent);
     color: var(--brand-lime-dark);
+  }
+  .orbis-action-btn.orbis-action-labeled {
+    width: auto;
+    min-width: 1.5rem;
+    padding: 0 0.45rem;
+    white-space: nowrap;
+    font-weight: 500;
+    border-color: var(--border);
+  }
+  .orbis-action-btn.orbis-action-outline {
+    border-color: var(--border);
+    color: var(--foreground);
+  }
+  .orbis-action-btn.orbis-action-destructive {
+    color: var(--destructive);
+    border-color: color-mix(in oklab, var(--destructive) 35%, transparent);
   }
   .orbis-action-icon {
     width: 0.8125rem;

@@ -5918,5 +5918,6 @@
   "student_grades_no_certificate_templates": "لا توجد قوالب شهادات مفعلة حالياً",
   "student_grades_preview_and_print": "معاينة وطباعة",
   "student_grades_cumulative": "التراكمي",
-  "student_grades_min_pass": "الحد الأدنى"
+  "student_grades_min_pass": "الحد الأدنى",
+  "operations_ui_attendance_quick_mark": "تحديد سريع"
 }

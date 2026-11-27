@@ -160,7 +160,8 @@ pub struct AttendanceDto {
 #[derive(Deserialize)]
 pub struct MarkAttendanceInput {
     pub student_id: String,
-    pub class_id: String,
+    #[serde(alias = "class_id")]
+    pub section_id: String,
     pub date: String,
     pub status: String,
     pub notes: Option<String>,
@@ -177,7 +178,8 @@ pub struct MarkAttendanceItemInput {
 
 #[derive(Deserialize)]
 pub struct BatchMarkAttendanceInput {
-    pub class_id: String,
+    #[serde(alias = "class_id")]
+    pub section_id: String,
     pub date: String,
     pub items: Vec<MarkAttendanceItemInput>,
 }
@@ -796,7 +798,7 @@ pub async fn assessment_mark_attendance(
 ) -> Result<ApiResponse<AttendanceDto>, String> {
     let ctx = make_ctx(&state);
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
+    let section_id = Uuid::parse_str(&request.section_id).map_err(|_| "Invalid sectionId")?;
     let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d")
         .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
 
@@ -807,7 +809,7 @@ pub async fn assessment_mark_attendance(
             ctx.tenant_id,
             Uuid::nil(),
             student_id,
-            Some(class_id),
+            Some(section_id),
             None,
             date,
             request.status,
@@ -825,7 +827,7 @@ pub async fn assessment_batch_mark_attendance(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<BatchMarkAttendanceResponseDto>, String> {
     let ctx = make_ctx(&state);
-    let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
+    let section_id = Uuid::parse_str(&request.section_id).map_err(|_| "Invalid sectionId")?;
     let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d")
         .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
 
@@ -850,7 +852,7 @@ pub async fn assessment_batch_mark_attendance(
 
     let list = state
         .assessment_service
-        .batch_mark_attendance(&ctx, ctx.tenant_id, class_id, date, items)
+        .batch_mark_attendance(&ctx, ctx.tenant_id, section_id, date, items)
         .await
         .map_err(|e| e.to_string())?;
 
