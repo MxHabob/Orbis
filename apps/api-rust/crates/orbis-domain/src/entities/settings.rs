@@ -195,21 +195,6 @@ pub struct AcademicSettings {
     /// Configurable grade bands for letter-grade evaluation (source of truth for AcademicPolicy).
     #[serde(default)]
     pub grade_bands: Vec<PolicyGradeBand>,
-    /// Optional institution-level overrides for score scales (when None, falls back to institution_type defaults).
-    #[serde(default)]
-    pub coursework_max_score: Option<Decimal>,
-    #[serde(default)]
-    pub exam_max_score: Option<Decimal>,
-    #[serde(default)]
-    pub term_max_score: Option<Decimal>,
-    #[serde(default)]
-    pub annual_max_score: Option<Decimal>,
-    #[serde(default)]
-    pub certificate_exam_max_score: Option<Decimal>,
-    #[serde(default)]
-    pub certificate_cumulative_max_score: Option<Decimal>,
-    #[serde(default)]
-    pub certificate_cumulative_year_count: Option<usize>,
 }
 
 impl Default for AcademicSettings {
@@ -240,36 +225,12 @@ impl Default for AcademicSettings {
             auto_graduate_final_level: false,
             exclude_withdrawn: true,
             grade_bands: Vec::new(),
-            coursework_max_score: None,
-            exam_max_score: None,
-            term_max_score: None,
-            annual_max_score: None,
-            certificate_exam_max_score: None,
-            certificate_cumulative_max_score: None,
-            certificate_cumulative_year_count: None,
         }
     }
 }
 
 impl AcademicSettings {
     pub fn to_academic_policy(&self, org_id: Uuid) -> AcademicPolicy {
-        self.to_academic_policy_for_institution(org_id, None)
-    }
-
-    pub fn to_academic_policy_for_institution(
-        &self,
-        org_id: Uuid,
-        institution_type: Option<&str>,
-    ) -> AcademicPolicy {
-        let base = match institution_type.map(|s| s.to_ascii_lowercase()).as_deref() {
-            Some("university") => AcademicPolicy::university_default(org_id),
-            Some("institute") | Some("training_center") => AcademicPolicy::institute_default(org_id),
-            _ => AcademicPolicy {
-                org_id,
-                ..AcademicPolicy::default()
-            },
-        };
-
         AcademicPolicy {
             org_id,
             passing_threshold_percentage: self.passing_threshold_percentage,
@@ -282,24 +243,14 @@ impl AcademicSettings {
             tie_policy: self.tie_policy,
             ranking_enabled: self.ranking_enabled,
             max_displayed_rank: self.max_displayed_rank,
-            coursework_max_score: self.coursework_max_score.unwrap_or(base.coursework_max_score),
-            exam_max_score: self.exam_max_score.unwrap_or(base.exam_max_score),
-            term_max_score: self.term_max_score.unwrap_or(base.term_max_score),
-            annual_max_score: self.annual_max_score.unwrap_or(base.annual_max_score),
-            certificate_exam_max_score: self
-                .certificate_exam_max_score
-                .unwrap_or(base.certificate_exam_max_score),
-            certificate_cumulative_max_score: self
-                .certificate_cumulative_max_score
-                .unwrap_or(base.certificate_cumulative_max_score),
-            certificate_cumulative_year_count: self
-                .certificate_cumulative_year_count
-                .unwrap_or(base.certificate_cumulative_year_count),
-            grade_bands: if self.grade_bands.is_empty() {
-                base.grade_bands
-            } else {
-                self.grade_bands.clone()
-            },
+            coursework_max_score: Decimal::from(20),
+            exam_max_score: Decimal::from(30),
+            term_max_score: Decimal::from(50),
+            annual_max_score: Decimal::from(100),
+            certificate_exam_max_score: Decimal::from(80),
+            certificate_cumulative_max_score: Decimal::from(20),
+            certificate_cumulative_year_count: 3,
+            grade_bands: self.grade_bands.clone(),
         }
     }
 }

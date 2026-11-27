@@ -2148,20 +2148,23 @@ impl AssessmentService {
 
             if !child_periods.is_empty() {
                 for cp in &child_periods {
-                    let code_upper = cp.code.as_deref().unwrap_or("").to_uppercase();
-                    let is_monthly_sub_exam = code_upper.contains("-M") && code_upper.ends_with("-EXAM");
-                    let is_term_final_exam = !is_monthly_sub_exam
-                        && (cp.period_kind == PeriodKind::Examination || code_upper.contains("EXAM"));
+                    let is_exam = cp.period_kind == PeriodKind::Examination
+                        || cp
+                            .code
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_uppercase()
+                            .contains("EXAM");
 
                     let period_grades: Vec<&Grade> =
                         all_grades.iter().filter(|g| g.period_id == cp.id).collect();
 
-                    if is_term_final_exam {
+                    if is_exam {
                         if let Some(first_grade) = period_grades.first() {
                             term_final_exam = Some(first_grade.score);
                         }
                     } else {
-                        // Monthly / continuous period
+                        // Monthly period
                         let components: Vec<ComponentScore> = if period_grades.is_empty() {
                             vec![]
                         } else {
@@ -2181,15 +2184,10 @@ impl AssessmentService {
                                 .collect()
                         };
 
-                        let computed_max: Decimal = components.iter().map(|c| c.max_score).sum();
                         let mut breakdown = PeriodComponentScores {
                             components,
                             total: Decimal::ZERO,
-                            total_max: if computed_max > Decimal::ZERO {
-                                computed_max
-                            } else {
-                                Decimal::from(100)
-                            },
+                            total_max: Decimal::from(100),
                         };
                         breakdown.compute_total();
 
@@ -2203,9 +2201,9 @@ impl AssessmentService {
                     }
                 }
             } else {
-                // Flat/direct period: filter strictly to the requested period_id
+                // Flat/direct grades
                 let mut direct_components = Vec::new();
-                for g in all_grades.iter().filter(|g| g.period_id == period_id) {
+                for g in &all_grades {
                     if g.is_final {
                         term_final_exam = Some(g.score);
                     } else {
@@ -2223,16 +2221,10 @@ impl AssessmentService {
                     }
                 }
                 if !direct_components.is_empty() {
-                    let computed_max: Decimal =
-                        direct_components.iter().map(|c| c.max_score).sum();
                     let mut breakdown = PeriodComponentScores {
                         components: direct_components,
                         total: Decimal::ZERO,
-                        total_max: if computed_max > Decimal::ZERO {
-                            computed_max
-                        } else {
-                            Decimal::from(100)
-                        },
+                        total_max: Decimal::from(100),
                     };
                     breakdown.compute_total();
                     monthly_results.push(PeriodAssessmentResult {
