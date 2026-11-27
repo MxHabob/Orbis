@@ -1,25 +1,13 @@
 import {
-  ALL_AVATAR_HATS,
   AvatarController,
   type AvatarHat,
   Avatar as CompanionAvatar,
+  pickNextAvatarHat,
 } from "@orbis/avatar-engine/native";
 import { memo, useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useI18n } from "@/lib/i18n";
 import { Text } from "@/components/ui/text";
-
-function pickNextHat(
-  currentHat?: AvatarHat,
-): Exclude<AvatarHat, "random" | "none"> {
-  const candidates = ALL_AVATAR_HATS.filter(
-    (hat): hat is Exclude<AvatarHat, "random" | "none"> =>
-      hat !== currentHat && hat !== "none",
-  );
-  return (
-    candidates[Math.floor(Math.random() * candidates.length)] ?? "graduation"
-  );
-}
 
 type HomeHeroProps = {
   firstName?: string;
@@ -27,7 +15,9 @@ type HomeHeroProps = {
 
 export const HomeHero = memo(function HomeHero({ firstName }: HomeHeroProps) {
   const { t, isArabic } = useI18n();
-  const [avatarHat, setAvatarHat] = useState<AvatarHat>(() => pickNextHat());
+  const [avatarHat, setAvatarHat] = useState<AvatarHat>(() =>
+    pickNextAvatarHat(),
+  );
   const [avatarController] = useState(() => new AvatarController());
   const hour = new Date().getHours();
   const greetingKey =
@@ -48,14 +38,8 @@ export const HomeHero = memo(function HomeHero({ firstName }: HomeHeroProps) {
   );
 
   const handleAvatarPress = useCallback(() => {
-    setAvatarHat((current) => pickNextHat(current));
-    const mood = Math.random();
-    if (mood < 0.2) avatarController.happy();
-    else if (mood < 0.4) avatarController.celebrate();
-    else if (mood < 0.6) avatarController.curious();
-    else if (mood < 0.75) avatarController.sleepy();
-    else if (mood < 0.9) avatarController.think();
-    else avatarController.blink();
+    setAvatarHat((current) => pickNextAvatarHat(current));
+    avatarController.tapReaction();
   }, [avatarController]);
 
   return (

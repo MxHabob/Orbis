@@ -1,6 +1,5 @@
 <!-- @component StepReview -->
 <script lang="ts">
-import { onDestroy } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import {
   type OnboardingFormModel,
@@ -11,11 +10,10 @@ import { setupRegions, regionName } from "../setup-regions";
 import type { BootstrapResult } from "$lib/api/types";
 import { getBlueprint } from "@orbis/blueprints";
 import { getLocale } from "$lib/paraglide/runtime";
-import { LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Card, CardContent } from "@orbis/ui/card";
-import { Avatar, AvatarController } from "@orbis/avatar-engine";
+import StatusStage from "$lib/shared/components/status-stage.svelte";
 import { normalizeLicenseProductKey } from "$lib/utils/license";
 
 let {
@@ -48,7 +46,6 @@ let {
   onActivateKey: (productKey: string) => Promise<boolean>;
 } = $props();
 
-const avatarController = new AvatarController();
 let productKey = $state("");
 let productKeyError = $state<string | null>(null);
 const blueprint = $derived(getBlueprint(form.institutionType));
@@ -86,11 +83,20 @@ const institutionTypeLabel = $derived(
   }[form.institutionType](),
 );
 
-$effect(() => {
-  if (isComplete) avatarController.happy();
-});
+const setupPhases = $derived([
+  m.ui_onboarding_setup_getting_everything_ready(),
+  m.ui_onboarding_setup_preparing_workspace(),
+  m.ui_onboarding_setup_might_take_a_moment(),
+  m.ui_onboarding_setup_almost_there(),
+]);
 
-onDestroy(() => avatarController.destroy());
+const welcomeTitle = $derived(
+  m.ui_onboarding_setup_welcome({
+    name: organizationName,
+    administrator: administratorName,
+    institutionType: institutionTypeLabel,
+  }),
+);
 
 async function submitProductKey() {
   const key = productKey.trim();
@@ -106,27 +112,15 @@ async function submitProductKey() {
 }
 </script>
 
-{#if isSubmitting}
-  <section class="flex min-h-64 items-center justify-center" role="status">
-    <LoadingIndicator size="lg" label={m.ui_onboarding_setup_getting_everything_ready()} />
-  </section>
-{:else if isComplete}
-  <section class="mx-auto flex min-h-[64vh] max-w-4xl flex-col items-center justify-center px-4 py-10 text-center">
-    <Avatar
-      controller={avatarController}
-      hat="graduation"
-      width="160px"
-      height="160px"
-      label="Orbis"
-      class="mb-4"
-    />
-    <h1 class="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl" dir={isArabic ? "rtl" : "ltr"}>
-      {m.ui_onboarding_setup_welcome({
-        name: organizationName,
-        administrator: administratorName,
-        institutionType: institutionTypeLabel,
-      })}
-    </h1>
+{#if isSubmitting || isComplete}
+  <StatusStage
+    status={isComplete ? "complete" : "preparing"}
+    hat="graduation"
+    phases={setupPhases}
+    title={welcomeTitle}
+    subtitle={isSubmitting ? m.ui_onboarding_setup_dont_close() : ""}
+    dir={isArabic ? "rtl" : "ltr"}
+  >
 
     {#if warnings.length > 0}
       <div class="mt-7 w-full max-w-xl space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-start text-sm text-amber-800 dark:text-amber-200" role="status">
@@ -200,7 +194,7 @@ async function submitProductKey() {
         {/if}
       </div>
     {/if}
-  </section>
+  </StatusStage>
 {:else}
   <div class="mx-auto max-w-5xl space-y-6 py-2">
     <div class="space-y-2 text-start">

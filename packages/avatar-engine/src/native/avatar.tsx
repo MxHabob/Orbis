@@ -14,11 +14,13 @@ import {
 } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { AvatarController } from "../core/avatar-controller";
+import type { AvatarState } from "../core/avatar-state-machine";
 import { renderAvatarSvg } from "../core/avatar-svg";
 import { type AvatarHat, resolveAvatarHat } from "../core/types";
 
 export interface NativeAvatarProps {
   controller?: AvatarController;
+  state?: AvatarState;
   hat?: AvatarHat;
   size?: number;
   width?: number | `${number}%`;
@@ -34,6 +36,7 @@ export interface NativeAvatarProps {
 
 export function Avatar({
   controller,
+  state: controlledState,
   hat = "random",
   size = 120,
   width,
@@ -47,7 +50,7 @@ export function Avatar({
   style,
 }: NativeAvatarProps) {
   const [ownedController] = useState(
-    () => new AvatarController("idle", { autoBlink }),
+    () => new AvatarController(controlledState ?? "idle", { autoBlink }),
   );
   const activeController = controller ?? ownedController;
   const state = useSyncExternalStore(
@@ -88,6 +91,12 @@ export function Avatar({
   useEffect(() => {
     activeController.setAutoBlink(autoBlink && !reduceMotion);
   }, [activeController, autoBlink, reduceMotion]);
+
+  useEffect(() => {
+    if (controlledState && activeController.state !== controlledState) {
+      activeController.transitionTo(controlledState);
+    }
+  }, [activeController, controlledState]);
 
   useEffect(() => () => ownedController.destroy(), [ownedController]);
 

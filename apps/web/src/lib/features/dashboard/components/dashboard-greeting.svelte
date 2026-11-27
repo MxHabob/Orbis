@@ -13,8 +13,8 @@ import type { DashboardCountsDto } from "$lib/api/types";
 import {
   Avatar,
   AvatarController,
-  ALL_AVATAR_HATS,
   type AvatarHat,
+  pickNextAvatarHat,
 } from "@orbis/avatar-engine";
 
 let {
@@ -28,28 +28,15 @@ let {
 const avatarController = new AvatarController();
 
 // Random Initial Hat from available hats
-let currentHat = $state<AvatarHat>(
-  ALL_AVATAR_HATS[Math.floor(Math.random() * ALL_AVATAR_HATS.length)] ||
-    "graduation",
-);
+let currentHat = $state<AvatarHat>(pickNextAvatarHat());
 
 function randomizeHat() {
-  const otherHats = ALL_AVATAR_HATS.filter((h) => h !== currentHat);
-  currentHat =
-    otherHats[Math.floor(Math.random() * otherHats.length)] ||
-    ALL_AVATAR_HATS[0];
+  currentHat = pickNextAvatarHat(currentHat);
 }
 
 function handleAvatarClick() {
   randomizeHat();
-  const rand = Math.random();
-  if (rand < 0.33) {
-    avatarController.happy();
-  } else if (rand < 0.66) {
-    avatarController.think();
-  } else {
-    avatarController.blink();
-  }
+  avatarController.tapReaction();
 }
 
 // Time-aware greeting calculations
