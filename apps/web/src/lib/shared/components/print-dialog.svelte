@@ -733,7 +733,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
           <PrintConfigPanel
             bind:config={multiUpConfig}
             onConfigChange={handleConfigChange}
-            disabled={generatingPdf || isBatchProcessing}
+            disabled={isBatchProcessing || (activeTab === "preview" && generatingPdf)}
           />
         </div>
 
@@ -817,7 +817,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                     variant={suggestion.itemsPerSheet === multiUpLayout.itemsPerSheet ? "default" : "outline"}
                     size="xs"
                     class="text-[10px] cursor-pointer"
-                    disabled={generatingPdf || isBatchProcessing}
+                    disabled={isBatchProcessing || (activeTab === "preview" && generatingPdf)}
                     onclick={() => applySuggestion(suggestion)}
                   >
                     {suggestion.columns}×{suggestion.rows}={suggestion.itemsPerSheet}
