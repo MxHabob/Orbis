@@ -5,12 +5,13 @@ use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AccountRepository, CurrencyRepository, DiscountTemplateRepository, FeeTemplateRepository,
     JournalEntryRepository, OrganizationRepository, PaymentRepository, PolicyRepository,
-    StudentFeeRepository,
+    StudentFeeRepository, StudentRepository,
 };
 use chrono::{NaiveDate, TimeZone, Utc};
 use orbis_domain::entities::account::{Account, AccountType};
 use orbis_domain::entities::discount_template::DiscountTemplate;
-use orbis_domain::entities::fee_template::FeeTemplate;
+use orbis_domain::entities::enrollment::StudyMode;
+use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate};
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::entities::payment::{Payment, PaymentMethod};
 use orbis_domain::entities::student_fee::{FeeStatus, StudentFee};
@@ -503,6 +504,7 @@ pub struct FinanceService {
     pub payment_gateway: Arc<dyn PaymentGatewayPort>,
     pub notification_gateway: Arc<dyn NotificationPort>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    pub student_repo: Option<Arc<dyn StudentRepository>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -657,6 +659,43 @@ impl FinanceService {
             payment_gateway,
             notification_gateway,
             permission_checker,
+            student_repo: None,
+        }
+    }
+
+    pub fn with_student_repo(mut self, student_repo: Arc<dyn StudentRepository>) -> Self {
+        self.student_repo = Some(student_repo);
+        self
+    }
+
+    async fn resolve_student_org_unit_id(
+        &self,
+        org_id: Uuid,
+        student_id: Option<Uuid>,
+    ) -> Option<Uuid> {
+        let student_id = student_id?;
+        let repo = self.student_repo.as_ref()?;
+        repo.find_by_id(student_id)
+            .await
+            .ok()
+            .flatten()
+            .filter(|student| student.org_id == org_id && !student.is_deleted)
+            .and_then(|student| student.org_unit_id)
+    }
+
+    fn resolve_discount_purpose(discount_code: Option<&str>) -> AccountPurpose {
+        let Some(code) = discount_code else {
+            return AccountPurpose::SiblingDiscount;
+        };
+        let upper = code.trim().to_ascii_uppercase();
+        if upper.contains("MERIT") || upper.contains("SCHOLAR") {
+            AccountPurpose::MeritScholarship
+        } else if upper.contains("STAFF") || upper.contains("EMP") {
+            AccountPurpose::StaffChildDiscount
+        } else if upper.contains("EARLY") {
+            AccountPurpose::EarlyPaymentDiscount
+        } else {
+            AccountPurpose::SiblingDiscount
         }
     }
 
@@ -874,6 +913,12 @@ impl FinanceService {
                     "Fee belongs to another organization".into(),
                 ));
             }
+            if matches!(fee.status, FeeStatus::Cancelled | FeeStatus::Refunded) {
+                return Err(DomainError::Validation(format!(
+                    "Cannot apply payment to a {} fee",
+                    fee.status
+                )));
+            }
             if amount > fee.balance_due {
                 return Err(DomainError::Validation(format!(
                     "Payment amount ({}) exceeds fee balance due ({})",
@@ -1051,6 +1096,10 @@ impl FinanceService {
 
         lines.extend(allocation_lines);
 
+        let resolved_org_unit_id = self
+            .resolve_student_org_unit_id(org_id, student_resolved_id)
+            .await;
+
         let entry = JournalEntry {
             id: journal_entry_id,
             org_id,
@@ -1082,7 +1131,7 @@ impl FinanceService {
             created_at: now,
             updated_at: now,
             updated_by: ctx.user_id(),
-            org_unit_id: None,
+            org_unit_id: resolved_org_unit_id,
             version: 1,
         };
 
@@ -1118,7 +1167,7 @@ impl FinanceService {
             created_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
-            org_unit_id: None,
+            org_unit_id: resolved_org_unit_id,
         };
         self.payment_repo
             .save_payment_posting(
@@ -1183,12 +1232,156 @@ impl FinanceService {
             .fee_template_repo
             .find_by_id(template_id)
             .await?
+            .filter(|t| t.org_id == org_id)
             .ok_or_else(|| {
                 DomainError::NotFound(format!("Fee Template {} not found", template_id))
             })?;
 
+        self.create_fee_invoice_from_template(
+            ctx,
+            org_id,
+            period_id,
+            student_id,
+            enrollment_id,
+            &template,
+            discount_amount,
+            None,
+            due_date,
+            None,
+            None,
+            None,
+        )
+        .await
+    }
+
+    /// Assess and post all mandatory fee templates applicable to a student's enrollment.
+    /// Guarantees double-entry accounting integrity and idempotency per period/template.
+    pub async fn assess_enrollment_fees(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        period_id: Uuid,
+        student_id: Uuid,
+        enrollment_id: Uuid,
+        section_level: Option<&str>,
+        study_mode: StudyMode,
+        org_unit_id: Option<Uuid>,
+    ) -> Result<Vec<StudentFee>, DomainError> {
+        if org_id != ctx.tenant_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        let templates = self.fee_template_repo.find_by_org(org_id).await?;
+        let existing_fees = self.student_fee_repo.find_by_student(student_id).await?;
+        let mode_key = study_mode.to_string();
+        let level_key = section_level.map(|l| l.trim().to_ascii_lowercase());
+
+        let mut created_fees = Vec::new();
+        for template in templates
+            .into_iter()
+            .filter(|t| t.org_id == org_id && t.is_mandatory && t.is_active)
+        {
+            if let Some(levels) = &template.applicable_levels {
+                if !levels.is_empty() {
+                    let matches_level = level_key.as_ref().is_some_and(|lvl| {
+                        levels
+                            .iter()
+                            .any(|allowed| allowed.trim().to_ascii_lowercase() == *lvl)
+                    });
+                    if !matches_level {
+                        continue;
+                    }
+                }
+            }
+
+            if let Some(modes) = &template.applicable_study_modes {
+                if !modes.is_empty()
+                    && !modes
+                        .iter()
+                        .any(|allowed| allowed.trim().eq_ignore_ascii_case(&mode_key))
+                {
+                    continue;
+                }
+            }
+
+            let already_billed = existing_fees.iter().any(|existing| {
+                existing.org_id == org_id
+                    && existing.fee_template_id == template.id
+                    && !matches!(existing.status, FeeStatus::Cancelled | FeeStatus::Refunded)
+                    && match template.frequency {
+                        FeeFrequency::Once => true,
+                        FeeFrequency::PerTerm | FeeFrequency::Monthly | FeeFrequency::Annual => {
+                            existing.period_id == period_id
+                        }
+                    }
+            });
+            if already_billed {
+                continue;
+            }
+
+            let fee = self
+                .create_fee_invoice_from_template(
+                    ctx,
+                    org_id,
+                    period_id,
+                    student_id,
+                    Some(enrollment_id),
+                    &template,
+                    None,
+                    None,
+                    None,
+                    Some(1),
+                    Some(format!("Auto-assigned mandatory fee: {}", template.name)),
+                    org_unit_id,
+                )
+                .await?;
+            created_fees.push(fee);
+        }
+
+        Ok(created_fees)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn create_fee_invoice_from_template(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        period_id: Uuid,
+        student_id: Uuid,
+        enrollment_id: Option<Uuid>,
+        template: &FeeTemplate,
+        discount_amount: Option<Decimal>,
+        discount_code: Option<&str>,
+        due_date: Option<chrono::NaiveDate>,
+        installment_number: Option<u32>,
+        notes: Option<String>,
+        org_unit_id: Option<Uuid>,
+    ) -> Result<StudentFee, DomainError> {
+        if template.org_id != org_id {
+            return Err(DomainError::Unauthorized(
+                "Fee template belongs to another organization".into(),
+            ));
+        }
+        if !template.is_active {
+            return Err(DomainError::Validation(format!(
+                "Fee template '{}' is inactive",
+                template.name
+            )));
+        }
+
         let discount = discount_amount.unwrap_or(Decimal::ZERO);
-        let net_amount = (template.default_amount - discount).max(Decimal::ZERO);
+        if discount < Decimal::ZERO {
+            return Err(DomainError::Validation(
+                "Discount amount cannot be negative".into(),
+            ));
+        }
+        if discount > template.default_amount {
+            return Err(DomainError::Validation(format!(
+                "Discount ({}) cannot exceed fee amount ({})",
+                discount, template.default_amount
+            )));
+        }
+        let net_amount = template.default_amount - discount;
 
         let now = Utc::now();
         let current_date = self.current_financial_date(org_id).await?;
@@ -1201,23 +1394,35 @@ impl FinanceService {
             30
         };
 
+        let resolved_org_unit_id = match org_unit_id {
+            Some(id) => Some(id),
+            None => {
+                self.resolve_student_org_unit_id(org_id, Some(student_id))
+                    .await
+            }
+        };
+
         let fee = StudentFee {
             id: fee_id,
             org_id,
             period_id,
             student_id,
             enrollment_id,
-            fee_template_id: template_id,
+            fee_template_id: template.id,
             original_amount: template.default_amount,
             discount_amount: discount,
             net_amount,
             paid_amount: Decimal::ZERO,
             balance_due: net_amount,
-            status: FeeStatus::Pending,
+            status: if net_amount == Decimal::ZERO {
+                FeeStatus::Paid
+            } else {
+                FeeStatus::Pending
+            },
             due_date: due_date.unwrap_or_else(|| current_date + chrono::Duration::days(due_days)),
             discount_details: None,
-            installment_number: None,
-            notes: None,
+            installment_number,
+            notes,
             created_by: ctx.user_id(),
             created_at: now,
             updated_at: now,
@@ -1233,19 +1438,23 @@ impl FinanceService {
 
         // Double-entry ledger accrual for student fee invoice (قيد استحقاق الرسوم)
         let journal_entry_id = Uuid::new_v4();
-        let mut lines = vec![JournalEntryLine {
-            id: Uuid::new_v4(),
-            account_id: template.receivable_account_id,
-            debit_amount: net_amount,
-            credit_amount: Decimal::ZERO,
-            description: Some(format!("Student fee invoice: {}", template.name)),
-            entity_type: Some("student".into()),
-            entity_id: Some(student_id),
-        }];
+        let mut lines = Vec::new();
+        if net_amount > Decimal::ZERO {
+            lines.push(JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: template.receivable_account_id,
+                debit_amount: net_amount,
+                credit_amount: Decimal::ZERO,
+                description: Some(format!("Student fee invoice: {}", template.name)),
+                entity_type: Some("student".into()),
+                entity_id: Some(student_id),
+            });
+        }
 
         if discount > Decimal::ZERO {
+            let purpose = Self::resolve_discount_purpose(discount_code);
             let discount_acct = self
-                .resolve_default_account(org_id, AccountPurpose::SiblingDiscount)
+                .resolve_default_account(org_id, purpose)
                 .await
                 .map(|a| a.id)
                 .unwrap_or(template.revenue_account_id);
@@ -1304,7 +1513,7 @@ impl FinanceService {
             created_at: now,
             updated_at: now,
             updated_by: ctx.user_id(),
-            org_unit_id: None,
+            org_unit_id: resolved_org_unit_id,
             version: 1,
         };
 
@@ -2217,12 +2426,10 @@ impl FinanceService {
         }
         let prior_refunds: Decimal = self
             .journal_repo
-            .find_by_org(org_id)
+            .find_by_source(org_id, "student_fee_refund", payment.id)
             .await?
             .into_iter()
-            .filter(|entry| {
-                entry.source_type == "student_fee_refund" && entry.source_id == Some(payment.id)
-            })
+            .filter(|entry| !entry.is_reversed)
             .map(|entry| entry.amount)
             .sum();
         if refund_amount > payment.amount - prior_refunds {
@@ -2559,7 +2766,8 @@ impl FinanceService {
         Ok(())
     }
 
-    /// Delete student fee
+    /// Cancel or delete a student fee safely.
+    /// If a posted invoice journal exists, performs an immutable reversal (preserving the audit trail).
     pub async fn delete_student_fee(
         &self,
         ctx: &RequestContext,
@@ -2582,11 +2790,87 @@ impl FinanceService {
 
         if fee.paid_amount > Decimal::ZERO {
             return Err(DomainError::Validation(
-                "Cannot delete fee with applied payments. Refund or reverse payments first.".into(),
+                "Cannot cancel or delete fee with applied payments. Refund or reverse payments first.".into(),
+            ));
+        }
+        if fee.status == FeeStatus::Cancelled {
+            return Err(DomainError::Validation("Fee is already cancelled".into()));
+        }
+        if fee.installment_number.is_some() {
+            return Err(DomainError::Validation(
+                "A fee that is part of an installment schedule cannot be cancelled directly".into(),
             ));
         }
 
-        self.student_fee_repo.delete_fee_posting(&fee).await?;
+        let invoice_journals = self
+            .journal_repo
+            .find_by_source(org_id, "student_fee_invoice", fee.id)
+            .await?;
+        if let Some(orig) = invoice_journals
+            .into_iter()
+            .find(|entry| !entry.is_reversed)
+        {
+            let now = Utc::now();
+            let rev_id = Uuid::new_v4();
+            let reason = "Student fee cancelled";
+            let reversed_lines: Vec<JournalEntryLine> = orig
+                .lines
+                .iter()
+                .map(|line| JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: line.account_id,
+                    debit_amount: line.credit_amount,
+                    credit_amount: line.debit_amount,
+                    description: Some(format!(
+                        "Reversal: {}",
+                        line.description.clone().unwrap_or_default()
+                    )),
+                    entity_type: line.entity_type.clone(),
+                    entity_id: line.entity_id,
+                })
+                .collect();
+            let reversal_entry = JournalEntry {
+                id: rev_id,
+                org_id,
+                reference_number: format!("REV-{}", orig.reference_number),
+                accounting_date: self.current_financial_date(org_id).await?,
+                amount: orig.amount,
+                currency_code: orig.currency_code.clone(),
+                exchange_rate: orig.exchange_rate,
+                base_amount: orig.base_amount,
+                debit_account_id: orig.credit_account_id,
+                credit_account_id: orig.debit_account_id,
+                description: format!("Reversal of {}: {}", orig.reference_number, reason),
+                description_ar: orig
+                    .description_ar
+                    .as_ref()
+                    .map(|ar| format!("عكس القيد: {ar}")),
+                source_type: "journal_reversal".into(),
+                source_id: Some(orig.id),
+                status: JournalPostingStatus::Posted,
+                lines: reversed_lines,
+                is_reversed: false,
+                reversed_by: None,
+                reversal_reason: None,
+                created_by: ctx.user_id(),
+                created_at: now,
+                updated_at: now,
+                updated_by: ctx.user_id(),
+                org_unit_id: orig.org_unit_id,
+                version: 1,
+            };
+
+            let mut cancelled = fee.clone();
+            cancelled.status = FeeStatus::Cancelled;
+            cancelled.balance_due = Decimal::ZERO;
+            cancelled.updated_at = now;
+
+            self.student_fee_repo
+                .save_fee_cancellation(&fee, &cancelled, &reversal_entry, Some(orig.id), reason)
+                .await?;
+        } else {
+            self.student_fee_repo.delete_fee_posting(&fee).await?;
+        }
 
         let _ = self
             .event_bus

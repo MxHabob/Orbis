@@ -24,6 +24,7 @@ import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte
 type RoundingMode = "round_half_up" | "round_up" | "round_down" | "truncate";
 type RankingScope = "class" | "grade_level" | "org_unit" | "cohort";
 type TiePolicy = "standard_competition" | "dense" | "fractional";
+type FinancialClearanceMode = "ignore" | "warn" | "block";
 
 interface PolicyForm {
   passingThreshold: string;
@@ -37,6 +38,11 @@ interface PolicyForm {
   roundingMode: RoundingMode;
   decimalPlaces: string;
   maxDisplayedRank: string;
+  autoGraduateFinalLevel: boolean;
+  checkAttendanceInPromotion: boolean;
+  autoAssessTargetFees: boolean;
+  financialClearanceMode: FinancialClearanceMode;
+  levelProgressionOrder: string;
 }
 
 let isLoading = $state(true);
@@ -101,6 +107,18 @@ function hydrate(value: OrganizationSettingsDto) {
       academic.max_displayed_rank == null
         ? ""
         : String(academic.max_displayed_rank),
+    autoGraduateFinalLevel: academic.auto_graduate_final_level ?? false,
+    checkAttendanceInPromotion: value.promotion?.check_attendance ?? true,
+    autoAssessTargetFees: value.promotion?.auto_assess_target_fees ?? false,
+    financialClearanceMode: enumValue(
+      value.promotion?.financial_clearance_mode,
+      ["ignore", "warn", "block"],
+      "financial clearance mode",
+      "warn",
+    ),
+    levelProgressionOrder: (
+      value.promotion?.level_progression_order ?? []
+    ).join(", "),
   };
   form = nextForm;
   initialSnapshot = JSON.stringify(nextForm);
@@ -255,6 +273,16 @@ async function savePolicy() {
           "Maximum displayed rank",
           { integer: true, minimum: 1 },
         ),
+        auto_graduate_final_level: form.autoGraduateFinalLevel,
+      },
+      promotion: {
+        financial_clearance_mode: form.financialClearanceMode,
+        check_attendance: form.checkAttendanceInPromotion,
+        auto_assess_target_fees: form.autoAssessTargetFees,
+        level_progression_order: form.levelProgressionOrder
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
       },
     });
     hydrate(updatedSettings);
@@ -475,6 +503,101 @@ async function savePolicy() {
                   </div>
                 </div>
               {/if}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent class="space-y-4 p-5">
+              <div class="space-y-1 text-start">
+                <h2 class="text-sm font-semibold text-foreground">
+                  {m.settings_promo_policy_title()}
+                </h2>
+                <p class="text-xs text-muted-foreground">
+                  {m.settings_promo_policy_desc()}
+                </p>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex items-center justify-between gap-4 rounded-lg border border-border/70 px-3.5 py-2.5">
+                  <Label for="policy-auto-graduate" class="text-xs font-medium text-foreground">
+                    {m.settings_promo_auto_graduate()}
+                  </Label>
+                  <Switch
+                    id="policy-auto-graduate"
+                    bind:checked={form.autoGraduateFinalLevel}
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <div class="flex items-center justify-between gap-4 rounded-lg border border-border/70 px-3.5 py-2.5">
+                  <Label for="policy-promo-attendance" class="text-xs font-medium text-foreground">
+                    {m.settings_promo_check_attendance()}
+                  </Label>
+                  <Switch
+                    id="policy-promo-attendance"
+                    bind:checked={form.checkAttendanceInPromotion}
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <div class="flex items-center justify-between gap-4 rounded-lg border border-border/70 px-3.5 py-2.5">
+                  <Label for="policy-promo-fees" class="text-xs font-medium text-foreground">
+                    {m.settings_promo_auto_assess_fees()}
+                  </Label>
+                  <Switch
+                    id="policy-promo-fees"
+                    bind:checked={form.autoAssessTargetFees}
+                    disabled={isSaving}
+                  />
+                </div>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div class="space-y-1.5 text-start">
+                  <Label for="policy-financial-clearance" class="text-xs font-medium">
+                    {m.settings_promo_financial_clearance()}
+                  </Label>
+                  <Select
+                    type="single"
+                    value={form.financialClearanceMode}
+                    onValueChange={(value) => {
+                      if (form && value) {
+                        form.financialClearanceMode = value as FinancialClearanceMode;
+                      }
+                    }}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger id="policy-financial-clearance" class="h-9 w-full text-xs">
+                      {form.financialClearanceMode === "ignore"
+                        ? m.settings_promo_clearance_ignore()
+                        : form.financialClearanceMode === "block"
+                          ? m.settings_promo_clearance_block()
+                          : m.settings_promo_clearance_warn()}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="warn">{m.settings_promo_clearance_warn()}</SelectItem>
+                      <SelectItem value="block">{m.settings_promo_clearance_block()}</SelectItem>
+                      <SelectItem value="ignore">{m.settings_promo_clearance_ignore()}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="space-y-1.5 text-start">
+                  <Label for="policy-level-order" class="text-xs font-medium">
+                    {m.settings_promo_level_order()}
+                  </Label>
+                  <Input
+                    id="policy-level-order"
+                    class="h-9 text-xs"
+                    placeholder="G01, G02, G03, ..."
+                    bind:value={form.levelProgressionOrder}
+                    disabled={isSaving}
+                  />
+                  <p class="text-[11px] text-muted-foreground">
+                    {m.settings_promo_level_order_hint()}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

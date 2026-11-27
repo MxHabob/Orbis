@@ -39,6 +39,7 @@ import {
 import {
   OrbisGrid,
   type CellEditEvent,
+  type GridActionEvent,
   type OrbisColumnDef,
 } from "@orbis/svelte-grid";
 import { exportToCsv } from "$lib/shared/utils/export";
@@ -91,6 +92,7 @@ let isLoadingRoster = $state(false);
 let isSaving = $state(false);
 let classLoadError = $state(false);
 let rosterLoadError = $state(false);
+let isDirty = $state(false);
 
 const columns: OrbisColumnDef[] = [
   {
@@ -98,8 +100,8 @@ const columns: OrbisColumnDef[] = [
     prop: "fullName",
     header: m.operations_ui_student_name(),
     name: m.operations_ui_student_name(),
-    width: 240,
-    size: 240,
+    width: 220,
+    size: 220,
     type: "avatar",
     readonly: true,
     pin: "left",
@@ -109,8 +111,8 @@ const columns: OrbisColumnDef[] = [
     prop: "studentNumber",
     header: m.operations_ui_student_number(),
     name: m.operations_ui_student_number(),
-    width: 140,
-    size: 140,
+    width: 130,
+    size: 130,
     readonly: true,
     cellClass: "font-mono text-muted-foreground",
   },
@@ -119,8 +121,8 @@ const columns: OrbisColumnDef[] = [
     prop: "status",
     header: m.operations_ui_attendance_status(),
     name: m.operations_ui_attendance_status(),
-    width: 160,
-    size: 160,
+    width: 140,
+    size: 140,
     type: "enum",
     align: "center",
     options: [
@@ -131,12 +133,47 @@ const columns: OrbisColumnDef[] = [
     ],
   },
   {
+    id: "quickStatus",
+    prop: "quickStatus",
+    header: m.operations_ui_attendance_quick_mark(),
+    name: m.operations_ui_attendance_quick_mark(),
+    width: 270,
+    size: 270,
+    type: "action",
+    readonly: true,
+    sort: false,
+    meta: {
+      items: [
+        {
+          id: "mark-present",
+          label: m.operations_ui_attendance_present(),
+          variant: "outline",
+        },
+        {
+          id: "mark-absent",
+          label: m.operations_ui_attendance_absent(),
+          variant: "destructive",
+        },
+        {
+          id: "mark-late",
+          label: m.operations_ui_attendance_late(),
+          variant: "outline",
+        },
+        {
+          id: "mark-excused",
+          label: m.operations_ui_attendance_excused(),
+          variant: "outline",
+        },
+      ],
+    },
+  },
+  {
     id: "remarks",
     prop: "remarks",
     header: m.operations_ui_notes(),
     name: m.operations_ui_notes(),
-    width: 260,
-    size: 260,
+    width: 220,
+    size: 220,
     type: "text",
   },
 ];
@@ -360,6 +397,7 @@ function buildAttendanceRows(lessonId: string) {
 
 function selectLesson(lessonId: string) {
   selectedLessonId = lessonId;
+  isDirty = false;
   buildAttendanceRows(lessonId);
 }
 
@@ -378,14 +416,39 @@ function handleGridEdit(event: CellEditEvent) {
   if (!row) return;
 
   if (event.columnId === "status" && isAttendanceStatus(event.newValue)) {
-    row.status = event.newValue;
+    setRowStatus(studentId, event.newValue);
   } else if (event.columnId === "remarks") {
-    row.remarks = String(event.newValue ?? "");
+    setRowRemarks(studentId, String(event.newValue ?? ""));
   }
+}
+
+function handleGridAction(event: GridActionEvent) {
+  const studentId = String(event.row?.studentId ?? event.row?.id ?? "");
+  if (!studentId) return;
+  if (event.actionId === "mark-present") setRowStatus(studentId, "present");
+  else if (event.actionId === "mark-absent") setRowStatus(studentId, "absent");
+  else if (event.actionId === "mark-late") setRowStatus(studentId, "late");
+  else if (event.actionId === "mark-excused")
+    setRowStatus(studentId, "excused");
+}
+
+function setRowStatus(studentId: string, status: AttendanceStatus) {
+  attendanceRows = attendanceRows.map((row) =>
+    row.studentId === studentId ? { ...row, status } : row,
+  );
+  isDirty = true;
+}
+
+function setRowRemarks(studentId: string, remarks: string) {
+  attendanceRows = attendanceRows.map((row) =>
+    row.studentId === studentId ? { ...row, remarks } : row,
+  );
+  isDirty = true;
 }
 
 function markAll(status: AttendanceStatus) {
   attendanceRows = attendanceRows.map((row) => ({ ...row, status }));
+  isDirty = true;
   toast.success(
     status === "present"
       ? m.operations_ui_attendance_marked_all_present()
@@ -421,6 +484,7 @@ async function handleSaveAttendance() {
       items,
     });
     toast.success(m.operations_ui_attendance_save_success());
+    isDirty = false;
     await loadRosterAndAttendance();
   } catch (error) {
     console.error("Failed to save attendance:", error);
@@ -750,7 +814,7 @@ const absentCount = $derived(
         </div>
       </div>
 
-      <CardContent class="min-h-0 flex-1 p-0">
+      <CardContent class="min-h-0 flex-1 overflow-y-auto p-0">
         {#if rosterLoadError}
           <div
             class="flex h-full flex-col items-center justify-center gap-2 text-center"
@@ -783,6 +847,7 @@ const absentCount = $derived(
               height="100%"
               rtl={getLocale() === "ar"}
               oncelledit={handleGridEdit}
+              onaction={handleGridAction}
               emptyTitle={m.operations_ui_attendance_no_students()}
             />
           {/if}

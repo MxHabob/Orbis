@@ -1504,6 +1504,8 @@ fn default_grade_certificate_templates() -> Vec<(
                     "id": "grades-table",
                     "props": {
                         "dataSource": "grades",
+                        "columnsSource": "tableColumns",
+                        "fitToBounds": true,
                         "columns": [
                             { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "32%", "alignment": "right", "total": "label", "totalLabel": "المجموع الكلي" },
                             { "header": "أعمال الفصل", "headerAr": "أعمال الفصل", "field": "courseworkScore", "width": "17%", "alignment": "center", "total": "sum" },
@@ -1919,6 +1921,7 @@ fn default_yemeni_academic_certificate_template() -> (
                         "id": "cert-subjects-table",
                         "props": {
                             "dataSource": "subjects",
+                            "fitToBounds": true,
                             "columns": [
                                 { "field": "seq", "header": "No", "headerAr": "م", "width": "5%", "alignment": "center" },
                                 { "field": "subject_name", "header": "Subject", "headerAr": "المادة الدراسية", "width": "25%", "alignment": "right", "total": "label", "totalLabel": "المجموع العام / Total" },

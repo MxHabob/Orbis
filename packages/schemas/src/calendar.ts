@@ -11,9 +11,6 @@ export const createPeriodInputSchema = z
     parent_id: optionalText,
     start_date: z.string().date(),
     end_date: z.string().date(),
-    grading_system: z.string().trim().min(1),
-    passing_grade: z.number().finite().min(0),
-    max_grade: z.number().finite().positive(),
   })
   .refine((value) => value.end_date >= value.start_date, {
     path: ["end_date"],

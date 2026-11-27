@@ -347,6 +347,8 @@ pub struct OrganizationSettingsDto {
     #[serde(default)]
     pub academic: AcademicSettingsDto,
     #[serde(default)]
+    pub promotion: orbis_domain::entities::settings::PromotionSettings,
+    #[serde(default)]
     pub student_sort: StudentSortSettingsDto,
     #[serde(default)]
     pub enrollment: EnrollmentSettingsDto,
@@ -593,6 +595,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 exclude_withdrawn: s.academic.exclude_withdrawn,
                 grade_bands: s.academic.grade_bands,
             },
+            promotion: s.promotion,
             student_sort: StudentSortSettingsDto {
                 field: s.student_sort.field,
                 direction: s.student_sort.direction,
@@ -723,6 +726,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 exclude_withdrawn: s.academic.exclude_withdrawn,
                 grade_bands: s.academic.grade_bands,
             },
+            promotion: s.promotion,
             student_sort: StudentSortSettings {
                 field: s.student_sort.field,
                 direction: s.student_sort.direction,

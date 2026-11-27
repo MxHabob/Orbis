@@ -155,9 +155,13 @@ pub fn run() {
             #[cfg(debug_assertions)]
             let win_builder = win_builder.devtools(true);
             #[cfg(target_os = "macos")]
-            let win_builder = win_builder.decorations(true).transparent(false);
+            let win_builder = win_builder
+                .decorations(true)
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
+                .hidden_title(true)
+                .transparent(false);
             #[cfg(not(target_os = "macos"))]
-            let win_builder = win_builder.decorations(true).transparent(false);
+            let win_builder = win_builder.decorations(false).transparent(false);
             let window = win_builder
                 .disable_drag_drop_handler()
                 .on_download(|_window, _event| {

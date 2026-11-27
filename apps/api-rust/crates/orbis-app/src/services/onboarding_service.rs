@@ -574,10 +574,20 @@ impl OnboardingService {
                     })?
             };
 
-            let exam_start = at_day_start(exam_start_date);
-            if index > 0 || *days > 3 {
-                let teaching_start = at_day_start(month_start);
-                let teaching_end = exam_start - Duration::seconds(1);
+            let exam_is_final = index % 4 == 3;
+            let teaching_start = at_day_start(month_start);
+            let teaching_end = if exam_is_final {
+                at_day_start(exam_start_date) - Duration::seconds(1)
+            } else {
+                at_day_end(month_end)
+            };
+            let teaching_hijri_end = if exam_is_final {
+                hijri_day_end - 3
+            } else {
+                hijri_day_end
+            };
+
+            if !exam_is_final || *days > 3 {
                 let teaching = AcademicPeriod {
                     id: Uuid::new_v4(),
                     org_id,
@@ -597,9 +607,7 @@ impl OnboardingService {
                     )),
                     hijri_end: Some(format!(
                         "{} {} {}",
-                        hijri_day_end - 3,
-                        month_names_en[month_index],
-                        month_year
+                        teaching_hijri_end, month_names_en[month_index], month_year
                     )),
                     enrollment_starts_at: None,
                     enrollment_ends_at: None,
@@ -628,63 +636,55 @@ impl OnboardingService {
                 }
             }
 
-            let exam_is_final = index % 4 == 3;
-            let exam_end = at_day_end(month_end);
-            let exam = AcademicPeriod {
-                id: Uuid::new_v4(),
-                org_id,
-                year_id,
-                parent_id: Some(term_id),
-                name: if exam_is_final {
-                    format!("{} Final Examination", term_name.0)
-                } else {
-                    format!("{} Monthly Examination", month_names_en[index])
-                },
-                name_ar: Some(if exam_is_final {
-                    format!("اختبار نهاية {}", term_name.1)
-                } else {
-                    format!("اختبار {}", month_names_ar[index])
-                }),
-                code: Some(if exam_is_final {
-                    format!("{}-FINAL", term_name.2)
-                } else {
-                    format!("H{}-M{:02}-EXAM", month_year, month_number)
-                }),
-                period_type: PeriodType::Month,
-                period_kind: PeriodKind::Examination,
-                state: calendar_period_state(exam_start, exam_end, now, true),
-                start_date: exam_start,
-                end_date: exam_end,
-                hijri_start: Some(format!(
-                    "{} {} {}",
-                    hijri_day_end - 2,
-                    month_names_en[month_index],
-                    month_year
-                )),
-                hijri_end: Some(format!(
-                    "{} {} {}",
-                    hijri_day_end, month_names_en[month_index], month_year
-                )),
-                enrollment_starts_at: None,
-                enrollment_ends_at: None,
-                is_enrollment_open: false,
-                grade_entry_starts_at: None,
-                grade_entry_ends_at: None,
-                is_grade_entry_open: calendar_period_state(exam_start, exam_end, now, true)
-                    == AcademicPeriodState::FinalExams,
-                exam_starts_at: Some(exam_start),
-                exam_ends_at: Some(exam_end),
-                is_locked: false,
-                locked_at: None,
-                locked_by: None,
-                sort_order: Some(100 + month_number as i32),
-                metadata: None,
-                created_at: now,
-                updated_at: now,
-            };
-            if !periods.iter().any(|period| period.code == exam.code) {
-                self.period_repo.save(&exam).await?;
-                periods.push(exam);
+            // Only create term-level final examination periods (not monthly sub-exam periods,
+            // since monthly written exams are already a component inside AssessmentScheme).
+            if exam_is_final {
+                let exam_start = at_day_start(exam_start_date);
+                let exam_end = at_day_end(month_end);
+                let exam = AcademicPeriod {
+                    id: Uuid::new_v4(),
+                    org_id,
+                    year_id,
+                    parent_id: Some(term_id),
+                    name: format!("{} Final Examination", term_name.0),
+                    name_ar: Some(format!("اختبار نهاية {}", term_name.1)),
+                    code: Some(format!("{}-FINAL", term_name.2)),
+                    period_type: PeriodType::Month,
+                    period_kind: PeriodKind::Examination,
+                    state: calendar_period_state(exam_start, exam_end, now, true),
+                    start_date: exam_start,
+                    end_date: exam_end,
+                    hijri_start: Some(format!(
+                        "{} {} {}",
+                        hijri_day_end - 2,
+                        month_names_en[month_index],
+                        month_year
+                    )),
+                    hijri_end: Some(format!(
+                        "{} {} {}",
+                        hijri_day_end, month_names_en[month_index], month_year
+                    )),
+                    enrollment_starts_at: None,
+                    enrollment_ends_at: None,
+                    is_enrollment_open: false,
+                    grade_entry_starts_at: None,
+                    grade_entry_ends_at: None,
+                    is_grade_entry_open: calendar_period_state(exam_start, exam_end, now, true)
+                        == AcademicPeriodState::FinalExams,
+                    exam_starts_at: Some(exam_start),
+                    exam_ends_at: Some(exam_end),
+                    is_locked: false,
+                    locked_at: None,
+                    locked_by: None,
+                    sort_order: Some(100 + month_number as i32),
+                    metadata: None,
+                    created_at: now,
+                    updated_at: now,
+                };
+                if !periods.iter().any(|period| period.code == exam.code) {
+                    self.period_repo.save(&exam).await?;
+                    periods.push(exam);
+                }
             }
 
             next_month_start = month_end + Duration::days(1);

@@ -216,9 +216,22 @@ impl<'a> LayoutEngine<'a> {
         contexts: &[Value],
         multi_up_config: &crate::layout::multi_up::MultiUpConfig,
     ) -> Result<LayoutResult, DocforgeError> {
-        use crate::layout::multi_up::{generate_cut_lines, offset_element, paginate_contexts};
+        use crate::layout::multi_up::{generate_cut_lines, paginate_contexts, transform_element};
 
         let multi_up = multi_up_config.compute_layout();
+        let slot_scale = if multi_up_config.forced_grid.is_some() && multi_up_config.scale_to_fit {
+            let first_slot = multi_up.slots.first();
+            first_slot
+                .map(|s| {
+                    (s.width_pt
+                        / crate::render::types::mm_to_pt(multi_up_config.template_width_mm)
+                            .max(1.0))
+                    .min(1.0)
+                })
+                .unwrap_or(1.0)
+        } else {
+            1.0
+        };
         let chunks = paginate_contexts(contexts, multi_up.items_per_sheet);
         let mut pages = Vec::with_capacity(chunks.len());
 
@@ -237,7 +250,8 @@ impl<'a> LayoutEngine<'a> {
                 // Take elements from the first page only (multi-up templates are single-page)
                 if let Some(first_page) = single_result.pages.first() {
                     for element in &first_page.elements {
-                        sheet_elements.push(offset_element(element, slot.x_pt, slot.y_pt));
+                        sheet_elements
+                            .push(transform_element(element, slot.x_pt, slot.y_pt, slot_scale));
                     }
                 }
             }
@@ -455,7 +469,7 @@ pub fn layout_table_elements(
     x: f32,
     y: f32,
     table_w: f32,
-    _table_h: f32,
+    table_h: f32,
 ) -> Result<Vec<PositionedElement>, DocforgeError> {
     let cols = &table.props.columns;
     if cols.is_empty() {
@@ -587,14 +601,15 @@ pub fn layout_table_elements(
     let alt_row_bg_col = style
         .and_then(|s| s.alt_row_bg_color.as_deref())
         .and_then(Color::from_hex);
-    let font_size = style.and_then(|s| s.font_size).unwrap_or(8.5) as f32;
+    let mut font_size = style.and_then(|s| s.font_size).unwrap_or(8.5) as f32;
     let font_family = style
         .and_then(|s| s.font_family.as_deref())
         .unwrap_or("Amiri")
         .to_string();
-    let header_h = style.and_then(|s| s.row_height).unwrap_or(24.0) as f32;
-    let row_h = style.and_then(|s| s.row_height).unwrap_or(20.0) as f32;
-    let padding = style.and_then(|s| s.padding).unwrap_or(3.5) as f32;
+    let mut header_font_size = header_font_size;
+    let mut header_h = style.and_then(|s| s.row_height).unwrap_or(24.0) as f32;
+    let mut row_h = style.and_then(|s| s.row_height).unwrap_or(20.0) as f32;
+    let mut padding = style.and_then(|s| s.padding).unwrap_or(3.5) as f32;
     let border_color = style
         .and_then(|s| s.border_color.as_deref())
         .and_then(Color::from_hex)
@@ -602,6 +617,28 @@ pub fn layout_table_elements(
     let border_width = style.and_then(|s| s.border_width).unwrap_or(0.75) as f32;
     let show_grid = table.props.show_grid;
     let show_border = table.props.show_border;
+
+    let rows_slice = table.props.rows.as_deref().unwrap_or(&[]);
+    if table.props.fit_to_bounds && table_h > 0.0 {
+        let natural_h = (if table.props.show_header {
+            header_h
+        } else {
+            0.0
+        }) + (rows_slice.len() as f32) * row_h
+            + (if table.props.show_totals && !rows_slice.is_empty() {
+                row_h
+            } else {
+                0.0
+            });
+        if natural_h > table_h && natural_h > 0.0 {
+            let fit_scale = (table_h / natural_h).clamp(0.42, 1.0);
+            header_h *= fit_scale;
+            row_h *= fit_scale;
+            header_font_size *= fit_scale;
+            font_size *= fit_scale;
+            padding *= fit_scale;
+        }
+    }
 
     let mut current_y = y;
 
@@ -1694,6 +1731,7 @@ mod tests {
                     total_type: Some("sum".to_string()),
                 },
             ],
+            columns_source: None,
             data_source: Some("subjects".to_string()),
             rows: None,
             show_header: true,
@@ -1710,6 +1748,7 @@ mod tests {
             }),
             show_grid: true,
             show_border: true,
+            fit_to_bounds: false,
             direction: Some("rtl".to_string()),
             style: Some(TableStyle {
                 border_color: Some("#334155".to_string()),

@@ -101,8 +101,10 @@ function sortNodesForRender(nodes: TemplateNode[]): TemplateNode[] {
   return [...nodes].sort((left, right) => {
     const leftProps = getProps(left);
     const rightProps = getProps(right);
-    const leftLayer = left.type === "Image" && leftProps.layer === "background" ? -1 : 0;
-    const rightLayer = right.type === "Image" && rightProps.layer === "background" ? -1 : 0;
+    const leftLayer =
+      left.type === "Image" && leftProps.layer === "background" ? -1 : 0;
+    const rightLayer =
+      right.type === "Image" && rightProps.layer === "background" ? -1 : 0;
     if (leftLayer !== rightLayer) {
       return leftLayer - rightLayer;
     }

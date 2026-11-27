@@ -16,6 +16,7 @@ import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import { untrack } from "svelte";
 import { Checkbox } from "@orbis/ui/checkbox";
+import { orgContext } from "$lib/stores";
 
 type SubjectDraft = {
   name: string;
@@ -47,7 +48,9 @@ const form = new FormController<SubjectDraft, CreateSubjectInput>({
     name: subject?.name ?? "",
     name_ar: subject?.name_ar ?? "",
     code: subject?.code ?? "",
-    credit_hours: Number(subject?.credit_hours ?? 3),
+    credit_hours: Number(
+      subject?.credit_hours ?? (orgContext.isUniversity ? 3 : 1),
+    ),
     color: subject?.color ?? "",
     description: subject?.description ?? "",
     sort_order: subject?.sort_order ?? 1,
@@ -158,7 +161,9 @@ async function handleSubmit(e: SubmitEvent) {
     <!-- Credit Hours -->
     <div class="flex flex-col gap-2 text-start">
       <label for="sub_weight" class="text-sm font-medium text-foreground">
-        {m.common_subject_label_periods()}
+        {orgContext.isUniversity
+          ? m.common_subject_label_credit_hours()
+          : m.common_subject_label_periods()}
       </label>
       <Input 
         id="sub_weight"

@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
 
-export type FieldValidator<T extends Record<string, string>, K extends keyof T> = (
-  value: T[K],
-  values: T,
-) => string | null;
+export type FieldValidator<
+  T extends Record<string, string>,
+  K extends keyof T,
+> = (value: T[K], values: T) => string | null;
 
 export type FormValidators<T extends Record<string, string>> = {
   [K in keyof T]?: FieldValidator<T, K>;
@@ -19,12 +19,18 @@ export function useFormValidation<T extends Record<string, string>>({
   validators,
 }: UseFormValidationOptions<T>) {
   const [values, setValues] = useState<T>(initialValues);
-  const [errors, setErrors] = useState<Partial<Record<keyof T, string | null>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof T, string | null>>>(
+    {},
+  );
   const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
   const runValidator = useCallback(
-    <K extends keyof T>(field: K, value: T[K], nextValues: T): string | null => {
+    <K extends keyof T>(
+      field: K,
+      value: T[K],
+      nextValues: T,
+    ): string | null => {
       const validator = validators[field];
       return validator ? validator(value, nextValues) : null;
     },

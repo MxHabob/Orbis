@@ -311,6 +311,7 @@ impl TablePropsWrapper {
             TablePropsWrapper::Legacy(val) => {
                 serde_json::from_value(val).unwrap_or_else(|_| TableProps {
                     columns: Vec::new(),
+                    columns_source: None,
                     data_source: None,
                     rows: None,
                     show_header: true,
@@ -322,6 +323,7 @@ impl TablePropsWrapper {
                     position: None,
                     show_grid: true,
                     show_border: true,
+                    fit_to_bounds: false,
                     direction: None,
                     style: None,
                     conditional_formatting: None,
@@ -337,6 +339,9 @@ impl TablePropsWrapper {
 pub struct TableProps {
     /// Column definitions.
     pub columns: Vec<TableColumnDef>,
+    /// Optional context path for dynamic columns (e.g. "tableColumns").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub columns_source: Option<String>,
     /// Data source identifier (e.g. "term_certificate.subjects").
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_source: Option<String>,
@@ -370,6 +375,9 @@ pub struct TableProps {
     /// Whether to draw outer border. Default true.
     #[serde(default = "default_true")]
     pub show_border: bool,
+    /// Whether to shrink row height and font size to fit within the table's box height.
+    #[serde(default)]
+    pub fit_to_bounds: bool,
     /// Text direction ("rtl" or "ltr").
     #[serde(skip_serializing_if = "Option::is_none")]
     pub direction: Option<String>,

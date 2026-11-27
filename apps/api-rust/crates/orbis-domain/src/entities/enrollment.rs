@@ -48,6 +48,8 @@ pub enum EnrollmentStatus {
     OnHold,
     Withdrawn,
     Transferred,
+    Completed,
+    Failed,
     Graduated,
     Suspended,
 }
@@ -60,6 +62,8 @@ impl std::fmt::Display for EnrollmentStatus {
             EnrollmentStatus::OnHold => write!(f, "on_hold"),
             EnrollmentStatus::Withdrawn => write!(f, "withdrawn"),
             EnrollmentStatus::Transferred => write!(f, "transferred"),
+            EnrollmentStatus::Completed => write!(f, "completed"),
+            EnrollmentStatus::Failed => write!(f, "failed"),
             EnrollmentStatus::Graduated => write!(f, "graduated"),
             EnrollmentStatus::Suspended => write!(f, "suspended"),
         }
@@ -74,6 +78,8 @@ pub struct Enrollment {
     pub student_id: Uuid,
     pub section_id: Option<Uuid>,
     pub attempt_number: i32,
+    #[serde(default)]
+    pub enrollment_type: Option<String>,
     pub student_number: String,
     pub study_mode: StudyMode,
     pub status: EnrollmentStatus,
@@ -106,6 +112,7 @@ impl Enrollment {
             student_id,
             section_id,
             attempt_number: 1,
+            enrollment_type: None,
             student_number,
             is_attendance_exempt: study_mode.default_attendance_exempt(),
             is_grade_exempt: study_mode.default_grade_exempt(),

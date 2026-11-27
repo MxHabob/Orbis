@@ -227,6 +227,20 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             let mut props = n.props.clone().into_typed();
             let position = n.position.clone().or_else(|| props.position.clone());
 
+            // If props.columns_source is provided, resolve dynamic columns from context
+            if let Some(ref cols_source) = props.columns_source {
+                if let Some(val) = resolve_path(context, cols_source) {
+                    if let Ok(dynamic_cols) = serde_json::from_value::<
+                        Vec<crate::model::nodes::TableColumnDef>,
+                    >(val.clone())
+                    {
+                        if !dynamic_cols.is_empty() {
+                            props.columns = dynamic_cols;
+                        }
+                    }
+                }
+            }
+
             // If props.data_source is provided, resolve rows from data_source in context
             if let Some(ref data_source) = props.data_source {
                 if let Some(val) = resolve_path(context, data_source) {

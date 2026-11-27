@@ -753,6 +753,12 @@ pub type LedgerAccountBalances =
 pub trait JournalEntryRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<JournalEntry>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<JournalEntry>, DomainError>;
+    async fn find_by_source(
+        &self,
+        org_id: Uuid,
+        source_type: &str,
+        source_id: Uuid,
+    ) -> Result<Vec<JournalEntry>, DomainError>;
     async fn account_balances_at(
         &self,
         org_id: Uuid,
@@ -816,6 +822,14 @@ pub trait StudentFeeRepository: Send + Sync {
         &self,
         fee: &StudentFee,
         entry: &JournalEntry,
+    ) -> Result<(), DomainError>;
+    async fn save_fee_cancellation(
+        &self,
+        previous: &StudentFee,
+        updated: &StudentFee,
+        reversal_entry: &JournalEntry,
+        original_journal_id: Option<Uuid>,
+        reason: &str,
     ) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
@@ -883,6 +897,12 @@ pub trait PromotionRepository: Send + Sync {
         details: &[ProgressionDetail],
         new_enrollments: &[Enrollment],
     ) -> Result<(), DomainError>;
+    async fn rollback_promotion(
+        &self,
+        job_id: Uuid,
+        org_id: Uuid,
+        updated_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<ProgressionJob, DomainError>;
     async fn save_job(&self, job: &ProgressionJob) -> Result<(), DomainError>;
     async fn save_detail(&self, detail: &ProgressionDetail) -> Result<(), DomainError>;
     async fn save_details(&self, details: &[ProgressionDetail]) -> Result<(), DomainError>;

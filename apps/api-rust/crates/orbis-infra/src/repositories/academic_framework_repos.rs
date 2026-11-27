@@ -180,6 +180,7 @@ fn map_enrollment(m: enrollment::Model) -> Result<Enrollment, DomainError> {
         student_id: m.student_id,
         section_id: m.section_id,
         attempt_number: m.attempt_number,
+        enrollment_type: m.enrollment_type,
         student_number: m.student_number,
         study_mode: match m.study_mode.as_deref().unwrap_or("regular") {
             "homeschooled" => orbis_domain::entities::enrollment::StudyMode::Homeschooled,
@@ -192,6 +193,8 @@ fn map_enrollment(m: enrollment::Model) -> Result<Enrollment, DomainError> {
                 orbis_domain::entities::enrollment::EnrollmentStatus::PendingApproval
             }
             "withdrawn" => orbis_domain::entities::enrollment::EnrollmentStatus::Withdrawn,
+            "completed" => orbis_domain::entities::enrollment::EnrollmentStatus::Completed,
+            "failed" => orbis_domain::entities::enrollment::EnrollmentStatus::Failed,
             "graduated" => orbis_domain::entities::enrollment::EnrollmentStatus::Graduated,
             "suspended" => orbis_domain::entities::enrollment::EnrollmentStatus::Suspended,
             _ => orbis_domain::entities::enrollment::EnrollmentStatus::Active,

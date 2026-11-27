@@ -439,7 +439,7 @@ const relatedFooterActions = $derived<FooterAction[]>(
                 isLoading={!studentFolderQuery.data}
                 fallbackText={studentFullName || "S"}
                 size={180}
-                class="rounded-xl shadow-xs border border-border/50"
+                class="rounded-md border border-border"
                 onupload={handleStudentAvatarUpload}
               />
             </div>
@@ -527,8 +527,12 @@ const relatedFooterActions = $derived<FooterAction[]>(
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                     >{m.common_word_status()}</span
                   >
-                  <span class="text-xs text-foreground font-medium capitalize">
-                    {student.status}
+                  <span class="text-xs text-foreground font-medium">
+                    {student.status === "active"
+                      ? m.common_phase_active()
+                      : student.status === "inactive"
+                        ? m.students_student_detail_row_status_inactive()
+                        : student.status}
                   </span>
                 </div>
               {/if}
@@ -601,7 +605,7 @@ const relatedFooterActions = $derived<FooterAction[]>(
       <!-- Right/Middle Panel (SecondaryMenu & sub-pages content) -->
       {#snippet middle()}
         <div
-          class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start"
+          class="h-full w-full overflow-y-auto p-6 pb-24 scrollbar-hide text-start"
         >
           <div class="flex flex-col gap-6 w-full min-h-full">
             <!-- Tabs using shared SecondaryMenu -->

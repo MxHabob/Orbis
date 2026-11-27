@@ -33,8 +33,8 @@ export function getDurationMinutes(
   endTime?: string,
 ): number {
   if (!startTime || !endTime) return 0;
-  const [h1, m1] = startTime.split(":").map((v) => parseInt(v, 10));
-  const [h2, m2] = endTime.split(":").map((v) => parseInt(v, 10));
+  const [h1 = NaN, m1 = NaN] = startTime.split(":").map((v) => parseInt(v, 10));
+  const [h2 = NaN, m2 = NaN] = endTime.split(":").map((v) => parseInt(v, 10));
   if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
   return h2 * 60 + m2 - (h1 * 60 + m1);
 }
@@ -42,13 +42,52 @@ export function getDurationMinutes(
 export function formatTimeSlotTime(val?: string, isArabic = false): string {
   if (!val) return "";
   const clean = val.slice(0, 5);
-  const [hStr, mStr] = clean.split(":");
+  const [hStr = "", mStr = "00"] = clean.split(":");
   let h = parseInt(hStr, 10);
   const m = mStr || "00";
   if (isNaN(h)) return val;
   const period = h >= 12 ? (isArabic ? "م" : "PM") : isArabic ? "ص" : "AM";
   h = h % 12 || 12;
   return `${h}:${m} ${period}`;
+}
+
+export function formatTimeRange(
+  start?: string,
+  end?: string,
+  isArabic = false,
+): string {
+  if (!start || !end) return "";
+  return `${formatTimeSlotTime(start, isArabic)} - ${formatTimeSlotTime(end, isArabic)}`;
+}
+
+const SUBJECT_PALETTE = [
+  "#6366f1", // Indigo
+  "#0d9488", // Teal
+  "#db2777", // Pink / Magenta
+  "#d97706", // Amber
+  "#059669", // Emerald
+  "#0284c7", // Sky
+  "#9333ea", // Violet
+  "#ea580c", // Orange
+] as const;
+
+/**
+ * Returns an explicit subject color when configured, or a deterministic
+ * high-contrast palette color derived from the subject ID.
+ */
+export function resolveSubjectColor(
+  subjectId?: string | number | null,
+  explicitColor?: string | null,
+): string {
+  const raw = explicitColor?.trim();
+  if (raw && raw !== "var(--primary)") return raw;
+  const key = String(subjectId ?? "");
+  if (!key) return SUBJECT_PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return SUBJECT_PALETTE[hash % SUBJECT_PALETTE.length]!;
 }
 
 export interface EnrichedTimeSlot {

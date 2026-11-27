@@ -1,30 +1,48 @@
 <!--
   @component UserProfile
   User profile management in Settings.
-  Integrates demographic data, dynamic role assignment, user status toggles,
-  and User Groups management via side Sheet.
+  Follows the canonical Organization Settings layout using Card + SettingsRow + CopyableInput.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import { api, queryKeys, type GroupDetailDto, type User } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type GroupDetailDto,
+  type UserDto,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
+import { Card } from "@orbis/ui/card";
 import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
-import { Checkbox } from "@orbis/ui/checkbox";
+import { Switch } from "@orbis/ui/switch";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
 import { Pencil, UserGroup } from "@orbis/icons";
 import { createUserQuery } from "$lib/features/settings/queries";
-import { useQueryClient, createQuery } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/svelte-query";
+import CopyableInput from "$lib/shared/components/copyable-input.svelte";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
-import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
+import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import { userAvatarDrafts } from "./user-avatar-draft.svelte";
+import { invalidateUserQueries, isUserActive } from "./user-detail";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -33,11 +51,9 @@ const userQuery = createUserQuery(
   () => userId,
 );
 const queryClient = useQueryClient();
-const user = $derived((userQuery.data as User | null) ?? null);
+const user = $derived<UserDto | null>(userQuery.data ?? null);
 const isLoading = $derived(userQuery.isLoading);
-let isSaving = $state(false);
 
-// Groups query & User Group memberships
 const groupsQuery = createQuery<GroupDetailDto[]>(() => ({
   queryKey: ["groups", orgId],
   queryFn: () => api.listGroups(),
@@ -47,30 +63,27 @@ const groupsQuery = createQuery<GroupDetailDto[]>(() => ({
 const allGroups = $derived(groupsQuery.data ?? []);
 
 const userGroupsQuery = createQuery<GroupDetailDto[]>(() => ({
-  queryKey: ["user_assigned_groups", orgId, userId],
+  queryKey: ["user_assigned_groups", orgId, userId, allGroups.map((g) => g.id)],
   queryFn: async () => {
-    const groups = await api.listGroups();
     const memberships = await Promise.all(
-      groups.map(async (g) => {
+      allGroups.map(async (g) => {
         try {
           const members = await api.getGroupMembers(g.id);
-          const isMember = members.some((m) => m.user_id === userId);
-          return isMember ? g : null;
+          return members.some((member) => member.user_id === userId) ? g : null;
         } catch {
           return null;
         }
       }),
     );
-    return memberships.filter(Boolean) as GroupDetailDto[];
+    return memberships.filter((g): g is GroupDetailDto => g !== null);
   },
-  enabled: !!userId,
+  enabled: !!userId && allGroups.length > 0,
   staleTime: 60 * 1000,
 }));
 
 const userAssignedGroups = $derived(userGroupsQuery.data ?? []);
 const userAssignedGroupIds = $derived(userAssignedGroups.map((g) => g.id));
 
-// Manage Groups Drawer Sheet State
 let groupsSheetOpen = $state(false);
 
 // Form fields
@@ -78,6 +91,10 @@ let fullName = $state("");
 let nameAr = $state("");
 let email = $state("");
 let phone = $state("");
+let nationalId = $state("");
+let gender = $state("");
+let birthDate = $state("");
+let address = $state("");
 let role = $state("staff");
 let isActiveState = $state(true);
 
@@ -88,10 +105,13 @@ $effect(() => {
   fullName = fetched.full_name || "";
   nameAr = fetched.full_name_ar || "";
   email = fetched.email || "";
-  phone = (fetched.phone as string) || "";
+  phone = fetched.phone || "";
+  nationalId = fetched.national_id || "";
+  gender = fetched.gender || "";
+  birthDate = fetched.birth_date || "";
+  address = fetched.address || "";
   role = fetched.roles?.[0] || "staff";
-  isActiveState =
-    fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+  isActiveState = isUserActive(fetched);
   initializedUserId = userId;
 });
 
@@ -100,32 +120,55 @@ const isDirty = $derived.by(() => {
   return (
     fullName !== (user.full_name || "") ||
     nameAr !== (user.full_name_ar || "") ||
-    email !== (user.email || "") ||
-    phone !== ((user.phone as string) || "") ||
+    phone !== (user.phone || "") ||
+    nationalId !== (user.national_id || "") ||
+    gender !== (user.gender || "") ||
+    birthDate !== (user.birth_date || "") ||
+    address !== (user.address || "") ||
     role !== (user.roles?.[0] || "staff") ||
-    isActiveState !==
-      (user.is_active !== undefined ? Boolean(user.is_active) : true) ||
+    isActiveState !== isUserActive(user) ||
     !!userAvatarDrafts[userId]
   );
 });
-
-function openManageGroups() {
-  groupsSheetOpen = true;
-}
 
 function resetForm() {
   if (!user) return;
   fullName = user.full_name || "";
   nameAr = user.full_name_ar || "";
   email = user.email || "";
-  phone = (user.phone as string) || "";
+  phone = user.phone || "";
+  nationalId = user.national_id || "";
+  gender = user.gender || "";
+  birthDate = user.birth_date || "";
+  address = user.address || "";
   role = user.roles?.[0] || "staff";
-  isActiveState = user.is_active !== undefined ? Boolean(user.is_active) : true;
+  isActiveState = isUserActive(user);
   userAvatarDrafts[userId] = null;
 }
 
+const toggleStatusMutation = createMutation(() => ({
+  mutationFn: (nextState: boolean) =>
+    api.updateUser(userId, { is_active: nextState }),
+  onSuccess: async (_data, nextState) => {
+    isActiveState = nextState;
+    await invalidateUserQueries(queryClient, orgId, userId);
+    toast.success(
+      nextState
+        ? m.settings_user_detail_activate_success
+          ? m.settings_user_detail_activate_success()
+          : m.ui_copy_account_activated_ecaf5563()
+        : m.settings_user_detail_deactivate_success
+          ? m.settings_user_detail_deactivate_success()
+          : m.ui_copy_account_deactivated_37ae84cf(),
+    );
+  },
+  onError: (e: unknown) => {
+    toast.error(extractErrorMessage(e) || m.ui_copy_update_failed_19a589b0());
+  },
+}));
+
 async function toggleAccountStatus() {
-  if (!userId || !user) return;
+  if (!userId || !user || toggleStatusMutation.isPending) return;
   const nextState = !isActiveState;
   const confirmMsg = nextState
     ? m.settings_user_detail_activate_confirm
@@ -143,31 +186,11 @@ async function toggleAccountStatus() {
     variant: nextState ? "default" : "destructive",
   });
   if (!confirmed) return;
-
-  isSaving = true;
-  try {
-    await api.updateUser(userId, { is_active: nextState });
-    isActiveState = nextState;
-    toast.success(
-      nextState
-        ? m.settings_user_detail_activate_success
-          ? m.settings_user_detail_activate_success()
-          : m.ui_copy_account_activated_ecaf5563()
-        : m.settings_user_detail_deactivate_success
-          ? m.settings_user_detail_deactivate_success()
-          : m.ui_copy_account_deactivated_37ae84cf(),
-    );
-  } catch (e: unknown) {
-    toast.error((e as any)?.message || m.ui_copy_update_failed_19a589b0());
-  } finally {
-    isSaving = false;
-  }
+  toggleStatusMutation.mutate(nextState);
 }
 
-async function saveProfile() {
-  if (!userId) return;
-  isSaving = true;
-  try {
+const saveProfileMutation = createMutation(() => ({
+  mutationFn: async () => {
     const avatarFile = userAvatarDrafts[userId];
     let avatarUrl: string | undefined;
     if (avatarFile) {
@@ -183,172 +206,251 @@ async function saveProfile() {
       avatarUrl = uploaded.url || uploaded.file_path;
     }
 
+    const initialRole = user?.roles?.[0] || "staff";
+    const roleChanged = Boolean(role) && role !== initialRole;
+
     await api.updateUser(userId, {
-      full_name: fullName || undefined,
-      full_name_ar: nameAr || undefined,
-      phone: phone || undefined,
+      full_name: fullName.trim() || undefined,
+      full_name_ar: nameAr.trim() || undefined,
+      phone: phone.trim() || undefined,
+      national_id: nationalId.trim() || undefined,
+      gender: gender || undefined,
+      birth_date: birthDate || undefined,
+      address: address.trim() || undefined,
       is_active: isActiveState,
-      roles: role ? [role] : user?.roles,
+      ...(roleChanged ? { roles: [role] } : {}),
       ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
     });
+    return avatarUrl;
+  },
+  onSuccess: async (avatarUrl) => {
     userAvatarDrafts[userId] = null;
-
-    await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });
-    await queryClient.invalidateQueries({ queryKey: ["users", orgId] });
-    await queryClient.invalidateQueries({
-      queryKey: ["users_paginated", orgId],
-    });
+    await invalidateUserQueries(queryClient, orgId, userId);
     if (avatarUrl) {
       await queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
     }
-
     toast.success(
       m.settings_user_detail_saved
         ? m.settings_user_detail_saved()
         : m.ui_copy_profile_saved_successfully_42b4e478(),
     );
-    await userQuery.refetch();
-  } catch (e: unknown) {
-    toast.error((e as any)?.message || m.ui_copy_save_failed_38ef99fb());
-  } finally {
-    isSaving = false;
-  }
-}
+  },
+  onError: (e: unknown) => {
+    toast.error(extractErrorMessage(e) || m.ui_copy_save_failed_38ef99fb());
+  },
+}));
+
+const isSaving = $derived(
+  saveProfileMutation.isPending || toggleStatusMutation.isPending,
+);
 </script>
 
 {#if isLoading}
-  <div class="flex flex-col gap-6 text-start">
-    <div class="border-b border-border/60 pb-3">
-      <Skeleton class="h-5 w-32" />
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="flex flex-col gap-2">
-        <Skeleton class="h-3 w-16" />
-        <Skeleton class="h-9 w-full" />
-      </div>
-      <div class="flex flex-col gap-2">
-        <Skeleton class="h-3 w-16" />
-        <Skeleton class="h-9 w-full" />
-      </div>
-    </div>
+  <div class="flex flex-col gap-5 text-start">
+    <Skeleton class="h-72 w-full rounded-md" />
+    <Skeleton class="h-56 w-full rounded-md" />
+    <Skeleton class="h-28 w-full rounded-md" />
   </div>
 {:else}
-  <div class="flex flex-col gap-6 text-start">
-    <!-- Status Switch -->
-    <div class="flex items-center gap-3">
-      <Checkbox
-        id="user_enabled"
-        checked={isActiveState}
-        onCheckedChange={toggleAccountStatus}
-      />
-      <Label
-        for="user_enabled"
-        class="text-xs font-semibold text-foreground cursor-pointer select-none"
+  <div class="flex flex-col gap-5 text-start">
+    <!-- Identity & Account -->
+    <Card>
+      <div class="border-b border-border bg-muted/20 px-4 py-3 sm:px-6">
+        <h2 class="text-xs font-semibold text-muted-foreground">
+          {m.settings_user_detail_tab_profile()}
+        </h2>
+      </div>
+
+      <SettingsRow
+        title={m.ui_copy_enabled_aceb3f59()}
+        labelFor="user_enabled"
       >
-        {m.ui_copy_enabled_aceb3f59()}
-      </Label>
-    </div>
-
-    <!-- Main Profile Fields -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="md:col-span-2">
-        <BilingualNameFields
-          arId="nameAr"
-          enId="fullName"
-          arLabel={m.ui_copy_full_name_arabic_4871e6bf()}
-          enLabel={m.common_word_fullname()}
-          bind:arValue={nameAr}
-          bind:enValue={fullName}
-          kind="person-name"
-          requestSuggestion={suggestLocalTranslation}
-          enRequired
+        <Switch
+          id="user_enabled"
+          checked={isActiveState}
           disabled={isSaving}
-          loadingMessage={m.bilingual_entry_loading()}
-          failureMessage={m.bilingual_entry_failure()}
+          onCheckedChange={toggleAccountStatus}
         />
+      </SettingsRow>
+
+      <SettingsRow title={m.common_word_fullname()} required>
+        <div class="w-full">
+          <BilingualNameFields
+            arId="nameAr"
+            enId="fullName"
+            arLabel={m.ui_copy_full_name_arabic_4871e6bf()}
+            enLabel={m.common_word_fullname()}
+            bind:arValue={nameAr}
+            bind:enValue={fullName}
+            kind="person-name"
+            requestSuggestion={suggestLocalTranslation}
+            enRequired
+            disabled={isSaving}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
+        </div>
+      </SettingsRow>
+
+      <SettingsRow title={m.common_word_email()} labelFor="email">
+        <CopyableInput
+          id="email"
+          label={m.common_word_email()}
+          value={email}
+        />
+      </SettingsRow>
+
+      <SettingsRow title={m.ui_copy_primary_role_b4890578()} labelFor="role">
+        <div class="w-full">
+          <RoleSelect bind:value={role} />
+        </div>
+      </SettingsRow>
+
+      <SettingsRow title={m.employees_phone()} labelFor="phone">
+        <Input
+          id="phone"
+          type="tel"
+          bind:value={phone}
+          disabled={isSaving}
+          class="h-10 w-full"
+        />
+      </SettingsRow>
+
+      <SettingsRow title="ID" labelFor="userId" last>
+        <CopyableInput id="userId" label="ID" value={userId} />
+      </SettingsRow>
+    </Card>
+
+    <!-- Demographic Details -->
+    <Card>
+      <div class="border-b border-border bg-muted/20 px-4 py-3 sm:px-6">
+        <h2 class="text-xs font-semibold text-muted-foreground">
+          {m.employees_national_id()} &amp; {m.employees_address()}
+        </h2>
       </div>
 
-      <!-- Email -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="email" class="text-xs font-medium text-muted-foreground">
-          {m.common_word_email()} *
-        </Label>
-        <Input id="email" type="email" bind:value={email} required />
-      </div>
+      <SettingsRow title={m.employees_national_id()} labelFor="nationalId">
+        <Input
+          id="nationalId"
+          type="text"
+          bind:value={nationalId}
+          disabled={isSaving}
+          class="h-10 w-full"
+        />
+      </SettingsRow>
 
-      <!-- Dynamic Primary Role Select -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="role" class="text-xs font-medium text-muted-foreground">
-          {m.ui_copy_primary_role_b4890578()}
-        </Label>
-        <RoleSelect bind:value={role} />
-      </div>
+      <SettingsRow title={m.employees_gender()}>
+        <Select
+          type="single"
+          value={gender}
+          disabled={isSaving}
+          onValueChange={(v) => (gender = v ?? "")}
+        >
+          <SelectTrigger class="h-10 w-full">
+            {#if gender === "male"}
+              {m.employees_gender_male()}
+            {:else if gender === "female"}
+              {m.employees_gender_female()}
+            {:else}
+              —
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="male">{m.employees_gender_male()}</SelectItem>
+            <SelectItem value="female">{m.employees_gender_female()}</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingsRow>
 
-      <!-- Phone -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="phone" class="text-xs font-medium text-muted-foreground">
-          {m.employees_phone()}
-        </Label>
-        <Input id="phone" type="text" bind:value={phone} />
-      </div>
-    </div>
+      <SettingsRow title={m.employees_birth_date()} labelFor="birthDate">
+        <Input
+          id="birthDate"
+          type="date"
+          bind:value={birthDate}
+          disabled={isSaving}
+          class="h-10 w-full"
+        />
+      </SettingsRow>
 
-    <!-- Assigned User Groups Card -->
-    <div class="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 mt-2 shadow-2xs">
-      <div class="flex items-center justify-between border-b border-border/50 pb-2.5">
+      <SettingsRow title={m.employees_address()} labelFor="address" last>
+        <Input
+          id="address"
+          type="text"
+          bind:value={address}
+          disabled={isSaving}
+          class="h-10 w-full"
+        />
+      </SettingsRow>
+    </Card>
+
+    <!-- Assigned User Groups -->
+    <Card>
+      <div class="flex items-center justify-between border-b border-border bg-muted/20 px-4 py-3 sm:px-6">
         <div class="flex items-center gap-2">
-          <UserGroup size={16} class="text-primary" />
-          <h3 class="text-xs font-bold text-foreground uppercase tracking-wider">{m.employees_user_groups()}</h3>
+          <UserGroup size={15} class="text-primary" />
+          <h2 class="text-xs font-semibold text-muted-foreground">
+            {m.employees_user_groups()}
+          </h2>
         </div>
         <Button
           variant="outline"
           size="sm"
           class="text-xs h-7 gap-1.5 cursor-pointer"
-          onclick={openManageGroups}
+          onclick={() => (groupsSheetOpen = true)}
         >
           <Pencil size={12} />
           <span>{m.ui_copy_manage_groups_bb35a396()}</span>
         </Button>
       </div>
 
-      {#if groupsQuery.isLoading}
-        <div class="flex gap-2 py-2">
-          <Skeleton class="h-6 w-24 rounded-full" />
-          <Skeleton class="h-6 w-28 rounded-full" />
-        </div>
-      {:else if userAssignedGroups.length === 0}
-        <span class="text-xs text-muted-foreground italic py-1">
-          {m.ui_copy_no_groups_currently_assigned_to_this_user_2a949232()}
-        </span>
-      {:else}
-        <div class="flex flex-wrap gap-2 py-1">
-          {#each userAssignedGroups as grp (grp.id)}
-            <Badge variant="secondary" class="text-xs py-1 px-2.5 font-medium flex items-center gap-1.5">
-              <UserGroup size={12} />
-              <span>{l(grp.name_ar, grp.name) || grp.name}</span>
-            </Badge>
-          {/each}
-        </div>
-      {/if}
-    </div>
-
+      <div class="px-4 py-4 sm:px-6">
+        {#if groupsQuery.isLoading}
+          <div class="flex gap-2">
+            <Skeleton class="h-6 w-24 rounded-full" />
+            <Skeleton class="h-6 w-28 rounded-full" />
+          </div>
+        {:else if userAssignedGroups.length === 0}
+          <span class="text-xs text-muted-foreground">
+            {m.ui_copy_no_groups_currently_assigned_to_this_user_2a949232()}
+          </span>
+        {:else}
+          <div class="flex flex-wrap gap-2">
+            {#each userAssignedGroups as grp (grp.id)}
+              <Badge
+                variant="secondary"
+                class="text-xs py-1 px-2.5 font-medium flex items-center gap-1.5"
+              >
+                <UserGroup size={12} />
+                <span>{l(grp.name_ar, grp.name) || grp.name}</span>
+              </Badge>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </Card>
   </div>
 
   <SettingsBottomBar
     visible={isDirty}
     {isDirty}
     {isSaving}
-    onsave={saveProfile}
+    onsave={() => saveProfileMutation.mutate()}
     onreset={resetForm}
   />
 
-  <!-- Manage User Groups Drawer Sheet Component -->
   <ManageUserGroupsSheet
     bind:open={groupsSheetOpen}
     {orgId}
     {userId}
     userName={user?.full_name || fullName}
     assignedGroupIds={userAssignedGroupIds}
-    onsaved={async () => { await groupsQuery.refetch(); }}
+    onsaved={async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["user_assigned_groups", orgId, userId],
+        }),
+        groupsQuery.refetch(),
+      ]);
+    }}
   />
 {/if}

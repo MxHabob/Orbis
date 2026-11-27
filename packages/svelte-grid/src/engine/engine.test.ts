@@ -18,6 +18,7 @@ import {
   duplicateRows,
 } from "./clipboard";
 import {
+  interpretEditorKey,
   interpretKey,
   clampIndex,
   resolveCellStep,
@@ -330,6 +331,58 @@ describe("keyboard + rtl", () => {
       pastEnd: false,
       withinRange: false,
     });
+  });
+
+  test("editor arrow keys commit and move in entry mode, and respect RTL", () => {
+    const ev = (key: string) => ({
+      key,
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+    });
+
+    // Entry mode: all 4 arrows commit and move
+    expect(interpretEditorKey(ev("ArrowDown"), "entry", false)).toEqual({
+      action: "commit",
+      rowDelta: 1,
+      colDelta: 0,
+      stepMode: "arrow",
+      preventDefault: true,
+    });
+    expect(interpretEditorKey(ev("ArrowUp"), "entry", false)).toEqual({
+      action: "commit",
+      rowDelta: -1,
+      colDelta: 0,
+      stepMode: "arrow",
+      preventDefault: true,
+    });
+    // LTR: ArrowRight moves +1, ArrowLeft moves -1
+    expect(interpretEditorKey(ev("ArrowRight"), "entry", false).colDelta).toBe(
+      1,
+    );
+    expect(interpretEditorKey(ev("ArrowLeft"), "entry", false).colDelta).toBe(
+      -1,
+    );
+    // RTL: ArrowLeft moves +1, ArrowRight moves -1
+    expect(interpretEditorKey(ev("ArrowLeft"), "entry", true).colDelta).toBe(1);
+    expect(interpretEditorKey(ev("ArrowRight"), "entry", true).colDelta).toBe(
+      -1,
+    );
+
+    // Edit mode (F2 / double-click): Up/Down commit & move, Left/Right stay inside text
+    expect(interpretEditorKey(ev("ArrowDown"), "edit", true).action).toBe(
+      "commit",
+    );
+    expect(interpretEditorKey(ev("ArrowLeft"), "edit", true).action).toBe(
+      "none",
+    );
+    expect(interpretEditorKey(ev("ArrowRight"), "edit", true).action).toBe(
+      "none",
+    );
+    expect(interpretEditorKey(ev("F2"), "edit", true).action).toBe(
+      "toggleMode",
+    );
   });
 
   test("Enter and Tab cycle inside a multi-cell selection range", () => {

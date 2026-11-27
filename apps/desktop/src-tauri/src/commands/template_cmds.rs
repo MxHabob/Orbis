@@ -853,8 +853,6 @@ pub async fn template_sync_defaults(
     .map_err(|e| e.to_string())?;
     let reports_synced =
         orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
-    let reports_synced =
-        orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
 
     Ok(ok(SyncDefaultsDto {
         templates_inserted: tpl_summary.templates_inserted,

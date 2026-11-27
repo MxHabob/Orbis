@@ -47,9 +47,6 @@ let {
     end_date?: string | null;
     grade_entry_starts_at?: string | null;
     grade_entry_ends_at?: string | null;
-    grading_system?: string | null;
-    passing_grade?: number | null;
-    max_grade?: number | null;
   } | null;
   onSuccess: () => void;
   onCancel: () => void;
@@ -90,9 +87,6 @@ const form = untrack(
         grade_entry_ends_at: period?.grade_entry_ends_at
           ? String(period.grade_entry_ends_at).slice(0, 10)
           : "",
-        grading_system: period?.grading_system || "percentage",
-        passing_grade: period?.passing_grade ?? 50,
-        max_grade: period?.max_grade ?? 100,
       },
       schema: createPeriodInputSchema,
     }),
@@ -109,12 +103,6 @@ const periodTypeLabels = $derived({
   year: m.common_cycle_form_type_year(),
   annual: m.common_period_type_annual(),
   term: m.common_period_form_type_term(),
-});
-
-const gradingLabels = $derived({
-  percentage: m.common_cycle_form_grading_percentage(),
-  letter: m.common_cycle_form_grading_letter(),
-  gpa: m.common_period_form_grading_gpa(),
 });
 
 async function handleSubmit(e: SubmitEvent) {
@@ -189,7 +177,7 @@ async function handleSubmit(e: SubmitEvent) {
   </SheetHeader>
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide text-start">
-    <Accordion type="multiple" value={["identity", "schedule", "grading"]} class="flex flex-col gap-2">
+    <Accordion type="multiple" value={["identity", "schedule"]} class="flex flex-col gap-2">
       <AccordionItem value="identity" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_user_form_name_en()}</AccordionTrigger>
         <AccordionContent>
@@ -336,56 +324,6 @@ async function handleSubmit(e: SubmitEvent) {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="grading" class="rounded-lg">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_cycle_form_grading()}</AccordionTrigger>
-        <AccordionContent>
-
-    <!-- Grading configs -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <FormField id="per_grading" label={m.common_cycle_form_grading()} error={fieldError("grading_system")} required>
-        {#snippet children()}
-        <Select type="single" value={form.values.grading_system} onValueChange={(v) => (form.values.grading_system = v ?? "percentage")}>
-          <SelectTrigger class="h-9 text-sm w-full">
-            {gradingLabels[form.values.grading_system as keyof typeof gradingLabels] || form.values.grading_system}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="percentage">{m.common_cycle_form_grading_percentage()}</SelectItem>
-            <SelectItem value="letter">{m.common_cycle_form_grading_letter()}</SelectItem>
-            <SelectItem value="gpa">{m.common_period_form_grading_gpa()}</SelectItem>
-          </SelectContent>
-        </Select>
-        {/snippet}
-      </FormField>
-
-      <FormField id="per_max" label={m.shared_ui_max_grade()} error={fieldError("max_grade")} required>
-        {#snippet children()}
-        <Input
-          id="per_max"
-          type="number"
-          bind:value={form.values.max_grade}
-          onblur={() => form.markTouched("max_grade")}
-          min={1}
-          disabled={form.isSubmitting}
-        />
-        {/snippet}
-      </FormField>
-
-      <FormField id="per_passing" label={m.common_cycle_form_passing_grade()} error={fieldError("passing_grade")} required>
-        {#snippet children()}
-        <Input
-          id="per_passing"
-          type="number"
-          bind:value={form.values.passing_grade}
-          min={0}
-          max={form.values.max_grade}
-          onblur={() => form.markTouched("passing_grade")}
-          disabled={form.isSubmitting}
-        />
-        {/snippet}
-      </FormField>
-    </div>
-        </AccordionContent>
-      </AccordionItem>
     </Accordion>
   </div>
 

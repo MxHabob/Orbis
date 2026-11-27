@@ -174,11 +174,121 @@ export function interpretKey(
           action: "edit",
           rowDelta: 0,
           colDelta: 0,
-          preventDefault: false,
+          preventDefault: true,
         };
       }
       return none;
   }
+}
+
+export type EditMode = "entry" | "edit";
+
+export interface EditorKeyCommand {
+  action: "none" | "commit" | "cancel" | "tab" | "toggleMode";
+  rowDelta: number;
+  colDelta: number;
+  stepMode: "smart" | "arrow";
+  preventDefault: boolean;
+}
+
+/**
+ * Interprets keystrokes while a cell text/number editor is active.
+ * - "entry" mode (quick typing or empty cell): all 4 arrow keys commit and move.
+ * - "edit" mode (F2 or double-click on existing text): Up/Down commit and move,
+ *   while Left/Right move the text caret; F2 toggles between modes.
+ */
+export function interpretEditorKey(
+  e: Pick<KeyboardEvent, "key" | "shiftKey" | "ctrlKey" | "metaKey" | "altKey">,
+  mode: EditMode,
+  rtl: boolean,
+): EditorKeyCommand {
+  const none: EditorKeyCommand = {
+    action: "none",
+    rowDelta: 0,
+    colDelta: 0,
+    stepMode: "smart",
+    preventDefault: false,
+  };
+  const hasMod = e.ctrlKey || e.metaKey || e.altKey;
+
+  if (e.key === "Escape") {
+    return {
+      action: "cancel",
+      rowDelta: 0,
+      colDelta: 0,
+      stepMode: "smart",
+      preventDefault: true,
+    };
+  }
+  if (e.key === "F2" && !hasMod && !e.shiftKey) {
+    return {
+      action: "toggleMode",
+      rowDelta: 0,
+      colDelta: 0,
+      stepMode: "smart",
+      preventDefault: true,
+    };
+  }
+  if (e.key === "Enter" && !hasMod) {
+    return {
+      action: "commit",
+      rowDelta: e.shiftKey ? -1 : 1,
+      colDelta: 0,
+      stepMode: "smart",
+      preventDefault: true,
+    };
+  }
+  if (e.key === "Tab" && !hasMod) {
+    return {
+      action: "tab",
+      rowDelta: 0,
+      colDelta: e.shiftKey ? -1 : 1,
+      stepMode: "smart",
+      preventDefault: true,
+    };
+  }
+
+  if (!hasMod && !e.shiftKey) {
+    const dir = rtl ? -1 : 1;
+    if (e.key === "ArrowUp") {
+      return {
+        action: "commit",
+        rowDelta: -1,
+        colDelta: 0,
+        stepMode: "arrow",
+        preventDefault: true,
+      };
+    }
+    if (e.key === "ArrowDown") {
+      return {
+        action: "commit",
+        rowDelta: 1,
+        colDelta: 0,
+        stepMode: "arrow",
+        preventDefault: true,
+      };
+    }
+    if (mode === "entry" && e.key === "ArrowLeft") {
+      return {
+        action: "commit",
+        rowDelta: 0,
+        colDelta: -dir,
+        stepMode: "arrow",
+        preventDefault: true,
+      };
+    }
+    if (mode === "entry" && e.key === "ArrowRight") {
+      return {
+        action: "commit",
+        rowDelta: 0,
+        colDelta: dir,
+        stepMode: "arrow",
+        preventDefault: true,
+      };
+    }
+  }
+
+  return none;
 }
 
 export function clampIndex(value: number, max: number): number {

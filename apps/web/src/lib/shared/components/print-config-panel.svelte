@@ -61,6 +61,55 @@ function onFillOrderChange(val: string) {
     onConfigChange?.();
   }
 }
+
+const layoutPreset = $derived.by(() => {
+  if (!config.forcedGrid) return "auto";
+  const { columns, rows } = config.forcedGrid;
+  if ((columns === 2 && rows === 1) || (columns === 1 && rows === 2))
+    return "2";
+  if (columns === 2 && rows === 2) return "4";
+  if ((columns === 3 && rows === 2) || (columns === 2 && rows === 3))
+    return "6";
+  return "custom";
+});
+
+function onLayoutPresetChange(val: string) {
+  if (!val) return;
+  const isLandscape = config.sheetOrientation === "landscape";
+  if (val !== "auto" && config.sheetSize === "A5" && (val === "2" || val === "4" || val === "6")) {
+    config.sheetSize = "A4";
+  }
+  if (val === "auto") {
+    config.forcedGrid = undefined;
+    config.scaleToFit = false;
+  } else if (val === "2") {
+    config.forcedGrid = isLandscape
+      ? { columns: 2, rows: 1 }
+      : { columns: 1, rows: 2 };
+    config.scaleToFit = true;
+  } else if (val === "4") {
+    config.forcedGrid = { columns: 2, rows: 2 };
+    config.scaleToFit = true;
+  } else if (val === "6") {
+    config.forcedGrid = isLandscape
+      ? { columns: 3, rows: 2 }
+      : { columns: 2, rows: 3 };
+    config.scaleToFit = true;
+  } else if (val === "custom") {
+    config.forcedGrid = config.forcedGrid ?? { columns: 2, rows: 2 };
+    config.scaleToFit = true;
+  }
+  onConfigChange?.();
+}
+
+function updateForcedGrid(field: "columns" | "rows", value: number) {
+  const safe = Math.max(1, Math.min(12, Math.round(value || 1)));
+  config.forcedGrid = {
+    columns: field === "columns" ? safe : (config.forcedGrid?.columns ?? 1),
+    rows: field === "rows" ? safe : (config.forcedGrid?.rows ?? 1),
+  };
+  onConfigChange?.();
+}
 </script>
 
 <div class="flex flex-col gap-4 text-start">
@@ -95,6 +144,81 @@ function onFillOrderChange(val: string) {
         <SelectItem value="landscape">{m.common_print_multi_up_landscape()}</SelectItem>
       </SelectContent>
     </Select>
+  </div>
+
+  <!-- Items per sheet / Forced grid -->
+  <div class="flex flex-col gap-1.5">
+    <Label class="text-xs font-semibold text-muted-foreground">
+      {m.common_print_multi_up_layout_mode()}
+    </Label>
+    <Select type="single" value={layoutPreset} onValueChange={onLayoutPresetChange} {disabled}>
+      <SelectTrigger class="h-8 text-xs" {disabled}>
+        {layoutPreset === "auto"
+          ? m.common_print_multi_up_layout_auto()
+          : layoutPreset === "2"
+            ? m.common_print_multi_up_layout_2()
+            : layoutPreset === "4"
+              ? m.common_print_multi_up_layout_4()
+              : layoutPreset === "6"
+                ? m.common_print_multi_up_layout_6()
+                : m.common_print_multi_up_layout_custom()}
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="auto">{m.common_print_multi_up_layout_auto()}</SelectItem>
+        <SelectItem value="2">{m.common_print_multi_up_layout_2()}</SelectItem>
+        <SelectItem value="4">{m.common_print_multi_up_layout_4()}</SelectItem>
+        <SelectItem value="6">{m.common_print_multi_up_layout_6()}</SelectItem>
+        <SelectItem value="custom">{m.common_print_multi_up_layout_custom()}</SelectItem>
+      </SelectContent>
+    </Select>
+
+    {#if config.forcedGrid}
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div class="flex flex-col gap-1">
+          <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_columns()}</Label>
+          <Input
+            type="number"
+            class="h-7 text-xs"
+            min={1}
+            max={12}
+            value={config.forcedGrid.columns}
+            oninput={(e) => updateForcedGrid("columns", Number((e.currentTarget as HTMLInputElement).value))}
+            {disabled}
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_rows()}</Label>
+          <Input
+            type="number"
+            class="h-7 text-xs"
+            min={1}
+            max={12}
+            value={config.forcedGrid.rows}
+            oninput={(e) => updateForcedGrid("rows", Number((e.currentTarget as HTMLInputElement).value))}
+            {disabled}
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-1">
+        <div class="flex flex-col gap-0.5">
+          <Label class="text-[11px] font-medium text-muted-foreground">
+            {m.common_print_multi_up_scale_to_fit()}
+          </Label>
+          <span class="text-[9px] text-muted-foreground/70">
+            {m.common_print_multi_up_scale_to_fit_desc()}
+          </span>
+        </div>
+        <Switch
+          checked={Boolean(config.scaleToFit)}
+          {disabled}
+          onCheckedChange={(checked) => {
+            config.scaleToFit = checked;
+            onConfigChange?.();
+          }}
+        />
+      </div>
+    {/if}
   </div>
 
   <Separator />

@@ -68,7 +68,7 @@ const resolvedGroups = $derived(groups || [{ items }]);
   class="h-full flex flex-col overflow-y-auto scrollbar-hide select-none"
 >
   <!-- Header -->
-  <div class="h-14 flex items-center justify-between border-b border-border/60 shrink-0">
+  <div class="h-14 px-3 flex items-center justify-between border-b border-border/60 shrink-0">
     <div class="flex items-center gap-2 min-w-0">
       <h2 class="text-sm font-semibold  text-foreground truncate">
         {title || "Navigation"}

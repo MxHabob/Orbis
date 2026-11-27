@@ -90,6 +90,7 @@ pub enum TaskType {
     GenericWorkflow,
     SendDelayNotification,
     TransitionPeriod,
+    CreateExamSession,
 }
 
 impl TaskType {
@@ -110,6 +111,7 @@ impl TaskType {
             TaskType::GenericWorkflow => "generic_workflow",
             TaskType::SendDelayNotification => "send_delay_notification",
             TaskType::TransitionPeriod => "transition_period",
+            TaskType::CreateExamSession => "create_exam_session",
         }
     }
 
@@ -130,6 +132,7 @@ impl TaskType {
             "generate_report" | "report_generation" => TaskType::GenerateReport,
             "backup_database" | "backup" => TaskType::BackupDatabase,
             "transition_period" => TaskType::TransitionPeriod,
+            "create_exam_session" => TaskType::CreateExamSession,
             _ => TaskType::GenericWorkflow,
         }
     }

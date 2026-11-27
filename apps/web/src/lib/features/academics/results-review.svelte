@@ -1,91 +1,167 @@
 <!--
   @component ResultsReview
-  Overview of grade entry completion and result status per section.
-  Allows academic managers to review, approve, and publish results.
+  Flexible ERP results review and batch certificate printing for a class or selected student group
+  across any period (monthly, midterm, term) or full academic year.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage } from "$lib/api";
-import type { StudentTermReportCard } from "$lib/api";
-import { academicContext } from "$lib/stores";
+import {
+  api,
+  extractErrorMessage,
+  type StudentAnnualReportCard,
+  type StudentTermReportCard,
+} from "$lib/api";
+import { formatDecimal, formatNumber, formatPercent } from "$lib/core/i18n";
+import { academicContext, orgContext } from "$lib/stores";
 import {
   createPeriodsQuery,
   createSectionsQuery,
 } from "$lib/features/academics";
 import { Button } from "@orbis/ui/button";
-import { Card } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
+import { Card } from "@orbis/ui/card";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { LoadingIndicator, toast } from "@orbis/ui";
+import { LoadingIndicator } from "@orbis/ui";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import {
   ChartBar,
   CheckCircle,
   DocumentCheck,
   InfoCircle,
+  Printer,
   Refresh,
   Users,
 } from "@orbis/icons";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import ClassSelect from "$lib/features/academics/components/class-select.svelte";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import {
+  OrbisGrid,
+  selectionColumn,
+  type GridActionEvent,
+  type OrbisColumnDef,
+} from "@orbis/svelte-grid";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { orgId }: { orgId: string } = $props();
 
+const isRtl = $derived(getLocale() === "ar");
+
+let viewMode = $state<"period" | "annual">("period");
 let selectedPeriodId = $state(academicContext.effectivePeriodId || "");
+let selectedYearId = $state(
+  academicContext.currentYear?.id || academicContext.allYears[0]?.id || "",
+);
 let selectedClassId = $state("");
+
 let isLoadingResults = $state(false);
 let resultError = $state<string | null>(null);
 let termResults = $state<StudentTermReportCard[]>([]);
+let annualResults = $state<StudentAnnualReportCard[]>([]);
+let selectedStudentIds = $state<Set<string>>(new Set());
+
+// Printing dialogs
+let printDialogOpen = $state(false);
+let pdfViewerOpen = $state(false);
+let pdfReportCode = $state("rep.academic.student-term-report-card");
+let pdfReportTitle = $state("");
 
 const periodsQuery = createPeriodsQuery(() => orgId);
 const sectionsQuery = createSectionsQuery(() => orgId);
-const periods = $derived(periodsQuery.data ?? []);
 const sections = $derived(sectionsQuery.data ?? []);
 const isLoading = $derived(periodsQuery.isLoading || sectionsQuery.isLoading);
-const isRtl = $derived(getLocale() === "ar");
 
-// ── Load results when class and period are selected ─────────
+const activeResults = $derived(
+  viewMode === "period" ? termResults : annualResults,
+);
+
+const yearNames = $derived(
+  new Map(
+    academicContext.allYears.map((y) => [
+      y.id,
+      isRtl ? y.name_ar || y.name : y.name,
+    ]),
+  ),
+);
+
+// ── Load class results (period or annual) ───────────────────
+let activeRequestId = 0;
+
 async function loadResults() {
-  if (!selectedClassId || !selectedPeriodId) return;
+  if (!selectedClassId) return;
+  if (viewMode === "period" && !selectedPeriodId) return;
+  if (viewMode === "annual" && !selectedYearId) return;
+
+  const requestId = ++activeRequestId;
   isLoadingResults = true;
   resultError = null;
+  selectedStudentIds = new Set();
   try {
-    termResults = await api.getClassTermResults(
-      selectedClassId,
-      selectedPeriodId,
-    );
+    if (viewMode === "period") {
+      const data = await api.getClassTermResults(
+        selectedClassId,
+        selectedPeriodId,
+      );
+      if (requestId !== activeRequestId) return;
+      termResults = data;
+      annualResults = [];
+    } else {
+      const data = await api.getClassAnnualResults(
+        selectedClassId,
+        selectedYearId,
+      );
+      if (requestId !== activeRequestId) return;
+      annualResults = data;
+      termResults = [];
+    }
   } catch (err) {
+    if (requestId !== activeRequestId) return;
     resultError = extractErrorMessage(err);
     termResults = [];
+    annualResults = [];
   } finally {
-    isLoadingResults = false;
+    if (requestId === activeRequestId) {
+      isLoadingResults = false;
+    }
   }
 }
 
 $effect(() => {
-  if (selectedClassId && selectedPeriodId) {
+  if (
+    selectedClassId &&
+    ((viewMode === "period" && selectedPeriodId) ||
+      (viewMode === "annual" && selectedYearId))
+  ) {
     void loadResults();
   } else {
     termResults = [];
+    annualResults = [];
   }
 });
 
 // ── Summary stats ───────────────────────────────────────────
-const totalStudents = $derived(termResults.length);
+const totalStudents = $derived(activeResults.length);
 const passedStudents = $derived(
-  termResults.filter(
+  activeResults.filter(
     (r) => r.status === "passed" || r.status === "passed_with_honors",
   ).length,
 );
 const failedStudents = $derived(
-  termResults.filter((r) => r.status === "failed").length,
+  activeResults.filter((r) => r.status === "failed").length,
 );
 const avgPercentage = $derived(
   totalStudents > 0
     ? Math.round(
-        termResults.reduce((sum, r) => sum + r.overall_percentage, 0) /
-          totalStudents,
+        activeResults.reduce(
+          (sum, r) => sum + Number(r.overall_percentage),
+          0,
+        ) / totalStudents,
       )
     : 0,
 );
@@ -93,264 +169,475 @@ const passRate = $derived(
   totalStudents > 0 ? Math.round((passedStudents / totalStudents) * 100) : 0,
 );
 
-// ── Grid columns ────────────────────────────────────────────
-const columns: OrbisColumnDef[] = [
-  {
-    id: "__rowIndex",
-    prop: "__rowIndex",
-    header: "#",
-    name: "#",
-    width: 48,
-    size: 48,
-    readonly: true,
-    pin: "left",
-    align: "center",
-    sort: false,
-  },
-  {
-    id: "student_name",
-    prop: "student_name",
-    header: m.common_word_student(),
-    name: m.common_word_student(),
-    width: 200,
-    size: 200,
-    readonly: true,
-    pin: "left",
-    sort: true,
-  },
-  {
-    id: "total_score",
-    prop: "total_score",
-    header: m.common_grades_col_total(),
-    name: m.common_grades_col_total(),
-    width: 90,
-    size: 90,
-    type: "number",
-    align: "end",
-    readonly: true,
-    sort: true,
-  },
-  {
-    id: "overall_percentage",
-    prop: "overall_percentage",
-    header: "%",
-    name: "%",
-    width: 75,
-    size: 75,
-    type: "percentage",
-    align: "end",
-    readonly: true,
-    sort: true,
-  },
-  {
-    id: "rank_in_class",
-    prop: "rank_in_class",
-    header: m.student_grades_rank_in_class(),
-    name: m.student_grades_rank_in_class(),
-    width: 85,
-    size: 85,
-    type: "number",
-    align: "center",
-    readonly: true,
-    sort: true,
-  },
-  {
-    id: "status",
-    prop: "status",
-    header: m.student_grades_status(),
-    name: m.student_grades_status(),
-    width: 100,
-    size: 100,
-    type: "badge",
-    align: "center",
-    readonly: true,
-    sort: true,
-  },
-];
+// ── Grid columns & source ───────────────────────────────────
+const columns = $derived.by<OrbisColumnDef[]>(() => {
+  const cols: OrbisColumnDef[] = [
+    selectionColumn(),
+    {
+      id: "__rowIndex",
+      prop: "__rowIndex",
+      header: "#",
+      name: "#",
+      width: 48,
+      size: 48,
+      readonly: true,
+      pin: "left",
+      align: "center",
+      sort: false,
+    },
+    {
+      id: "student_name",
+      prop: "student_name",
+      header: m.common_word_student(),
+      name: m.common_word_student(),
+      width: 200,
+      size: 200,
+      readonly: true,
+      pin: "left",
+      sort: true,
+    },
+    {
+      id: "total_score",
+      prop: "total_score",
+      header: m.common_grades_col_total(),
+      name: m.common_grades_col_total(),
+      width: 95,
+      size: 95,
+      type: "number",
+      align: "end",
+      readonly: true,
+      sort: true,
+    },
+    {
+      id: "overall_percentage",
+      prop: "overall_percentage",
+      header: "%",
+      name: "%",
+      width: 80,
+      size: 80,
+      type: "percentage",
+      align: "end",
+      readonly: true,
+      sort: true,
+    },
+  ];
+
+  if (orgContext.isUniversity) {
+    cols.push({
+      id: "gpa",
+      prop: "gpa",
+      header: viewMode === "annual" ? "CGPA" : "GPA",
+      name: viewMode === "annual" ? "CGPA" : "GPA",
+      width: 80,
+      size: 80,
+      type: "number",
+      align: "end",
+      readonly: true,
+      sort: true,
+    });
+  }
+
+  cols.push(
+    {
+      id: "rank_in_class",
+      prop: "rank_in_class",
+      header: m.student_grades_rank_in_class(),
+      name: m.student_grades_rank_in_class(),
+      width: 85,
+      size: 85,
+      type: "number",
+      align: "center",
+      readonly: true,
+      sort: true,
+    },
+    {
+      id: "status",
+      prop: "status",
+      header: m.student_grades_status(),
+      name: m.student_grades_status(),
+      width: 110,
+      size: 110,
+      type: "badge",
+      align: "center",
+      readonly: true,
+      sort: true,
+    },
+  );
+  return cols;
+});
 
 const gridSource = $derived(
-  termResults.map((r, i) => ({
+  activeResults.map((r, i) => ({
+    id: r.student_id,
     __rowIndex: i + 1,
     student_id: r.student_id,
     student_name: r.student_name,
     student_number: r.student_number,
-    total_score: r.total_score,
-    max_possible_score: r.max_possible_score,
-    overall_percentage: r.overall_percentage,
+    total_score: Number(r.total_score),
+    max_possible_score: Number(r.max_possible_score),
+    overall_percentage: Number(r.overall_percentage),
+    gpa:
+      "gpa" in r && r.gpa != null
+        ? Number(r.gpa)
+        : "cumulative_gpa" in r && r.cumulative_gpa != null
+          ? Number(r.cumulative_gpa)
+          : "—",
     rank_in_class: r.rank_in_class ?? "—",
     status: r.status,
   })),
 );
 
-// ── Section overview (when no class selected) ───────────────
-let sectionOverview = $state<
-  {
-    id: string;
-    name: string;
-    studentCount: number;
-    avgPct: number | null;
-    status: string;
-  }[]
->([]);
-let isLoadingOverview = $state(false);
-
-async function loadSectionOverview() {
-  if (!selectedPeriodId || sections.length === 0) {
-    sectionOverview = [];
-    return;
-  }
-  isLoadingOverview = true;
-  const results: typeof sectionOverview = [];
-  for (const section of sections) {
-    try {
-      const cards = await api.getClassTermResults(
-        String(section.id),
-        selectedPeriodId,
-      );
-      const avg =
-        cards.length > 0
-          ? Math.round(
-              cards.reduce((s, c) => s + c.overall_percentage, 0) /
-                cards.length,
-            )
-          : null;
-      results.push({
-        id: String(section.id),
-        name: section.name_ar || section.name,
-        studentCount: cards.length,
-        avgPct: avg,
-        status: cards.length > 0 ? "ready" : "pending",
-      });
-    } catch {
-      results.push({
-        id: String(section.id),
-        name: section.name_ar || section.name,
-        studentCount: 0,
-        avgPct: null,
-        status: "error",
-      });
+function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "toggle-select" || event.actionId === "select") {
+    const id = String(event.row?.id || "");
+    if (!id) return;
+    const next = new Set(selectedStudentIds);
+    if (
+      event.selected === false ||
+      (event.selected === undefined && next.has(id))
+    ) {
+      next.delete(id);
+    } else {
+      next.add(id);
     }
+    selectedStudentIds = next;
+  } else if (event.actionId === "select-all") {
+    const next = new Set(selectedStudentIds);
+    for (const id of event.selectedIds ?? []) {
+      if (event.selected) next.add(id);
+      else next.delete(id);
+    }
+    selectedStudentIds = next;
   }
-  sectionOverview = results;
-  isLoadingOverview = false;
 }
 
-// Load overview when period changes and no class is selected
-$effect(() => {
-  if (selectedPeriodId && !selectedClassId && sections.length > 0) {
-    void loadSectionOverview();
-  }
+const targetStudentIds = $derived(
+  selectedStudentIds.size > 0
+    ? [...selectedStudentIds]
+    : activeResults.map((r) => r.student_id),
+);
+
+const targetStudentLabels = $derived(
+  targetStudentIds.map(
+    (id) => activeResults.find((r) => r.student_id === id)?.student_name ?? id,
+  ),
+);
+
+const targetStudentContexts = $derived.by<Record<string, unknown>[]>(() => {
+  const resultMap = new Map(activeResults.map((r) => [r.student_id, r]));
+  const yearName = yearNames.get(selectedYearId) ?? "";
+  const selectedPeriod = (periodsQuery.data ?? []).find(
+    (p) => p.id === selectedPeriodId,
+  );
+  const selectedSection = sections.find((s) => s.id === selectedClassId);
+  const localizedPeriodName = selectedPeriod
+    ? isRtl
+      ? selectedPeriod.name_ar || selectedPeriod.name
+      : selectedPeriod.name
+    : yearName;
+  const localizedSectionName = selectedSection
+    ? isRtl
+      ? selectedSection.name_ar || selectedSection.name
+      : selectedSection.name
+    : "";
+
+  return targetStudentIds.flatMap((id) => {
+    const card = resultMap.get(id);
+    if (!card) return [];
+
+    const periodName =
+      localizedPeriodName ||
+      ("period_name" in card && card.period_name ? card.period_name : yearName);
+    const className = localizedSectionName || card.class_name;
+    const calendarName =
+      yearName ||
+      ("academic_calendar_name" in card && card.academic_calendar_name
+        ? card.academic_calendar_name
+        : "");
+
+    const subjects = card.subjects.map((subj) => {
+      const subjectName = isRtl
+        ? subj.subject_name_ar || subj.subject_name
+        : subj.subject_name;
+      if ("term_total" in subj) {
+        const componentScores: Record<string, number> = {};
+        for (const periodRes of subj.monthly_results ?? []) {
+          for (const comp of periodRes.breakdown?.components ?? []) {
+            componentScores[comp.code] =
+              (componentScores[comp.code] ?? 0) + Number(comp.score ?? 0);
+          }
+        }
+        return {
+          ...componentScores,
+          subjectName,
+          subjectCode: subj.subject_code,
+          creditHours: Number(subj.credit_hours ?? 0),
+          courseworkScore: Number(subj.monthly_contribution ?? 0),
+          examScore:
+            subj.term_final_exam != null ? Number(subj.term_final_exam) : 0,
+          totalScore: Number(subj.term_total ?? 0),
+          maxScore: Number(subj.term_max ?? 0),
+          percentage: Number(subj.percentage ?? 0),
+          gradeLetter: subj.letter_grade ?? "—",
+          status: subj.status,
+        };
+      }
+      return {
+        subjectName,
+        subjectCode: subj.subject_code,
+        creditHours: Number(subj.credit_hours ?? 0),
+        term1Score: Number(subj.term_1_result?.term_total ?? 0),
+        term2Score: Number(subj.term_2_result?.term_total ?? 0),
+        courseworkScore: Number(subj.term_1_result?.term_total ?? 0),
+        examScore: Number(subj.term_2_result?.term_total ?? 0),
+        totalScore: Number(subj.annual_total ?? 0),
+        maxScore: Number(subj.annual_max ?? 0),
+        percentage: Number(subj.percentage ?? 0),
+        gradeLetter: subj.letter_grade ?? "—",
+        status: subj.status,
+      };
+    });
+
+    return [
+      {
+        student: {
+          id: card.student_id,
+          name: card.student_name,
+          full_name: card.student_name,
+          fullName: card.student_name,
+          student_number: card.student_number ?? "",
+          studentNumber: card.student_number ?? "",
+          className,
+          class_name: className,
+          sectionName: className,
+          section_name: className,
+          rankInClass: card.rank_in_class ?? "—",
+          rank_in_class: card.rank_in_class ?? "—",
+          totalStudentsInClass: card.total_students_in_class,
+          total_students_in_class: card.total_students_in_class,
+          status: card.status,
+        },
+        report: {
+          periodName,
+          period_name: periodName,
+          academicCalendarName: calendarName,
+          academic_calendar_name: calendarName,
+          totalScore: Number(card.total_score ?? 0),
+          total_score: Number(card.total_score ?? 0),
+          maxPossibleScore: Number(card.max_possible_score ?? 0),
+          max_possible_score: Number(card.max_possible_score ?? 0),
+          overallPercentage: Number(card.overall_percentage ?? 0),
+          overall_percentage: Number(card.overall_percentage ?? 0),
+          gpa:
+            "gpa" in card && card.gpa != null
+              ? Number(card.gpa)
+              : "cumulative_gpa" in card && card.cumulative_gpa != null
+                ? Number(card.cumulative_gpa)
+                : "—",
+          status: card.status,
+          subjects,
+        },
+        AcademicCalendar: {
+          id: selectedYearId,
+          name: calendarName,
+        },
+        subjects,
+        items: subjects,
+        grades: subjects,
+      },
+    ];
+  });
 });
+
+function openClassPdfReport() {
+  pdfReportCode =
+    viewMode === "annual"
+      ? "rep.academic.student-certificate"
+      : "rep.academic.student-term-report-card";
+  pdfReportTitle =
+    viewMode === "annual"
+      ? m.academics_results_class_annual_certificates()
+      : m.academics_results_class_period_reports();
+  pdfViewerOpen = true;
+}
 </script>
 
 <div class="h-full min-h-0 w-full overflow-hidden p-6 font-sans text-start select-none">
-  <div class="mx-auto flex h-full min-h-0 max-w-7xl flex-col gap-6">
+  <div class="mx-auto flex h-full min-h-0 max-w-7xl flex-col gap-5">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-border/40 pb-4">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
       <div>
         <h1 class="text-base font-bold text-foreground">
           {m.academics_nav_results_review()}
         </h1>
-        <p class="text-xs text-muted-foreground mt-0.5">
+        <p class="mt-0.5 text-xs text-muted-foreground">
           {m.academics_results_review_subtitle()}
         </p>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        class="h-8 gap-1.5 text-xs font-semibold"
-        onclick={() => {
-          if (selectedClassId) void loadResults();
-          else void loadSectionOverview();
-        }}
-      >
-        {#if isLoadingResults || isLoadingOverview}
-          <LoadingIndicator size={13} />
-        {:else}
-          <Refresh size={13} />
+
+      <div class="flex flex-wrap items-center gap-2">
+        {#if selectedClassId && activeResults.length > 0}
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 gap-1.5 text-xs font-medium"
+            onclick={openClassPdfReport}
+          >
+            <Printer size={13} />
+            <span>
+              {viewMode === "annual"
+                ? m.academics_results_annual_report_pdf()
+                : m.academics_results_period_report_pdf()}
+            </span>
+          </Button>
+
+          <Button
+            variant="default"
+            size="sm"
+            class="h-8 gap-1.5 text-xs font-semibold"
+            onclick={() => (printDialogOpen = true)}
+          >
+            <Printer size={13} />
+            <span>
+              {selectedStudentIds.size > 0
+                ? m.academics_results_print_selected({
+                    count: formatNumber(selectedStudentIds.size),
+                  })
+                : m.academics_results_print_class({
+                    count: formatNumber(activeResults.length),
+                  })}
+            </span>
+          </Button>
         {/if}
-        <span>{m.common_retry()}</span>
-      </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 gap-1.5 text-xs font-semibold"
+          onclick={() => {
+            if (selectedClassId) void loadResults();
+            else void sectionsQuery.refetch();
+          }}
+        >
+          {#if isLoadingResults || isLoading}
+            <LoadingIndicator size={13} />
+          {:else}
+            <Refresh size={13} />
+          {/if}
+          <span>{m.common_retry()}</span>
+        </Button>
+      </div>
     </div>
 
-    <!-- Filters -->
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <PeriodSelect
-        bind:value={selectedPeriodId}
-        placeholder={m.student_grades_select_period()}
-        class="h-9 w-full text-xs sm:w-64"
-      />
+    <!-- Filters: Mode (Period vs Annual) + Period/Year + Class -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
+        <button
+          type="button"
+          onclick={() => (viewMode = "period")}
+          class={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+            viewMode === "period"
+              ? "bg-background text-foreground shadow-xs font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {m.academics_results_mode_period()}
+        </button>
+        <button
+          type="button"
+          onclick={() => (viewMode = "annual")}
+          class={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+            viewMode === "annual"
+              ? "bg-background text-foreground shadow-xs font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {m.academics_results_mode_annual()}
+        </button>
+      </div>
+
+      {#if viewMode === "period"}
+        <PeriodSelect
+          bind:value={selectedPeriodId}
+          placeholder={m.student_grades_select_period()}
+          class="h-9 w-full text-xs sm:w-60"
+        />
+      {:else}
+        <Select
+          type="single"
+          value={selectedYearId}
+          onValueChange={(val) => {
+            if (val) selectedYearId = val;
+          }}
+        >
+          <SelectTrigger class="h-9 w-full text-xs sm:w-60">
+            {yearNames.get(selectedYearId) ??
+              m.student_grades_select_academic_year()}
+          </SelectTrigger>
+          <SelectContent class="text-xs">
+            {#each academicContext.allYears as year (year.id)}
+              <SelectItem value={year.id}>
+                {isRtl ? year.name_ar || year.name : year.name}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {/if}
+
       <ClassSelect
         bind:value={selectedClassId}
-        disabled={!selectedPeriodId}
+        disabled={viewMode === "period" ? !selectedPeriodId : !selectedYearId}
         placeholder={m.common_control_select_class()}
-        class="h-9 w-full text-xs sm:w-64"
+        class="h-9 w-full text-xs sm:w-60"
       />
     </div>
 
-    {#if !selectedPeriodId}
-      <!-- No period selected -->
-      <Card class="flex flex-col items-center justify-center py-16 gap-3 border-border/40 bg-card/40 rounded-xl">
-        <InfoCircle size={36} class="text-muted-foreground opacity-40" />
-        <p class="text-sm text-muted-foreground">
-          {m.student_grades_select_period()}
+    {#if (viewMode === "period" && !selectedPeriodId) || (viewMode === "annual" && !selectedYearId)}
+      <Card class="flex flex-col items-center justify-center gap-3 rounded-md border-border/60 bg-card py-16">
+        <InfoCircle size={32} class="text-muted-foreground opacity-40" />
+        <p class="text-xs text-muted-foreground">
+          {viewMode === "period"
+            ? m.student_grades_select_period()
+            : m.student_grades_select_academic_year()}
         </p>
       </Card>
     {:else if !selectedClassId}
-      <!-- Overview mode: show all sections -->
-      {#if isLoadingOverview || isLoading}
-        <div class="grid min-h-0 flex-1 grid-cols-1 content-start gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
+      <!-- Overview mode: show all sections immediately without N+1 calculation bottleneck -->
+      {#if isLoading}
+        <div class="grid min-h-0 flex-1 grid-cols-1 content-start gap-3 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
           {#each Array(6) as _, i (i)}
-            <Skeleton class="h-28 w-full rounded-xl" />
+            <Skeleton class="h-24 w-full rounded-md" />
           {/each}
         </div>
-      {:else if sectionOverview.length === 0}
-        <Card class="flex flex-col items-center justify-center py-16 gap-3 border-border/40 bg-card/40 rounded-xl">
-          <Users size={36} class="text-muted-foreground opacity-40" />
-          <p class="text-sm text-muted-foreground">
+      {:else if sections.length === 0}
+        <Card class="flex flex-col items-center justify-center gap-3 rounded-md border-border/60 bg-card py-16">
+          <Users size={32} class="text-muted-foreground opacity-40" />
+          <p class="text-xs text-muted-foreground">
             {m.academics_results_no_sections()}
           </p>
         </Card>
       {:else}
-        <!-- Section cards overview -->
-        <div class="grid min-h-0 flex-1 grid-cols-1 content-start gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
-          {#each sectionOverview as section (section.id)}
+        <div class="grid min-h-0 flex-1 grid-cols-1 content-start gap-3 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
+          {#each sections as section (section.id)}
             <button
+              type="button"
               class="text-start"
-              onclick={() => { selectedClassId = section.id; }}
+              onclick={() => {
+                selectedClassId = String(section.id);
+              }}
             >
-              <Card class="p-4 hover:border-primary/30 transition-colors cursor-pointer rounded-xl border-border/60">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-sm font-semibold text-foreground truncate">
-                    {section.name}
+              <Card class="cursor-pointer rounded-md border-border p-4 transition-colors hover:border-primary/40">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <span class="truncate text-xs font-semibold text-foreground">
+                    {isRtl ? section.name_ar || section.name : section.name}
                   </span>
-                  {#if section.status === "ready"}
-                    <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4.5 rounded font-sans bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                      <CheckCircle size={10} class="me-0.5" />
-                      {m.academics_results_status_ready()}
-                    </Badge>
-                  {:else if section.status === "pending"}
-                    <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4.5 rounded font-sans">
-                      {m.academics_results_status_pending()}
-                    </Badge>
-                  {:else}
-                    <Badge variant="destructive" class="text-[9px] px-1.5 py-0 h-4.5 rounded font-sans">
-                      {m.academics_results_status_error()}
-                    </Badge>
-                  {/if}
+                  <Badge variant="outline" class="h-5 rounded px-2 text-[10px] font-medium">
+                    {m.academics_results_view_results()}
+                  </Badge>
                 </div>
-                <div class="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span class="flex items-center gap-1">
-                    <Users size={12} />
-                    {section.studentCount}
-                  </span>
-                  {#if section.avgPct !== null}
-                    <span class="flex items-center gap-1">
-                      <ChartBar size={12} />
-                      {section.avgPct}%
-                    </span>
-                  {/if}
-                </div>
+                <p class="text-[11px] text-muted-foreground">
+                  {m.academics_results_click_to_load()}
+                </p>
               </Card>
             </button>
           {/each}
@@ -358,15 +645,15 @@ $effect(() => {
       {/if}
     {:else}
       <!-- Detail mode: show results for selected class -->
-      <div class="flex min-h-0 flex-1 flex-col">
+      <div class="flex min-h-0 flex-1 flex-col gap-4">
         {#if isLoadingResults}
           <div class="flex flex-1 items-center justify-center py-16">
             <LoadingIndicator size="lg" label={m.common_control_loading()} />
           </div>
         {:else if resultError}
-          <Card class="flex flex-col items-center justify-center py-12 gap-3 border-destructive/20 bg-destructive/5 rounded-xl p-6">
-            <InfoCircle size={32} class="text-destructive opacity-80" />
-            <p class="text-sm text-destructive font-medium">{resultError}</p>
+          <Card class="flex flex-col items-center justify-center gap-3 rounded-md border-destructive/20 bg-destructive/5 p-6 py-12">
+            <InfoCircle size={28} class="text-destructive opacity-80" />
+            <p class="text-xs font-medium text-destructive">{resultError}</p>
             <Button
               variant="outline"
               size="sm"
@@ -377,51 +664,62 @@ $effect(() => {
               <span>{m.common_retry()}</span>
             </Button>
           </Card>
-        {:else if termResults.length === 0}
-          <Card class="flex flex-col items-center justify-center py-16 gap-3 border-border/40 bg-card/40 rounded-xl">
-            <DocumentCheck size={36} class="text-muted-foreground opacity-40" />
-            <p class="text-sm text-muted-foreground">
+        {:else if activeResults.length === 0}
+          <Card class="flex flex-col items-center justify-center gap-3 rounded-md border-border/60 bg-card py-16">
+            <DocumentCheck size={32} class="text-muted-foreground opacity-40" />
+            <p class="text-xs text-muted-foreground">
               {m.academics_results_empty_section()}
             </p>
           </Card>
         {:else}
-          <!-- Summary stats -->
-          <div class="grid shrink-0 grid-cols-2 gap-3 md:grid-cols-4">
-            <Card class="rounded-xl border-border/60 p-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <!-- Unified Summary Strip -->
+          <div class="grid shrink-0 grid-cols-2 divide-y divide-border rounded-md border border-border bg-card sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
+            <div class="px-4 py-3">
+              <p class="text-[11px] text-muted-foreground">
                 {m.academics_results_stat_total_students()}
               </p>
-              <p class="text-xl font-bold text-foreground mt-1">{totalStudents}</p>
-            </Card>
-            <Card class="p-3 rounded-xl border-border/60">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <p class="mt-1 text-base font-bold tabular-nums text-foreground">
+                {formatNumber(totalStudents)}
+              </p>
+            </div>
+            <div class="px-4 py-3">
+              <p class="text-[11px] text-muted-foreground">
                 {m.academics_results_stat_pass_rate()}
               </p>
-              <p class="text-xl font-bold text-foreground mt-1">{passRate}%</p>
-            </Card>
-            <Card class="p-3 rounded-xl border-border/60">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <p class="mt-1 text-base font-bold tabular-nums text-foreground">
+                {formatPercent(passRate)}
+              </p>
+            </div>
+            <div class="px-4 py-3">
+              <p class="text-[11px] text-muted-foreground">
                 {m.academics_results_stat_average()}
               </p>
-              <p class="text-xl font-bold text-foreground mt-1">{avgPercentage}%</p>
-            </Card>
-            <Card class="p-3 rounded-xl border-border/60">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <p class="mt-1 text-base font-bold tabular-nums text-foreground">
+                {formatPercent(avgPercentage)}
+              </p>
+            </div>
+            <div class="px-4 py-3">
+              <p class="text-[11px] text-muted-foreground">
                 {m.academics_results_stat_failed()}
               </p>
-              <p class="text-xl font-bold mt-1"
+              <p
+                class="mt-1 text-base font-bold tabular-nums"
                 class:text-destructive={failedStudents > 0}
                 class:text-foreground={failedStudents === 0}
-              >{failedStudents}</p>
-            </Card>
+              >
+                {formatNumber(failedStudents)}
+              </p>
+            </div>
           </div>
 
-          <!-- Results grid -->
+          <!-- Results grid with multi-selection for group certificate printing -->
           <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div class="min-h-0 flex-1">
               <OrbisGrid
                 source={gridSource}
-                columns={columns}
+                {columns}
+                selectedRowIds={selectedStudentIds}
+                onaction={handleGridAction}
                 rtl={isRtl}
                 readonly
               />
@@ -432,3 +730,23 @@ $effect(() => {
     {/if}
   </div>
 </div>
+
+<PrintDialog
+  bind:open={printDialogOpen}
+  entityType="student"
+  entityIds={targetStudentIds}
+  entityLabels={targetStudentLabels}
+  contexts={targetStudentContexts}
+/>
+
+<PdfReportViewer
+  bind:open={pdfViewerOpen}
+  templateId={pdfReportCode}
+  parameters={{
+    class_id: selectedClassId,
+    period_id: viewMode === "period" ? selectedPeriodId : undefined,
+    year_id: selectedYearId,
+    calendar_id: selectedYearId,
+  }}
+  reportTitle={pdfReportTitle}
+/>

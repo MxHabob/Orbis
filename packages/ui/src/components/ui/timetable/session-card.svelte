@@ -1,9 +1,6 @@
 <script lang="ts">
 import {
-  AdjustmentsHorizontal,
-  BookOpen,
   CheckSquare,
-  ClockRotateRight,
   InfoCircle,
   Pencil,
   Pin,
@@ -11,6 +8,7 @@ import {
   Users,
 } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
+import { formatTimeRange, resolveSubjectColor } from "./utils.js";
 
 interface Props {
   lesson: any;
@@ -55,6 +53,7 @@ let {
 }: Props = $props();
 
 const isArabic = $derived(locale === "ar");
+
 const subjectName = $derived(
   lesson.subject_name ||
     lesson.subjectName ||
@@ -87,27 +86,25 @@ const roomName = $derived(
     "",
 );
 
+const primaryTitle = $derived(
+  viewMode === "subject" && className ? className : subjectName,
+);
+
+const resolvedColor = $derived(
+  resolveSubjectColor(lesson.subject_id, subjectColor),
+);
+
 const isConflict = $derived(
   Boolean(hasConflict || lesson.has_conflict || lesson.conflict),
 );
 
-function formatTime(val: string): string {
-  if (!val) return "";
-  const clean = val.slice(0, 5);
-  const [hStr, mStr] = clean.split(":");
-  let h = parseInt(hStr, 10);
-  const m = mStr || "00";
-  if (isNaN(h)) return val;
-  const period = h >= 12 ? (isArabic ? "م" : "PM") : isArabic ? "ص" : "AM";
-  h = h % 12 || 12;
-  return `${h}:${m} ${period}`;
-}
-
-const timeLabel = $derived.by(() => {
-  const s = lesson.time_slot_start || timeSlot?.start_time;
-  const e = lesson.time_slot_end || timeSlot?.end_time;
-  return s && e ? `${formatTime(s)} - ${formatTime(e)}` : "";
-});
+const timeLabel = $derived(
+  formatTimeRange(
+    lesson.time_slot_start || timeSlot?.start_time,
+    lesson.time_slot_end || timeSlot?.end_time,
+    isArabic,
+  ),
+);
 
 function handleCardClick(e: MouseEvent) {
   e.stopPropagation();
@@ -158,129 +155,175 @@ function handleDragStart(e: DragEvent) {
   onkeydown={handleCardKeydown}
   draggable={!isDraft}
   ondragstart={handleDragStart}
-  style={`--subject-theme: ${subjectColor};`}
-  class="group relative flex h-full w-full min-w-0 flex-col justify-between overflow-hidden rounded-lg border transition-all duration-150 select-none text-start text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {compact
-    ? 'p-1.5 min-h-[52px]'
-    : 'p-2 min-h-[72px]'} {isConflict
-    ? 'border-destructive bg-destructive/10 shadow-sm ring-1 ring-destructive/30'
+  style={`--subject-theme: ${resolvedColor};`}
+  class="session-card group relative flex h-full w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded-md border text-start text-foreground transition-colors select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {compact
+    ? 'min-h-14'
+    : 'min-h-18'} {isConflict
+    ? 'border-destructive/80 bg-destructive/10'
     : isDraft
-      ? 'border-dashed border-primary/50 bg-primary/5'
-      : 'border-border/60 bg-card hover:border-primary/40 hover:bg-card/90 hover:shadow-sm'}"
+      ? 'border-dashed border-primary/50 bg-primary/8'
+      : 'session-card--tinted'}"
 >
-  <!-- Accent Edge Bar -->
+  <!-- Crisp 3px subject accent bar -->
   <div
-    class="absolute inset-s-0 top-0 bottom-0 w-1 rounded-s-lg transition-all group-hover:w-1.5"
-    style="background-color: var(--subject-theme);"
+    class="absolute inset-s-0 top-0 bottom-0 w-[3px]"
+    style="background-color: {isConflict ? 'var(--destructive)' : 'var(--subject-theme)'};"
   ></div>
 
-  <!-- Header / Subject Title & Conflict Indicator -->
-  <div class="flex items-start justify-between gap-1 ps-1.5">
-    <div class="min-w-0 flex-1">
-      <div class="flex items-center gap-1">
-        <span
-          class="font-bold tracking-tight truncate leading-tight {compact ? 'text-[11px]' : 'text-xs'}"
-          title={subjectName}
-        >
-          {subjectName}
-        </span>
-        {#if isDraft}
-          <span class="rounded bg-primary/20 px-1 py-0.2 text-[9px] font-semibold text-primary">
-            {isArabic ? "مسودة" : "Draft"}
+  <!-- Main Content -->
+  <div class="flex min-h-0 flex-1 flex-col justify-between {compact ? 'px-2 pt-1.5 pb-1 ps-2.5' : 'px-2.5 pt-2 pb-1.5 ps-3'}">
+    <!-- Header -->
+    <div class="flex items-start justify-between gap-1.5">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-1.5">
+          <span
+            class="truncate font-semibold leading-snug {compact
+              ? 'text-[11px]'
+              : 'text-xs'}"
+            title={primaryTitle}
+          >
+            {primaryTitle}
           </span>
+          {#if isDraft}
+            <span
+              class="shrink-0 rounded-sm bg-primary/15 px-1 py-0.5 text-[10px] font-medium leading-none text-primary"
+            >
+              {isArabic ? "مسودة" : "Draft"}
+            </span>
+          {/if}
+        </div>
+
+        {#if lesson.topic}
+          <p
+            class="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground"
+            title={lesson.topic}
+          >
+            {lesson.topic}
+          </p>
         {/if}
       </div>
 
-      {#if lesson.topic}
-        <p class="text-[9px] text-muted-foreground truncate leading-none mt-0.5" title={lesson.topic}>
-          {lesson.topic}
-        </p>
+      {#if isConflict}
+        <span
+          class="flex shrink-0 items-center justify-center text-destructive"
+          title={conflictMessage ||
+            (isArabic ? "يوجد تعارض في هذا الموعد" : "Schedule conflict")}
+        >
+          <InfoCircle size={13} strokeWidth={2.25} />
+        </span>
       {/if}
     </div>
 
-    {#if isConflict}
+    <!-- Contextual Metadata -->
+    <div
+      class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-muted-foreground {compact
+        ? 'mt-1 text-[10px]'
+        : 'mt-1.5 text-[11px]'}"
+    >
+      {#if viewMode !== "class" && viewMode !== "subject" && className}
+        <span
+          class="inline-flex max-w-[130px] items-center gap-1 truncate font-medium text-foreground/85"
+          title={className}
+        >
+          <Users size={11} class="shrink-0 text-muted-foreground" />
+          <span class="truncate">{className}</span>
+        </span>
+      {/if}
+
+      {#if viewMode !== "teacher" && teacherName}
+        <span
+          class="inline-flex max-w-[130px] items-center gap-1 truncate"
+          title={teacherName}
+        >
+          <span class="truncate">{teacherName}</span>
+        </span>
+      {/if}
+
+      {#if viewMode !== "room" && roomName}
+        <span
+          class="inline-flex items-center gap-0.5 truncate font-medium text-foreground/85"
+          title={roomName}
+        >
+          <Pin size={10} class="shrink-0" style="color: var(--subject-theme);" />
+          <span class="truncate">{roomName}</span>
+        </span>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Footer: Subtle Tinted Time Band & Quick Actions -->
+  {#if !compact || (!isDraft && (onAttendance || onEdit || onDelete))}
+    <div
+      class="session-card__footer flex items-center justify-between gap-1 border-t px-2 py-1 ps-2.5"
+    >
       <span
-        class="shrink-0 flex items-center justify-center text-destructive animate-pulse"
-        title={conflictMessage || (isArabic ? "يوجد تعارض في هذا الموعد" : "Schedule conflict")}
+        class="truncate font-mono text-[10px] font-medium text-foreground/75 tabular-nums"
       >
-        <InfoCircle size={13} strokeWidth={2.5} />
+        {timeLabel}
       </span>
-    {/if}
-  </div>
 
-  <!-- Contextual Metadata Pills -->
-  <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 ps-1.5 text-muted-foreground {compact ? 'text-[9px] mt-1' : 'text-[10px] mt-1.5'}">
-    <!-- ViewMode Contextual rendering -->
-    {#if viewMode !== "class" && className}
-      <span class="inline-flex items-center gap-1 font-medium truncate max-w-[120px]" title={className}>
-        <Users size={10} class="shrink-0 text-muted-foreground/70" />
-        <span class="truncate">{className}</span>
-      </span>
-    {/if}
-
-    {#if viewMode !== "teacher" && teacherName}
-      <span class="inline-flex items-center gap-1 truncate max-w-[110px]" title={teacherName}>
-        <Users size={10} class="shrink-0 text-muted-foreground/70" />
-        <span class="truncate">{teacherName}</span>
-      </span>
-    {/if}
-
-    {#if roomName}
-      <span class="inline-flex items-center gap-1 truncate text-foreground/80 font-medium" title={roomName}>
-        <Pin size={10} class="shrink-0 text-primary" />
-        <span class="truncate">{roomName}</span>
-      </span>
-    {/if}
-  </div>
-
-  <!-- Footer: Time Slot & Quick Actions -->
-  <div class="flex items-center justify-between ps-1.5 pt-1 border-t border-border/40 mt-1">
-    <span class="text-[9px] font-medium text-muted-foreground/80 font-mono">
-      {timeLabel || (timeSlot ? `${formatTime(timeSlot.start_time)} - ${formatTime(timeSlot.end_time)}` : "")}
-    </span>
-
-    <!-- Hover Micro-Actions -->
-    {#if !isDraft && (onAttendance || onEdit || onDelete)}
-      <div class="touch-actions flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-        {#if onAttendance}
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 rounded p-0 text-muted-foreground hover:text-primary"
-            onclick={handleAttendanceClick}
-            aria-label={isArabic ? "تسجيل الحضور" : "Record attendance"}
-            title={isArabic ? "تسجيل الحضور" : "Record attendance"}
-          >
-            <CheckSquare size={13} />
-          </Button>
-        {/if}
-        {#if onEdit}
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-5 w-5 rounded p-0 text-muted-foreground hover:text-foreground"
-            onclick={handleEditClick}
-            aria-label={isArabic ? "تعديل" : "Edit"}
-          >
-            <Pencil size={10} />
-          </Button>
-        {/if}
-        {#if onDelete}
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-5 w-5 rounded p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-            onclick={handleDeleteClick}
-            aria-label={isArabic ? "حذف" : "Delete"}
-          >
-            <Trash size={10} />
-          </Button>
-        {/if}
-      </div>
-    {/if}
-  </div>
+      {#if !isDraft && (onAttendance || onEdit || onDelete)}
+        <div
+          class="touch-actions flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        >
+          {#if onAttendance}
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 rounded-sm p-0 text-muted-foreground hover:text-primary"
+              onclick={handleAttendanceClick}
+              aria-label={isArabic ? "تسجيل الحضور" : "Record attendance"}
+              title={isArabic ? "تسجيل الحضور" : "Record attendance"}
+            >
+              <CheckSquare size={11} />
+            </Button>
+          {/if}
+          {#if onEdit}
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 rounded-sm p-0 text-muted-foreground hover:text-foreground"
+              onclick={handleEditClick}
+              aria-label={isArabic ? "تعديل" : "Edit"}
+              title={isArabic ? "تعديل" : "Edit"}
+            >
+              <Pencil size={10} />
+            </Button>
+          {/if}
+          {#if onDelete}
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 rounded-sm p-0 text-destructive/75 hover:bg-destructive/10 hover:text-destructive"
+              onclick={handleDeleteClick}
+              aria-label={isArabic ? "حذف" : "Delete"}
+              title={isArabic ? "حذف" : "Delete"}
+            >
+              <Trash size={10} />
+            </Button>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 </article>
 
 <style>
+  .session-card--tinted {
+    border-color: color-mix(in srgb, var(--subject-theme) 38%, var(--border));
+    background-color: color-mix(in srgb, var(--subject-theme) 13%, var(--card));
+  }
+
+  .session-card--tinted:hover {
+    border-color: color-mix(in srgb, var(--subject-theme) 58%, var(--border));
+    background-color: color-mix(in srgb, var(--subject-theme) 20%, var(--card));
+  }
+
+  .session-card__footer {
+    border-color: color-mix(in srgb, var(--subject-theme) 22%, var(--border));
+    background-color: color-mix(in srgb, var(--subject-theme) 8%, transparent);
+  }
+
   @media (hover: none) {
     .touch-actions {
       opacity: 1;

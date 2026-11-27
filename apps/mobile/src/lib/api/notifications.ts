@@ -28,7 +28,9 @@ function extractData<T>(response: unknown): T {
     const message =
       err instanceof Error
         ? err.message
-        : typeof err === "object" && "message" in err && typeof err.message === "string"
+        : typeof err === "object" &&
+            "message" in err &&
+            typeof err.message === "string"
           ? err.message
           : typeof err === "string"
             ? err

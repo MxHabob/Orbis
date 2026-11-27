@@ -14,6 +14,10 @@ let {
   orgId: string;
 } = $props();
 
+let tabStripEl = $state<HTMLDivElement | null>(null);
+let draggingTabId = $state<string | null>(null);
+let suppressClick = false;
+
 const currentPath = $derived(deLocalizeUrl(page.url).pathname);
 const currentTabTitle = $derived(
   orgId
@@ -62,6 +66,76 @@ function handleLinkClickIntent(e: MouseEvent) {
   }
 }
 
+function startTabDrag(e: PointerEvent, tabId: string) {
+  if (e.button !== 0 || tabsStore.tabs.length < 2) return;
+  if ((e.target as HTMLElement | null)?.closest("button")) return;
+
+  const startX = e.clientX;
+  let active = false;
+
+  const onMove = (moveEvent: PointerEvent) => {
+    if (!active) {
+      if (Math.abs(moveEvent.clientX - startX) < 6) return;
+      active = true;
+      draggingTabId = tabId;
+    }
+
+    if (!tabStripEl) return;
+    const nodes = tabStripEl.querySelectorAll<HTMLElement>("[data-tab-id]");
+    let targetId: string | null = null;
+
+    for (const node of nodes) {
+      const rect = node.getBoundingClientRect();
+      if (moveEvent.clientX >= rect.left && moveEvent.clientX <= rect.right) {
+        targetId = node.dataset.tabId ?? null;
+        break;
+      }
+    }
+
+    if (targetId && targetId !== tabId) {
+      tabsStore.moveTab(orgId, tabId, targetId);
+    }
+  };
+
+  const onEnd = () => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onEnd);
+    window.removeEventListener("pointercancel", onEnd);
+
+    if (active) {
+      suppressClick = true;
+      requestAnimationFrame(() => {
+        suppressClick = false;
+      });
+    }
+    draggingTabId = null;
+  };
+
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onEnd);
+  window.addEventListener("pointercancel", onEnd);
+}
+
+function handleTabKeydown(e: KeyboardEvent, tabId: string) {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    tabsStore.activateTab(orgId, tabId);
+    return;
+  }
+
+  if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    e.preventDefault();
+    const isRtl =
+      tabStripEl !== null && getComputedStyle(tabStripEl).direction === "rtl";
+    const step = e.key === "ArrowLeft" ? (isRtl ? 1 : -1) : isRtl ? -1 : 1;
+    const idx = tabsStore.tabs.findIndex((t) => t.id === tabId);
+    const target = tabsStore.tabs[idx + step];
+    if (target) {
+      tabsStore.moveTab(orgId, tabId, target.id);
+    }
+  }
+}
+
 onMount(() => {
   window.addEventListener("click", handleLinkClickIntent, true);
   window.addEventListener("auxclick", handleLinkClickIntent, true);
@@ -75,31 +149,36 @@ onMount(() => {
 <svelte:window onkeydown={handleKeydown} />
 
 <div
+  bind:this={tabStripEl}
+  role="tablist"
   class="flex items-end h-full min-w-0 flex-1 overflow-x-auto scrollbar-hide px-1 gap-1"
   data-tauri-drag-region
 >
   {#each tabsStore.tabs as tab (tab.id)}
     {@const active = tab.id === tabsStore.activeTabId}
+    {@const isDragging = draggingTabId === tab.id}
     <div
+      data-tab-id={tab.id}
       role="tab"
       tabindex="0"
       aria-selected={active}
-      onclick={() => tabsStore.activateTab(orgId, tab.id)}
+      onpointerdown={(e) => startTabDrag(e, tab.id)}
+      onclick={() => {
+        if (suppressClick) return;
+        tabsStore.activateTab(orgId, tab.id);
+      }}
       onauxclick={(e) => {
         if (e.button === 1) {
           e.preventDefault();
           tabsStore.closeTab(orgId, tab.id);
         }
       }}
-      onkeydown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          tabsStore.activateTab(orgId, tab.id);
-        }
-      }}
-      class="group relative flex items-center justify-between gap-2 h-9 self-end pb-1 min-w-[104px] max-w-[196px] px-2.5 rounded-t-md font-medium cursor-pointer transition-colors duration-150 shrink-0 {active
-        ? 'bg-background text-foreground z-10'
-        : 'text-muted-foreground hover:text-foreground hover:bg-background/60'}"
+      onkeydown={(e) => handleTabKeydown(e, tab.id)}
+      class="group relative flex items-center justify-between gap-2 h-9 self-end pb-1 min-w-[104px] max-w-[196px] px-2.5 rounded-t-md font-medium transition-colors duration-150 shrink-0 select-none {isDragging
+        ? 'z-20 cursor-grabbing bg-background text-foreground ring-1 ring-primary/50 shadow-xs'
+        : active
+          ? 'bg-background text-foreground z-10 cursor-pointer'
+          : 'text-muted-foreground hover:text-foreground hover:bg-background/60 cursor-pointer'}"
     >
       <div class="flex items-center gap-1.5 min-w-0">
         <span

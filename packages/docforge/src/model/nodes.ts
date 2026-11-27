@@ -179,8 +179,12 @@ export interface TableNode extends BaseNode {
     position?: Position;
     /** Column definitions */
     columns: TableColumn[];
+    /** Optional context path for dynamic columns (e.g. "tableColumns") */
+    columnsSource?: string;
     /** Data source path for rows (resolves to an array) */
     dataSource?: string;
+    /** Shrink row height & font size to fit within table box height */
+    fitToBounds?: boolean;
     /** Static rows (alternative to dataSource for fixed tables) */
     staticRows?: TableRow[];
     /** Show header row */

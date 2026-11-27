@@ -16,7 +16,9 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import StatusStage from "$lib/shared/components/status-stage.svelte";
 
 let startupState: StartupState | null = $state(null);
-let statusText = $state<string>(m.ui_onboarding_setup_getting_everything_ready());
+let statusText = $state<string>(
+  m.ui_onboarding_setup_getting_everything_ready(),
+);
 
 onMount(async () => {
   statusText = "Checking connection...";

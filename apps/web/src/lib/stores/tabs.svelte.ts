@@ -126,6 +126,15 @@ class TabsStore {
     }
   }
 
+  private navigateToTab(targetPath: string) {
+    this.pendingNavPath = targetPath;
+    void goto(localizeHref(targetPath)).finally(() => {
+      if (this.pendingNavPath === targetPath) {
+        this.pendingNavPath = null;
+      }
+    });
+  }
+
   openNewTab(orgId: string, path?: string, title = "Orbis", dedupe = false) {
     if (!orgId) return;
     const targetPath = path || `/${orgId}`;
@@ -142,18 +151,16 @@ class TabsStore {
     this.tabs =
       next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next;
     this.activeTabId = tab.id;
-    this.pendingNavPath = targetPath;
     this.persist(orgId);
-    void goto(localizeHref(targetPath));
+    this.navigateToTab(targetPath);
   }
 
   activateTab(orgId: string, id: string) {
     const tab = this.tabs.find((t) => t.id === id);
     if (!tab) return;
     this.activeTabId = tab.id;
-    this.pendingNavPath = tab.path;
     this.persist(orgId);
-    void goto(localizeHref(tab.path));
+    this.navigateToTab(tab.path);
   }
 
   closeTab(orgId: string, id: string) {
@@ -171,9 +178,8 @@ class TabsStore {
       if (removed.path === homePath) return;
       this.tabs = [{ id: createId(), path: homePath, title: removed.title }];
       this.activeTabId = this.tabs[0].id;
-      this.pendingNavPath = homePath;
       this.persist(orgId);
-      void goto(localizeHref(homePath));
+      this.navigateToTab(homePath);
       return;
     }
 
@@ -183,12 +189,24 @@ class TabsStore {
     if (this.activeTabId === id) {
       const fallback = remaining[Math.min(idx, remaining.length - 1)];
       this.activeTabId = fallback.id;
-      this.pendingNavPath = fallback.path;
       this.persist(orgId);
-      void goto(localizeHref(fallback.path));
+      this.navigateToTab(fallback.path);
     } else {
       this.persist(orgId);
     }
+  }
+
+  moveTab(orgId: string, fromId: string, toId: string) {
+    if (!orgId || fromId === toId) return;
+    const fromIndex = this.tabs.findIndex((t) => t.id === fromId);
+    const toIndex = this.tabs.findIndex((t) => t.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const next = this.tabs.slice();
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    this.tabs = next;
+    this.persist(orgId);
   }
 
   reopenLastClosed(orgId: string) {

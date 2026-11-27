@@ -968,9 +968,235 @@ impl OrgContextResolver for DbOrgContextResolver {
             city: organization_metadata_text(&org.metadata, "city"),
             tax_id: organization_metadata_text(&org.metadata, "tax_id"),
             license_number: organization_metadata_text(&org.metadata, "license_number"),
+            institution_type: Some(org.institution_type.clone()),
             student_sort,
         })
     }
+}
+
+/// Enrich batch print data contexts on the backend from the database:
+/// - Injects full organization branding (`$org` and `org`).
+/// - Generates `tableColumns` from the organization's active `assessment_schemes` in DB.
+pub async fn enrich_batch_print_contexts_from_db(
+    db: &DatabaseConnection,
+    contexts: &mut [serde_json::Value],
+    org_context: &OrgReportContext,
+) -> Result<(), String> {
+    use crate::models::assessment_scheme;
+    use orbis_domain::entities::assessment_scheme::{AssessmentComponent, AssessmentComponentKind};
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let org_json = docforge_org_context(org_context).map_err(|e| e.to_string())?;
+
+    let inst_type = org_context
+        .institution_type
+        .as_deref()
+        .unwrap_or("school")
+        .to_lowercase();
+
+    let needs_columns = contexts.iter().any(|c| {
+        c.as_object().is_some_and(|obj| {
+            !obj.contains_key("tableColumns")
+                && (obj.get("subjects").and_then(|v| v.as_array()).is_some()
+                    || obj.get("grades").and_then(|v| v.as_array()).is_some())
+        })
+    });
+
+    let db_schemes = if needs_columns {
+        assessment_scheme::Entity::find()
+            .filter(assessment_scheme::Column::OrgId.eq(org_context.id))
+            .all(db)
+            .await
+            .map_err(|e| format!("Failed to load assessment schemes: {e}"))?
+    } else {
+        Vec::new()
+    };
+
+    for (index, context) in contexts.iter_mut().enumerate() {
+        let obj = context
+            .as_object_mut()
+            .ok_or_else(|| format!("Data context at index {index} must be a JSON object"))?;
+        obj.entry("$org").or_insert_with(|| org_json.clone());
+        obj.entry("org").or_insert_with(|| org_json.clone());
+
+        if obj.contains_key("tableColumns") {
+            continue;
+        }
+        let Some(rows) = obj
+            .get("subjects")
+            .or_else(|| obj.get("grades"))
+            .and_then(|v| v.as_array())
+        else {
+            continue;
+        };
+        let sample_row = rows.first().and_then(|r| r.as_object());
+        let is_annual = sample_row.is_some_and(|r| r.contains_key("term1Score"));
+        let has_credits = inst_type == "university"
+            && sample_row.is_some_and(|r| {
+                r.get("creditHours")
+                    .and_then(|v| v.as_f64())
+                    .is_some_and(|c| c > 0.0)
+            });
+
+        let preferred_levels: &[&str] = if is_annual {
+            &["annual", "certificate"]
+        } else if inst_type == "institute" || inst_type == "training_center" {
+            &["module_assessment", "term", "monthly_period"]
+        } else if inst_type == "university" {
+            &["term", "coursework", "final"]
+        } else {
+            &["term", "monthly_period"]
+        };
+
+        let matched_scheme = preferred_levels.iter().find_map(|lvl| {
+            db_schemes
+                .iter()
+                .filter(|s| {
+                    s.level.eq_ignore_ascii_case(lvl)
+                        && (s.institution_scope.eq_ignore_ascii_case(&inst_type)
+                            || s.institution_scope.eq_ignore_ascii_case("all"))
+                })
+                .max_by_key(|s| {
+                    (
+                        s.is_default,
+                        s.institution_scope.eq_ignore_ascii_case(&inst_type),
+                    )
+                })
+        });
+
+        let mut eval_cols: Vec<(String, String, String, Option<&str>)> = Vec::new();
+        if let Some(scheme) = matched_scheme {
+            if let Ok(mut comps) =
+                serde_json::from_str::<Vec<AssessmentComponent>>(&scheme.components_json)
+            {
+                comps.sort_by_key(|c| c.sort_order);
+                for comp in comps {
+                    let field = if sample_row.is_some_and(|r| r.contains_key(&comp.code)) {
+                        comp.code.clone()
+                    } else if matches!(
+                        comp.component_type,
+                        Some(
+                            AssessmentComponentKind::FinalExam
+                                | AssessmentComponentKind::Practical
+                                | AssessmentComponentKind::Lab
+                        )
+                    ) {
+                        "examScore".to_string()
+                    } else {
+                        "courseworkScore".to_string()
+                    };
+                    if !eval_cols.iter().any(|(_, _, f, _)| f == &field) {
+                        eval_cols.push((
+                            comp.code,
+                            comp.name_ar.unwrap_or_else(|| comp.name.clone()),
+                            field,
+                            Some("sum"),
+                        ));
+                    }
+                }
+            }
+        }
+
+        if eval_cols.is_empty() {
+            if is_annual {
+                eval_cols.push((
+                    "term1Score".into(),
+                    "الفصل الأول".into(),
+                    "term1Score".into(),
+                    Some("sum"),
+                ));
+                eval_cols.push((
+                    "term2Score".into(),
+                    "الفصل الثاني".into(),
+                    "term2Score".into(),
+                    Some("sum"),
+                ));
+            } else {
+                eval_cols.push((
+                    "courseworkScore".into(),
+                    "أعمال الفصل".into(),
+                    "courseworkScore".into(),
+                    Some("sum"),
+                ));
+                eval_cols.push((
+                    "examScore".into(),
+                    "الاختبار".into(),
+                    "examScore".into(),
+                    Some("sum"),
+                ));
+            }
+        }
+
+        let mut raw_cols: Vec<(&str, String, String, String, Option<&str>)> = Vec::new();
+        raw_cols.push((
+            "subjectName",
+            "Subject".into(),
+            "المادة".into(),
+            "subjectName".into(),
+            None,
+        ));
+        if has_credits {
+            raw_cols.push((
+                "creditHours",
+                "Credits".into(),
+                "الساعات".into(),
+                "creditHours".into(),
+                Some("sum"),
+            ));
+        }
+        for (id, label, field, total) in &eval_cols {
+            raw_cols.push((
+                id.as_str(),
+                label.clone(),
+                label.clone(),
+                field.clone(),
+                *total,
+            ));
+        }
+        raw_cols.push((
+            "totalScore",
+            "Total".into(),
+            "المجموع".into(),
+            "totalScore".into(),
+            Some("sum"),
+        ));
+        raw_cols.push((
+            "gradeLetter",
+            "Grade".into(),
+            "التقدير".into(),
+            "gradeLetter".into(),
+            None,
+        ));
+
+        let subject_pct = 30.0f64;
+        let other_pct = (100.0 - subject_pct) / (raw_cols.len().saturating_sub(1).max(1) as f64);
+        let cols_json: Vec<serde_json::Value> = raw_cols
+            .into_iter()
+            .enumerate()
+            .map(|(idx, (id, header, header_ar, field, total_type))| {
+                let width = if idx == 0 {
+                    format!("{subject_pct:.0}%")
+                } else {
+                    format!("{other_pct:.1}%")
+                };
+                let mut col = serde_json::json!({
+                    "id": id,
+                    "header": header,
+                    "headerAr": header_ar,
+                    "field": field,
+                    "width": width,
+                    "alignment": if idx == 0 { "start" } else { "center" },
+                });
+                if let Some(tt) = total_type {
+                    col["totalType"] = serde_json::json!(tt);
+                }
+                col
+            })
+            .collect();
+        obj.insert("tableColumns".into(), serde_json::Value::Array(cols_json));
+    }
+
+    Ok(())
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1390,6 +1616,28 @@ pub struct TermResultDataProvider {
     pub db: DatabaseConnection,
 }
 
+async fn resolve_passing_ratio(db: &sea_orm::DatabaseConnection, org_id: Uuid) -> f64 {
+    use crate::models::organization;
+    use sea_orm::EntityTrait;
+
+    if let Ok(Some(org)) = organization::Entity::find_by_id(org_id).one(db).await {
+        if let Some(val) = org
+            .settings
+            .as_ref()
+            .and_then(|s| s.get("academic"))
+            .and_then(|a| a.get("passing_threshold_percentage"))
+        {
+            let pct = val
+                .as_f64()
+                .or_else(|| val.as_str().and_then(|s| s.parse::<f64>().ok()));
+            if let Some(pct) = pct.filter(|p| *p > 0.0 && *p <= 100.0) {
+                return pct / 100.0;
+            }
+        }
+    }
+    0.5
+}
+
 #[async_trait]
 impl ReportDataProvider for TermResultDataProvider {
     fn provider_key(&self) -> &str {
@@ -1404,6 +1652,8 @@ impl ReportDataProvider for TermResultDataProvider {
         _locale: &ReportLocale,
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
+
+        let pass_ratio = resolve_passing_ratio(&self.db, org_id).await;
 
         let student_filter = parse_uuid_param(parameters, "student_id")?;
         let period_filter = parse_uuid_param(parameters, "period_id")?;
@@ -1481,7 +1731,7 @@ impl ReportDataProvider for TermResultDataProvider {
                 "score": score,
                 "max_score": max,
                 "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
-                "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
+                "status": if score >= (max * pass_ratio) { "Pass" } else { "Fail" },
             }));
         }
 
@@ -1567,7 +1817,7 @@ impl ReportDataProvider for TermResultDataProvider {
                         "subject_name": "Total / المجموع",
                         "score": total_score,
                         "max_score": max_total,
-                        "status": if total_score >= (max_total * 0.5) { "Pass" } else { "Fail" },
+                        "status": if total_score >= (max_total * pass_ratio) { "Pass" } else { "Fail" },
                     }),
                     subtotals: None,
                 })
@@ -1883,6 +2133,8 @@ impl ReportDataProvider for AnnualResultDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
+        let pass_ratio = resolve_passing_ratio(&self.db, org_id).await;
+
         let student_filter = parse_uuid_param(parameters, "student_id")?;
         let class_filter = parse_uuid_param(parameters, "class_id")?;
         let is_general_mode = student_filter.is_none();
@@ -1954,7 +2206,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
                 "score": score,
                 "max_score": max,
                 "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
-                "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
+                "status": if score >= (max * pass_ratio) { "Pass" } else { "Fail" },
             }));
         }
 
@@ -2040,7 +2292,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
                         "subject_name": "Grand Total / المجموع العام",
                         "score": total_score,
                         "max_score": max_total,
-                        "status": if total_score >= (max_total * 0.5) { "Pass" } else { "Fail" },
+                        "status": if total_score >= (max_total * pass_ratio) { "Pass" } else { "Fail" },
                     }),
                     subtotals: None,
                 })
@@ -2077,6 +2329,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
+        let pass_ratio = resolve_passing_ratio(&self.db, org_id).await;
         let student_filter = parse_uuid_param(parameters, "student_id")?;
         let class_filter = parse_uuid_param(parameters, "class_id")?;
         let year_filter = parse_uuid_param(parameters, "year_id")?;
@@ -2162,7 +2415,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
             let score = decimal_to_f64(row, "score");
             let max = decimal_to_f64(row, "max_score");
             let max = if max > 0.0 { max } else { 100.0 };
-            let min = max * 0.5;
+            let min = max * pass_ratio;
 
             total_score += score;
             max_total += max;

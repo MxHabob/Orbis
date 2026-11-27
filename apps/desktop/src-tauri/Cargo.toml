@@ -1,6 +1,6 @@
 [package]
 name = "orbis-desktop"
-version = "1.2.5"
+version = "1.2.6"
 description = ""
 authors = ["Mulverse", "Mohamed Alhabob"]
 edition = "2024"
@@ -51,6 +51,5 @@ rust_decimal = { version = "1.36", features = ["serde", "maths"] }
 
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-single-instance = "2"

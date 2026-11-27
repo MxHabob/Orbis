@@ -18,6 +18,7 @@ mod m20261125_000003_override_approval_policy;
 mod m20261125_000004_refresh_stock_templates;
 mod m20261125_000005_finance_ledger_indexes;
 mod m20261127_000001_refresh_redesigned_stock_templates;
+mod m20261127_000002_remove_monthly_exam_periods;
 
 pub struct Migrator;
 
@@ -42,6 +43,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261125_000004_refresh_stock_templates::Migration),
             Box::new(m20261125_000005_finance_ledger_indexes::Migration),
             Box::new(m20261127_000001_refresh_redesigned_stock_templates::Migration),
+            Box::new(m20261127_000002_remove_monthly_exam_periods::Migration),
         ]
     }
 }

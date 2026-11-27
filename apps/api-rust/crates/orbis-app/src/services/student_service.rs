@@ -8,6 +8,7 @@ use crate::ports::repositories::{
     SectionRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
     StudentGuardianRepository, StudentRepository,
 };
+use crate::services::finance_service::FinanceService;
 use chrono::{Datelike, NaiveDate, Utc};
 use orbis_domain::entities::academic_period::AcademicPeriodState;
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
@@ -18,7 +19,6 @@ use orbis_domain::entities::override_request::{
 use orbis_domain::entities::person::Person;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::entities::student::{AcademicStanding, Student, StudentDetail, StudentStatus};
-use orbis_domain::entities::student_fee::{FeeStatus, StudentFee};
 use orbis_domain::entities::student_guardian::StudentGuardian;
 use orbis_domain::errors::{DomainError, PeriodOverrideTarget};
 use orbis_domain::events::DomainEvent;
@@ -45,6 +45,7 @@ pub struct StudentService {
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
     license_runtime: Option<Arc<dyn LicenseRuntime>>,
+    pub finance_service: Option<Arc<FinanceService>>,
     enrollment_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
@@ -544,6 +545,7 @@ impl StudentService {
             event_bus,
             permission_checker,
             license_runtime: None,
+            finance_service: None,
             enrollment_lock: Arc::new(tokio::sync::Mutex::new(())),
         }
     }
@@ -551,6 +553,52 @@ impl StudentService {
     pub fn with_license_runtime(mut self, runtime: Arc<dyn LicenseRuntime>) -> Self {
         self.license_runtime = Some(runtime);
         self
+    }
+
+    pub fn with_finance_service(mut self, finance_service: Arc<FinanceService>) -> Self {
+        self.finance_service = Some(finance_service);
+        self
+    }
+
+    async fn auto_assign_enrollment_fees(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        period_id: Uuid,
+        student_id: Uuid,
+        enrollment_id: Uuid,
+        section_id: Option<Uuid>,
+        study_mode: StudyMode,
+        fallback_org_unit_id: Option<Uuid>,
+    ) -> usize {
+        let Some(finance_service) = &self.finance_service else {
+            return 0;
+        };
+        let section = match section_id {
+            Some(id) => self.section_repo.find_by_id(id).await.ok().flatten(),
+            None => None,
+        };
+        let section_level = section.as_ref().and_then(|s| s.level.as_deref());
+        let org_unit_id = section
+            .as_ref()
+            .and_then(|s| s.org_unit_id)
+            .or(fallback_org_unit_id);
+        match finance_service
+            .assess_enrollment_fees(
+                ctx,
+                org_id,
+                period_id,
+                student_id,
+                enrollment_id,
+                section_level,
+                study_mode,
+                org_unit_id,
+            )
+            .await
+        {
+            Ok(fees) => fees.len(),
+            Err(_) => 0,
+        }
     }
 
     async fn find_student_in_org(
@@ -1025,38 +1073,20 @@ impl StudentService {
             enrollment_status = enrollment.status;
             created_override_req = save_result.override_request;
 
-            // 6. Auto-assign tuition fee templates if enabled and enrollment is active
+            // 6. Auto-assign tuition fee templates via FinanceService (atomic GL journal + sub-ledger)
             if admission_policy.auto_assign_fees && enrollment_status == EnrollmentStatus::Active {
-                if let Ok(templates) = self.fee_template_repo.find_by_org(org_id).await {
-                    for tpl in templates
-                        .into_iter()
-                        .filter(|t| t.is_mandatory && t.is_active)
-                    {
-                        let student_fee = StudentFee {
-                            id: Uuid::new_v4(),
-                            org_id,
-                            period_id,
-                            student_id,
-                            enrollment_id: Some(enrollment.id),
-                            fee_template_id: tpl.id,
-                            original_amount: tpl.default_amount,
-                            discount_amount: rust_decimal::Decimal::ZERO,
-                            net_amount: tpl.default_amount,
-                            paid_amount: rust_decimal::Decimal::ZERO,
-                            balance_due: tpl.default_amount,
-                            status: FeeStatus::Pending,
-                            due_date: now.date_naive(),
-                            discount_details: None,
-                            installment_number: Some(1),
-                            notes: Some(format!("Auto-assigned mandatory fee: {}", tpl.name)),
-                            created_by: ctx.user_id(),
-                            created_at: now,
-                            updated_at: now,
-                        };
-                        let _ = self.student_fee_repo.save(&student_fee).await;
-                        auto_assigned_fees_count += 1;
-                    }
-                }
+                auto_assigned_fees_count = self
+                    .auto_assign_enrollment_fees(
+                        ctx,
+                        org_id,
+                        period_id,
+                        student_id,
+                        enrollment.id,
+                        input.initial_section_id,
+                        mode,
+                        student.org_unit_id,
+                    )
+                    .await;
             }
 
             let _ = self
@@ -1219,35 +1249,18 @@ impl StudentService {
             && admission_policy.auto_assign_fees
             && enrollment_status == EnrollmentStatus::Active
         {
-            if let Ok(templates) = self.fee_template_repo.find_by_org(org_id).await {
-                for template in templates
-                    .into_iter()
-                    .filter(|template| template.is_mandatory && template.is_active)
-                {
-                    let fee = StudentFee {
-                        id: Uuid::new_v4(),
-                        org_id,
-                        period_id,
-                        student_id,
-                        enrollment_id: Some(enrollment.id),
-                        fee_template_id: template.id,
-                        original_amount: template.default_amount,
-                        discount_amount: rust_decimal::Decimal::ZERO,
-                        net_amount: template.default_amount,
-                        paid_amount: rust_decimal::Decimal::ZERO,
-                        balance_due: template.default_amount,
-                        status: FeeStatus::Pending,
-                        due_date: now.date_naive(),
-                        discount_details: None,
-                        installment_number: Some(1),
-                        notes: Some(format!("Auto-assigned mandatory fee: {}", template.name)),
-                        created_by: ctx.user_id(),
-                        created_at: now,
-                        updated_at: now,
-                    };
-                    let _ = self.student_fee_repo.save(&fee).await;
-                }
-            }
+            let _ = self
+                .auto_assign_enrollment_fees(
+                    ctx,
+                    org_id,
+                    period_id,
+                    student_id,
+                    enrollment.id,
+                    section_id,
+                    study_mode,
+                    student.org_unit_id,
+                )
+                .await;
         }
 
         let _ = self

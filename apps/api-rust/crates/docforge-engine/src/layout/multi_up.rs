@@ -104,6 +104,9 @@ pub struct MultiUpConfig {
     /// Whether to center templates within the available area
     #[serde(default = "default_true")]
     pub center_on_sheet: bool,
+    /// Automatically scale templates down to fit within forced grid slots
+    #[serde(default)]
+    pub scale_to_fit: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -222,7 +225,7 @@ impl MultiUpConfig {
 
         // Step 3: Compute grid dimensions
         let (columns, rows) = if let Some(ref forced) = self.forced_grid {
-            (forced.columns, forced.rows)
+            (forced.columns.max(1), forced.rows.max(1))
         } else {
             let cols =
                 compute_max_items(printable_w, self.template_width_mm, self.gap_horizontal_mm);
@@ -233,9 +236,25 @@ impl MultiUpConfig {
 
         let items_per_sheet = columns * rows;
 
-        // Step 4: Compute slot positions
-        let template_w_pt = mm_to_pt(self.template_width_mm);
-        let template_h_pt = mm_to_pt(self.template_height_mm);
+        // Step 4: Compute scale (when forced_grid + scale_to_fit are active) and slot positions
+        let scale: f32 = if self.forced_grid.is_some() && self.scale_to_fit {
+            let avail_slot_w = ((printable_w
+                - self.gap_horizontal_mm * (columns.saturating_sub(1)) as f64)
+                / columns as f64)
+                .max(1.0);
+            let avail_slot_h = ((printable_h
+                - self.gap_vertical_mm * (rows.saturating_sub(1)) as f64)
+                / rows as f64)
+                .max(1.0);
+            let scale_w = avail_slot_w / self.template_width_mm.max(1.0);
+            let scale_h = avail_slot_h / self.template_height_mm.max(1.0);
+            scale_w.min(scale_h).min(1.0).max(0.05) as f32
+        } else {
+            1.0
+        };
+
+        let template_w_pt = mm_to_pt(self.template_width_mm) * scale;
+        let template_h_pt = mm_to_pt(self.template_height_mm) * scale;
         let gap_h_pt = mm_to_pt(self.gap_horizontal_mm);
         let gap_v_pt = mm_to_pt(self.gap_vertical_mm);
         let sheet_w_pt = mm_to_pt(sheet_w_mm);
@@ -320,43 +339,68 @@ fn compute_max_items(available: f64, size: f64, gap: f64) -> u32 {
 /// Offset a positioned element by (dx, dy) in points.
 /// Used to place a rendered template's elements into a specific slot.
 pub fn offset_element(element: &PositionedElement, dx: f32, dy: f32) -> PositionedElement {
+    transform_element(element, dx, dy, 1.0)
+}
+
+/// Scale and offset a positioned element into a specific slot.
+pub fn transform_element(
+    element: &PositionedElement,
+    dx: f32,
+    dy: f32,
+    scale: f32,
+) -> PositionedElement {
     match element {
         PositionedElement::Text(t) => {
             let mut t2 = t.clone();
-            t2.x += dx;
-            t2.y += dy;
+            t2.x = t2.x * scale + dx;
+            t2.y = t2.y * scale + dy;
+            t2.width *= scale;
+            t2.height *= scale;
+            t2.font_size *= scale;
+            t2.line_height *= scale;
             PositionedElement::Text(t2)
         }
         PositionedElement::Image(img) => {
             let mut img2 = img.clone();
-            img2.x += dx;
-            img2.y += dy;
+            img2.x = img2.x * scale + dx;
+            img2.y = img2.y * scale + dy;
+            img2.width *= scale;
+            img2.height *= scale;
             PositionedElement::Image(img2)
         }
         PositionedElement::Rect(r) => {
             let mut r2 = r.clone();
-            r2.x += dx;
-            r2.y += dy;
+            r2.x = r2.x * scale + dx;
+            r2.y = r2.y * scale + dy;
+            r2.width *= scale;
+            r2.height *= scale;
+            r2.stroke_width *= scale;
+            r2.border_radius *= scale;
             PositionedElement::Rect(r2)
         }
         PositionedElement::Line(l) => {
             let mut l2 = l.clone();
-            l2.x1 += dx;
-            l2.y1 += dy;
-            l2.x2 += dx;
-            l2.y2 += dy;
+            l2.x1 = l2.x1 * scale + dx;
+            l2.y1 = l2.y1 * scale + dy;
+            l2.x2 = l2.x2 * scale + dx;
+            l2.y2 = l2.y2 * scale + dy;
+            l2.width *= scale;
             PositionedElement::Line(l2)
         }
         PositionedElement::BarcodeSvg(svg) => {
             let mut svg2 = svg.clone();
-            svg2.x += dx;
-            svg2.y += dy;
+            svg2.x = svg2.x * scale + dx;
+            svg2.y = svg2.y * scale + dy;
+            svg2.width *= scale;
+            svg2.height *= scale;
             PositionedElement::BarcodeSvg(svg2)
         }
         PositionedElement::QrCodeSvg(svg) => {
             let mut svg2 = svg.clone();
-            svg2.x += dx;
-            svg2.y += dy;
+            svg2.x = svg2.x * scale + dx;
+            svg2.y = svg2.y * scale + dy;
+            svg2.width *= scale;
+            svg2.height *= scale;
             PositionedElement::QrCodeSvg(svg2)
         }
     }
@@ -508,6 +552,7 @@ pub fn suggest_layouts(
                 cut_line_color: default_cut_line_color(),
                 forced_grid: None,
                 center_on_sheet: true,
+                scale_to_fit: false,
             };
 
             let layout = config.compute_layout();
@@ -555,6 +600,7 @@ mod tests {
             cut_line_color: "#cccccc".to_string(),
             forced_grid: None,
             center_on_sheet: true,
+            scale_to_fit: false,
         }
     }
 

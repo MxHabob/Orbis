@@ -78,9 +78,7 @@ export const InstitutionCard = memo(function InstitutionCard({
         variant="default"
         padding={isFeatured ? "four" : isLauncher ? "four" : "three"}
         className={`relative flex-row items-center ${
-          isCurrent
-            ? "border-primary/40 bg-primary/5"
-            : "border-border bg-card"
+          isCurrent ? "border-primary/40 bg-primary/5" : "border-border bg-card"
         } ${isFeatured ? "min-h-[112px]" : "min-h-[84px]"}`}
       >
         {isLauncher ? (
