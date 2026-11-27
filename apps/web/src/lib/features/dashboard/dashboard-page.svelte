@@ -52,13 +52,5 @@ const error = $derived(
 </div>
 {#if !isLoading && !error}
 	<DesktopBanner />
-	<MulverseIntroDialog
-		{orgId}
-		hasOperationalActivity={Boolean(
-			stats &&
-				(stats.active_sections > 0 ||
-					stats.total_students > 0 ||
-					stats.total_employees > 0),
-		)}
-	/>
+	<MulverseIntroDialog {orgId} />
 {/if}

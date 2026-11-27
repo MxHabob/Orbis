@@ -1191,9 +1191,9 @@ export class StudentFormState {
         birth_date: this.personal.birthDate,
         sex:
           this.personal.sex === "male"
-            ? "ذكر"
+            ? m.common_form_male({}, { locale: "ar" })
             : this.personal.sex === "female"
-              ? "أنثى"
+              ? m.common_form_female({}, { locale: "ar" })
               : "",
         sex_en: this.personal.sex,
         class_name: this.selectedClassName,

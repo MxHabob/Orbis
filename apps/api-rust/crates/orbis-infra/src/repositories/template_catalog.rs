@@ -185,100 +185,89 @@ pub fn get_master_template_definitions() -> Vec<(
                     "type": "Page",
                     "id": "p1",
                     "children": [
-                        // Background Card Base
                         {
                             "type": "Shape",
-                            "id": "bg-base",
-                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#e2e8f0", "strokeWidth": 0.5, "borderRadius": 4 },
-                            "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                            "id": "top-accent",
+                            "props": { "shapeType": "rectangle", "fillColor": "#1e293b", "strokeColor": "#1e293b", "strokeWidth": 0, "borderRadius": 0 },
+                            "position": { "x": 0, "y": 0, "width": 85.6, "height": 1.4 }
                         },
-                        // Header Banner Shape
                         {
-                            "type": "Shape",
-                            "id": "header-banner",
-                            "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 3 },
-                            "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
+                            "type": "Image",
+                            "id": "org-logo",
+                            "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                            "position": { "x": 73, "y": 3.5, "width": 8, "height": 8 }
                         },
-                        // Institution Name in Header
                         {
                             "type": "Text",
                             "id": "org-name-ar",
-                            "props": { "content": "{{$org.name_ar}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 15, "y": 2.5, "width": 55, "height": 4.5 }
+                            "props": { "content": "{{$org.name_ar}}", "fontSize": 8.2, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 14, "y": 3.8, "width": 57, "height": 4.5 }
                         },
                         {
                             "type": "Text",
                             "id": "card-title-sub",
-                            "props": { "content": "بطاقة هوية طالب منتظم | STUDENT IDENTITY CARD", "fontSize": 5.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#94a3b8", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 10, "y": 7.5, "width": 65, "height": 3.5 }
+                            "props": { "content": "بطاقة هوية طالب | STUDENT ID CARD", "fontSize": 5.2, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 14, "y": 8.5, "width": 57, "height": 3.2 }
                         },
-                        // Student Photo Frame
+                        {
+                            "type": "Separator",
+                            "id": "header-sep",
+                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.25 },
+                            "position": { "x": 4.5, "y": 13, "width": 76.6, "height": 0.3 }
+                        },
                         {
                             "type": "Image",
                             "id": "student-photo",
                             "props": { "src": "{{student.avatarUrl}}", "fit": "cover" },
-                            "position": { "x": 4, "y": 14, "width": 22, "height": 26 }
+                            "position": { "x": 5, "y": 16, "width": 21, "height": 25 }
                         },
                         {
                             "type": "Shape",
                             "id": "photo-border",
-                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
-                            "position": { "x": 4, "y": 14, "width": 22, "height": 26 }
+                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#e2e8f0", "strokeWidth": 0.3, "borderRadius": 1.5 },
+                            "position": { "x": 5, "y": 16, "width": 21, "height": 25 }
                         },
-                        // Student Name
                         {
                             "type": "Text",
                             "id": "student-name",
-                            "props": { "content": "{{student.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 14, "width": 42, "height": 5 }
+                            "props": { "content": "{{student.name}}", "fontSize": 9.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 16, "width": 52, "height": 5 }
                         },
-                        // Student Number / ID
                         {
                             "type": "Text",
                             "id": "student-num-lbl",
-                            "props": { "content": "الرقم الأكاديمي: {{student.studentNumber}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 20, "width": 42, "height": 4 }
+                            "props": { "content": "الرقم الأكاديمي: {{student.studentNumber}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 22.5, "width": 40, "height": 4 }
                         },
-                        // Grade / Class
                         {
                             "type": "Text",
                             "id": "student-class-lbl",
-                            "props": { "content": "الصف / الشعبة: {{student.className}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 24.5, "width": 42, "height": 4 }
+                            "props": { "content": "الصف / الشعبة: {{student.className}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 27.5, "width": 40, "height": 4 }
                         },
-                        // National ID
                         {
                             "type": "Text",
                             "id": "student-nat-lbl",
-                            "props": { "content": "رقم الهوية: {{student.nationalId}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 29, "width": 42, "height": 4 }
+                            "props": { "content": "رقم الهوية: {{student.nationalId}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 32.5, "width": 40, "height": 4 }
                         },
-                        // QR Code Verification
                         {
                             "type": "QRCode",
                             "id": "student-qr",
                             "props": { "data": "{{student.studentNumber}}", "size": 11, "errorCorrection": "M" },
-                            "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
+                            "position": { "x": 70, "y": 28, "width": 11, "height": 11 }
                         },
-                        // Bottom Barcode & Expiry
                         {
-                            "type": "Barcode",
-                            "id": "student-barcode",
-                            "props": { "data": "{{student.studentNumber}}", "format": "CODE128", "height": 9.5 },
-                            "position": { "x": 28, "y": 34.5, "width": 53, "height": 9.5 }
-                        },
-                        // Card Footer Accent
-                        {
-                            "type": "Shape",
-                            "id": "footer-accent",
-                            "props": { "shapeType": "rectangle", "fillColor": "#2563eb", "strokeColor": "#2563eb", "strokeWidth": 0, "borderRadius": 1 },
-                            "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
+                            "type": "Separator",
+                            "id": "footer-sep",
+                            "props": { "direction": "horizontal", "color": "#f1f5f9", "thickness": 0.25 },
+                            "position": { "x": 4.5, "y": 45, "width": 76.6, "height": 0.3 }
                         },
                         {
                             "type": "Text",
                             "id": "footer-text",
-                            "props": { "content": "صالحة للعام الدراسي الحالي | VALID FOR CURRENT ACADEMIC YEAR", "fontSize": 4.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 5, "y": 49.5, "width": 75, "height": 3 }
+                            "props": { "content": "صالحة للعام الدراسي الحالي  |  VALID FOR CURRENT ACADEMIC YEAR", "fontSize": 4.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 5, "y": 47, "width": 75.6, "height": 3 }
                         }
                     ]
                 }]
@@ -316,81 +305,87 @@ pub fn get_master_template_definitions() -> Vec<(
                     "children": [
                         {
                             "type": "Shape",
-                            "id": "bg-card",
-                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
-                            "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                            "id": "top-accent",
+                            "props": { "shapeType": "rectangle", "fillColor": "#312e81", "strokeColor": "#312e81", "strokeWidth": 0, "borderRadius": 0 },
+                            "position": { "x": 0, "y": 0, "width": 85.6, "height": 1.4 }
                         },
                         {
-                            "type": "Shape",
-                            "id": "header-bg",
-                            "props": { "shapeType": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
-                            "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
+                            "type": "Image",
+                            "id": "org-logo",
+                            "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                            "position": { "x": 73, "y": 3.5, "width": 8, "height": 8 }
                         },
                         {
                             "type": "Text",
                             "id": "org-title",
-                            "props": { "content": "{{$org.name_ar}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 15, "y": 2.5, "width": 55, "height": 4.5 }
+                            "props": { "content": "{{$org.name_ar}}", "fontSize": 8.2, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 14, "y": 3.8, "width": 57, "height": 4.5 }
                         },
                         {
                             "type": "Text",
                             "id": "badge-subtitle",
-                            "props": { "content": "بطاقة تعريف كادر تعليمي وإداري | FACULTY & STAFF BADGE", "fontSize": 5.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#c7d2fe", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 10, "y": 7.5, "width": 65, "height": 3.5 }
+                            "props": { "content": "بطاقة تعريف الكادر الوظيفي | STAFF ID BADGE", "fontSize": 5.2, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 14, "y": 8.5, "width": 57, "height": 3.2 }
+                        },
+                        {
+                            "type": "Separator",
+                            "id": "header-sep",
+                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.25 },
+                            "position": { "x": 4.5, "y": 13, "width": 76.6, "height": 0.3 }
                         },
                         {
                             "type": "Image",
                             "id": "employee-photo",
                             "props": { "src": "{{employee.avatarUrl}}", "fit": "cover" },
-                            "position": { "x": 4, "y": 14, "width": 22, "height": 26 }
+                            "position": { "x": 5, "y": 16, "width": 21, "height": 25 }
+                        },
+                        {
+                            "type": "Shape",
+                            "id": "photo-border",
+                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#e2e8f0", "strokeWidth": 0.3, "borderRadius": 1.5 },
+                            "position": { "x": 5, "y": 16, "width": 21, "height": 25 }
                         },
                         {
                             "type": "Text",
                             "id": "emp-name",
-                            "props": { "content": "{{employee.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 14, "width": 42, "height": 5 }
+                            "props": { "content": "{{employee.name}}", "fontSize": 9.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 16, "width": 52, "height": 5 }
                         },
                         {
                             "type": "Text",
                             "id": "emp-title",
-                            "props": { "content": "المسمى: {{employee.jobTitle}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#4338ca", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 19.5, "width": 42, "height": 4 }
+                            "props": { "content": "{{employee.jobTitle}}", "fontSize": 7.2, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#312e81", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 21.8, "width": 40, "height": 4 }
                         },
                         {
                             "type": "Text",
                             "id": "emp-dept",
-                            "props": { "content": "القسم: {{employee.department}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 24, "width": 42, "height": 4 }
+                            "props": { "content": "القسم: {{employee.department}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 27, "width": 40, "height": 4 }
                         },
                         {
                             "type": "Text",
                             "id": "emp-no",
-                            "props": { "content": "الرقم الوظيفي: {{employee.employeeNumber}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 28, "y": 28.5, "width": 42, "height": 4 }
+                            "props": { "content": "الرقم الوظيفي: {{employee.employeeNumber}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 29, "y": 32, "width": 40, "height": 4 }
                         },
                         {
                             "type": "QRCode",
                             "id": "emp-qr",
                             "props": { "data": "{{employee.employeeNumber}}", "size": 11, "errorCorrection": "M" },
-                            "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
+                            "position": { "x": 70, "y": 28, "width": 11, "height": 11 }
                         },
                         {
-                            "type": "Barcode",
-                            "id": "emp-barcode",
-                            "props": { "data": "{{employee.employeeNumber}}", "format": "CODE128", "height": 10.0 },
-                            "position": { "x": 28, "y": 34, "width": 53, "height": 10 }
-                        },
-                        {
-                            "type": "Shape",
-                            "id": "footer-strip",
-                            "props": { "shapeType": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
-                            "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
+                            "type": "Separator",
+                            "id": "footer-sep",
+                            "props": { "direction": "horizontal", "color": "#f1f5f9", "thickness": 0.25 },
+                            "position": { "x": 4.5, "y": 45, "width": 76.6, "height": 0.3 }
                         },
                         {
                             "type": "Text",
                             "id": "footer-lbl",
-                            "props": { "content": "بطاقة رسمية معتمدة | OFFICIAL AUTHORIZED BADGE", "fontSize": 5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 5, "y": 49.5, "width": 75, "height": 3 }
+                            "props": { "content": "بطاقة تعريف رسمية معتمدة  |  OFFICIAL STAFF BADGE", "fontSize": 4.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 5, "y": 47, "width": 75.6, "height": 3 }
                         }
                     ]
                 }]
@@ -718,81 +713,87 @@ pub fn get_master_template_definitions() -> Vec<(
                     "children": [
                         {
                             "type": "Shape",
-                            "id": "bg-exam-card",
-                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.4, "borderRadius": 3 },
-                            "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                            "id": "top-accent",
+                            "props": { "shapeType": "rectangle", "fillColor": "#1e293b", "strokeColor": "#1e293b", "strokeWidth": 0, "borderRadius": 0 },
+                            "position": { "x": 0, "y": 0, "width": 85.6, "height": 1.4 }
                         },
                         {
-                            "type": "Shape",
-                            "id": "exam-accent",
-                            "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2.5 },
-                            "position": { "x": 1, "y": 1, "width": 83.6, "height": 10.5 }
+                            "type": "Image",
+                            "id": "org-logo",
+                            "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                            "position": { "x": 73, "y": 3.5, "width": 8, "height": 8 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-header",
-                            "props": { "content": "{{$org.name_ar | default:$org.name}}", "fontSize": 7.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 4, "y": 2, "width": 77.6, "height": 4 }
+                            "props": { "content": "{{$org.name_ar | default:$org.name}}", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 14, "y": 3.8, "width": 57, "height": 4.5 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-sub",
-                            "props": { "content": "بطاقة رقم الجلوس ودخول الاختبار", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#e2e8f0", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 4, "y": 6.5, "width": 77.6, "height": 3.5 }
+                            "props": { "content": "بطاقة رقم الجلوس ودخول الاختبار", "fontSize": 5.2, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 14, "y": 8.5, "width": 57, "height": 3.2 }
+                        },
+                        {
+                            "type": "Separator",
+                            "id": "exam-header-sep",
+                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.25 },
+                            "position": { "x": 4.5, "y": 13, "width": 76.6, "height": 0.3 }
                         },
                         {
                             "type": "Shape",
                             "id": "seat-box",
-                            "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#0f172a", "strokeWidth": 0.5, "borderRadius": 2 },
-                            "position": { "x": 4.5, "y": 14, "width": 24, "height": 17.5 }
+                            "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.3, "borderRadius": 2 },
+                            "position": { "x": 5, "y": 16, "width": 23, "height": 22 }
                         },
                         {
                             "type": "Text",
                             "id": "seat-title",
-                            "props": { "content": "رقم الجلوس", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 5.5, "y": 15.5, "width": 22, "height": 3.5 }
+                            "props": { "content": "رقم الجلوس", "fontSize": 5.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 6, "y": 18, "width": 21, "height": 3.5 }
                         },
                         {
                             "type": "Text",
                             "id": "seat-val",
-                            "props": { "content": "{{exam.seatingNumber | default:'—'}}", "fontSize": 11.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "ltr" },
-                            "position": { "x": 5.5, "y": 20.5, "width": 22, "height": 8 }
+                            "props": { "content": "{{exam.seatingNumber | default:'—'}}", "fontSize": 12.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "ltr" },
+                            "position": { "x": 6, "y": 23.5, "width": 21, "height": 9 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-student-name",
-                            "props": { "content": "{{student.name | default:'—'}}", "fontSize": 8.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 31, "y": 14, "width": 50, "height": 5 }
+                            "props": { "content": "{{student.name | default:'—'}}", "fontSize": 8.8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 31, "y": 16.5, "width": 50, "height": 5 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-hall-info",
-                            "props": { "content": "القاعة: {{exam.hallName | default:'—'}}", "fontSize": 6.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 31, "y": 20.5, "width": 50, "height": 4 }
+                            "props": { "content": "القاعة: {{exam.hallName | default:'—'}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 31, "y": 23, "width": 37, "height": 4 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-session-info",
-                            "props": { "content": "الدورة: {{exam.sessionName | default:'—'}}", "fontSize": 6.2, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 31, "y": 25.5, "width": 50, "height": 4 }
+                            "props": { "content": "الدورة: {{exam.sessionName | default:'—'}}", "fontSize": 6.2, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                            "position": { "x": 31, "y": 28, "width": 37, "height": 4 }
+                        },
+                        {
+                            "type": "QRCode",
+                            "id": "exam-qr",
+                            "props": { "data": "{{exam.seatingNumber}}", "size": 11, "errorCorrection": "M" },
+                            "position": { "x": 70, "y": 28, "width": 11, "height": 11 }
                         },
                         {
                             "type": "Separator",
                             "id": "exam-sep",
-                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.4 },
-                            "position": { "x": 4.5, "y": 34, "width": 76.6, "height": 0.5 }
-                        },
-                        {
-                            "type": "Barcode",
-                            "id": "exam-barcode",
-                            "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 9.0 },
-                            "position": { "x": 16, "y": 36.5, "width": 53.6, "height": 9 }
+                            "props": { "direction": "horizontal", "color": "#f1f5f9", "thickness": 0.25 },
+                            "position": { "x": 4.5, "y": 45, "width": 76.6, "height": 0.3 }
                         },
                         {
                             "type": "Text",
                             "id": "exam-rules",
-                            "props": { "content": "تُبرز البطاقة عند دخول اللجنة ويُمنع اصطحاب الهواتف", "fontSize": 4.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 4, "y": 47, "width": 77.6, "height": 3 }
+                            "props": { "content": "تُبرز البطاقة عند دخول اللجنة ويُمنع اصطحاب الهواتف", "fontSize": 4.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 5, "y": 47, "width": 75.6, "height": 3 }
                         }
                     ]
                 }]
@@ -2303,75 +2304,87 @@ fn default_exam_hall_seating_card_template() -> (
                 "children": [
                     {
                         "type": "Shape",
-                        "id": "bg-seating-card",
-                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.4, "borderRadius": 3 },
-                        "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                        "id": "top-accent",
+                        "props": { "shapeType": "rectangle", "fillColor": "#1e293b", "strokeColor": "#1e293b", "strokeWidth": 0, "borderRadius": 0 },
+                        "position": { "x": 0, "y": 0, "width": 85.6, "height": 1.4 }
                     },
                     {
-                        "type": "Shape",
-                        "id": "seating-accent",
-                        "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2.5 },
-                        "position": { "x": 1, "y": 1, "width": 83.6, "height": 10.5 }
+                        "type": "Image",
+                        "id": "org-logo",
+                        "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                        "position": { "x": 73, "y": 3.5, "width": 8, "height": 8 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-header",
-                        "props": { "content": "{{$org.name_ar | default:$org.name}}", "fontSize": 7.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 4, "y": 2, "width": 77.6, "height": 4 }
+                        "props": { "content": "{{$org.name_ar | default:$org.name}}", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 14, "y": 3.8, "width": 57, "height": 4.5 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-sub",
-                        "props": { "content": "بطاقة رقم الجلوس — {{exam.sessionName | default:'الاختبارات'}}", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#e2e8f0", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 4, "y": 6.5, "width": 77.6, "height": 3.5 }
+                        "props": { "content": "بطاقة رقم الجلوس — {{exam.sessionName | default:'الاختبارات'}}", "fontSize": 5.3, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 14, "y": 8.5, "width": 57, "height": 3.2 }
+                    },
+                    {
+                        "type": "Separator",
+                        "id": "seating-header-sep",
+                        "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.25 },
+                        "position": { "x": 4.5, "y": 13, "width": 76.6, "height": 0.3 }
                     },
                     {
                         "type": "Shape",
                         "id": "seat-box",
-                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#0f172a", "strokeWidth": 0.5, "borderRadius": 2 },
-                        "position": { "x": 4.5, "y": 14, "width": 24, "height": 17.5 }
+                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.3, "borderRadius": 2 },
+                        "position": { "x": 5, "y": 16, "width": 23, "height": 22 }
                     },
                     {
                         "type": "Text",
                         "id": "seat-title",
-                        "props": { "content": "رقم الجلوس", "fontSize": 5.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 5.5, "y": 15.5, "width": 22, "height": 3.5 }
+                        "props": { "content": "رقم الجلوس", "fontSize": 5.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 6, "y": 18, "width": 21, "height": 3.5 }
                     },
                     {
                         "type": "Text",
                         "id": "seat-val",
-                        "props": { "content": "{{exam.seatingNumber | default:'—'}}", "fontSize": 11.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "ltr" },
-                        "position": { "x": 5.5, "y": 20.5, "width": 22, "height": 8 }
+                        "props": { "content": "{{exam.seatingNumber | default:'—'}}", "fontSize": 12.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "ltr" },
+                        "position": { "x": 6, "y": 23.5, "width": 21, "height": 9 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-student-name",
-                        "props": { "content": "{{student.name | default:'—'}}", "fontSize": 8.5, "fontFamily": "Noto Sans Arabic", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 31, "y": 14, "width": 50, "height": 5 }
+                        "props": { "content": "{{student.name | default:'—'}}", "fontSize": 8.8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 31, "y": 16.5, "width": 50, "height": 5 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-hall-info",
-                        "props": { "content": "القاعة: {{exam.hallName | default:'—'}}  |  المقعد: {{exam.deskNumber | default:'—'}}", "fontSize": 6.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 31, "y": 21, "width": 50, "height": 4.5 }
+                        "props": { "content": "القاعة: {{exam.hallName | default:'—'}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 31, "y": 23, "width": 37, "height": 4 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "exam-desk-info",
+                        "props": { "content": "المقعد: {{exam.deskNumber | default:'—'}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 31, "y": 28, "width": 37, "height": 4 }
+                    },
+                    {
+                        "type": "QRCode",
+                        "id": "exam-qr",
+                        "props": { "data": "{{exam.seatingNumber}}", "size": 11, "errorCorrection": "M" },
+                        "position": { "x": 70, "y": 28, "width": 11, "height": 11 }
                     },
                     {
                         "type": "Separator",
                         "id": "seating-sep",
-                        "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.4 },
-                        "position": { "x": 4.5, "y": 34, "width": 76.6, "height": 0.5 }
-                    },
-                    {
-                        "type": "Barcode",
-                        "id": "exam-barcode",
-                        "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128", "height": 9.0 },
-                        "position": { "x": 16, "y": 36.5, "width": 53.6, "height": 9 }
+                        "props": { "direction": "horizontal", "color": "#f1f5f9", "thickness": 0.25 },
+                        "position": { "x": 4.5, "y": 45, "width": 76.6, "height": 0.3 }
                     },
                     {
                         "type": "Text",
                         "id": "exam-rules",
-                        "props": { "content": "يُرجى إبراز البطاقة عند دخول قاعة الاختبار", "fontSize": 4.8, "fontFamily": "Noto Sans Arabic", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 4, "y": 47, "width": 77.6, "height": 3 }
+                        "props": { "content": "يُرجى إبراز البطاقة عند دخول قاعة الاختبار", "fontSize": 4.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 5, "y": 47, "width": 75.6, "height": 3 }
                     }
                 ]
             }]
@@ -2420,81 +2433,87 @@ fn default_user_id_card_template() -> (
                 "children": [
                     {
                         "type": "Shape",
-                        "id": "bg-card",
-                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
-                        "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                        "id": "top-accent",
+                        "props": { "shapeType": "rectangle", "fillColor": "#312e81", "strokeColor": "#312e81", "strokeWidth": 0, "borderRadius": 0 },
+                        "position": { "x": 0, "y": 0, "width": 85.6, "height": 1.4 }
                     },
                     {
-                        "type": "Shape",
-                        "id": "header-bg",
-                        "props": { "shapeType": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
-                        "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
+                        "type": "Image",
+                        "id": "org-logo",
+                        "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                        "position": { "x": 73, "y": 3.5, "width": 8, "height": 8 }
                     },
                     {
                         "type": "Text",
                         "id": "org-title",
-                        "props": { "content": "{{$org.name_ar}}", "fontSize": 9.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 15, "y": 2.5, "width": 55, "height": 4.5 }
+                        "props": { "content": "{{$org.name_ar}}", "fontSize": 8.2, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 14, "y": 3.8, "width": 57, "height": 4.5 }
                     },
                     {
                         "type": "Text",
                         "id": "badge-subtitle",
-                        "props": { "content": "بطاقة تعريف كادر تعليمي وإداري | FACULTY & STAFF BADGE", "fontSize": 5.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#c7d2fe", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 10, "y": 7.5, "width": 65, "height": 3.5 }
+                        "props": { "content": "بطاقة تعريف الكادر الوظيفي | STAFF ID BADGE", "fontSize": 5.2, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 14, "y": 8.5, "width": 57, "height": 3.2 }
+                    },
+                    {
+                        "type": "Separator",
+                        "id": "header-sep",
+                        "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.25 },
+                        "position": { "x": 4.5, "y": 13, "width": 76.6, "height": 0.3 }
                     },
                     {
                         "type": "Image",
                         "id": "user-photo",
                         "props": { "src": "{{user.avatarUrl}}", "fit": "cover" },
-                        "position": { "x": 4, "y": 14, "width": 22, "height": 26 }
+                        "position": { "x": 5, "y": 16, "width": 21, "height": 25 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "photo-border",
+                        "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#e2e8f0", "strokeWidth": 0.3, "borderRadius": 1.5 },
+                        "position": { "x": 5, "y": 16, "width": 21, "height": 25 }
                     },
                     {
                         "type": "Text",
                         "id": "user-name",
-                        "props": { "content": "{{user.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 28, "y": 14, "width": 42, "height": 5 }
+                        "props": { "content": "{{user.name}}", "fontSize": 9.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 29, "y": 16, "width": 52, "height": 5 }
                     },
                     {
                         "type": "Text",
                         "id": "user-title",
-                        "props": { "content": "المسمى: {{user.jobTitle}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#4338ca", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 28, "y": 19.5, "width": 42, "height": 4 }
+                        "props": { "content": "{{user.jobTitle}}", "fontSize": 7.2, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#312e81", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 29, "y": 21.8, "width": 40, "height": 4 }
                     },
                     {
                         "type": "Text",
                         "id": "user-dept",
-                        "props": { "content": "القسم: {{user.department}}", "fontSize": 7.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 28, "y": 24, "width": 42, "height": 4 }
+                        "props": { "content": "القسم: {{user.department}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 29, "y": 27, "width": 40, "height": 4 }
                     },
                     {
                         "type": "Text",
                         "id": "user-no",
-                        "props": { "content": "الرقم الوظيفي: {{user.employeeNumber}}", "fontSize": 7.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
-                        "position": { "x": 28, "y": 28.5, "width": 42, "height": 4 }
+                        "props": { "content": "الرقم الوظيفي: {{user.employeeNumber}}", "fontSize": 6.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 29, "y": 32, "width": 40, "height": 4 }
                     },
                     {
                         "type": "QRCode",
                         "id": "user-qr",
                         "props": { "data": "{{user.employeeNumber}}", "size": 11, "errorCorrection": "M" },
-                        "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
+                        "position": { "x": 70, "y": 28, "width": 11, "height": 11 }
                     },
                     {
-                        "type": "Barcode",
-                        "id": "user-barcode",
-                        "props": { "data": "{{user.employeeNumber}}", "format": "CODE128", "height": 10.0 },
-                        "position": { "x": 28, "y": 34, "width": 53, "height": 10 }
-                    },
-                    {
-                        "type": "Shape",
-                        "id": "footer-strip",
-                        "props": { "shapeType": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
-                        "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
+                        "type": "Separator",
+                        "id": "footer-sep",
+                        "props": { "direction": "horizontal", "color": "#f1f5f9", "thickness": 0.25 },
+                        "position": { "x": 4.5, "y": 45, "width": 76.6, "height": 0.3 }
                     },
                     {
                         "type": "Text",
                         "id": "footer-lbl",
-                        "props": { "content": "بطاقة رسمية معتمدة | OFFICIAL AUTHORIZED BADGE", "fontSize": 5.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
-                        "position": { "x": 5, "y": 49.5, "width": 75, "height": 3 }
+                        "props": { "content": "بطاقة تعريف رسمية معتمدة  |  OFFICIAL AUTHORIZED BADGE", "fontSize": 4.8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 5, "y": 47, "width": 75.6, "height": 3 }
                     }
                 ]
             }]

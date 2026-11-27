@@ -476,6 +476,14 @@ export class RemoteClient implements OrbisApiClient {
     );
   }
 
+  async deleteUser(id: string): Promise<void> {
+    return this.call(
+      this.client.delete<{ 200: void }>({
+        url: `/api/v1/iam/users/${id}`,
+      }),
+    );
+  }
+
   async resetUserPassword(
     userId: string,
   ): Promise<AccountProvisioningResultDto> {

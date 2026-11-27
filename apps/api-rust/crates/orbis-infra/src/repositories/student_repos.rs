@@ -767,13 +767,13 @@ impl EnrollmentRepository for StudentRepoImpl {
             }
             let section_id = enrollment_record.section_id.ok_or_else(|| {
                 DomainError::Internal(
-                    "A capacity breach was reported without an assigned class".into(),
+                    "A capacity breach was reported without an assigned section".into(),
                 )
             })?;
             request.reason =
-                format!("Class capacity reached ({active_count}/{capacity}); review required.");
+                format!("Section capacity reached ({active_count}/{capacity}); review required.");
             request.metadata = serde_json::json!({
-                "class_id": section_id,
+                "section_id": section_id,
                 "active_count": active_count,
                 "max_capacity": capacity
             });
@@ -1150,10 +1150,10 @@ mod tests {
             risk_level: orbis_domain::entities::override_request::RiskLevel::Medium,
             entity_type: "enrollment".into(),
             entity_id: second_student_id,
-            field_name: Some("class_id".into()),
+            field_name: Some("section_id".into()),
             old_value: None,
             new_value: Some(section_id.to_string()),
-            reason: "Class capacity reached; review required.".into(),
+            reason: "Section capacity reached; review required.".into(),
             requested_by: Uuid::new_v4(),
             requested_by_name: None,
             status: orbis_domain::entities::override_request::OverrideStatus::Pending,
@@ -1165,7 +1165,7 @@ mod tests {
             resolved_at: None,
             resolution_notes: None,
             expires_at: None,
-            metadata: serde_json::json!({ "class_id": section_id }),
+            metadata: serde_json::json!({ "section_id": section_id }),
             created_at: now,
             updated_at: now,
         };

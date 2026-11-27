@@ -580,6 +580,45 @@ pub async fn iam_get_user(
 }
 
 #[tauri::command]
+pub async fn iam_delete_user(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<()>, String> {
+    let ctx = authenticated_ctx(&state).await?;
+    state
+        .permission_checker
+        .check(&ctx, Permission::UserWrite)
+        .await
+        .map_err(|e| e.to_string())?;
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let mut user = state
+        .auth_service
+        .get_user(uid)
+        .await
+        .map_err(|e| e.to_string())?
+        .filter(|user| user.org_id == ctx.tenant_id && !user.is_deleted)
+        .ok_or("User not found")?;
+    let actor = ctx.actor.id().ok_or("User identity is required")?;
+    if actor == uid {
+        return Err("Cannot delete your own account".to_string());
+    }
+    protect_administrator(state.permission_checker.as_ref(), &ctx, actor, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    user.is_deleted = true;
+    user.status = "inactive".to_string();
+    user.updated_at = chrono::Utc::now();
+    user.updated_by = Some(actor);
+    state
+        .user_repo
+        .save(&user)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(()))
+}
+
+#[tauri::command]
 pub async fn iam_update_user(
     id: String,
     request: serde_json::Value,
@@ -645,10 +684,20 @@ pub async fn iam_update_user(
         } else {
             "inactive".to_string()
         };
-        let _ = state.user_repo.save(&user).await;
+        user.updated_at = chrono::Utc::now();
+        state
+            .user_repo
+            .save(&user)
+            .await
+            .map_err(|e| e.to_string())?;
     } else if let Some(status) = request.get("status").and_then(|v| v.as_str()) {
         user.status = status.to_string();
-        let _ = state.user_repo.save(&user).await;
+        user.updated_at = chrono::Utc::now();
+        state
+            .user_repo
+            .save(&user)
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     // 3. Update Person details

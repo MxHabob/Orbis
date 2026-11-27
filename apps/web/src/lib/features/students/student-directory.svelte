@@ -257,7 +257,7 @@ async function deleteSelectedStudents() {
           type="button"
           variant="outline"
           size="sm"
-          class="h-8 px-2.5 text-xs font-medium"
+          class="h-7 px-2.5 text-xs font-medium"
           onclick={() => goto(localizeHref(`/${orgId}/students/${selectedStudent.student?.id}`))}
         >
           {m.operations_ui_student_profile()}
@@ -268,7 +268,7 @@ async function deleteSelectedStudents() {
         type="button"
         variant="outline"
         size="sm"
-        class="h-8 px-2.5 text-xs font-medium"
+        class="h-7 px-2.5 text-xs font-medium"
         onclick={() => (transferDialogOpen = true)}
       >
         {m.common_student_layout_transfer_class()}
@@ -278,7 +278,7 @@ async function deleteSelectedStudents() {
         type="button"
         variant="destructive"
         size="sm"
-        class="h-8 px-2.5 text-xs font-medium"
+        class="h-7 px-2.5 text-xs font-medium"
         disabled={isDeletingStudents}
         onclick={deleteSelectedStudents}
       >
@@ -287,9 +287,9 @@ async function deleteSelectedStudents() {
 
       <Button
         type="button"
-        variant="lime"
+        variant="default"
         size="sm"
-        class="h-8 px-3 text-xs font-semibold"
+        class="h-7 px-2.5 text-xs font-semibold"
         onclick={() => printDialogOpen = true}
       >
         {m.common_print_templates()}
@@ -299,7 +299,7 @@ async function deleteSelectedStudents() {
         type="button"
         variant="ghost"
         size="sm"
-        class="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+        class="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
         onclick={() => selectedStudentIds = new Set()}
       >
         {m.common_action_cancel()}

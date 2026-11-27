@@ -16,6 +16,8 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { isDesktopApp } from "$lib/api";
+import { authStore, effectiveContext } from "$lib/stores";
+import MulverseIntroDialog from "$lib/features/dashboard/components/mulverse-intro-dialog.svelte";
 import {
   AboutDialog,
   BackupCliDialog,
@@ -33,12 +35,14 @@ import {
   Lock,
   QuestionMarkCircle,
   Scale,
+  Sparkles,
   Users,
 } from "@orbis/icons";
 
 let isBackupCliOpen = $state(false);
 let isAboutOpen = $state(false);
 let isSupportOpen = $state(false);
+let isMulverseIntroOpen = $state(false);
 
 let {
   orgName = "Orbis School",
@@ -197,6 +201,12 @@ const iconClass = "text-muted-foreground shrink-0";
           <CodeBracket size={13} class={iconClass} />
           <span>{m.ui_shell_cli()}</span>
         </DropdownMenuItem>
+        {#if effectiveContext.isAdmin && authStore.orgId}
+          <DropdownMenuItem class={menuItemClass} onclick={() => (isMulverseIntroOpen = true)}>
+            <Sparkles size={13} class={iconClass} />
+            <span>{m.mulverse_intro_form_title()}</span>
+          </DropdownMenuItem>
+        {/if}
       </DropdownMenuSubContent>
     </DropdownMenuSub>
 
@@ -212,3 +222,6 @@ const iconClass = "text-muted-foreground shrink-0";
 <AboutDialog bind:open={isAboutOpen} />
 <SupportDialog bind:open={isSupportOpen} />
 <BackupCliDialog bind:open={isBackupCliOpen} {orgName} />
+{#if effectiveContext.isAdmin && authStore.orgId}
+  <MulverseIntroDialog orgId={authStore.orgId} bind:open={isMulverseIntroOpen} autoShow={false} />
+{/if}

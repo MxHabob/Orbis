@@ -45,6 +45,11 @@ class EffectiveContextStore {
   currentOrgId = $derived<string>(authStore.orgId);
   currentPeriodId = $derived<string>(academicContext.effectivePeriodId);
   currentYearId = $derived<string>(academicContext.currentYear?.id || "");
+  isAdmin = $derived<boolean>(
+    this.hasPermission("*") ||
+      this.effectiveRole === "super_admin" ||
+      this.effectiveRole === "org_admin",
+  );
 
   selectedDependent = $derived<LinkedDependentDto | null>(
     this.dependents.find((d) => d.student_id === this.selectedDependentId) ||

@@ -294,7 +294,7 @@ async function handleAction(event: GridActionEvent) {
     });
     if (confirmed) {
       try {
-        await api.updateUser(user.id, { is_active: false } as any);
+        await api.deleteUser(user.id);
         await queryClient.invalidateQueries({
           queryKey: ["users", orgId],
         });

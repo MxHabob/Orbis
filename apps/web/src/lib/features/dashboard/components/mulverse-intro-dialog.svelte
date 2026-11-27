@@ -28,16 +28,17 @@ import mulverseBanner from "$lib/assets/image.png";
 
 let {
   orgId,
-  hasOperationalActivity = false,
+  open = $bindable(false),
+  autoShow = true,
 }: {
   orgId: string;
-  hasOperationalActivity?: boolean;
+  open?: boolean;
+  autoShow?: boolean;
 } = $props();
 
-const STORAGE_KEY_PREFIX = "orbis_mulverse_intro_dismissed_";
+const STORAGE_KEY_PREFIX = "orbis_mulverse_intro_v2_";
 const queryClient = useQueryClient();
 
-let open = $state(false);
 let step = $state<"intro" | "create">("intro");
 
 let fullName = $state("");
@@ -49,8 +50,6 @@ let formError = $state<string | null>(null);
 let credentialModalOpen = $state(false);
 let provisioningResult = $state<AccountProvisioningResultDto | null>(null);
 let createdUserName = $state("");
-
-const isAdminUser = $derived(effectiveContext.hasPermission("*"));
 
 const userFirstName = $derived.by(() => {
   const full =
@@ -72,13 +71,13 @@ function markDismissed() {
 }
 
 onMount(() => {
-  if (!orgId || !hasOperationalActivity || !isAdminUser) return;
+  if (!autoShow || !orgId || !effectiveContext.isAdmin) return;
   if (localStorage.getItem(storageKey()) === "true") return;
 
   const timer = setTimeout(() => {
     localStorage.setItem(storageKey(), "true");
     open = true;
-  }, 1200);
+  }, 800);
 
   return () => clearTimeout(timer);
 });

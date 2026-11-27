@@ -335,6 +335,9 @@ export class LocalClient implements OrbisApiClient {
   async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return unwrap(await invoke("iam_update_user", { id, request: req }));
   }
+  async deleteUser(id: string): Promise<void> {
+    return unwrap(await invoke("iam_delete_user", { id }));
+  }
   async resetUserPassword(
     userId: string,
   ): Promise<AccountProvisioningResultDto> {

@@ -183,6 +183,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         iam_cmds::iam_list_users,
         iam_cmds::iam_get_user,
         iam_cmds::iam_update_user,
+        iam_cmds::iam_delete_user,
         iam_cmds::iam_reset_user_password,
         iam_cmds::iam_list_roles,
         iam_cmds::iam_save_role,
