@@ -1799,7 +1799,8 @@ pub async fn sync_default_templates(
     .map_err(|e| ApiError::internal(e.to_string()))?;
     let reports_synced =
         orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
-    let reports_synced = orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
+    let reports_synced =
+        orbis_infra::repositories::report_catalog::get_master_report_catalog().len() as u64;
 
     Ok(ApiResponse::ok_with_id(
         SyncDefaultsResponse {
