@@ -428,7 +428,8 @@ function handleGridAction(event: GridActionEvent) {
   if (event.actionId === "mark-present") setRowStatus(studentId, "present");
   else if (event.actionId === "mark-absent") setRowStatus(studentId, "absent");
   else if (event.actionId === "mark-late") setRowStatus(studentId, "late");
-  else if (event.actionId === "mark-excused") setRowStatus(studentId, "excused");
+  else if (event.actionId === "mark-excused")
+    setRowStatus(studentId, "excused");
 }
 
 function setRowStatus(studentId: string, status: AttendanceStatus) {

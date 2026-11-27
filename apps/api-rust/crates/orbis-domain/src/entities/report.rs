@@ -678,6 +678,9 @@ pub struct OrgReportContext {
     pub tax_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub license_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub institution_type: Option<String>,
     #[serde(skip)]
     pub student_sort: StudentSortSettings,
 }

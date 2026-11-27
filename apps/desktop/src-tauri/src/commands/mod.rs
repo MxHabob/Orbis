@@ -294,6 +294,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         progression_cmds::progression_promote_cohort,
         progression_cmds::progression_list_jobs,
         progression_cmds::progression_get_job,
+        progression_cmds::progression_get_job_details,
+        progression_cmds::progression_rollback_job,
         // ── Scheduling & Solver ────────────────────────────────
         scheduling_cmds::scheduling_create_room,
         scheduling_cmds::scheduling_list_rooms,

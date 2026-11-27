@@ -43,6 +43,8 @@ export interface MultiUpConfig {
   /** Custom sheet dimensions (only used when sheetSize = 'Custom') */
   customSheetWidthMm?: number;
   customSheetHeightMm?: number;
+  /** Scale templates down to fit forced grid slots */
+  scaleToFit?: boolean;
 }
 
 export interface MultiUpLayout {
@@ -146,8 +148,8 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
   let rows: number;
 
   if (config.forcedGrid) {
-    columns = config.forcedGrid.columns;
-    rows = config.forcedGrid.rows;
+    columns = Math.max(1, config.forcedGrid.columns);
+    rows = Math.max(1, config.forcedGrid.rows);
   } else {
     columns = Math.max(
       1,
@@ -169,11 +171,30 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
 
   const itemsPerSheet = columns * rows;
 
+  const scale =
+    config.forcedGrid && config.scaleToFit
+      ? Math.max(
+          0.05,
+          Math.min(
+            1,
+            Math.max(
+              1,
+              (printableW - config.gapHorizontalMm * (columns - 1)) / columns,
+            ) / Math.max(1, config.templateWidthMm),
+            Math.max(
+              1,
+              (printableH - config.gapVerticalMm * (rows - 1)) / rows,
+            ) / Math.max(1, config.templateHeightMm),
+          ),
+        )
+      : 1;
+  const effectiveW = config.templateWidthMm * scale;
+  const effectiveH = config.templateHeightMm * scale;
+
   // Step 4: Compute slot positions in mm
   const contentBlockW =
-    config.templateWidthMm * columns + config.gapHorizontalMm * (columns - 1);
-  const contentBlockH =
-    config.templateHeightMm * rows + config.gapVerticalMm * (rows - 1);
+    effectiveW * columns + config.gapHorizontalMm * (columns - 1);
+  const contentBlockH = effectiveH * rows + config.gapVerticalMm * (rows - 1);
 
   let offsetX: number;
   let offsetY: number;
@@ -194,19 +215,16 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
       const physicalCol =
         config.fillOrder === "rtl-ttb" ? columns - 1 - colIdx : colIdx;
 
-      const x =
-        offsetX +
-        physicalCol * (config.templateWidthMm + config.gapHorizontalMm);
-      const y =
-        offsetY + rowIdx * (config.templateHeightMm + config.gapVerticalMm);
+      const x = offsetX + physicalCol * (effectiveW + config.gapHorizontalMm);
+      const y = offsetY + rowIdx * (effectiveH + config.gapVerticalMm);
 
       const sequentialIndex = rowIdx * columns + colIdx;
 
       slots.push({
         xMm: x,
         yMm: y,
-        widthMm: config.templateWidthMm,
-        heightMm: config.templateHeightMm,
+        widthMm: effectiveW,
+        heightMm: effectiveH,
         col: physicalCol,
         row: rowIdx,
         index: sequentialIndex,
@@ -221,8 +239,8 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
     slots,
     sheetWidthMm,
     sheetHeightMm,
-    templateWidthMm: config.templateWidthMm,
-    templateHeightMm: config.templateHeightMm,
+    templateWidthMm: effectiveW,
+    templateHeightMm: effectiveH,
   };
 }
 

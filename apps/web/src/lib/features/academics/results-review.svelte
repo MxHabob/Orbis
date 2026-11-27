@@ -323,6 +323,132 @@ const targetStudentLabels = $derived(
   ),
 );
 
+const targetStudentContexts = $derived.by<Record<string, unknown>[]>(() => {
+  const resultMap = new Map(activeResults.map((r) => [r.student_id, r]));
+  const yearName = yearNames.get(selectedYearId) ?? "";
+  const selectedPeriod = (periodsQuery.data ?? []).find(
+    (p) => p.id === selectedPeriodId,
+  );
+  const selectedSection = sections.find((s) => s.id === selectedClassId);
+  const localizedPeriodName = selectedPeriod
+    ? isRtl
+      ? selectedPeriod.name_ar || selectedPeriod.name
+      : selectedPeriod.name
+    : yearName;
+  const localizedSectionName = selectedSection
+    ? isRtl
+      ? selectedSection.name_ar || selectedSection.name
+      : selectedSection.name
+    : "";
+
+  return targetStudentIds.flatMap((id) => {
+    const card = resultMap.get(id);
+    if (!card) return [];
+
+    const periodName =
+      localizedPeriodName ||
+      ("period_name" in card && card.period_name ? card.period_name : yearName);
+    const className = localizedSectionName || card.class_name;
+    const calendarName =
+      yearName ||
+      ("academic_calendar_name" in card && card.academic_calendar_name
+        ? card.academic_calendar_name
+        : "");
+
+    const subjects = card.subjects.map((subj) => {
+      const subjectName = isRtl
+        ? subj.subject_name_ar || subj.subject_name
+        : subj.subject_name;
+      if ("term_total" in subj) {
+        const componentScores: Record<string, number> = {};
+        for (const periodRes of subj.monthly_results ?? []) {
+          for (const comp of periodRes.breakdown?.components ?? []) {
+            componentScores[comp.code] =
+              (componentScores[comp.code] ?? 0) + Number(comp.score ?? 0);
+          }
+        }
+        return {
+          ...componentScores,
+          subjectName,
+          subjectCode: subj.subject_code,
+          creditHours: Number(subj.credit_hours ?? 0),
+          courseworkScore: Number(subj.monthly_contribution ?? 0),
+          examScore:
+            subj.term_final_exam != null ? Number(subj.term_final_exam) : 0,
+          totalScore: Number(subj.term_total ?? 0),
+          maxScore: Number(subj.term_max ?? 0),
+          percentage: Number(subj.percentage ?? 0),
+          gradeLetter: subj.letter_grade ?? "—",
+          status: subj.status,
+        };
+      }
+      return {
+        subjectName,
+        subjectCode: subj.subject_code,
+        creditHours: Number(subj.credit_hours ?? 0),
+        term1Score: Number(subj.term_1_result?.term_total ?? 0),
+        term2Score: Number(subj.term_2_result?.term_total ?? 0),
+        courseworkScore: Number(subj.term_1_result?.term_total ?? 0),
+        examScore: Number(subj.term_2_result?.term_total ?? 0),
+        totalScore: Number(subj.annual_total ?? 0),
+        maxScore: Number(subj.annual_max ?? 0),
+        percentage: Number(subj.percentage ?? 0),
+        gradeLetter: subj.letter_grade ?? "—",
+        status: subj.status,
+      };
+    });
+
+    return [
+      {
+        student: {
+          id: card.student_id,
+          name: card.student_name,
+          full_name: card.student_name,
+          fullName: card.student_name,
+          student_number: card.student_number ?? "",
+          studentNumber: card.student_number ?? "",
+          className,
+          class_name: className,
+          sectionName: className,
+          section_name: className,
+          rankInClass: card.rank_in_class ?? "—",
+          rank_in_class: card.rank_in_class ?? "—",
+          totalStudentsInClass: card.total_students_in_class,
+          total_students_in_class: card.total_students_in_class,
+          status: card.status,
+        },
+        report: {
+          periodName,
+          period_name: periodName,
+          academicCalendarName: calendarName,
+          academic_calendar_name: calendarName,
+          totalScore: Number(card.total_score ?? 0),
+          total_score: Number(card.total_score ?? 0),
+          maxPossibleScore: Number(card.max_possible_score ?? 0),
+          max_possible_score: Number(card.max_possible_score ?? 0),
+          overallPercentage: Number(card.overall_percentage ?? 0),
+          overall_percentage: Number(card.overall_percentage ?? 0),
+          gpa:
+            "gpa" in card && card.gpa != null
+              ? Number(card.gpa)
+              : "cumulative_gpa" in card && card.cumulative_gpa != null
+                ? Number(card.cumulative_gpa)
+                : "—",
+          status: card.status,
+          subjects,
+        },
+        AcademicCalendar: {
+          id: selectedYearId,
+          name: calendarName,
+        },
+        subjects,
+        items: subjects,
+        grades: subjects,
+      },
+    ];
+  });
+});
+
 function openClassPdfReport() {
   pdfReportCode =
     viewMode === "annual"
@@ -610,6 +736,7 @@ function openClassPdfReport() {
   entityType="student"
   entityIds={targetStudentIds}
   entityLabels={targetStudentLabels}
+  contexts={targetStudentContexts}
 />
 
 <PdfReportViewer

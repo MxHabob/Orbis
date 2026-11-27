@@ -41,6 +41,16 @@ const startIndex = $derived((visiblePage - 1) * layout.itemsPerSheet);
 
 const sheetAspectRatio = $derived(layout.sheetWidthMm / layout.sheetHeightMm);
 
+const hasOverflow = $derived(
+  layout.slots.some(
+    (slot) =>
+      slot.xMm < -0.5 ||
+      slot.yMm < -0.5 ||
+      slot.xMm + slot.widthMm > layout.sheetWidthMm + 0.5 ||
+      slot.yMm + slot.heightMm > layout.sheetHeightMm + 0.5,
+  ),
+);
+
 const cutLines = $derived.by(() => {
   if (cutLineWidthMm <= 0) return [];
 
@@ -107,7 +117,7 @@ function nextPage() {
     class="flex min-h-0 min-w-0 w-full flex-1 items-center justify-center"
   >
     <div
-      class="relative shrink-0 rounded-sm border border-border bg-white shadow-md"
+      class="relative shrink-0 overflow-hidden rounded-sm border border-border bg-white shadow-md"
       style="
         width: {sheetAspectRatio > 1 ? '100%' : 'auto'};
         height: {sheetAspectRatio <= 1 ? '100%' : 'auto'};
@@ -120,8 +130,13 @@ function nextPage() {
       {#each layout.slots as slot, i (i)}
         {@const recordIdx = startIndex + i}
         {@const hasRecord = recordIdx < totalRecords}
+        {@const slotOverflows =
+          slot.xMm < -0.5 ||
+          slot.yMm < -0.5 ||
+          slot.xMm + slot.widthMm > layout.sheetWidthMm + 0.5 ||
+          slot.yMm + slot.heightMm > layout.sheetHeightMm + 0.5}
         <div
-          class="absolute border transition-all duration-150 {hasRecord ? 'border-primary bg-primary/5' : 'border-dashed border-border/40 bg-muted/10'}"
+          class="absolute border transition-all duration-150 {slotOverflows ? 'border-amber-500 bg-amber-500/10' : hasRecord ? 'border-primary bg-primary/5' : 'border-dashed border-border/40 bg-muted/10'}"
           style="
             left: {slot.xMm / layout.sheetWidthMm * 100}%;
             top: {slot.yMm / layout.sheetHeightMm * 100}%;
@@ -131,7 +146,7 @@ function nextPage() {
         >
           {#if hasRecord}
             <div class="absolute inset-0 flex items-center justify-center overflow-hidden p-1">
-              <span class="text-sm font-bold text-primary">
+              <span class="text-sm font-bold {slotOverflows ? 'text-amber-600' : 'text-primary'}">
                 #{recordIdx + 1}
               </span>
             </div>
@@ -155,6 +170,11 @@ function nextPage() {
   </div>
 
   <!-- Page Navigation -->
+  {#if hasOverflow}
+    <p class="text-[11px] text-amber-600 dark:text-amber-400 text-center px-2">
+      {m.common_print_multi_up_overflow_hint()}
+    </p>
+  {/if}
   {#if totalPages > 1}
     <div class="flex shrink-0 items-center gap-2">
       <Button

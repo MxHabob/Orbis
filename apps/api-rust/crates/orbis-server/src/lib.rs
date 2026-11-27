@@ -203,6 +203,8 @@ use api::{
         api::progression_routes::promote_cohort,
         api::progression_routes::list_jobs,
         api::progression_routes::get_job,
+        api::progression_routes::get_job_details,
+        api::progression_routes::rollback_job,
         // Scheduling
         api::scheduling_routes::create_room,
         api::scheduling_routes::list_rooms,
@@ -673,6 +675,7 @@ use api::{
             api::autopilot_routes::ListTasksResponse,
             // Progression
             api::progression_routes::ProgressionJobDto,
+            api::progression_routes::ProgressionDetailDto,
             api::progression_routes::StudentProgressionItemInput,
             api::progression_routes::PromoteCohortRequest,
             api::progression_routes::EvaluateCohortRequest,

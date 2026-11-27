@@ -10,7 +10,8 @@ import {
   api,
   queryKeys,
   type progressionJobDto,
-  type StudentProgressionItemInput,
+  type StudentProgressionItemDto,
+  type ProgressionDetailDto,
   type PromoteCohortInput,
 } from "$lib/api";
 
@@ -21,7 +22,7 @@ export function createprogressionJobsQuery(orgId: () => string) {
     queryFn: () => api.listprogressionJobs(),
     enabled: !!orgId(),
     staleTime: 60 * 1000,
-    refetchInterval: 2 * 1000,
+    refetchInterval: 5 * 1000,
   }));
 }
 
@@ -36,13 +37,27 @@ export function createprogressionJobQuery(jobId: string | (() => string)) {
   }));
 }
 
+/** Get per-student details for a promotion job */
+export function createProgressionJobDetailsQuery(jobId: () => string | null) {
+  return createQuery<ProgressionDetailDto[]>(() => ({
+    queryKey: [...queryKeys.progression.job(jobId() ?? ""), "details"],
+    queryFn: () => api.getprogressionJobDetails(jobId()!),
+    enabled: !!jobId(),
+    staleTime: 60 * 1000,
+  }));
+}
+
 /** Evaluate student cohort promotion readiness and recommendations */
 export function createEvaluateCohortMutation() {
   return createMutation(() => ({
-    mutationFn: (
-      sourcePeriodId: string,
-    ): Promise<StudentProgressionItemInput[]> =>
-      api.evaluateCohort(sourcePeriodId),
+    mutationFn: ({
+      sourcePeriodId,
+      targetPeriodId,
+    }: {
+      sourcePeriodId: string;
+      targetPeriodId?: string;
+    }): Promise<StudentProgressionItemDto[]> =>
+      api.evaluateCohort(sourcePeriodId, targetPeriodId),
   }));
 }
 
@@ -56,6 +71,19 @@ export function createPromoteCohortMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.progression.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+    },
+  }));
+}
+
+/** Rollback a completed cohort promotion job */
+export function createRollbackPromotionMutation() {
+  const queryClient = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (jobId: string): Promise<progressionJobDto> =>
+      api.rollbackprogressionJob(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.progression.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
 }

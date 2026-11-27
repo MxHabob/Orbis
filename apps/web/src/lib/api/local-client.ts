@@ -1150,10 +1150,12 @@ export class LocalClient implements OrbisApiClient {
   // ── Student Cohort Progression ──────────────────────────────
   async evaluateCohort(
     sourcePeriodId: string,
-  ): Promise<StudentProgressionItemInput[]> {
+    targetPeriodId?: string,
+  ): Promise<import("./types").StudentProgressionItemDto[]> {
     return unwrap(
       await invoke("progression_evaluate_cohort", {
         sourcePeriodId,
+        targetPeriodId: targetPeriodId || null,
       }),
     );
   }
@@ -1165,6 +1167,14 @@ export class LocalClient implements OrbisApiClient {
   }
   async getprogressionJob(id: string): Promise<progressionJobDto> {
     return unwrap(await invoke("progression_get_job", { id }));
+  }
+  async getprogressionJobDetails(
+    id: string,
+  ): Promise<import("./types").ProgressionDetailDto[]> {
+    return unwrap(await invoke("progression_get_job_details", { id }));
+  }
+  async rollbackprogressionJob(id: string): Promise<progressionJobDto> {
+    return unwrap(await invoke("progression_rollback_job", { id }));
   }
 
   // ── Workflow & Academic Overrides ───────────────────────────

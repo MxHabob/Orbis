@@ -332,6 +332,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Build Domain Services
+    let finance_service = Arc::new(
+        orbis_app::services::FinanceService::new(
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            org_repo.clone(),
+            finance_repo.clone(),
+            policy_repo.clone(),
+            event_bus.clone(),
+            integration_resolver.clone(),
+            notification_adapter.clone(),
+            permission_checker.clone(),
+        )
+        .with_student_repo(student_repo.clone()),
+    );
+
     let student_service = Arc::new(
         orbis_app::services::StudentService::new(
             student_repo.clone(),
@@ -350,16 +369,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             event_bus.clone(),
             permission_checker.clone(),
         )
-        .with_license_runtime(license_runtime.clone()),
+        .with_license_runtime(license_runtime.clone())
+        .with_finance_service(finance_service.clone()),
     );
 
-    let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
-        progression_repo.clone(),
-        student_repo.clone(),
-        student_repo.clone(),
-        event_bus.clone(),
-        permission_checker.clone(),
-    ));
+    let progression_service = Arc::new(
+        orbis_app::services::ProgressionService::new(
+            progression_repo.clone(),
+            student_repo.clone(),
+            student_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        )
+        .with_erp_dependencies(
+            org_repo.clone(),
+            calendar_repo.clone(),
+            academic_repo.clone(),
+            policy_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            finance_repo.clone(),
+            finance_service.clone(),
+        ),
+    );
 
     let academic_service = Arc::new(orbis_app::services::AcademicService::new(
         academic_repo.clone(),
@@ -368,22 +401,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         academic_repo.clone(),
         assessment_repo.clone(),
         event_bus.clone(),
-        permission_checker.clone(),
-    ));
-
-    let finance_service = Arc::new(orbis_app::services::FinanceService::new(
-        finance_repo.clone(),
-        finance_repo.clone(),
-        finance_repo.clone(),
-        finance_repo.clone(),
-        finance_repo.clone(),
-        finance_repo.clone(),
-        org_repo.clone(),
-        finance_repo.clone(),
-        policy_repo.clone(),
-        event_bus.clone(),
-        integration_resolver.clone(),
-        notification_adapter.clone(),
         permission_checker.clone(),
     ));
 

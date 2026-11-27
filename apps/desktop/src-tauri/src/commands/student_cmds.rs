@@ -431,6 +431,8 @@ fn parse_enrollment_status(status_str: &str) -> Option<EnrollmentStatus> {
         "on_hold" => Some(EnrollmentStatus::OnHold),
         "withdrawn" => Some(EnrollmentStatus::Withdrawn),
         "transferred" => Some(EnrollmentStatus::Transferred),
+        "completed" => Some(EnrollmentStatus::Completed),
+        "failed" => Some(EnrollmentStatus::Failed),
         "graduated" => Some(EnrollmentStatus::Graduated),
         "suspended" => Some(EnrollmentStatus::Suspended),
         _ => None,

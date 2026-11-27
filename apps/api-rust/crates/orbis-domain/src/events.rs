@@ -150,6 +150,11 @@ pub enum DomainEvent {
         promoted_count: u32,
         timestamp: DateTime<Utc>,
     },
+    CohortPromotionRolledBack {
+        job_id: Uuid,
+        org_id: Uuid,
+        timestamp: DateTime<Utc>,
+    },
 
     RoomCreated {
         room_id: Uuid,
@@ -712,6 +717,9 @@ impl DomainEvent {
             )),
             DomainEvent::CohortPromoted { job_id, .. } => {
                 Some(("promotion.completed", "progression_job", *job_id))
+            }
+            DomainEvent::CohortPromotionRolledBack { job_id, .. } => {
+                Some(("promotion.rolled_back", "progression_job", *job_id))
             }
 
             // Scheduling

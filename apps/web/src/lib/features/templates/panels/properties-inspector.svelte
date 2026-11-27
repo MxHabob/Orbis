@@ -529,6 +529,24 @@ function applyYemeniCertificateColumnsPreset() {
                 />
                 <span class="text-[11px]">{m.template_inspector_outer_border()}</span>
               </div>
+
+              <div class="col-span-2 flex items-center gap-1.5 cursor-pointer pt-1" title={m.template_inspector_dynamic_columns_desc()}>
+                <Checkbox
+                  checked={Boolean(nodeProps.columnsSource)}
+                  onCheckedChange={(checked) => updateProp("columnsSource", checked === true ? "tableColumns" : undefined)}
+                  aria-label={m.template_inspector_dynamic_columns()}
+                />
+                <span class="text-[11px]">{m.template_inspector_dynamic_columns()}</span>
+              </div>
+
+              <div class="col-span-2 flex items-center gap-1.5 cursor-pointer" title={m.template_inspector_fit_to_bounds_desc()}>
+                <Checkbox
+                  checked={nodeProps.fitToBounds === true}
+                  onCheckedChange={(checked) => updateProp("fitToBounds", checked === true)}
+                  aria-label={m.template_inspector_fit_to_bounds()}
+                />
+                <span class="text-[11px]">{m.template_inspector_fit_to_bounds()}</span>
+              </div>
             </div>
 
             <!-- Direction -->

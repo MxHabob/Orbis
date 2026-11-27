@@ -224,21 +224,13 @@ pub async fn batch_print(
         .resolve(ctx.tenant_id)
         .await
         .map_err(|error| error.to_string())?;
-    let org_context = serde_json::json!({
-        "id": org_context.id,
-        "name": org_context.name,
-        "name_ar": org_context.name_ar,
-        "currency": org_context.currency_code,
-        "logo_url": org_context.logo_url,
-        "primary_color": org_context.primary_color,
-    });
     let mut contexts = contexts;
-    for (index, context) in contexts.iter_mut().enumerate() {
-        let context = context
-            .as_object_mut()
-            .ok_or_else(|| format!("Data context at index {index} must be a JSON object"))?;
-        context.entry("$org").or_insert_with(|| org_context.clone());
-    }
+    orbis_infra::adapters::report_adapter::enrich_batch_print_contexts_from_db(
+        &state.db,
+        &mut contexts,
+        &org_context,
+    )
+    .await?;
     let pdf = render_multi_up(&document_json, &contexts, &config, title)
         .map_err(|error| error.to_string())?;
     Ok(pdf.bytes)

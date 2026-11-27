@@ -1915,12 +1915,16 @@ export class RemoteClient implements OrbisApiClient {
   // ── Student Cohort Progression ──────────────────────────────
   async evaluateCohort(
     sourcePeriodId: string,
-  ): Promise<StudentProgressionItemInput[]> {
+    targetPeriodId?: string,
+  ): Promise<import("./types").StudentProgressionItemDto[]> {
     return (
       this.call(
         sdk.evaluateCohort({
           client: this.client,
-          body: { source_period_id: sourcePeriodId },
+          body: {
+            source_period_id: sourcePeriodId,
+            ...(targetPeriodId ? { target_period_id: targetPeriodId } : {}),
+          } as any,
         }),
       ) ?? []
     );
@@ -1938,6 +1942,28 @@ export class RemoteClient implements OrbisApiClient {
 
   async getprogressionJob(id: string): Promise<progressionJobDto> {
     return this.call(sdk.getJob({ client: this.client, path: { id } }));
+  }
+
+  async getprogressionJobDetails(
+    id: string,
+  ): Promise<import("./types").ProgressionDetailDto[]> {
+    return (
+      this.call(
+        this.client.get({
+          url: "/api/v1/progression/jobs/{id}/details",
+          path: { id },
+        }) as any,
+      ) ?? []
+    );
+  }
+
+  async rollbackprogressionJob(id: string): Promise<progressionJobDto> {
+    return this.call(
+      this.client.post({
+        url: "/api/v1/progression/jobs/{id}/rollback",
+        path: { id },
+      }) as any,
+    );
   }
 
   // ── Workflow & Academic Overrides ───────────────────────────

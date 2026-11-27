@@ -1557,8 +1557,10 @@ impl AssessmentService {
             return Ok(ids);
         };
         let year_periods = pr.find_by_year(period.year_id).await?;
-        let parent_map: HashMap<Uuid, Option<Uuid>> =
-            year_periods.into_iter().map(|p| (p.id, p.parent_id)).collect();
+        let parent_map: HashMap<Uuid, Option<Uuid>> = year_periods
+            .into_iter()
+            .map(|p| (p.id, p.parent_id))
+            .collect();
         let mut current = period.parent_id;
         while let Some(pid) = current {
             if !ids.insert(pid) {

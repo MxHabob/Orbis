@@ -37,7 +37,7 @@ import type {
   OrgUnitDto,
   CreateOrgUnitRequest,
   UpdateOrgUnitRequest,
-  OrganizationSettingsDto,
+  OrganizationSettingsDto as SdkOrganizationSettingsDto,
   DashboardCountsDto,
   AcademicCalendarDto,
   AcademicPeriodDto,
@@ -811,11 +811,61 @@ export interface ProgressionDetailDto {
   created_at: string;
 }
 
+export interface PromotionSettingsDto {
+  financial_clearance_mode: "ignore" | "warn" | "block";
+  check_attendance: boolean;
+  auto_assess_target_fees: boolean;
+  level_progression_order: string[];
+}
+
+export type OrganizationSettingsDto = SdkOrganizationSettingsDto & {
+  promotion?: PromotionSettingsDto;
+};
+
+export interface StudentProgressionItemDto {
+  student_id: string;
+  student_number?: string | null;
+  student_name?: string | null;
+  student_name_ar?: string | null;
+  enrollment_id: string;
+  source_section_id?: string | null;
+  target_section_id?: string | null;
+  decision: string;
+  reason?: string;
+  final_gpa?: string | number | null;
+  overall_percentage?: string | number | null;
+  attendance_rate?: string | number | null;
+  failed_subjects_count?: number;
+  financial_balance_due?: string | number;
+  has_financial_hold?: boolean;
+  already_enrolled_in_target?: boolean;
+  manual_override?: boolean;
+  override_reason?: string | null;
+}
+
+export interface ProgressionDetailDto {
+  id: string;
+  job_id: string;
+  student_id: string;
+  enrollment_id: string;
+  source_section_id?: string | null;
+  target_section_id?: string | null;
+  decision: string;
+  reason: string;
+  manual_override: boolean;
+  override_by?: string | null;
+  override_reason?: string | null;
+  final_gpa?: string | number | null;
+  attendance_rate?: string | number | null;
+  created_at: string;
+}
+
 export interface PromoteCohortInput {
   source_period_id: string;
   target_period_id: string;
   job_name: string;
-  items: StudentProgressionItemInput[];
+  items: StudentProgressionItemDto[];
+  auto_assess_fees?: boolean;
   sourcePeriodId?: string;
   targetPeriodId?: string;
   jobName?: string;
@@ -2182,10 +2232,13 @@ export interface OrbisApiClient {
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(
     sourcePeriodId: string,
-  ): Promise<StudentProgressionItemInput[]>;
+    targetPeriodId?: string,
+  ): Promise<StudentProgressionItemDto[]>;
   promoteCohort(req: PromoteCohortInput): Promise<ProgressionJobDto>;
   listprogressionJobs(): Promise<ProgressionJobDto[]>;
   getprogressionJob(id: string): Promise<ProgressionJobDto>;
+  getprogressionJobDetails(id: string): Promise<ProgressionDetailDto[]>;
+  rollbackprogressionJob(id: string): Promise<ProgressionJobDto>;
 
   // ── Workflow & Academic Overrides ───────────────────────────
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;

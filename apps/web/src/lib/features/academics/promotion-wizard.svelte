@@ -1,6 +1,7 @@
 <!--
 @component PromotionWizard
-Reviews server-evaluated cohort progression and submits one confirmed promotion request.
+Reviews server-evaluated cohort progression (academic, attendance, financial, and level rules)
+and submits one atomic promotion request with optional target-period fee assessment.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -8,14 +9,15 @@ import {
   api,
   extractErrorMessage,
   type AcademicPeriodDto,
-  type SectionDto,
-  type StudentProgressionItemInput,
+  type StudentProgressionItemDto,
   type PromoteCohortInput,
   type progressionJobDto,
 } from "$lib/api";
 import { toast, FormField, LoadingIndicator } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Input } from "@orbis/ui/input";
 import {
   Select,
@@ -83,19 +85,37 @@ const targetPeriods = $derived(
   ),
 );
 const targetSections = $derived(
-  sections.filter(
-    (section) =>
-      section.period_id === form.values.target_period_id || !section.period_id,
-  ),
+  [...sections].sort((a, b) => {
+    const levelCmp = (a.level ?? "").localeCompare(b.level ?? "");
+    if (levelCmp !== 0) return levelCmp;
+    return (l(a.name_ar, a.name) || a.code).localeCompare(
+      l(b.name_ar, b.name) || b.code,
+    );
+  }),
 );
 
 let step = $state<"setup" | "review" | "complete">("setup");
-let cohort = $state<StudentProgressionItemInput[]>([]);
+let cohort = $state<StudentProgressionItemDto[]>([]);
+let initialDecisions = $state<Record<string, string>>({});
 let sourceSectionTargets = $state<Record<string, string>>({});
+let autoAssessFees = $state(false);
 let page = $state(0);
 let isEvaluating = $state(false);
 let showExecuteConfirm = $state(false);
 let result = $state<progressionJobDto | null>(null);
+
+$effect(() => {
+  if (orgId) {
+    void api
+      .getSettings()
+      .then((s) => {
+        if (s.promotion?.auto_assess_target_fees !== undefined) {
+          autoAssessFees = s.promotion.auto_assess_target_fees;
+        }
+      })
+      .catch(() => {});
+  }
+});
 
 const sourceSectionIds = $derived([
   ...new Set(
@@ -135,13 +155,22 @@ function periodLabel(period: AcademicPeriodDto): string {
 
 function sectionLabel(sectionId: string): string {
   const section = sections.find((item) => item.id === sectionId);
-  return section ? l(section.name_ar, section.name) || section.code : sectionId;
+  if (!section) return sectionId;
+  const name = l(section.name_ar, section.name) || section.code;
+  return section.level ? `${name} (${section.level})` : name;
+}
+
+function studentLabel(item: StudentProgressionItemDto): string {
+  const name = l(item.student_name_ar, item.student_name);
+  if (name && item.student_number) return `${name} · ${item.student_number}`;
+  return name || item.student_number || item.student_id;
 }
 
 function setSourcePeriod(value: string | undefined) {
   form.setField("source_period_id", value ?? "");
   form.markTouched("source_period_id");
   cohort = [];
+  initialDecisions = {};
   sourceSectionTargets = {};
   if (form.values.target_period_id === value) {
     form.setField("target_period_id", "");
@@ -152,6 +181,7 @@ function setTargetPeriod(value: string | undefined) {
   form.setField("target_period_id", value ?? "");
   form.markTouched("target_period_id");
   cohort = [];
+  initialDecisions = {};
   sourceSectionTargets = {};
   const targetName = periods.find((period) => period.id === value);
   if (!form.values.job_name.trim() && targetName) {
@@ -168,9 +198,26 @@ async function evaluateCohort() {
 
   isEvaluating = true;
   try {
-    const evaluated = await api.evaluateCohort(form.values.source_period_id);
+    const evaluated = await api.evaluateCohort(
+      form.values.source_period_id,
+      form.values.target_period_id,
+    );
     cohort = evaluated.map((item) => ({ ...item }));
-    sourceSectionTargets = {};
+    const defaults: Record<string, string> = {};
+    const suggestedMapping: Record<string, string> = {};
+    for (const item of evaluated) {
+      defaults[item.enrollment_id] = item.decision;
+      if (
+        item.decision === "promote" &&
+        item.source_section_id &&
+        item.target_section_id &&
+        !suggestedMapping[item.source_section_id]
+      ) {
+        suggestedMapping[item.source_section_id] = item.target_section_id;
+      }
+    }
+    initialDecisions = defaults;
+    sourceSectionTargets = suggestedMapping;
     page = 0;
     step = "review";
   } catch (error: unknown) {
@@ -186,7 +233,7 @@ function setSectionTarget(sourceSectionId: string, targetSectionId: string) {
     [sourceSectionId]: targetSectionId,
   };
   cohort = cohort.map((item) =>
-    item.source_section_id === sourceSectionId
+    item.source_section_id === sourceSectionId && item.decision === "promote"
       ? { ...item, target_section_id: targetSectionId || null }
       : item,
   );
@@ -196,13 +243,43 @@ function setDecision(index: number, decision: string) {
   const itemIndex = page * PAGE_SIZE + index;
   const item = cohort[itemIndex];
   if (!item) return;
+  const isOverridden = initialDecisions[item.enrollment_id] !== decision;
+  let nextTargetSection = item.target_section_id;
+  if (decision === "promote" && item.source_section_id) {
+    nextTargetSection =
+      sourceSectionTargets[item.source_section_id] ||
+      item.target_section_id ||
+      null;
+  } else if (decision === "retain") {
+    nextTargetSection = item.source_section_id ?? null;
+  } else {
+    nextTargetSection = null;
+  }
   cohort[itemIndex] = {
     ...item,
     decision,
-    target_section_id:
-      decision === "promote" && item.source_section_id
-        ? sourceSectionTargets[item.source_section_id] || null
-        : item.target_section_id,
+    manual_override: isOverridden,
+    target_section_id: nextTargetSection,
+  };
+}
+
+function setItemTargetSection(index: number, targetSectionId: string) {
+  const itemIndex = page * PAGE_SIZE + index;
+  const item = cohort[itemIndex];
+  if (!item) return;
+  cohort[itemIndex] = {
+    ...item,
+    target_section_id: targetSectionId || null,
+  };
+}
+
+function setItemOverrideReason(index: number, reason: string) {
+  const itemIndex = page * PAGE_SIZE + index;
+  const item = cohort[itemIndex];
+  if (!item) return;
+  cohort[itemIndex] = {
+    ...item,
+    override_reason: reason,
   };
 }
 
@@ -218,13 +295,26 @@ async function executePromotion() {
       source_period_id: values.source_period_id,
       target_period_id: values.target_period_id,
       job_name: values.job_name,
+      auto_assess_fees: autoAssessFees,
       items: cohort.map((item) => ({
         student_id: item.student_id,
+        student_number: item.student_number,
+        student_name: item.student_name,
+        student_name_ar: item.student_name_ar,
         enrollment_id: item.enrollment_id,
         source_section_id: item.source_section_id,
         target_section_id: item.target_section_id,
         decision: item.decision,
         reason: item.reason,
+        final_gpa: item.final_gpa,
+        overall_percentage: item.overall_percentage,
+        attendance_rate: item.attendance_rate,
+        failed_subjects_count: item.failed_subjects_count,
+        financial_balance_due: item.financial_balance_due,
+        has_financial_hold: item.has_financial_hold,
+        already_enrolled_in_target: item.already_enrolled_in_target,
+        manual_override: item.manual_override,
+        override_reason: item.override_reason,
       })),
     };
     result = await api.promoteCohort(request);
@@ -339,6 +429,20 @@ function changeItemDecision(index: number, value: string | undefined) {
               {/snippet}
             </FormField>
           </div>
+
+          <div class="sm:col-span-2 flex items-center gap-3 rounded-md border border-border/70 px-3.5 py-2.5">
+            <Checkbox
+              id="promotion-auto-assess-fees"
+              checked={autoAssessFees}
+              onCheckedChange={(checked) => {
+                autoAssessFees = checked === true;
+              }}
+            />
+            <label for="promotion-auto-assess-fees" class="cursor-pointer text-sm text-foreground">
+              {m.common_promo_auto_assess_fees()}
+            </label>
+          </div>
+
           {#if periodsQuery.isLoading || sectionsQuery.isLoading}
             <div class="sm:col-span-2 flex items-center gap-2 text-sm text-muted-foreground" role="status">
               <LoadingIndicator size={16} />
@@ -369,12 +473,13 @@ function changeItemDecision(index: number, value: string | undefined) {
       </div>
     {:else if step === "review"}
       <section class="flex flex-col gap-5">
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {#each [
             { label: m.common_promo_total(), value: cohort.length },
             { label: m.common_promo_promoted(), value: promotedCount },
             { label: m.common_promo_retained(), value: retainedCount },
             { label: m.common_form_status_graduated(), value: graduatedCount },
+            { label: m.common_promo_excluded(), value: excludedCount },
           ] as stat (stat.label)}
             <div class="rounded-lg border border-border/70 bg-card px-4 py-3">
               <p class="text-xs text-muted-foreground">{stat.label}</p>
@@ -415,7 +520,7 @@ function changeItemDecision(index: number, value: string | undefined) {
                         <SelectContent>
                           {#each targetSections as section (section.id)}
                             <SelectItem value={section.id}>
-                              {l(section.name_ar, section.name) || section.code}
+                              {sectionLabel(section.id)}
                             </SelectItem>
                           {/each}
                         </SelectContent>
@@ -429,7 +534,7 @@ function changeItemDecision(index: number, value: string | undefined) {
 
           {#if missingTargetCount > 0}
             <div class="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="status">
-              {m.common_form_error_required_fields()}
+              {m.common_form_error_required_fields()} ({missingTargetCount})
             </div>
           {/if}
 
@@ -466,16 +571,46 @@ function changeItemDecision(index: number, value: string | undefined) {
 
             <div class="divide-y divide-border/60">
               {#each pageItems as item, index (item.enrollment_id)}
-                <div class="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1fr)_minmax(10rem,0.7fr)_minmax(12rem,0.8fr)] md:items-center">
+                <div class="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.2fr)_minmax(10rem,0.6fr)_minmax(12rem,0.8fr)] md:items-center">
                   <div class="min-w-0 text-start">
-                    <p class="truncate text-sm font-medium">
-                      {item.student_number || item.student_id}
-                    </p>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <p class="truncate text-sm font-medium">{studentLabel(item)}</p>
+                      {#if item.has_financial_hold}
+                        <Badge variant="destructive" class="text-[11px]">
+                          {m.common_promo_financial_hold()}: {item.financial_balance_due}
+                        </Badge>
+                      {/if}
+                      {#if item.already_enrolled_in_target}
+                        <Badge variant="outline" class="text-[11px]">
+                          {m.common_promo_already_enrolled()}
+                        </Badge>
+                      {/if}
+                    </div>
                     <p class="mt-0.5 text-xs text-muted-foreground">
                       {item.source_section_id ? sectionLabel(item.source_section_id) : "—"}
+                      {#if item.overall_percentage != null}
+                        <span class="mx-1">·</span>
+                        {item.overall_percentage}%
+                      {/if}
+                      {#if item.final_gpa != null}
+                        <span class="mx-1">·</span>
+                        GPA {item.final_gpa}
+                      {/if}
+                      {#if item.attendance_rate != null}
+                        <span class="mx-1">·</span>
+                        {m.common_promo_attendance()}: {item.attendance_rate}%
+                      {/if}
                     </p>
                     {#if item.reason}
                       <p class="mt-1 text-xs text-muted-foreground">{item.reason}</p>
+                    {/if}
+                    {#if item.manual_override}
+                      <Input
+                        class="mt-2 h-8 max-w-md text-xs"
+                        placeholder={m.common_promo_override_reason()}
+                        value={item.override_reason ?? ""}
+                        oninput={(event) => setItemOverrideReason(index, event.currentTarget.value)}
+                      />
                     {/if}
                   </div>
 
@@ -501,9 +636,30 @@ function changeItemDecision(index: number, value: string | undefined) {
                     </SelectContent>
                   </Select>
 
-                  <p class="text-xs text-muted-foreground md:text-end">
-                    {item.target_section_id ? sectionLabel(item.target_section_id) : "—"}
-                  </p>
+                  <div>
+                    {#if item.decision === "promote" || item.decision === "retain"}
+                      <Select
+                        type="single"
+                        value={item.target_section_id ?? ""}
+                        onValueChange={(value) => setItemTargetSection(index, value ?? "")}
+                      >
+                        <SelectTrigger class="h-9 w-full">
+                          {item.target_section_id
+                            ? sectionLabel(item.target_section_id)
+                            : m.common_form_select_class()}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {#each targetSections as section (section.id)}
+                            <SelectItem value={section.id}>
+                              {sectionLabel(section.id)}
+                            </SelectItem>
+                          {/each}
+                        </SelectContent>
+                      </Select>
+                    {:else}
+                      <p class="text-xs text-muted-foreground md:text-end">—</p>
+                    {/if}
+                  </div>
                 </div>
               {/each}
             </div>
@@ -552,6 +708,7 @@ function changeItemDecision(index: number, value: string | undefined) {
         <Button variant="outline" onclick={() => {
           const nextSourcePeriodId = form.values.target_period_id;
           cohort = [];
+          initialDecisions = {};
           result = null;
           step = "setup";
           form.reset();

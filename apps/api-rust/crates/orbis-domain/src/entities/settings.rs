@@ -9,10 +9,46 @@ use super::admission::AdmissionConfiguration;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum FinancialClearanceMode {
+    Ignore,
+    Warn,
+    Block,
+}
+
+impl Default for FinancialClearanceMode {
+    fn default() -> Self {
+        Self::Warn
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(default)]
+pub struct PromotionSettings {
+    pub financial_clearance_mode: FinancialClearanceMode,
+    pub check_attendance: bool,
+    pub auto_assess_target_fees: bool,
+    pub level_progression_order: Vec<String>,
+}
+
+impl Default for PromotionSettings {
+    fn default() -> Self {
+        Self {
+            financial_clearance_mode: FinancialClearanceMode::Warn,
+            check_attendance: true,
+            auto_assess_target_fees: false,
+            level_progression_order: Vec::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OrganizationSettings {
     #[serde(default)]
     pub academic: AcademicSettings,
+    #[serde(default)]
+    pub promotion: PromotionSettings,
     #[serde(default)]
     pub student_sort: StudentSortSettings,
     #[serde(default)]

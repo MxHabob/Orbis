@@ -218,6 +218,20 @@ async fn load_journal_lines(
     Ok(by_entry)
 }
 
+async fn inflate_journal_entries(
+    db: &impl ConnectionTrait,
+    models: Vec<journal_entry::Model>,
+) -> Result<Vec<DomainJournalEntry>, DomainError> {
+    let mut lines = load_journal_lines(db, &models).await?;
+    Ok(models
+        .into_iter()
+        .map(|model| {
+            let entry_lines = lines.remove(&model.id).unwrap_or_default();
+            map_journal_entry_model_to_domain(model, entry_lines)
+        })
+        .collect())
+}
+
 fn journal_header(entry: &DomainJournalEntry) -> journal_entry::ActiveModel {
     journal_entry::ActiveModel {
         id: Set(entry.id),
@@ -331,14 +345,23 @@ impl JournalEntryRepository for FinanceRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        let mut lines = load_journal_lines(&self.db, &models).await?;
-        Ok(models
-            .into_iter()
-            .map(|model| {
-                let entry_lines = lines.remove(&model.id).unwrap_or_default();
-                map_journal_entry_model_to_domain(model, entry_lines)
-            })
-            .collect())
+        inflate_journal_entries(&self.db, models).await
+    }
+
+    async fn find_by_source(
+        &self,
+        org_id: Uuid,
+        source_type: &str,
+        source_id: Uuid,
+    ) -> Result<Vec<DomainJournalEntry>, DomainError> {
+        let models = JournalEntryEntity::find()
+            .filter(journal_entry::Column::OrgId.eq(org_id))
+            .filter(journal_entry::Column::SourceType.eq(source_type))
+            .filter(journal_entry::Column::SourceId.eq(source_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        inflate_journal_entries(&self.db, models).await
     }
 
     async fn account_balances_at(
@@ -1353,6 +1376,68 @@ impl StudentFeeRepository for FinanceRepoImpl {
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
         insert_journal_lines(&txn, entry).await?;
+        txn.commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+
+    async fn save_fee_cancellation(
+        &self,
+        previous: &DomainStudentFee,
+        updated: &DomainStudentFee,
+        reversal_entry: &DomainJournalEntry,
+        original_journal_id: Option<Uuid>,
+        reason: &str,
+    ) -> Result<(), DomainError> {
+        reversal_entry
+            .validate_balance()
+            .map_err(DomainError::Validation)?;
+        let txn = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        update_fee_balance(&txn, previous, updated).await?;
+        if let Some(orig_id) = original_journal_id {
+            let update = JournalEntryEntity::update_many()
+                .col_expr(journal_entry::Column::IsReversed, Expr::value(true))
+                .col_expr(
+                    journal_entry::Column::ReversedBy,
+                    Expr::value(Some(reversal_entry.id)),
+                )
+                .col_expr(
+                    journal_entry::Column::ReversalReason,
+                    Expr::value(reason.to_owned()),
+                )
+                .col_expr(
+                    journal_entry::Column::UpdatedAt,
+                    Expr::value(reversal_entry.updated_at),
+                )
+                .col_expr(
+                    journal_entry::Column::Version,
+                    Expr::col(journal_entry::Column::Version).add(1),
+                )
+                .filter(journal_entry::Column::Id.eq(orig_id))
+                .filter(journal_entry::Column::OrgId.eq(reversal_entry.org_id))
+                .filter(
+                    Condition::any()
+                        .add(journal_entry::Column::IsReversed.eq(false))
+                        .add(journal_entry::Column::IsReversed.is_null()),
+                )
+                .exec(&txn)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+            if update.rows_affected != 1 {
+                return Err(DomainError::ConcurrencyConflict(
+                    "Original fee invoice journal was already reversed".into(),
+                ));
+            }
+        }
+        journal_header(reversal_entry)
+            .insert(&txn)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        insert_journal_lines(&txn, reversal_entry).await?;
         txn.commit()
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))
