@@ -115,68 +115,69 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 </script>
 
 <TooltipProvider delayDuration={150}>
-	<div class="app-sidebar flex h-full w-12 shrink-0 flex-col items-center justify-between py-2 select-none">
-		<div class="flex min-h-0 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden scrollbar-hide pb-1">
-			<OrgSidebarSwitcher
+  <nav
+    aria-label={orgNameDisplay || m.common_nav_overview()}
+    class="app-sidebar flex h-full min-h-0 w-12 shrink-0 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden py-2 select-none"
+  >
+    <div class="flex shrink-0 flex-col items-center gap-2">
+      <OrgSidebarSwitcher
         {orgId}
         orgName={orgNameDisplay ?? undefined}
         orgNameAr={orgNameArabic}
         primaryColor={orgPrimaryColor}
       />
 
-			<!-- Divider -->
-			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 self-center shrink-0"></div>
+      <!-- Divider -->
+      <div class="h-px w-8 self-center shrink-0 bg-border"></div>
 
-			{#each navItems as item (item.href)}
-				<div class="flex">
-					<Tooltip>
-						<TooltipTrigger>
-							<Button
-								href={localizeHref(item.href)}
-								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
-								size="icon"
-								class="rounded-[10px]"
-								aria-label={item.label}
-								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
-								onmouseenter={() => {
-									// Prefetch data for the destination page on hover
-									const segment = item.href.split('/').pop() || 'dashboard';
-									prefetchRouteData(segment, orgId);
-								}}
-							>
-								<item.icon size={20} />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent side="inline-end" sideOffset={12}>{item.label}</TooltipContent>
-					</Tooltip>
-				</div>
-			{/each}
-		</div>
+      {#each navItems as item (item.href)}
+        <div class="flex shrink-0">
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                href={localizeHref(item.href)}
+                variant={isActive(item.href, item.match) ? "default" : "ghost"}
+                size="icon"
+                class="rounded-[10px]"
+                aria-label={item.label}
+                aria-current={isActive(item.href, item.match) ? "page" : undefined}
+                onmouseenter={() => {
+                  // Prefetch data for the destination page on hover
+                  const segment = item.href.split("/").pop() || "dashboard";
+                  prefetchRouteData(segment, orgId);
+                }}
+              >
+                <item.icon size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="inline-end" sideOffset={12}>
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      {/each}
+    </div>
 
-		<div class="flex shrink-0 flex-col gap-1 items-center w-full relative">
-			<div class="sidebar-aux flex flex-col items-center w-8 gap-1">
-				<OnboardingPopover {orgId} />
-				<GitIntegrationPopover {orgId} />
-				<UpgradeButton />
-				<AutomationStatusPopover {orgId} />
+    <div class="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2 relative">
+      <div class="sidebar-aux flex w-8 flex-col items-center gap-1">
+        <OnboardingPopover {orgId} />
+        <GitIntegrationPopover {orgId} />
+        <UpgradeButton />
+        <AutomationStatusPopover {orgId} />
         <MoreActionsDropdown orgName={orgNameDisplay ?? undefined} />
-			</div>
-			<UserSidebarMenu {orgId} />
-		</div>
-	</div>
+      </div>
+      <UserSidebarMenu {orgId} />
+    </div>
+  </nav>
 </TooltipProvider>
 
 <style>
-	@media (max-height: 720px) {
-		.app-sidebar :global(.sidebar-aux) {
-			display: none;
-		}
-	}
+  .app-sidebar {
+    scrollbar-width: none;
+    scroll-padding-block: 0.5rem;
+  }
 
-	@media (max-height: 600px) {
-		.app-sidebar {
-			padding-top: 0.25rem;
-			padding-bottom: 0.25rem;
-		}
-	}
+  .app-sidebar::-webkit-scrollbar {
+    display: none;
+  }
 </style>

@@ -4,27 +4,47 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import {
+  extractErrorMessage,
+  type PaymentDto,
+  type StudentFeeDto,
+} from "$lib/api";
 import { CheckCircle, Document, InfoCircle } from "@orbis/icons";
+import { Button } from "@orbis/ui/button";
 import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
-import { onMount } from "svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
+import {
+  createStudentFeesQuery,
+  createStudentPaymentsQuery,
+} from "$lib/features/students/queries";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/core/i18n";
+import { formatCurrency } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
-let fees = $state<any[]>([]);
-let payments = $state<any[]>([]);
-let isLoading = $state(true);
+const feesQuery = createStudentFeesQuery(() => studentId);
+const paymentsQuery = createStudentPaymentsQuery(() => studentId);
 
-let totalFees = $derived(
+const fees = $derived<StudentFeeDto[]>(feesQuery.data ?? []);
+const payments = $derived<PaymentDto[]>(paymentsQuery.data ?? []);
+const isLoading = $derived(feesQuery.isLoading || paymentsQuery.isLoading);
+const isError = $derived(feesQuery.isError || paymentsQuery.isError);
+const errorMessage = $derived(
+  feesQuery.error
+    ? extractErrorMessage(feesQuery.error)
+    : paymentsQuery.error
+      ? extractErrorMessage(paymentsQuery.error)
+      : "",
+);
+
+const totalFees = $derived(
   fees.reduce((s, f) => s + Number(f.net_amount || 0), 0),
 );
-let totalPaid = $derived(
+const totalPaid = $derived(
   fees.reduce((s, f) => s + Number(f.paid_amount || 0), 0),
 );
-let balanceDue = $derived(
+const balanceDue = $derived(
   fees.reduce(
     (s, f) =>
       s +
@@ -34,27 +54,6 @@ let balanceDue = $derived(
     0,
   ),
 );
-
-onMount(() => loadFinance());
-
-async function loadFinance() {
-  isLoading = true;
-  try {
-    if (!orgId || !studentId) return;
-    const [f, p] = await Promise.all([
-      api.listStudentFees({ student_id: studentId }),
-      api.listPayments({ student_id: studentId }),
-    ]);
-    fees = f;
-    payments = p;
-  } catch (e) {
-    console.error(e);
-  } finally {
-    isLoading = false;
-  }
-}
-
-// ── Grid Sources ────────────────────────────────────────────────────────
 
 const feesSource = $derived(
   fees.map((f, i) => {
@@ -73,11 +72,12 @@ const feesSource = $derived(
     return {
       ...f,
       __idx: i + 1,
-      fee_name: f.notes || m.common_ft_category_tuition(),
-      total: formatCurrency(originalAmount),
-      paid: formatCurrency(paidAmount),
-      discount: formatCurrency(discountAmount),
-      balance: formatCurrency(balance),
+      fee_name: m.common_ft_category_tuition(),
+      due_date: f.due_date || null,
+      total: originalAmount,
+      paid: paidAmount,
+      discount: discountAmount,
+      balance,
       status: displayStatus,
     };
   }),
@@ -106,12 +106,27 @@ const feesCols: OrbisColumnDef[] = [
     readonly: true,
   },
   {
+    id: "due_date",
+    prop: "due_date",
+    header: m.common_overview_date(),
+    name: m.common_overview_date(),
+    type: "date",
+    sortable: true,
+    width: 120,
+    size: 120,
+    readonly: true,
+    cellClass: "font-mono",
+  },
+  {
     id: "total",
     prop: "total",
     header: m.common_ft_col_amount(),
     name: m.common_ft_col_amount(),
-    width: 110,
-    size: 110,
+    type: "currency",
+    aggregate: "sum",
+    sortable: true,
+    width: 120,
+    size: 120,
     readonly: true,
     align: "end",
     cellClass: "font-mono font-medium",
@@ -121,8 +136,11 @@ const feesCols: OrbisColumnDef[] = [
     prop: "paid",
     header: m.finance_fees_total_collected(),
     name: m.finance_fees_total_collected(),
-    width: 110,
-    size: 110,
+    type: "currency",
+    aggregate: "sum",
+    sortable: true,
+    width: 120,
+    size: 120,
     readonly: true,
     align: "end",
     cellClass: "font-mono text-emerald-600 font-medium",
@@ -132,8 +150,11 @@ const feesCols: OrbisColumnDef[] = [
     prop: "balance",
     header: m.finance_fees_total_due(),
     name: m.finance_fees_total_due(),
-    width: 110,
-    size: 110,
+    type: "currency",
+    aggregate: "sum",
+    sortable: true,
+    width: 120,
+    size: 120,
     readonly: true,
     align: "end",
     cellClass: "font-mono font-bold text-rose-600",
@@ -188,8 +209,10 @@ const paymentsCols: OrbisColumnDef[] = [
     prop: "date",
     header: m.finance_fees_col_pay_date(),
     name: m.finance_fees_col_pay_date(),
-    width: 120,
-    size: 120,
+    type: "date",
+    sortable: true,
+    width: 125,
+    size: 125,
     readonly: true,
     cellClass: "font-mono",
   },
@@ -198,8 +221,11 @@ const paymentsCols: OrbisColumnDef[] = [
     prop: "amount",
     header: m.finance_payments_col_amount(),
     name: m.finance_payments_col_amount(),
-    width: 120,
-    size: 120,
+    type: "currency",
+    aggregate: "sum",
+    sortable: true,
+    width: 125,
+    size: 125,
     readonly: true,
     align: "end",
     cellClass: "font-mono font-bold text-emerald-600",
@@ -212,68 +238,90 @@ const paymentsSource = $derived(
     __idx: i + 1,
     receipt: `#${p.receipt_number || p.id?.slice(0, 8)}`,
     method: p.method || m.finance_pos_cash(),
-    date: formatDate(p.created_at) || "—",
-    amount: formatCurrency(Number(p.amount || 0)),
+    date: p.paid_at || p.created_at || null,
+    amount: Number(p.amount || 0),
   })),
 );
 
 const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="flex flex-col gap-6 text-xs text-start font-sans">
-  <!-- Summary Statistics Cards -->
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-    <StudentMetricCard
-      title={m.finance_fees_total_fees()}
-      value={formatCurrency(totalFees)}
-      icon={Document}
-      loading={isLoading}
-    />
-    <StudentMetricCard
-      title={m.finance_fees_total_paid()}
-      value={formatCurrency(totalPaid)}
-      icon={CheckCircle}
-      tone="success"
-      loading={isLoading}
-    />
-    <StudentMetricCard
-      title={m.finance_fees_balance_due()}
-      value={formatCurrency(balanceDue)}
-      icon={InfoCircle}
-      tone={balanceDue > 0 ? "danger" : "success"}
-      loading={isLoading}
-    />
+{#if isError}
+  <StudentSectionState
+    icon={Document}
+    title={m.common_search_load_failed()}
+    description={errorMessage}
+  >
+    {#snippet action()}
+      <Button
+        variant="outline"
+        size="sm"
+        onclick={() => {
+          void feesQuery.refetch();
+          void paymentsQuery.refetch();
+        }}
+      >
+        {m.common_retry()}
+      </Button>
+    {/snippet}
+  </StudentSectionState>
+{:else}
+  <div class="flex flex-col gap-6 text-xs text-start font-sans">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <StudentMetricCard
+        title={m.finance_fees_total_fees()}
+        value={formatCurrency(totalFees)}
+        icon={Document}
+        loading={isLoading}
+      />
+      <StudentMetricCard
+        title={m.finance_fees_total_paid()}
+        value={formatCurrency(totalPaid)}
+        icon={CheckCircle}
+        tone="success"
+        loading={isLoading}
+      />
+      <StudentMetricCard
+        title={m.finance_fees_balance_due()}
+        value={formatCurrency(balanceDue)}
+        icon={InfoCircle}
+        tone={balanceDue > 0 ? "danger" : "success"}
+        loading={isLoading}
+      />
+    </div>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="text-xs font-semibold text-foreground">
+        {m.finance_fees_assigned_title()}
+      </h3>
+      <div class="h-[320px] w-full">
+        <OrbisGrid
+          columns={feesCols}
+          source={feesSource}
+          loading={isLoading}
+          clientQuery
+          emptyTitle={m.finance_fees_no_fees()}
+          {rtl}
+          readonly
+        />
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="text-xs font-semibold text-foreground">
+        {m.finance_fees_payments_title()}
+      </h3>
+      <div class="h-[320px] w-full">
+        <OrbisGrid
+          columns={paymentsCols}
+          source={paymentsSource}
+          loading={isLoading}
+          clientQuery
+          emptyTitle={m.finance_fees_no_payments()}
+          {rtl}
+          readonly
+        />
+      </div>
+    </section>
   </div>
-
-  <section class="flex flex-col gap-2">
-    <h3 class="text-xs font-semibold text-foreground">
-      {m.finance_fees_assigned_title()}
-    </h3>
-    <div class="h-56 w-full">
-      <OrbisGrid
-        columns={feesCols}
-        source={feesSource}
-        loading={isLoading}
-        emptyTitle={m.finance_fees_no_fees()}
-        {rtl}
-        readonly
-      />
-    </div>
-  </section>
-
-  <section class="flex flex-col gap-2">
-    <h3 class="text-xs font-semibold text-foreground">
-      {m.finance_fees_payments_title()}
-    </h3>
-    <div class="h-56 w-full">
-      <OrbisGrid
-        columns={paymentsCols}
-        source={paymentsSource}
-        loading={isLoading}
-        emptyTitle={m.finance_fees_no_payments()}
-        {rtl}
-        readonly
-      />
-    </div>
-  </section>
-</div>
+{/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
 interface Weekday {
   value?: number;
-  day?: number; // 1 = Sunday, 2 = Monday, etc.
+  day?: number;
   label: string;
   isToday?: boolean;
   dateLabel?: string;
@@ -26,43 +26,47 @@ let {
 const isArabic = $derived(locale === "ar");
 </script>
 
-<div class="flex flex-1 min-w-0 border-b border-border/60 bg-muted/10">
-  {#each weekdays as day, idx (day.value ?? day.day ?? idx)}
-    {@const dayValue = day.value ?? day.day ?? (idx + 1)}
-    {@const isSelected = activeDay === dayValue}
-    {@const count = lessonsByDay[dayValue] ?? 0}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      onclick={() => onDaySelect?.(dayValue)}
-      class="flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-3 border-e border-border/40 text-center transition-colors last:border-e-0 {day.isToday
-        ? 'bg-primary/5 font-bold'
-        : isSelected
-          ? 'bg-accent/40 font-bold'
-          : 'hover:bg-muted/30 font-medium'}"
-    >
-      <div class="flex items-center justify-center gap-1.5 min-w-0 truncate">
-        <span class="text-xs truncate text-foreground {day.isToday ? 'text-primary' : ''}">
-          {day.label}
-        </span>
-        {#if day.dateLabel}
-          <span class="text-[10px] text-muted-foreground font-normal">
-            {day.dateLabel}
-          </span>
-        {/if}
-        {#if day.isToday}
-          <span class="inline-block h-1.5 w-1.5 rounded-full bg-primary shrink-0" title={isArabic ? "اليوم" : "Today"}></span>
-        {/if}
-      </div>
-
-      {#if count > 0}
+{#each weekdays as day, idx (day.value ?? day.day ?? idx)}
+  {@const dayValue = day.value ?? day.day ?? idx + 1}
+  {@const isSelected = activeDay === dayValue}
+  {@const count = lessonsByDay[dayValue] ?? 0}
+  <button
+    type="button"
+    onclick={() => onDaySelect?.(dayValue)}
+    class="sticky top-0 z-20 flex h-11 min-w-0 items-center justify-center gap-2 border-b border-e border-border bg-card px-3 text-center transition-colors last:border-e-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring {day.isToday
+      ? 'bg-primary/[0.06] font-semibold'
+      : isSelected
+        ? 'bg-accent/50 font-semibold'
+        : 'hover:bg-muted/30 font-medium'}"
+  >
+    <div class="flex min-w-0 items-center justify-center gap-1.5 truncate">
+      {#if day.isToday}
         <span
-          class="shrink-0 rounded-full bg-muted px-1.5 py-0.2 text-[9px] font-semibold text-muted-foreground"
-          title={isArabic ? `${count} حصص` : `${count} lessons`}
-        >
-          {count}
+          class="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+          title={isArabic ? "اليوم" : "Today"}
+        ></span>
+      {/if}
+      <span
+        class="truncate text-xs {day.isToday
+          ? 'text-primary'
+          : 'text-foreground'}"
+      >
+        {day.label}
+      </span>
+      {#if day.dateLabel}
+        <span class="text-[11px] font-normal text-muted-foreground tabular-nums">
+          {day.dateLabel}
         </span>
       {/if}
     </div>
-  {/each}
-</div>
+
+    {#if count > 0}
+      <span
+        class="shrink-0 rounded-sm border border-border/70 bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground tabular-nums leading-none"
+        title={isArabic ? `${count} حصص` : `${count} lessons`}
+      >
+        {count}
+      </span>
+    {/if}
+  </button>
+{/each}

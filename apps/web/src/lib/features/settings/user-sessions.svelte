@@ -1,32 +1,46 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
-import { api, type UserDeviceDto } from "$lib/api";
-import { confirmStore } from "$lib/stores";
+import { api, extractErrorMessage, type UserDeviceDto } from "$lib/api";
+import { authStore, confirmStore } from "$lib/stores";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { Computer, Trash, ShieldCheck } from "@orbis/icons";
 import { formatDate, l } from "$lib/core/i18n";
+import { createMutation, createQuery, useQueryClient } from "@tanstack/svelte-query";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
-let activeSessions = $state<UserDeviceDto[]>([]);
-let isLoading = $state(true);
+const queryClient = useQueryClient();
+const isOwnAccount = $derived(
+  Boolean(userId) && authStore.userId === userId,
+);
 
-async function loadSessions() {
-  if (!userId) return;
-  isLoading = true;
-  try {
-    const rawSessions = await api.listDevices();
-    activeSessions = rawSessions;
-  } catch (err) {
-    console.error("Failed to load user sessions:", err);
-  } finally {
-    isLoading = false;
-  }
-}
+const devicesQuery = createQuery<UserDeviceDto[]>(() => ({
+  queryKey: ["auth", "devices", orgId, userId],
+  queryFn: () => api.listDevices(),
+  enabled: isOwnAccount,
+  staleTime: 60 * 1000,
+}));
+
+const activeSessions = $derived(devicesQuery.data ?? []);
+
+const revokeMutation = createMutation(() => ({
+  mutationFn: (deviceId: string) => api.revokeDevice(deviceId),
+  onSuccess: async () => {
+    await queryClient.invalidateQueries({
+      queryKey: ["auth", "devices", orgId, userId],
+    });
+    toast.success(m.ui_copy_device_session_revoked_1690099f());
+  },
+  onError: (e: unknown) => {
+    toast.error(
+      extractErrorMessage(e) || m.ui_copy_failed_to_revoke_device_fa2a67e6(),
+    );
+  },
+}));
 
 async function handleRevoke(deviceId: string, deviceName: string) {
   const confirmed = await confirmStore.prompt({
@@ -39,24 +53,21 @@ async function handleRevoke(deviceId: string, deviceName: string) {
     variant: "destructive",
   });
   if (confirmed) {
-    try {
-      await api.revokeDevice(deviceId);
-      activeSessions = activeSessions.filter((s) => s.id !== deviceId);
-      toast.success(m.ui_copy_device_session_revoked_1690099f());
-    } catch (e: any) {
-      toast.error(e?.message || m.ui_copy_failed_to_revoke_device_fa2a67e6());
-    }
+    revokeMutation.mutate(deviceId);
   }
 }
-
-onMount(loadSessions);
 </script>
 
-{#if isLoading}
+{#if !isOwnAccount}
+  <EmptyState
+    icon={Computer}
+    title={m.settings_user_detail_no_sessions()}
+  />
+{:else if devicesQuery.isLoading}
   <div class="flex flex-col gap-4">
-    {#each Array(3) as _}
+    {#each Array(3) as _, index (index)}
       <div class="flex items-center gap-3 py-3">
-        <Skeleton class="h-10 w-10 rounded-lg" />
+        <Skeleton class="h-10 w-10 rounded-md" />
         <div class="flex flex-col gap-1">
           <Skeleton class="h-4 w-40" />
           <Skeleton class="h-3 w-60" />
@@ -64,25 +75,34 @@ onMount(loadSessions);
       </div>
     {/each}
   </div>
+{:else if devicesQuery.isError}
+  <EmptyState
+    icon={Computer}
+    title={m.common_search_load_failed()}
+    description={extractErrorMessage(devicesQuery.error)}
+    actionLabel={m.common_retry()}
+    onaction={() => void devicesQuery.refetch()}
+  />
 {:else if activeSessions.length === 0}
-  <div
-    class="flex flex-col items-center justify-center py-12 text-muted-foreground border border-border border-dashed rounded-xl gap-3"
-  >
-    <Computer size={40} class="text-muted-foreground/30" />
-    <p class="text-xs font-semibold">
-      {m.settings_user_detail_no_sessions()}
-    </p>
-  </div>
+  <EmptyState
+    icon={Computer}
+    title={m.settings_user_detail_no_sessions()}
+  />
 {:else}
   <div class="flex flex-col gap-3 text-start">
     {#each activeSessions as session (session.id)}
-      {@const deviceTitle = session.device_name || session.device_id || "Unknown Device"}
-      {@const platformInfo = [session.os, session.browser].filter(Boolean).join(" • ") || session.device_type}
+      {@const deviceTitle =
+        session.device_name || session.device_id || "Unknown Device"}
+      {@const platformInfo =
+        [session.os, session.browser].filter(Boolean).join(" • ") ||
+        session.device_type}
       <div
-        class="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-card hover:border-border transition-colors"
+        class="flex items-center justify-between p-3.5 rounded-md border border-border bg-card transition-colors"
       >
         <div class="flex items-center gap-3.5">
-          <div class="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary shrink-0">
+          <div
+            class="p-2.5 rounded-md bg-primary/10 border border-primary/20 text-primary shrink-0"
+          >
             <Computer size={18} />
           </div>
           <div class="flex flex-col gap-1 text-start">
@@ -101,7 +121,9 @@ onMount(loadSessions);
               {/if}
             </div>
             <span class="text-[11px] text-muted-foreground font-mono">
-              {platformInfo} • {session.last_active_at ? formatDate(session.last_active_at, "datetime") : "—"}
+              {platformInfo} • {session.last_active_at
+                ? formatDate(session.last_active_at, "datetime")
+                : "—"}
             </span>
           </div>
         </div>
@@ -110,6 +132,7 @@ onMount(loadSessions);
           variant="ghost"
           size="sm"
           class="text-xs text-destructive hover:bg-destructive/10 h-8 px-3 gap-1.5 cursor-pointer"
+          disabled={revokeMutation.isPending}
           onclick={() => handleRevoke(session.id, deviceTitle)}
         >
           <Trash size={13} />

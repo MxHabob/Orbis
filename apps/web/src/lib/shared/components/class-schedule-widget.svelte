@@ -132,7 +132,7 @@ const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
     >
       <Calendar size={13} />
       <span>{m.ui_class_schedule_full_schedule()}</span>
-      <ArrowForward size={11} class="opacity-70" />
+      <ArrowForward size={11} class="opacity-70 rtl:rotate-180" />
     </a>
   {/snippet}
 
@@ -153,7 +153,7 @@ const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
     </div>
   {:else}
     <!-- Compact, responsive viewport container -->
-    <div class="w-full max-h-95 overflow-hidden rounded-md bg-card">
+    <div class="flex w-full max-h-[540px] flex-col">
       <TimetableGrid
         {timeSlots}
         {weekdays}

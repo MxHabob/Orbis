@@ -107,6 +107,11 @@ function buildMenuItems(): NonNullable<MenuOptions["items"]> {
       accelerator: "CmdOrCtrl+P",
       action: () => window.print(),
     },
+    {
+      text: m.titlebar_menu_reload(),
+      accelerator: "CmdOrCtrl+R",
+      action: () => window.location.reload(),
+    },
     SEP,
     {
       text: m.titlebar_menu_check_updates(),

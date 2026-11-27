@@ -592,6 +592,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 auto_graduate_final_level: s.academic.auto_graduate_final_level,
                 exclude_withdrawn: s.academic.exclude_withdrawn,
                 grade_bands: s.academic.grade_bands,
+                ..Default::default()
             },
             student_sort: StudentSortSettingsDto {
                 field: s.student_sort.field,
@@ -722,6 +723,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 auto_graduate_final_level: s.academic.auto_graduate_final_level,
                 exclude_withdrawn: s.academic.exclude_withdrawn,
                 grade_bands: s.academic.grade_bands,
+                ..Default::default()
             },
             student_sort: StudentSortSettings {
                 field: s.student_sort.field,

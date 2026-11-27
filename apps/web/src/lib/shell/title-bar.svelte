@@ -12,6 +12,7 @@ import {
   Maximize,
   Minus,
   Moon,
+  Refresh,
   Restore,
   Search,
   Sidebar,
@@ -174,6 +175,16 @@ onMount(() => {
           aria-label={m.titlebar_menu_forward()}
         >
           <ChevronRight size={14} class="rtl:rotate-180" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="size-7 text-muted-foreground hover:text-foreground"
+          onclick={() => window.location.reload()}
+          title={m.titlebar_menu_reload()}
+          aria-label={m.titlebar_menu_reload()}
+        >
+          <Refresh size={14} />
         </Button>
       </div>
     {/if}

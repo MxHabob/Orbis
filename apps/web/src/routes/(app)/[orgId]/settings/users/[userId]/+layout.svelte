@@ -8,30 +8,35 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
-import { api } from "$lib/api";
-import type { User, AccountProvisioningResultDto } from "$lib/api";
-import { Button } from "@orbis/ui/button";
+import { api, extractErrorMessage } from "$lib/api";
+import type { UserDto, AccountProvisioningResultDto } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
-import { Lock, ShieldCheck, Trash } from "@orbis/icons";
+import { Lock, Refresh, ShieldCheck, Trash, User } from "@orbis/icons";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import SplitActionMenu, {
+  type SplitActionItem,
+} from "$lib/shared/components/split-action-menu.svelte";
 import { userAvatarDrafts } from "$lib/features/settings/user-avatar-draft.svelte";
-import RelatedActions, {
-  type ActionGroup,
-  type FooterAction,
-} from "$lib/shared/components/related-actions.svelte";
 import type { Snippet } from "svelte";
 
+import { formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
+import {
+  isUserActive,
+  invalidateUserQueries,
+} from "$lib/features/settings/user-detail";
+import { useQueryClient } from "@tanstack/svelte-query";
 import { createUserQuery } from "$lib/features/settings/queries";
 
 let { children }: { children: Snippet } = $props();
 
+const queryClient = useQueryClient();
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
 $effect(() => {
@@ -44,14 +49,12 @@ const userQuery = createUserQuery(
   () => String(orgId || ""),
   () => String(userId || ""),
 );
-const user = $derived((userQuery.data as any) ?? null);
+const user = $derived<UserDto | null>(userQuery.data ?? null);
 const isLoading = $derived(userQuery.isLoading);
 const fullName = $derived(user?.full_name ?? "");
 const email = $derived(user?.email ?? "");
 const role = $derived(user?.roles?.[0] ?? "staff");
-const isActiveState = $derived(
-  user?.is_active !== undefined ? Boolean(user.is_active) : true,
-);
+const isActiveState = $derived(isUserActive(user));
 const avatarUrl = $derived(user?.avatar_url ?? null);
 
 // CSPRNG Temporary Password Generation
@@ -76,7 +79,7 @@ async function handleGenerateTempPassword() {
       credentialModalOpen = true;
       toast.success(m.employees_password_reset_success());
     } catch (e: unknown) {
-      toast.error((e as any)?.message || m.shared_ui_reset_password_failed());
+      toast.error(extractErrorMessage(e) || m.shared_ui_reset_password_failed());
     }
   }
 }
@@ -91,11 +94,12 @@ async function handleDeleteUser() {
   });
   if (!confirmed) return;
   try {
-    await api.updateUser(userId as string, { is_active: false } as any);
+    await api.updateUser(userId, { is_active: false });
+    await invalidateUserQueries(queryClient, String(orgId || ""), userId);
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {
-    toast.error((e as any)?.message || m.shared_ui_action_failed());
+    toast.error(extractErrorMessage(e) || m.shared_ui_action_failed());
   }
 }
 
@@ -120,63 +124,74 @@ const menuItems = $derived([
   },
 ]);
 
-const relatedActionGroups = $derived<ActionGroup[]>(
-  user
-    ? [
-        {
-          id: "account_security",
-          title: m.ui_copy_account_security_access_8a19d0e5(),
-          icon: Lock,
-          defaultExpanded: true,
-          subLinks: [
-            {
-              id: "generate_temp_password",
-              label: m.ui_copy_generate_temp_password_5e2ee7d3(),
-              onclick: handleGenerateTempPassword,
-            },
-            {
-              id: "reset_password",
-              label: m.settings_user_detail_btn_reset_pass(),
-              onclick: handleGenerateTempPassword,
-            },
-            {
-              id: "active_sessions",
-              label: m.settings_security_sessions(),
-              href: `/${orgId}/settings/users/${userId}/sessions`,
-            },
-          ],
-        },
-        {
-          id: "permissions_audit",
-          title: m.ui_copy_roles_audit_aff035ef(),
-          icon: ShieldCheck,
-          defaultExpanded: true,
-          subLinks: [
-            {
-              id: "user_roles",
-              label: m.settings_nav_permissions(),
-              href: `/${orgId}/settings/users/${userId}/roles`,
-            },
-            {
-              id: "user_audit",
-              label: m.ui_copy_user_audit_logs_55f2f1f7(),
-              href: `/${orgId}/settings/audit?userId=${userId}`,
-            },
-          ],
-        },
-      ]
-    : [],
-);
+async function handleToggleAccountStatus() {
+  if (!userId || !user) return;
+  const nextState = !isActiveState;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_word_status ? m.common_word_status() : m.common_status(),
+    description: nextState
+      ? m.settings_user_detail_activate_confirm
+        ? m.settings_user_detail_activate_confirm()
+        : m.ui_copy_activate_account_89c1b85d()
+      : m.settings_user_detail_deactivate_confirm
+        ? m.settings_user_detail_deactivate_confirm()
+        : m.ui_copy_deactivate_account_084a7a7b(),
+    confirmText: m.common_word_status
+      ? m.common_word_status()
+      : m.ui_copy_confirm_0100f51c(),
+    variant: nextState ? "default" : "destructive",
+  });
+  if (!confirmed) return;
+  try {
+    await api.updateUser(userId, { is_active: nextState });
+    await invalidateUserQueries(queryClient, String(orgId || ""), userId);
+    toast.success(
+      nextState
+        ? m.settings_user_detail_activate_success
+          ? m.settings_user_detail_activate_success()
+          : m.ui_copy_account_activated_ecaf5563()
+        : m.settings_user_detail_deactivate_success
+          ? m.settings_user_detail_deactivate_success()
+          : m.ui_copy_account_deactivated_37ae84cf(),
+    );
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e) || m.ui_copy_update_failed_19a589b0());
+  }
+}
 
-const relatedFooterActions = $derived<FooterAction[]>(
+const headerActions = $derived<SplitActionItem[]>(
   user
     ? [
+        {
+          id: "refresh",
+          label: m.common_refresh(),
+          icon: Refresh,
+          disabled: userQuery.isFetching,
+          onSelect: () => void userQuery.refetch(),
+        },
+        {
+          id: "audit",
+          label: m.ui_copy_user_audit_logs_55f2f1f7(),
+          icon: ShieldCheck,
+          onSelect: () =>
+            void goto(localizeHref(`/${orgId}/settings/audit?userId=${userId}`)),
+        },
+        {
+          id: "toggle-status",
+          label: isActiveState
+            ? m.ui_copy_deactivate_account_084a7a7b()
+            : m.ui_copy_activate_account_89c1b85d(),
+          icon: User,
+          separatorBefore: true,
+          onSelect: handleToggleAccountStatus,
+        },
         {
           id: "delete_user",
           label: m.settings_user_detail_btn_delete(),
           icon: Trash,
-          variant: "destructive",
-          onclick: handleDeleteUser,
+          destructive: true,
+          separatorBefore: true,
+          onSelect: handleDeleteUser,
         },
       ]
     : [],
@@ -221,22 +236,15 @@ const relatedFooterActions = $derived<FooterAction[]>(
     {/if}
 
     {#snippet actions()}
-      <Button
+      <SplitActionMenu
+        label={m.settings_user_detail_btn_reset_pass()}
+        menuLabel={m.operations_ui_actions()}
+        icon={Lock}
         variant="outline"
-        size="sm"
-        onclick={handleGenerateTempPassword}
-      >
-        {m.settings_user_detail_btn_reset_pass()}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        class="text-destructive border-destructive/20 hover:bg-destructive/5"
-        onclick={handleDeleteUser}
-      >
-        <Trash size={13} class="me-1" />
-        {m.settings_user_detail_btn_delete()}
-      </Button>
+        disabled={isLoading || !user}
+        actions={headerActions}
+        onprimary={handleGenerateTempPassword}
+      />
     {/snippet}
   </DetailPageHeader>
 
@@ -244,47 +252,61 @@ const relatedFooterActions = $derived<FooterAction[]>(
   <div class="flex-1 w-full overflow-hidden">
     <MainViewport
       name="user-detail-viewport"
-      leftWidth={{ default: 220, min: 180 }}
+      leftWidth={{ default: 256, min: 220 }}
     >
       <!-- Left Sidebar (Avatar + basic info) -->
       {#snippet left()}
         <div
           class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent select-none"
         >
-          <div class="w-full flex justify-start">
+          <div class="w-full flex justify-center">
             <AvatarUpload
               {avatarUrl}
               bind:file={userAvatarDrafts[userId ?? ""]}
               deferred
               entityType="user"
               entityId={String(userId)}
-              size={220}
+              size={192}
               fallbackText={fullName}
-              class="rounded-xl border border-border"
+              class="rounded-md border border-border"
             />
           </div>
 
-          <div class="flex flex-col gap-1 w-full pt-1 text-start">
+          <div class="flex flex-col gap-1.5 w-full pt-1 text-start">
             <span
               class="text-xs text-muted-foreground font-mono truncate max-w-full"
               >{email || "No email"}</span
             >
-            <div class="pt-2">
+            <div class="flex flex-wrap items-center gap-1.5 pt-1">
               <Badge
                 variant="secondary"
                 class="text-[10px] font-semibold px-2 py-0.5 uppercase tracking-wider"
               >
                 {role.replace("_", " ")}
               </Badge>
+              {#if user?.is_mfa_enabled}
+                <Badge
+                  variant="success"
+                  class="text-[10px] font-semibold px-2 py-0.5 gap-1"
+                >
+                  <ShieldCheck size={11} />
+                  <span>MFA</span>
+                </Badge>
+              {/if}
             </div>
+            {#if user?.created_at}
+              <span class="text-[11px] font-mono text-muted-foreground pt-1">
+                {formatDate(user.created_at)}
+              </span>
+            {/if}
           </div>
         </div>
       {/snippet}
 
       <!-- Right Workspace Area -->
       {#snippet middle()}
-        <div class="h-full w-full overflow-y-auto p-6 scrollbar-hide">
-          <div class="max-w-3xl mx-auto flex flex-col gap-6">
+        <div class="h-full w-full overflow-y-auto p-6 pb-24 scrollbar-hide">
+          <div class="w-full max-w-6xl mx-auto flex flex-col gap-6">
             <!-- Secondary Menu -->
             <SecondaryMenu items={menuItems} {basePath} />
 
@@ -292,15 +314,6 @@ const relatedFooterActions = $derived<FooterAction[]>(
             <div class="w-full flex-1">
               {@render children()}
             </div>
-
-            <!-- Contextual Related Actions (Full Width Footer) -->
-            {#if user}
-              <RelatedActions
-                title={m.ui_copy_related_support_bf36e16f()}
-                groups={relatedActionGroups}
-                footerActions={relatedFooterActions}
-              />
-            {/if}
           </div>
         </div>
       {/snippet}

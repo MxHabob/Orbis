@@ -11,14 +11,15 @@ import {
   Sparkles,
   User,
   Users,
+  XMark,
 } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
 } from "@orbis/ui/select";
 import { l } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
@@ -78,6 +79,19 @@ const orgUnitsById = $derived(
 const selectedPeriod = $derived(
   periods.find((p) => String(p.id) === String(activePeriodId)),
 );
+const selectedClass = $derived(
+  classes.find((c) => String(c.id) === selectedClassId),
+);
+const selectedTeacher = $derived(
+  teachers.find((t) => String(t.id) === selectedTeacherId),
+);
+const selectedRoom = $derived(
+  rooms.find((r) => String(r.id) === selectedRoomId),
+);
+const selectedSubject = $derived(
+  subjects.find((s) => String(s.id) === selectedSubjectId),
+);
+
 function handlePeriodSelect(val: string | null) {
   if (!val) return;
   activePeriodId = val;
@@ -91,42 +105,197 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
   { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
   { id: "matrix", label: m.academics_planning_studio_title, icon: Keyframes },
 ];
-
-let toolbarElement = $state<HTMLDivElement>();
-let isNarrow = $state(false);
-
-$effect(() => {
-  if (!toolbarElement) return;
-
-  const updateLayout = () => {
-    const rootFontSize =
-      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
-      16;
-    isNarrow = toolbarElement!.clientWidth < 820 * (rootFontSize / 16);
-  };
-
-  updateLayout();
-  const observer = new ResizeObserver(updateLayout);
-  observer.observe(toolbarElement);
-
-  return () => observer.disconnect();
-});
 </script>
 
-<div bind:this={toolbarElement} class="w-full shrink-0 border-b border-border/60 bg-card select-none">
-  <!-- Top Primary Row: Perspectives + Period + Search + Actions -->
-  <div class="flex w-full items-center justify-between px-2 sm:px-3 py-1 gap-2 {isNarrow ? 'flex-wrap' : 'min-h-12 overflow-x-auto overflow-y-hidden scrollbar-hide'}">
-    <!-- Left: Period Selector & View Mode Segmented Tabs -->
-    <div class="flex items-center gap-2 {isNarrow ? 'w-full flex-wrap' : 'min-w-max shrink-0'}">
-      <!-- Period Select Dropdown -->
+<header
+  class="@container w-full shrink-0 border-b border-border/70 bg-background px-3 py-2.5 sm:px-4 select-none"
+>
+  <div class="flex flex-wrap items-center justify-between gap-2.5">
+    <!-- Start: View Perspectives + Contextual Entity Picker -->
+    <div class="flex min-w-0 flex-wrap items-center gap-2">
+      <div
+        role="tablist"
+        aria-label={m.academics_planning_studio_title()}
+        class="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-muted/30 p-0.5"
+      >
+        {#each viewModes as mode (mode.id)}
+          {@const Icon = mode.icon}
+          {@const isActive = viewMode === mode.id}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {isActive
+              ? 'bg-card font-semibold text-foreground shadow-2xs'
+              : 'font-medium text-muted-foreground hover:text-foreground'}"
+            onclick={() => (viewMode = mode.id)}
+          >
+            <Icon
+              size={13}
+              class={isActive ? "text-primary" : "text-muted-foreground/80"}
+            />
+            <span>{mode.label()}</span>
+          </button>
+        {/each}
+      </div>
+
+      {#if viewMode === "class"}
+        <Select
+          type="single"
+          value={selectedClassId}
+          onValueChange={(val) => (selectedClassId = val ?? "")}
+        >
+          <SelectTrigger
+            class="h-8 w-44 border-border bg-card text-xs font-medium @sm:w-52"
+          >
+            <div class="flex items-center gap-1.5 truncate">
+              <Users size={13} class="shrink-0 text-muted-foreground" />
+              <span class="truncate">
+                {selectedClass
+                  ? l(selectedClass.name_ar, selectedClass.name)
+                  : m.academics_studio_select_class()}
+              </span>
+            </div>
+          </SelectTrigger>
+          <SelectContent class="max-h-60 text-start">
+            {#each classes as c (c.id)}
+              <SelectItem value={String(c.id)} class="text-xs">
+                {l(c.name_ar, c.name)}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {:else if viewMode === "teacher"}
+        <Select
+          type="single"
+          value={selectedTeacherId}
+          onValueChange={(val) => (selectedTeacherId = val ?? "")}
+        >
+          <SelectTrigger
+            class="h-8 w-44 border-border bg-card text-xs font-medium @sm:w-52"
+          >
+            <div class="flex items-center gap-1.5 truncate">
+              <User size={13} class="shrink-0 text-muted-foreground" />
+              <span class="truncate">
+                {selectedTeacher
+                  ? l(selectedTeacher.name_ar, selectedTeacher.full_name)
+                  : m.academics_studio_select_teacher()}
+              </span>
+            </div>
+          </SelectTrigger>
+          <SelectContent class="max-h-60 text-start">
+            {#each teachers as t (t.id)}
+              <SelectItem value={String(t.id)} class="text-xs">
+                {l(t.name_ar, t.full_name)}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {:else if viewMode === "room"}
+        <Select
+          type="single"
+          value={selectedRoomId}
+          onValueChange={(val) => (selectedRoomId = val ?? "")}
+        >
+          <SelectTrigger
+            class="h-8 w-44 border-border bg-card text-xs font-medium @sm:w-52"
+          >
+            <div class="flex items-center gap-1.5 truncate">
+              <Pin size={13} class="shrink-0 text-muted-foreground" />
+              <span class="truncate">
+                {selectedRoom
+                  ? l(selectedRoom.name_ar, selectedRoom.name)
+                  : m.academics_studio_select_room()}
+              </span>
+            </div>
+          </SelectTrigger>
+          <SelectContent class="max-h-60 text-start">
+            {#each rooms as r (r.id)}
+              <SelectItem value={String(r.id)} class="text-xs">
+                {l(r.name_ar, r.name)}
+                {#if r.org_unit_id}
+                  ({getOrgUnitLocationPath(String(r.org_unit_id), orgUnitsById) || "—"})
+                {/if}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {:else if viewMode === "subject"}
+        <Select
+          type="single"
+          value={selectedSubjectId}
+          onValueChange={(val) => (selectedSubjectId = val ?? "")}
+        >
+          <SelectTrigger
+            class="h-8 w-44 border-border bg-card text-xs font-medium @sm:w-52"
+          >
+            <div class="flex items-center gap-1.5 truncate">
+              {#if selectedSubject}
+                <span
+                  class="h-2 w-2 shrink-0 rounded-full"
+                  style={`background-color: ${selectedSubject.color || "var(--primary)"};`}
+                ></span>
+              {:else}
+                <BookOpen size={13} class="shrink-0 text-muted-foreground" />
+              {/if}
+              <span class="truncate">
+                {selectedSubject
+                  ? l(selectedSubject.name_ar, selectedSubject.name)
+                  : m.academics_schedule_select_subject()}
+              </span>
+            </div>
+          </SelectTrigger>
+          <SelectContent class="max-h-60 text-start">
+            {#each subjects as s (s.id)}
+              <SelectItem value={String(s.id)} class="text-xs">
+                <div class="flex items-center gap-1.5">
+                  <span
+                    class="h-2 w-2 shrink-0 rounded-full"
+                    style={`background-color: ${s.color || "var(--primary)"};`}
+                  ></span>
+                  <span>{l(s.name_ar, s.name)}</span>
+                </div>
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      {/if}
+    </div>
+
+    <!-- End: Period, Quick Search, Utilities & Primary Action -->
+    <div class="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
+      <div class="relative min-w-36 flex-1 @md:max-w-52 @md:flex-initial">
+        <Search
+          size={13}
+          class="pointer-events-none absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          bind:value={searchTerm}
+          placeholder={m.academics_schedule_quick_filter()}
+          class="h-8 border-border bg-card ps-8 pe-7 text-xs"
+        />
+        {#if searchTerm}
+          <button
+            type="button"
+            class="absolute inset-e-1.5 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+            onclick={() => (searchTerm = "")}
+            aria-label="Clear"
+          >
+            <XMark size={12} />
+          </button>
+        {/if}
+      </div>
+
       <Select
         type="single"
         value={activePeriodId}
         onValueChange={handlePeriodSelect}
       >
-        <SelectTrigger class="h-8 {isNarrow ? 'w-full min-w-40' : 'w-40'} bg-muted/30 text-xs font-bold border-border/60">
+        <SelectTrigger
+          class="h-8 w-auto min-w-32 max-w-48 border-border bg-card text-xs font-medium"
+        >
           <div class="flex items-center gap-1.5 truncate">
-            <Calendar size={13} class="text-primary shrink-0" />
+            <Calendar size={13} class="shrink-0 text-primary" />
             <span class="truncate">
               {selectedPeriod
                 ? l(selectedPeriod.name_ar, selectedPeriod.name)
@@ -143,178 +312,53 @@ $effect(() => {
         </SelectContent>
       </Select>
 
-      <div class="h-4 w-px bg-border/60 mx-1 hidden sm:block"></div>
-
-      <!-- Segmented View Tabs -->
-      <div class="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/40 {isNarrow ? 'w-full overflow-x-auto scrollbar-hide' : 'overflow-x-auto scrollbar-hide'}">
-        {#each viewModes as mode (mode.id)}
-          {@const Icon = mode.icon}
-          {@const isActive = viewMode === mode.id}
-          <button
-            type="button"
-            class="flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer {isActive
-              ? 'bg-card text-foreground shadow-2xs font-bold'
-              : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => (viewMode = mode.id)}
+      <div class="flex items-center gap-1">
+        {#if viewMode !== "matrix"}
+          <Button
+            variant={compactView ? "secondary" : "ghost"}
+            size="icon"
+            class="h-8 w-8 text-muted-foreground hover:text-foreground"
+            aria-pressed={compactView}
+            onclick={() => (compactView = !compactView)}
+            title={compactView ? "Comfortable" : "Compact"}
           >
-            <Icon size={12} class={isActive ? "text-primary" : "text-muted-foreground"} />
-            <span class="hidden md:inline">{mode.label()}</span>
-          </button>
-        {/each}
+            <AdjustmentsHorizontal size={14} />
+          </Button>
+        {/if}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onclick={onTimeSlotsClick}
+          aria-label={m.academics_schedule_time_slots_title()}
+          title={m.academics_schedule_time_slots_title()}
+        >
+          <ClockRotateRight size={14} />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onclick={onExportClick}
+          aria-label={m.academics_schedule_export_title()}
+          title={m.academics_schedule_export_title()}
+        >
+          <Printer size={14} />
+        </Button>
+
+        <Button
+          size="sm"
+          class="h-8 gap-1.5 px-3 text-xs font-semibold"
+          onclick={onAutoScheduleClick}
+        >
+          <Sparkles size={13} />
+          <span class="hidden @sm:inline">
+            {m.academics_schedule_year_planner()}
+          </span>
+        </Button>
       </div>
-    </div>
-
-    <!-- Center: Global Schedule Search -->
-    <div class="{isNarrow ? 'order-3 w-full' : 'flex-1 max-w-xs min-w-0 hidden lg:block'}">
-      <div class="relative w-full">
-        <Search size={13} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        <Input
-          bind:value={searchTerm}
-          placeholder={m.academics_schedule_quick_filter()}
-          class="h-8 ps-8 pe-3 text-xs bg-muted/20 border-border/40"
-        />
-      </div>
-    </div>
-
-    <!-- Right: Solver, Time Slots, Export, New Lesson -->
-    <div class="flex items-center gap-1.5 {isNarrow ? 'ms-auto' : 'shrink-0'}">
-      
-      <!-- Time Slots Configuration -->
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-        onclick={onTimeSlotsClick}
-        title={m.academics_schedule_time_slots_title()}
-      >
-        <ClockRotateRight size={13} />
-        <span class="hidden xl:inline">{m.academics_schedule_time_slots_label()}</span>
-      </Button>
-
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-        onclick={onExportClick}
-        title={m.academics_schedule_export_title()}
-      >
-        <Printer size={13} />
-      </Button>
-      <!-- AI Generator Studio Button -->
-      <Button
-        size="sm"
-        class="h-8 gap-1.5 px-2.5 text-xs font-bold"
-        onclick={onAutoScheduleClick}
-      >
-        <Sparkles size={13} />
-        <span class="hidden sm:inline">{m.academics_schedule_year_planner()}</span>
-      </Button>
     </div>
   </div>
-
-  <!-- Bottom Secondary Row: Contextual Resource Dropdowns & AdjustmentsHorizontal Chips -->
-  {#if viewMode !== "matrix"}
-    <div class="flex w-full items-center justify-between px-2 sm:px-3 py-1.5 gap-2 bg-muted/15 border-t border-border/40 text-xs {isNarrow ? 'flex-wrap min-h-10' : 'h-10 overflow-x-auto overflow-y-hidden scrollbar-hide'}">
-      <div class="flex items-center gap-2 min-w-0 flex-1 {isNarrow ? 'flex-wrap w-full' : ''}">
-        <!-- Class Selector (When in Class view) -->
-        {#if viewMode === "class"}
-          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_class()}</span>
-          <Select
-            type="single"
-            value={selectedClassId}
-            onValueChange={(val) => (selectedClassId = val ?? "")}
-          >
-            <SelectTrigger class="h-7 w-48 bg-card text-xs font-semibold border-border/60">
-              <span class="truncate">
-                {classes.find((c) => String(c.id) === selectedClassId) ? l(classes.find((c) => String(c.id) === selectedClassId).name_ar, classes.find((c) => String(c.id) === selectedClassId).name) : m.academics_studio_select_class()}
-              </span>
-            </SelectTrigger>
-            <SelectContent class="max-h-60 text-start">
-              {#each classes as c (c.id)}
-                <SelectItem value={String(c.id)} class="text-xs">
-                  {l(c.name_ar, c.name)}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/if}
-
-        <!-- Teacher Selector (When in Teacher view) -->
-        {#if viewMode === "teacher"}
-          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_teacher()}</span>
-          <Select
-            type="single"
-            value={selectedTeacherId}
-            onValueChange={(val) => (selectedTeacherId = val ?? "")}
-          >
-            <SelectTrigger class="h-7 w-52 bg-card text-xs font-semibold border-border/60">
-              <span class="truncate">
-                {teachers.find((t) => String(t.id) === selectedTeacherId) ? l(teachers.find((t) => String(t.id) === selectedTeacherId).name_ar, teachers.find((t) => String(t.id) === selectedTeacherId).full_name) : m.academics_studio_select_teacher()}
-              </span>
-            </SelectTrigger>
-            <SelectContent class="max-h-60 text-start">
-              {#each teachers as t (t.id)}
-                <SelectItem value={String(t.id)} class="text-xs">
-                  {l(t.name_ar, t.full_name)}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/if}
-
-        <!-- Room Selector (When in Room view) -->
-        {#if viewMode === "room"}
-          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_room()}</span>
-          <Select
-            type="single"
-            value={selectedRoomId}
-            onValueChange={(val) => (selectedRoomId = val ?? "")}
-          >
-            <SelectTrigger class="h-7 w-48 bg-card text-xs font-semibold border-border/60">
-              <span class="truncate">
-                {rooms.find((r) => String(r.id) === selectedRoomId) ? l(rooms.find((r) => String(r.id) === selectedRoomId).name_ar, rooms.find((r) => String(r.id) === selectedRoomId).name) : m.academics_studio_select_room()}
-              </span>
-            </SelectTrigger>
-            <SelectContent class="max-h-60 text-start">
-              {#each rooms as r (r.id)}
-                <SelectItem value={String(r.id)} class="text-xs">
-                  {l(r.name_ar, r.name)}
-                  {#if r.org_unit_id}
-                    ({getOrgUnitLocationPath(String(r.org_unit_id), orgUnitsById) || "—"})
-                  {/if}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/if}
-
-        <!-- Subject Selector (When in Subject view) -->
-        {#if viewMode === "subject"}
-          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_subject()}</span>
-          <Select
-            type="single"
-            value={selectedSubjectId}
-            onValueChange={(val) => (selectedSubjectId = val ?? "")}
-          >
-            <SelectTrigger class="h-7 w-48 bg-card text-xs font-semibold border-border/60">
-              <span class="truncate">
-                {subjects.find((s) => String(s.id) === selectedSubjectId) ? l(subjects.find((s) => String(s.id) === selectedSubjectId).name_ar, subjects.find((s) => String(s.id) === selectedSubjectId).name) : m.academics_schedule_select_subject()}
-              </span>
-            </SelectTrigger>
-            <SelectContent class="max-h-60 text-start">
-              {#each subjects as s (s.id)}
-                <SelectItem value={String(s.id)} class="text-xs">
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-2 w-2 rounded-full" style={`background-color: ${s.color || 'oklch(0.58 0.1 285)'};`}></span>
-                    <span>{l(s.name_ar, s.name)}</span>
-                  </div>
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/if}
-      </div>
-    </div>
-  {/if}
-</div>
+</header>

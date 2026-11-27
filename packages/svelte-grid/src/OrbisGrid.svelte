@@ -49,6 +49,7 @@ import {
   fillDown,
   fillRight,
   formatCell,
+  interpretEditorKey,
   interpretKey,
   isRowSelected,
   normalizeRange,
@@ -57,6 +58,7 @@ import {
   rangeContains,
   resolveCellStep,
   selectedCount,
+  type EditMode,
   type EntryAxis,
   toggleId,
   toggleSort,
@@ -195,6 +197,7 @@ let editing = $state<{
   row: number;
   col: number;
   draft: string;
+  mode: EditMode;
   error?: string;
 } | null>(null);
 let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
@@ -548,6 +551,16 @@ const windowedCols = $derived([
     .slice(firstScrollingColumn, lastScrollingColumn)
     .map((col, index) => ({ col, index: firstScrollingColumn + index })),
 ]);
+const colIds = $derived(visibleCols.map((col) => columnId(col)));
+const colAligns = $derived(visibleCols.map((col) => defaultAlign(col)));
+const editableCols = $derived(
+  readonly
+    ? []
+    : visibleCols.flatMap((col, index) => (isEditableColumn(col) ? [index] : [])),
+);
+const normalizedRange = $derived(
+  selection.range ? normalizeRange(selection.range) : null,
+);
 
 function rowKey(row: GridRow, index: number): string {
   const id = row[rowIdKey];
@@ -661,19 +674,8 @@ function isEditableColumn(col: OrbisColumnDef): boolean {
   );
 }
 
-function editableColumnIndices(): number[] {
-  return visibleCols.flatMap((col, index) =>
-    isEditableColumn(col) ? [index] : [],
-  );
-}
-
 function firstEditableColumnIndex(): number {
-  return editableColumnIndices()[0] ?? 0;
-}
-
-function lastEditableColumnIndex(): number {
-  const indices = editableColumnIndices();
-  return indices[indices.length - 1] ?? 0;
+  return editableCols[0] ?? 0;
 }
 
 function addRowFromToolbar() {
@@ -694,7 +696,6 @@ function moveActiveAfterEdit(
   colDelta: number,
   allowAppend = true,
 ) {
-  const editableCols = readonly ? [] : editableColumnIndices();
   const step = resolveCellStep(row, col, rowDelta, colDelta, {
     rowCount: displayRows.length,
     colCount: visibleCols.length,
@@ -901,7 +902,10 @@ function revealColumn(col: number) {
     scrollLeft: bodyEl.scrollLeft,
     rtl,
   });
-  if (next !== bodyEl.scrollLeft) bodyEl.scrollLeft = next;
+  if (next !== bodyEl.scrollLeft) {
+    bodyEl.scrollLeft = next;
+    scrollLeft = bodyEl.scrollLeft;
+  }
 }
 
 function commitOverlay(
@@ -1021,7 +1025,11 @@ function isGridControl(target: EventTarget | null): boolean {
   );
 }
 
-function startEdit(row: number, col: number, seed?: string) {
+function focusEditor(node: HTMLElement) {
+  node.focus({ preventScroll: true });
+}
+
+function startEdit(row: number, col: number, seed?: string, mode?: EditMode) {
   const column = visibleCols[col];
   if (
     !column ||
@@ -1043,15 +1051,20 @@ function startEdit(row: number, col: number, seed?: string) {
     return;
   }
   const value = displayRows[row] ? getCellValue(displayRows[row]!, column) : "";
+  const initialText = value == null ? "" : String(value);
   editing = {
     row,
     col,
-    draft: seed ?? (value == null ? "" : String(value)),
+    draft: seed ?? initialText,
+    mode: mode ?? (seed !== undefined || initialText === "" ? "entry" : "edit"),
   };
-  requestAnimationFrame(() => editorEl?.focus());
 }
 
-function commitEdit(moveRow = 0, moveCol = 0) {
+function commitEdit(
+  moveRow = 0,
+  moveCol = 0,
+  stepMode: "smart" | "arrow" = "smart",
+) {
   if (!editing) return;
   const column = visibleCols[editing.col];
   if (column && !commitOverlay(editing.row, column, editing.draft)) return;
@@ -1059,15 +1072,20 @@ function commitEdit(moveRow = 0, moveCol = 0) {
   const c = editing.col;
   entryAxis = detectEntryAxis(lastEditCell, r, c, entryAxis);
   lastEditCell = { row: r, col: c };
+  skipBlur = true;
   editing = null;
   root?.focus({ preventScroll: true });
-  if (moveRow || moveCol) moveActiveAfterEdit(r, c, moveRow, moveCol);
+  if (moveRow || moveCol) {
+    if (stepMode === "arrow") setActive(r + moveRow, c + moveCol);
+    else moveActiveAfterEdit(r, c, moveRow, moveCol);
+  }
 }
 
 function cancelEdit() {
   skipBlur = true;
   tabAnchorCol = null;
   editing = null;
+  root?.focus({ preventScroll: true });
 }
 
 function currentRange(): CellRange {
@@ -1196,7 +1214,7 @@ function handlePointer(row: number, col: number, e: PointerEvent) {
 
 function handleDblClick(row: number, col: number, e: MouseEvent) {
   if (isGridControl(e.target)) return;
-  startEdit(row, col);
+  startEdit(row, col, undefined, "edit");
   const data = displayRows[row];
   if (data) {
     onaction?.({
@@ -1266,7 +1284,12 @@ function handleKeydown(e: KeyboardEvent) {
       else moveActiveAfterEdit(active.row, active.col, 0, cmd.colDelta, false);
       break;
     case "edit":
-      startEdit(active.row, active.col, e.key.length === 1 ? e.key : undefined);
+      startEdit(
+        active.row,
+        active.col,
+        e.key.length === 1 ? e.key : undefined,
+        e.key === "F2" ? "edit" : undefined,
+      );
       break;
     case "commit":
       commitEdit(cmd.rowDelta, cmd.colDelta);
@@ -1564,18 +1587,27 @@ function cellClass(
   c: number,
 ): string {
   const parts: string[] = ["orbis-cell"];
+  const id = colIds[c] ?? columnId(col);
   const errors = row.__errors as Map<string, string> | undefined;
-  if (errors?.has(columnId(col))) parts.push("is-error");
+  if (errors?.has(id)) parts.push("is-error");
   if (selection.active?.row === r && selection.active?.col === c)
     parts.push("is-active");
-  if (rangeContains(selection.range, r, c)) parts.push("is-ranged");
+  if (
+    normalizedRange &&
+    r >= normalizedRange.startRow &&
+    r <= normalizedRange.endRow &&
+    c >= normalizedRange.startCol &&
+    c <= normalizedRange.endCol
+  ) {
+    parts.push("is-ranged");
+  }
   if (isRowSelected(selection, rowKey(row, r), displayRows.length))
     parts.push("is-row-selected");
   if (cellStyle) {
     const extra = cellStyle(row, col);
     if (extra) parts.push(extra);
   }
-  const align = defaultAlign(col);
+  const align = colAligns[c] ?? defaultAlign(col);
   parts.push(`align-${align}`);
   if (col.cellClass) parts.push(String(col.cellClass));
   return parts.join(" ");
@@ -2129,6 +2161,7 @@ const headerPanes = $derived.by(() => {
                         <select
                           class="orbis-editor"
                           class:invalid={!!editing.error}
+                          use:focusEditor
                           bind:this={editorEl}
                           bind:value={editing.draft}
                           aria-invalid={!!editing.error}
@@ -2163,6 +2196,7 @@ const headerPanes = $derived.by(() => {
                           class="orbis-editor"
                           class:invalid={!!editing.error}
                           type={editorInputType(col)}
+                          use:focusEditor
                           bind:this={editorEl}
                           bind:value={editing.draft}
                           aria-invalid={!!editing.error}
@@ -2175,15 +2209,18 @@ const headerPanes = $derived.by(() => {
                             commitEdit();
                           }}
                           onkeydown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              commitEdit(e.shiftKey ? -1 : 1, 0);
-                            } else if (e.key === "Tab") {
-                              e.preventDefault();
-                              commitEdit(0, e.shiftKey ? -1 : 1);
-                            } else if (e.key === "Escape") {
-                              e.preventDefault();
+                            if (!editing) return;
+                            const cmd = interpretEditorKey(e, editing.mode, rtl);
+                            if (cmd.preventDefault) e.preventDefault();
+                            if (cmd.action === "commit" || cmd.action === "tab") {
+                              commitEdit(cmd.rowDelta, cmd.colDelta, cmd.stepMode);
+                            } else if (cmd.action === "cancel") {
                               cancelEdit();
+                            } else if (cmd.action === "toggleMode") {
+                              editing = {
+                                ...editing,
+                                mode: editing.mode === "entry" ? "edit" : "entry",
+                              };
                             }
                             e.stopPropagation();
                           }}

@@ -1,15 +1,23 @@
 <script lang="ts">
-import { api, extractErrorMessage, type GradeDto } from "$lib/api";
-import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
-import { academicContext } from "$lib/stores";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type GradeDto,
+  type ReportDefinitionDto,
+  type SubjectAnnualResult,
+  type SubjectTermResult,
+} from "$lib/api";
 import {
   formatDate,
   formatDecimal,
   formatNumber,
   formatPercent,
 } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import { academicContext, orgContext } from "$lib/stores";
 import {
   AcademicCap,
   BookOpen,
@@ -21,6 +29,7 @@ import {
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { LoadingIndicator } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import {
   Select,
@@ -29,7 +38,6 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import { createQuery } from "@tanstack/svelte-query";
-import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
 
 let {
   orgId,
@@ -42,13 +50,11 @@ let {
 } = $props();
 
 const isRtl = $derived(getLocale() === "ar");
+const instType = $derived(orgContext.institutionType);
 
-// View mode: "records" | "term" | "annual" | "certificate"
-let activeTab = $state<"records" | "term" | "annual" | "certificate">(
-  "records",
-);
+type ViewTab = "records" | "term" | "annual" | "certificate";
+let activeTab = $state<ViewTab>("records");
 
-// Selection states
 let selectedPeriodId = $state("all");
 let selectedTermPeriodId = $state(
   academicContext.effectivePeriodId || academicContext.allPeriods[0]?.id || "",
@@ -56,23 +62,116 @@ let selectedTermPeriodId = $state(
 let selectedCalendarId = $state(
   academicContext.currentYear?.id || academicContext.allYears[0]?.id || "",
 );
-let selectedCertType = $state<"secondary_thanawiya" | "basic_grade9">(
-  "secondary_thanawiya",
-);
 
-// Dialog states for printing
-let showPrintCertificateDialog = $state(false);
-let printTemplateId = $state("academic.student-certificate-yemeni");
+// Print modal state
+let showPrintDialog = $state(false);
+let printReportCode = $state("rep.academic.student-term-report-card");
 let printTitle = $state("");
 
-// ── 1. Raw Assessment Records Query ─────────────────────────
+// ── Dynamic Institution Labels ───────────────────────────────
+const labels = $derived.by(() => {
+  if (instType === "university") {
+    return {
+      course: isRtl ? "المقرر" : "Course",
+      coursework: isRtl ? "الأعمال الفصلية" : "Coursework",
+      finalExam: isRtl ? "الاختبار النهائي" : "Final Exam",
+      termTotal: isRtl ? "الدرجة النهائية" : "Total",
+      termTab: isRtl ? "نتائج الفصل" : "Semester",
+      annualTab: isRtl ? "السجل التراكمي" : "Cumulative",
+      certTab: isRtl ? "الشهادات والوثائق" : "Documents",
+      term1: isRtl ? "الفصل الأول" : "Semester 1",
+      term2: isRtl ? "الفصل الثاني" : "Semester 2",
+      credits: isRtl ? "الساعات" : "Credits",
+      gpa: isRtl ? "المعدل الفصلي" : "Term GPA",
+      cumGpa: isRtl ? "المعدل التراكمي" : "CGPA",
+    };
+  }
+  if (instType === "institute") {
+    return {
+      course: isRtl ? "الوحدة التدريبية" : "Module",
+      coursework: isRtl ? "الجانب النظري" : "Theory",
+      finalExam: isRtl ? "التطبيق العملي" : "Practical",
+      termTotal: isRtl ? "المجموع" : "Total",
+      termTab: isRtl ? "نتائج الوحدات" : "Modules",
+      annualTab: isRtl ? "الملخص العام" : "Summary",
+      certTab: isRtl ? "الشهادات والوثائق" : "Certificates",
+      term1: isRtl ? "المرحلة 1" : "Phase 1",
+      term2: isRtl ? "المرحلة 2" : "Phase 2",
+      credits: isRtl ? "الوحدات" : "Units",
+      gpa: isRtl ? "المعدل" : "Average",
+      cumGpa: isRtl ? "المعدل العام" : "Overall Avg",
+    };
+  }
+  return {
+    course: m.student_grades_subject(),
+    coursework: isRtl ? "أعمال الفصل" : "Coursework",
+    finalExam: isRtl ? "اختبار الفصل" : "Term Exam",
+    termTotal: isRtl ? "المجموع" : "Total",
+    termTab: m.student_grades_tab_term_report(),
+    annualTab: m.student_grades_tab_annual_results(),
+    certTab: isRtl ? "الشهادات والوثائق" : "Certificates",
+    term1: isRtl ? "الفصل الأول" : "Term 1",
+    term2: isRtl ? "الفصل الثاني" : "Term 2",
+    credits: isRtl ? "الوزن" : "Credits",
+    gpa: isRtl ? "المعدل" : "GPA",
+    cumGpa: isRtl ? "المعدل التراكمي" : "Cumulative GPA",
+  };
+});
+
+// ── Reference Queries ────────────────────────────────────────
+const settingsQuery = createQuery(() => ({
+  queryKey: queryKeys.org.settings(orgId),
+  queryFn: () => api.getSettings(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const passingThreshold = $derived(
+  Number(settingsQuery.data?.academic?.passing_threshold_percentage ?? 50),
+);
+
+const subjectsQuery = createQuery(() => ({
+  queryKey: queryKeys.academic.subjects(orgId),
+  queryFn: () => api.listSubjects(),
+  enabled: !!orgId && activeTab === "records",
+  staleTime: 5 * 60 * 1000,
+}));
+
+const sectionSubjectsQuery = createQuery(() => ({
+  queryKey: queryKeys.academic.SectionSubjects(
+    classId ?? "",
+    academicContext.effectivePeriodId || "",
+  ),
+  queryFn: () =>
+    api.listSectionSubjects(
+      classId ?? "",
+      academicContext.effectivePeriodId || "",
+    ),
+  enabled: !!orgId && !!classId && activeTab === "records",
+  staleTime: 5 * 60 * 1000,
+}));
+
+const schemesQuery = createQuery(() => ({
+  queryKey: ["assessment-schemes", orgId],
+  queryFn: () => api.listAssessmentSchemes(),
+  enabled: !!orgId && activeTab === "records",
+  staleTime: 5 * 60 * 1000,
+}));
+
+const reportDefsQuery = createQuery(() => ({
+  queryKey: ["report-definitions", "student-certificates", orgId],
+  queryFn: () => api.listReportDefinitions(),
+  enabled: !!orgId && activeTab === "certificate",
+  staleTime: 5 * 60 * 1000,
+}));
+
+// ── Data Queries ─────────────────────────────────────────────
 const gradesQuery = createQuery(() => ({
   queryKey: ["assessment-grades", "student", orgId, studentId],
   queryFn: () => api.listGrades({ studentId }),
   enabled: !!orgId && !!studentId && activeTab === "records",
 }));
 
-// ── 2. Term Report Card Query ────────────────────────────────
 const termReportQuery = createQuery(() => ({
   queryKey: [
     "assessment-term-results",
@@ -90,7 +189,6 @@ const termReportQuery = createQuery(() => ({
     !!orgId && !!studentId && !!selectedTermPeriodId && activeTab === "term",
 }));
 
-// ── 3. Annual Report Query ───────────────────────────────────
 const annualReportQuery = createQuery(() => ({
   queryKey: [
     "assessment-annual-results",
@@ -108,20 +206,19 @@ const annualReportQuery = createQuery(() => ({
     !!orgId && !!studentId && !!selectedCalendarId && activeTab === "annual",
 }));
 
-// ── 4. Certificate Results Query ─────────────────────────────
 const certificateReportQuery = createQuery(() => ({
   queryKey: [
     "assessment-certificate-results",
     studentId,
     selectedCalendarId,
-    selectedCertType,
+    "general",
     classId ?? "",
   ],
   queryFn: () =>
     api.getStudentCertificateResults(
       studentId,
       selectedCalendarId,
-      selectedCertType,
+      "general",
       classId || undefined,
     ),
   enabled:
@@ -131,41 +228,78 @@ const certificateReportQuery = createQuery(() => ({
     activeTab === "certificate",
 }));
 
+// ── Lookup Maps ──────────────────────────────────────────────
 const periodNames = $derived(
   new Map(
-    academicContext.allPeriods.map((period) => [
-      period.id,
-      period.name_ar || period.name,
+    academicContext.allPeriods.map((p) => [
+      p.id,
+      isRtl ? p.name_ar || p.name : p.name,
     ]),
   ),
 );
 
 const yearNames = $derived(
   new Map(
-    academicContext.allYears.map((year) => [
-      year.id,
-      year.name_ar || year.name,
+    academicContext.allYears.map((y) => [
+      y.id,
+      isRtl ? y.name_ar || y.name : y.name,
     ]),
   ),
 );
 
-// ── Helper: Format Status ────────────────────────────────────
-function getStatusBadge(status?: string | null) {
+const subjectById = $derived(
+  new Map((subjectsQuery.data ?? []).map((s) => [s.id, s])),
+);
+
+const offeringNameById = $derived.by(() => {
+  const map = new Map<string, string>();
+  for (const ss of sectionSubjectsQuery.data ?? []) {
+    const subj = subjectById.get(ss.subject_id);
+    if (subj) {
+      map.set(ss.id, isRtl ? subj.name_ar || subj.name : subj.name);
+    }
+  }
+  return map;
+});
+
+const componentNameByCode = $derived.by(() => {
+  const map = new Map<string, string>();
+  for (const scheme of schemesQuery.data ?? []) {
+    for (const comp of scheme.components ?? []) {
+      if (comp.code && !map.has(comp.code)) {
+        map.set(comp.code, isRtl ? comp.nameAr || comp.name : comp.name);
+      }
+    }
+  }
+  return map;
+});
+
+const studentDocuments = $derived.by((): ReportDefinitionDto[] => {
+  const all = reportDefsQuery.data ?? [];
+  return all.filter(
+    (def) =>
+      def.is_active &&
+      (def.code.includes("certificate") ||
+        def.code.includes("transcript") ||
+        def.code.includes("term-report-card")),
+  );
+});
+
+// ── Helpers ──────────────────────────────────────────────────
+function getStatusInfo(status?: string | null) {
   const s = String(status || "").toLowerCase();
-  if (s.includes("honor") || s === "passedwithhonors") {
+  if (s.includes("honor") || s === "passed_with_honors") {
     return {
       label: m.student_grades_status_honors(),
-      variant: "default" as const,
-      color:
-        "bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-600/30",
+      badgeClass:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     };
   }
   if (s.includes("pass") || s === "passed") {
     return {
       label: m.student_grades_status_passed(),
-      variant: "default" as const,
-      color:
-        "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+      badgeClass:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     };
   }
   if (
@@ -175,102 +309,130 @@ function getStatusBadge(status?: string | null) {
   ) {
     return {
       label: m.student_grades_status_conditional_retake(),
-      variant: "secondary" as const,
-      color:
-        "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+      badgeClass:
+        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     };
   }
   if (s.includes("fail") || s === "failed") {
     return {
       label: m.student_grades_status_failed(),
-      variant: "destructive" as const,
-      color:
-        "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
+      badgeClass:
+        "bg-destructive/10 text-destructive border-destructive/20",
+    };
+  }
+  if (s.includes("incomplete")) {
+    return {
+      label: isRtl ? "غير مكتمل" : "Incomplete",
+      badgeClass:
+        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     };
   }
   return {
     label: m.student_grades_status_pending(),
-    variant: "secondary" as const,
-    color: "bg-muted text-muted-foreground border-border",
+    badgeClass: "bg-muted text-muted-foreground border-border",
   };
 }
 
-// getAppreciation removed — now using backend-computed overall_letter_grade_ar / letter_grade
-
-// ── Print Triggers ───────────────────────────────────────────
-function triggerPrintCertificate() {
-  printTemplateId = "academic.student-certificate-yemeni";
-  printTitle = m.student_grades_certificate_print_title();
-  showPrintCertificateDialog = true;
+function getLetterDisplay(report: object) {
+  const r = report as {
+    overall_letter_grade?: string | null;
+    overall_letter_grade_ar?: string | null;
+  };
+  return isRtl
+    ? r.overall_letter_grade_ar || r.overall_letter_grade || "—"
+    : r.overall_letter_grade || r.overall_letter_grade_ar || "—";
 }
 
-function triggerPrintTermReport() {
-  printTemplateId = "academic.student-term-report-card";
-  printTitle = m.student_grades_term_report_print_title();
-  showPrintCertificateDialog = true;
+function maxLabel(max: number | string | null | undefined) {
+  const n = Number(max ?? 0);
+  return n > 0 ? ` (${formatNumber(n)})` : "";
 }
 
-// ── Grid Configuration for Raw Records ──────────────────────
+function openPrint(reportCode: string, title: string) {
+  printReportCode = reportCode;
+  printTitle = title;
+  showPrintDialog = true;
+}
+
+// ── Raw Records Grid ─────────────────────────────────────────
 const filteredGrades = $derived(
   (gradesQuery.data ?? []).filter(
-    (grade) =>
-      selectedPeriodId === "all" || grade.period_id === selectedPeriodId,
+    (g) => selectedPeriodId === "all" || g.period_id === selectedPeriodId,
   ),
 );
 
-const rows = $derived(
-  filteredGrades.map((grade: GradeDto) => ({
-    period: periodNames.get(grade.period_id) ?? grade.period_id,
-    offering_id: grade.section_subject_id,
-    component_id: grade.component_id ?? "—",
-    score: Number(grade.score),
-    maximum: Number(grade.max_score),
-    weight: grade.weight == null ? "—" : Number(grade.weight),
-    letter_grade: grade.letter_grade ?? "—",
-    record_state: grade.is_exempt
-      ? m.student_grades_state_exempt()
-      : grade.is_excused
-        ? m.student_grades_state_excused()
-        : grade.is_final
-          ? m.student_grades_state_final()
-          : m.student_grades_state_recorded(),
-    updated_at: formatDate(grade.updated_at, "datetime"),
-  })),
+const recordRows = $derived(
+  filteredGrades.map((grade: GradeDto) => {
+    const score = Number(grade.score);
+    const max = Number(grade.max_score);
+    const pct = max > 0 ? (score / max) * 100 : 0;
+    const compLabel =
+      (grade.component_code && componentNameByCode.get(grade.component_code)) ||
+      grade.component_code ||
+      (grade.is_final ? labels.finalExam : null) ||
+      grade.notes ||
+      "—";
+
+    return {
+      id: grade.id,
+      subject:
+        offeringNameById.get(grade.section_subject_id) ??
+        grade.section_subject_id,
+      period: periodNames.get(grade.period_id) ?? grade.period_id,
+      component: compLabel,
+      score,
+      maximum: max,
+      percentage: Number(pct.toFixed(1)),
+      letter_grade: grade.letter_grade ?? "—",
+      record_state: grade.is_absent
+        ? isRtl
+          ? "غائب"
+          : "Absent"
+        : grade.is_exempt
+          ? m.student_grades_state_exempt()
+          : grade.is_excused
+            ? m.student_grades_state_excused()
+            : grade.is_final
+              ? m.student_grades_state_final()
+              : m.student_grades_state_recorded(),
+      updated_at: formatDate(grade.updated_at, "datetime"),
+    };
+  }),
 );
 
-const columns: OrbisColumnDef[] = [
+const recordColumns = $derived<OrbisColumnDef[]>([
+  {
+    id: "subject",
+    prop: "subject",
+    header: labels.course,
+    name: labels.course,
+    width: 210,
+    size: 210,
+    pin: "left",
+  },
   {
     id: "period",
     prop: "period",
     header: m.student_grades_period(),
     name: m.student_grades_period(),
-    width: 170,
-    size: 170,
+    width: 150,
+    size: 150,
   },
   {
-    id: "offering_id",
-    prop: "offering_id",
-    header: m.student_grades_course_or_offering(),
-    name: m.student_grades_course_or_offering(),
-    width: 230,
-    size: 230,
-    pin: "left",
-  },
-  {
-    id: "component_id",
-    prop: "component_id",
+    id: "component",
+    prop: "component",
     header: m.student_grades_assessment_component(),
     name: m.student_grades_assessment_component(),
-    width: 190,
-    size: 190,
+    width: 170,
+    size: 170,
   },
   {
     id: "score",
     prop: "score",
     header: m.student_grades_score(),
     name: m.student_grades_score(),
-    width: 95,
-    size: 95,
+    width: 90,
+    size: 90,
     align: "end",
     type: "number",
   },
@@ -279,18 +441,18 @@ const columns: OrbisColumnDef[] = [
     prop: "maximum",
     header: m.student_grades_maximum_score(),
     name: m.student_grades_maximum_score(),
-    width: 105,
-    size: 105,
+    width: 95,
+    size: 95,
     align: "end",
     type: "number",
   },
   {
-    id: "weight",
-    prop: "weight",
-    header: m.student_grades_weight(),
-    name: m.student_grades_weight(),
-    width: 90,
-    size: 90,
+    id: "percentage",
+    prop: "percentage",
+    header: m.student_grades_percentage(),
+    name: m.student_grades_percentage(),
+    width: 100,
+    size: 100,
     align: "end",
     type: "number",
   },
@@ -307,106 +469,131 @@ const columns: OrbisColumnDef[] = [
     prop: "record_state",
     header: m.student_grades_record_state(),
     name: m.student_grades_record_state(),
-    width: 115,
-    size: 115,
+    width: 110,
+    size: 110,
   },
   {
     id: "updated_at",
     prop: "updated_at",
     header: m.student_grades_last_updated(),
     name: m.student_grades_last_updated(),
-    width: 180,
-    size: 180,
+    width: 165,
+    size: 165,
   },
-];
+]);
+
+const showCredits = $derived(
+  orgContext.isUniversity ||
+    (termReportQuery.data?.subjects ?? []).some(
+      (s) => Number(s.credit_hours) !== 1,
+    ) ||
+    (annualReportQuery.data?.subjects ?? []).some(
+      (s) => Number(s.credit_hours) !== 1,
+    ),
+);
 </script>
 
-<div class="flex flex-col gap-4 text-xs text-start font-sans print:p-0">
-  <!-- Mode Selection Tabs & Action Bar -->
-  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3">
-    <div class="inline-flex rounded-lg border border-border bg-muted/30 p-1">
-      <Button
-        variant={activeTab === "records" ? "secondary" : "ghost"}
-        size="sm"
-        class="gap-1.5 text-xs font-semibold"
-        onclick={() => (activeTab = "records")}
-      >
-        <BookOpen size={13} class={activeTab === "records" ? "text-primary" : ""} />
-        <span>{m.student_grades_tab_assessment_records()}</span>
-      </Button>
-
-      <Button
-        variant={activeTab === "term" ? "secondary" : "ghost"}
-        size="sm"
-        class="gap-1.5 text-xs font-semibold"
-        onclick={() => (activeTab = "term")}
-      >
-        <DocumentChartBar size={13} class={activeTab === "term" ? "text-primary" : ""} />
-        <span>{m.student_grades_tab_term_report()}</span>
-      </Button>
-
-      <Button
-        variant={activeTab === "annual" ? "secondary" : "ghost"}
-        size="sm"
-        class="gap-1.5 text-xs font-semibold"
-        onclick={() => (activeTab = "annual")}
-      >
-        <ChartBar size={13} class={activeTab === "annual" ? "text-primary" : ""} />
-        <span>{m.student_grades_tab_annual_results()}</span>
-      </Button>
-
-      <Button
-        variant={activeTab === "certificate" ? "secondary" : "ghost"}
-        size="sm"
-        class="gap-1.5 text-xs font-semibold"
-        onclick={() => (activeTab = "certificate")}
-      >
-        <AcademicCap size={13} class={activeTab === "certificate" ? "text-primary" : ""} />
-        <span>{m.student_grades_tab_certificate_results()}</span>
-      </Button>
-    </div>
-
-    <!-- Contextual Actions -->
-    <div class="flex items-center gap-2">
-      {#if activeTab === "certificate"}
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-8 gap-1.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/5"
-          onclick={triggerPrintCertificate}
+<div class="flex flex-col gap-5 text-xs text-start font-sans print:p-0">
+  <!-- ── Clean Header Navigation & Context Controls ─────────── -->
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+    <nav class="flex items-center gap-1">
+      {#each [
+        { id: "records" as const, label: m.student_grades_tab_assessment_records(), icon: BookOpen },
+        { id: "term" as const, label: labels.termTab, icon: DocumentChartBar },
+        { id: "annual" as const, label: labels.annualTab, icon: ChartBar },
+        { id: "certificate" as const, label: labels.certTab, icon: AcademicCap },
+      ] as tab (tab.id)}
+        {@const Icon = tab.icon}
+        <button
+          type="button"
+          onclick={() => (activeTab = tab.id)}
+          class={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            activeTab === tab.id
+              ? "bg-secondary text-foreground font-semibold"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          }`}
         >
-          <Printer size={13} />
-          <span>{m.student_grades_print_official_certificate()}</span>
-        </Button>
-      {:else if activeTab === "term"}
+          <Icon size={13} class={activeTab === tab.id ? "text-primary" : ""} />
+          <span>{tab.label}</span>
+        </button>
+      {/each}
+    </nav>
+
+    <!-- Right Contextual Filters & Actions -->
+    <div class="flex flex-wrap items-center gap-2 print:hidden">
+      {#if activeTab === "term"}
+        <Select
+          type="single"
+          value={selectedTermPeriodId}
+          onValueChange={(val) => {
+            if (val) selectedTermPeriodId = val;
+          }}
+        >
+          <SelectTrigger class="h-8 min-w-44 text-xs">
+            {periodNames.get(selectedTermPeriodId) ??
+              m.student_grades_select_term()}
+          </SelectTrigger>
+          <SelectContent class="text-xs">
+            {#each academicContext.allPeriods as period (period.id)}
+              <SelectItem value={period.id}>
+                {isRtl ? period.name_ar || period.name : period.name}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+
         <Button
           variant="outline"
           size="sm"
-          class="h-8 gap-1.5 text-xs font-semibold"
-          onclick={triggerPrintTermReport}
+          class="h-8 gap-1.5 text-xs"
+          onclick={() =>
+            openPrint(
+              "rep.academic.student-term-report-card",
+              m.student_grades_term_report_print_title(),
+            )}
         >
           <Printer size={13} />
           <span>{m.student_grades_print_term_report()}</span>
         </Button>
+      {:else if activeTab === "annual" || activeTab === "certificate"}
+        <Select
+          type="single"
+          value={selectedCalendarId}
+          onValueChange={(val) => {
+            if (val) selectedCalendarId = val;
+          }}
+        >
+          <SelectTrigger class="h-8 min-w-40 text-xs">
+            {yearNames.get(selectedCalendarId) ??
+              m.student_grades_select_academic_year()}
+          </SelectTrigger>
+          <SelectContent class="text-xs">
+            {#each academicContext.allYears as year (year.id)}
+              <SelectItem value={year.id}>
+                {isRtl ? year.name_ar || year.name : year.name}
+              </SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
       {/if}
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 1: RAW ASSESSMENT RECORDS                               -->
+  <!-- TAB 1: DETAILED ASSESSMENT RECORDS                          -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   {#if activeTab === "records"}
     {#if gradesQuery.error}
-      <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-lg border border-destructive/20 p-6 text-center text-destructive">
-        <InfoCircle class="h-7 w-7 stroke-current opacity-80" />
+      <div class="flex min-h-56 flex-col items-center justify-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-6 text-center text-destructive">
+        <InfoCircle class="h-6 w-6 opacity-80" />
         <p class="text-xs font-semibold">{m.common_load_error()}</p>
-        <p class="text-[10px] text-muted-foreground">
+        <p class="text-[11px] text-muted-foreground">
           {extractErrorMessage(gradesQuery.error)}
         </p>
         <Button
           variant="outline"
           size="sm"
-          class="mt-2 h-8 gap-1.5 text-xs"
+          class="mt-1 h-8 gap-1.5 text-xs"
           onclick={() => gradesQuery.refetch()}
         >
           <Refresh size={13} />
@@ -414,10 +601,10 @@ const columns: OrbisColumnDef[] = [
         </Button>
       </div>
     {:else}
-      <div class={rows.length === 0 ? "h-64 w-full" : "h-115 w-full"}>
+      <div class={recordRows.length === 0 ? "h-64 w-full" : "h-115 w-full"}>
         <OrbisGrid
-          {columns}
-          source={rows}
+          columns={recordColumns}
+          source={recordRows}
           loading={gradesQuery.isLoading}
           clientQuery
           rtl={isRtl}
@@ -437,27 +624,34 @@ const columns: OrbisColumnDef[] = [
                 <SelectTrigger class="h-8 min-w-40 text-xs">
                   {selectedPeriodId === "all"
                     ? m.student_grades_all_periods()
-                    : periodNames.get(selectedPeriodId) ?? m.student_grades_select_period()}
+                    : periodNames.get(selectedPeriodId) ??
+                      m.student_grades_select_period()}
                 </SelectTrigger>
                 <SelectContent class="text-xs">
-                  <SelectItem value="all">{m.student_grades_all_periods()}</SelectItem>
+                  <SelectItem value="all">
+                    {m.student_grades_all_periods()}
+                  </SelectItem>
                   {#each academicContext.allPeriods as period (period.id)}
                     <SelectItem value={period.id}>
-                      {period.name_ar || period.name}
+                      {isRtl ? period.name_ar || period.name : period.name}
                     </SelectItem>
                   {/each}
                 </SelectContent>
               </Select>
 
               <Button
-                variant="outline"
-                size="sm"
-                class="h-8 gap-1.5 text-xs"
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8"
                 onclick={() => gradesQuery.refetch()}
                 disabled={gradesQuery.isFetching}
+                title={m.common_retry()}
               >
-                {#if gradesQuery.isFetching}<LoadingIndicator size={13} />{:else}<Refresh size={13} />{/if}
-                {m.common_retry()}
+                {#if gradesQuery.isFetching}
+                  <LoadingIndicator size={13} />
+                {:else}
+                  <Refresh size={13} />
+                {/if}
               </Button>
             </div>
           {/snippet}
@@ -466,566 +660,384 @@ const columns: OrbisColumnDef[] = [
     {/if}
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 2: TERM REPORT CARD                                     -->
+  <!-- TAB 2: TERM / SEMESTER / MODULE REPORT                      -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   {:else if activeTab === "term"}
-    <div class="flex flex-col gap-4">
-      <!-- Period Selector Header -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
-          <div class="flex items-center gap-3">
-            <div class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <DocumentChartBar size={18} />
-            </div>
-            <div>
-              <h2 class="text-xs font-bold text-foreground">
-                {m.student_grades_term_report_heading()}
-              </h2>
-              <p class="text-[11px] text-muted-foreground">
-                {m.student_grades_term_report_description()}
-              </p>
-            </div>
-          </div>
+    {#if termReportQuery.isLoading}
+      <div class="flex min-h-56 flex-col items-center justify-center gap-2 rounded-md border border-border bg-card p-8">
+        <LoadingIndicator size={22} />
+        <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
+      </div>
+    {:else if termReportQuery.error}
+      <div class="flex min-h-56 flex-col items-center justify-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-8 text-center text-destructive">
+        <InfoCircle class="h-6 w-6 opacity-80" />
+        <p class="text-xs font-semibold">{m.common_load_error()}</p>
+        <p class="text-[11px] text-muted-foreground">
+          {extractErrorMessage(termReportQuery.error)}
+        </p>
+      </div>
+    {:else if !termReportQuery.data || termReportQuery.data.subjects.length === 0}
+      <div class="flex min-h-56 flex-col items-center justify-center gap-1 rounded-md border border-border bg-card p-8 text-center">
+        <p class="text-xs font-semibold text-foreground">{m.academics_grades_empty_title()}</p>
+        <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
+      </div>
+    {:else}
+      {@const report = termReportQuery.data}
+      {@const statusInfo = getStatusInfo(report.status)}
+      {@const sample = report.subjects[0]}
 
+      <!-- Unified Summary Strip -->
+      <div class="grid grid-cols-2 divide-y divide-border rounded-md border border-border bg-card sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">{m.student_grades_total_score()}</span>
+          <span class="text-sm font-semibold tabular-nums text-foreground">
+            {formatDecimal(Number(report.total_score), 1)}
+            <span class="text-xs font-normal text-muted-foreground">/ {formatNumber(Number(report.max_possible_score))}</span>
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">{m.student_grades_percentage()}</span>
+          <span class="text-sm font-semibold tabular-nums text-foreground">
+            {formatPercent(Number(report.overall_percentage))}
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">
+            {report.gpa != null ? labels.gpa : m.student_grades_appreciation_label()}
+          </span>
+          <span class="text-sm font-semibold tabular-nums text-foreground">
+            {report.gpa != null ? formatDecimal(Number(report.gpa), 2) : getLetterDisplay(report)}
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">{m.student_grades_academic_decision()}</span>
           <div class="flex items-center gap-2">
-            <Select
-              type="single"
-              value={selectedTermPeriodId}
-              onValueChange={(val) => {
-                if (val) selectedTermPeriodId = val;
-              }}
-            >
-              <SelectTrigger class="h-8 min-w-45 text-xs">
-                {periodNames.get(selectedTermPeriodId) ?? m.student_grades_select_term()}
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                {#each academicContext.allPeriods as period (period.id)}
-                  <SelectItem value={period.id}>
-                    {period.name_ar || period.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-8 gap-1.5 text-xs"
-              onclick={() => termReportQuery.refetch()}
-              disabled={termReportQuery.isFetching}
-            >
-              {#if termReportQuery.isFetching}<LoadingIndicator size={13} />{:else}<Refresh size={13} />{/if}
-              {m.common_retry()}
-            </Button>
+            <Badge variant="outline" class={`text-[10px] font-semibold ${statusInfo.badgeClass}`}>
+              {statusInfo.label}
+            </Badge>
+            {#if report.rank_in_class}
+              <span class="text-[11px] tabular-nums text-muted-foreground">
+                #{formatNumber(report.rank_in_class)}
+              </span>
+            {/if}
           </div>
+        </div>
       </div>
 
-      {#if termReportQuery.isLoading}
-        <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-8">
-          <LoadingIndicator size={24} />
-          <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
-        </div>
-      {:else if termReportQuery.error}
-        <div class="flex min-h-64 flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center text-destructive">
-          <InfoCircle class="mb-2 h-8 w-8 stroke-current opacity-80" />
-          <p class="text-xs font-semibold">{m.common_load_error()}</p>
-          <p class="mt-1 text-[10px] text-muted-foreground">
-            {extractErrorMessage(termReportQuery.error)}
-          </p>
-        </div>
-      {:else if termReportQuery.data}
-        {@const termReport = termReportQuery.data}
-        {@const badge = getStatusBadge(termReport.status)}
-
-        <!-- Performance Summary KPIs -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <StudentMetricCard
-            title={m.student_grades_total_score()}
-            value={`${formatDecimal(Number(termReport.total_score), 1)} / ${formatNumber(Number(termReport.max_possible_score))}`}
-            icon={AcademicCap}
-          />
-          <StudentMetricCard
-            title={m.student_grades_percentage()}
-            value={formatPercent(Number(termReport.overall_percentage))}
-            icon={ChartBar}
-          />
-          <StudentMetricCard
-            title={m.student_grades_appreciation_label()}
-            value={(termReport as any).overall_letter_grade_ar ?? (termReport as any).overall_letter_grade ?? "—"}
-            icon={InfoCircle}
-          />
-          <StudentMetricCard
-            title={m.student_grades_academic_decision()}
-            value={badge.label}
-            icon={InfoCircle}
-            tone={badge.variant === "destructive" ? "danger" : "success"}
-          />
-          <StudentMetricCard
-            title={m.student_grades_rank_in_class()}
-            value={termReport.rank_in_class ? `#${formatNumber(termReport.rank_in_class)}` : "—"}
-            icon={BookOpen}
-          >
-            {#if termReport.total_students_in_class}
-              {m.student_grades_of()} {formatNumber(termReport.total_students_in_class)}
-            {/if}
-          </StudentMetricCard>
-        </div>
-
-        <!-- Subject Results Table -->
-        {#if termReport.subjects.length === 0}
-          <div class="flex min-h-36 flex-col items-center justify-center gap-1 py-8 text-center">
-            <p class="text-xs font-medium text-foreground">{m.academics_grades_empty_title()}</p>
-            <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
-          </div>
-        {:else}
-          <div class="overflow-x-auto border-y border-border">
-            <table class="w-full text-xs text-start">
-              <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
-                <tr>
-                  <th class="px-4 py-2.5 text-start">{m.student_grades_subject()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_coursework_20()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_term_exam_30()}</th>
-                  <th class="px-3 py-2.5 text-center font-bold text-foreground">{m.student_grades_term_total_50()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border/60">
-                {#each termReport.subjects as subj (subj.subject_id)}
-                  {@const subjPassed = String(subj.status).toLowerCase().includes("pass")}
-                  <tr class="hover:bg-muted/20 transition-colors">
-                    <td class="px-4 py-2.5 font-medium text-foreground">
-                      {isRtl ? (subj.subject_name_ar || subj.subject_name) : subj.subject_name}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {formatDecimal(Number(subj.monthly_contribution), 1)}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {subj.term_final_exam != null ? formatDecimal(Number(subj.term_final_exam), 1) : "—"}
-                    </td>
-                    <td class="px-3 py-2.5 text-center font-bold text-foreground">
-                      {formatDecimal(Number(subj.term_total), 1)}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {formatPercent(Number(subj.percentage))}
-                    </td>
-                    <td class="px-3 py-2.5 text-center font-medium">
-                      {subj.letter_grade ?? "—"}
-                    </td>
-                    <td class="px-3 py-2.5 text-center">
-                      <span class={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        subjPassed
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                      }`}>
-                        {subjPassed ? m.student_grades_status_passed() : m.student_grades_status_failed()}
-                      </span>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {/if}
-      {/if}
-    </div>
+      <!-- Clean Subject Results Table -->
+      <div class="overflow-x-auto rounded-md border border-border bg-card">
+        <table class="w-full text-xs text-start">
+          <thead class="border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+            <tr>
+              <th class="px-4 py-2.5 text-start">{labels.course}</th>
+              {#if showCredits}
+                <th class="px-3 py-2.5 text-center">{labels.credits}</th>
+              {/if}
+              <th class="px-3 py-2.5 text-center">
+                {labels.coursework}{maxLabel(sample?.monthly_contribution_max)}
+              </th>
+              <th class="px-3 py-2.5 text-center">
+                {labels.finalExam}{maxLabel(sample?.term_final_exam_max)}
+              </th>
+              <th class="px-3 py-2.5 text-center font-semibold text-foreground">
+                {labels.termTotal}{maxLabel(sample?.term_max)}
+              </th>
+              <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
+              <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
+              <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            {#each report.subjects as subj (subj.subject_id)}
+              {@const subjStatus = getStatusInfo(subj.status)}
+              <tr class="transition-colors hover:bg-muted/20">
+                <td class="px-4 py-2.5 font-medium text-foreground">
+                  {isRtl ? subj.subject_name_ar || subj.subject_name : subj.subject_name}
+                </td>
+                {#if showCredits}
+                  <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                    {formatNumber(Number(subj.credit_hours))}
+                  </td>
+                {/if}
+                <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                  {formatDecimal(Number(subj.monthly_contribution), 1)}
+                </td>
+                <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                  {subj.term_final_exam != null ? formatDecimal(Number(subj.term_final_exam), 1) : "—"}
+                </td>
+                <td class="px-3 py-2.5 text-center font-semibold tabular-nums text-foreground">
+                  {formatDecimal(Number(subj.term_total), 1)}
+                </td>
+                <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                  {formatPercent(Number(subj.percentage))}
+                </td>
+                <td class="px-3 py-2.5 text-center font-medium text-foreground">
+                  {subj.letter_grade ?? "—"}
+                </td>
+                <td class="px-3 py-2.5 text-center">
+                  <Badge variant="outline" class={`text-[10px] font-medium ${subjStatus.badgeClass}`}>
+                    {subjStatus.label}
+                  </Badge>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 3: ANNUAL REPORT CARD                                   -->
+  <!-- TAB 3: ANNUAL / CUMULATIVE RESULTS                          -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   {:else if activeTab === "annual"}
-    <div class="flex flex-col gap-4">
-      <!-- Calendar Selector Header -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
-          <div class="flex items-center gap-3">
-            <div class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <ChartBar size={18} />
-            </div>
-            <div>
-              <h2 class="text-xs font-bold text-foreground">
-                {m.student_grades_annual_results_heading()}
-              </h2>
-              <p class="text-[11px] text-muted-foreground">
-                {m.student_grades_annual_results_description()}
-              </p>
-            </div>
-          </div>
+    {#if annualReportQuery.isLoading}
+      <div class="flex min-h-56 flex-col items-center justify-center gap-2 rounded-md border border-border bg-card p-8">
+        <LoadingIndicator size={22} />
+        <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
+      </div>
+    {:else if annualReportQuery.error}
+      <div class="flex min-h-56 flex-col items-center justify-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-8 text-center text-destructive">
+        <InfoCircle class="h-6 w-6 opacity-80" />
+        <p class="text-xs font-semibold">{m.common_load_error()}</p>
+        <p class="text-[11px] text-muted-foreground">
+          {extractErrorMessage(annualReportQuery.error)}
+        </p>
+      </div>
+    {:else if !annualReportQuery.data || annualReportQuery.data.subjects.length === 0}
+      <div class="flex min-h-56 flex-col items-center justify-center gap-1 rounded-md border border-border bg-card p-8 text-center">
+        <p class="text-xs font-semibold text-foreground">{m.academics_grades_empty_title()}</p>
+        <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
+      </div>
+    {:else}
+      {@const report = annualReportQuery.data}
+      {@const statusInfo = getStatusInfo(report.status)}
+      {@const sample = report.subjects[0]}
 
+      <!-- Unified Summary Strip -->
+      <div class="grid grid-cols-2 divide-y divide-border rounded-md border border-border bg-card sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">{m.student_grades_annual_total()}</span>
+          <span class="text-sm font-semibold tabular-nums text-foreground">
+            {formatDecimal(Number(report.total_score), 1)}
+            <span class="text-xs font-normal text-muted-foreground">/ {formatNumber(Number(report.max_possible_score))}</span>
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">{m.student_grades_annual_percentage()}</span>
+          <span class="text-sm font-semibold tabular-nums text-foreground">
+            {formatPercent(Number(report.overall_percentage))}
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">
+            {report.cumulative_gpa != null ? labels.cumGpa : m.student_grades_appreciation_label()}
+          </span>
+          <span class="text-sm font-semibold tabular-nums text-foreground">
+            {report.cumulative_gpa != null ? formatDecimal(Number(report.cumulative_gpa), 2) : getLetterDisplay(report)}
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-1 px-4 py-3">
+          <span class="text-[11px] text-muted-foreground">{m.student_grades_promotion_status()}</span>
           <div class="flex items-center gap-2">
-            <Select
-              type="single"
-              value={selectedCalendarId}
-              onValueChange={(val) => {
-                if (val) selectedCalendarId = val;
-              }}
-            >
-              <SelectTrigger class="h-8 min-w-45 text-xs">
-                {yearNames.get(selectedCalendarId) ?? m.student_grades_select_academic_year()}
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                {#each academicContext.allYears as year (year.id)}
-                  <SelectItem value={year.id}>
-                    {year.name_ar || year.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-8 gap-1.5 text-xs"
-              onclick={() => annualReportQuery.refetch()}
-              disabled={annualReportQuery.isFetching}
-            >
-              {#if annualReportQuery.isFetching}<LoadingIndicator size={13} />{:else}<Refresh size={13} />{/if}
-              {m.common_retry()}
-            </Button>
+            <Badge variant="outline" class={`text-[10px] font-semibold ${statusInfo.badgeClass}`}>
+              {statusInfo.label}
+            </Badge>
+            {#if report.rank_in_class}
+              <span class="text-[11px] tabular-nums text-muted-foreground">
+                #{formatNumber(report.rank_in_class)}
+              </span>
+            {/if}
           </div>
+        </div>
       </div>
 
-      {#if annualReportQuery.isLoading}
-        <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-8">
-          <LoadingIndicator size={24} />
-          <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
-        </div>
-      {:else if annualReportQuery.error}
-        <div class="flex min-h-64 flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center text-destructive">
-          <InfoCircle class="mb-2 h-8 w-8 stroke-current opacity-80" />
-          <p class="text-xs font-semibold">{m.common_load_error()}</p>
-          <p class="mt-1 text-[10px] text-muted-foreground">
-            {extractErrorMessage(annualReportQuery.error)}
-          </p>
-        </div>
-      {:else if annualReportQuery.data}
-        {@const annualReport = annualReportQuery.data}
-        {@const badge = getStatusBadge(annualReport.status)}
-
-        <!-- Performance Summary KPIs -->
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
-          <StudentMetricCard
-            title={m.student_grades_annual_total()}
-            value={`${formatDecimal(Number(annualReport.total_score), 1)} / ${formatNumber(Number(annualReport.max_possible_score))}`}
-            icon={AcademicCap}
-          />
-          <StudentMetricCard
-            title={m.student_grades_annual_percentage()}
-            value={formatPercent(Number(annualReport.overall_percentage))}
-            icon={ChartBar}
-          />
-          <StudentMetricCard
-            title={m.student_grades_appreciation_label()}
-            value={(annualReport as any).overall_letter_grade_ar ?? (annualReport as any).overall_letter_grade ?? "—"}
-            icon={InfoCircle}
-          />
-          <StudentMetricCard
-            title={m.student_grades_promotion_status()}
-            value={badge.label}
-            icon={InfoCircle}
-            tone={badge.variant === "destructive" ? "danger" : "success"}
-          />
-          <StudentMetricCard
-            title={m.student_grades_rank()}
-            value={annualReport.rank_in_class ? `#${formatNumber(annualReport.rank_in_class)}` : "—"}
-            icon={BookOpen}
-          >
-            {#if annualReport.total_students_in_class}
-              {m.student_grades_in_class()} {formatNumber(annualReport.total_students_in_class)}
-            {/if}
-          </StudentMetricCard>
-        </div>
-
-        <!-- Subject Results Table -->
-        {#if annualReport.subjects.length === 0}
-          <div class="flex min-h-36 flex-col items-center justify-center gap-1 py-8 text-center">
-            <p class="text-xs font-medium text-foreground">{m.academics_grades_empty_title()}</p>
-            <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
-          </div>
-        {:else}
-          <div class="overflow-x-auto border-y border-border">
-            <table class="w-full text-xs text-start">
-              <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
-                <tr>
-                  <th class="px-4 py-2.5 text-start">{m.student_grades_subject()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_term_1_50()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_term_2_50()}</th>
-                  <th class="px-3 py-2.5 text-center font-bold text-foreground">{m.student_grades_annual_total_100()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border/60">
-                {#each annualReport.subjects as subj (subj.subject_id)}
-                  {@const subjPassed = String(subj.status).toLowerCase().includes("pass")}
-                  <tr class="hover:bg-muted/20 transition-colors">
-                    <td class="px-4 py-2.5 font-medium text-foreground">
-                      {isRtl ? (subj.subject_name_ar || subj.subject_name) : subj.subject_name}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {subj.term_1_result ? formatDecimal(Number(subj.term_1_result.term_total), 1) : "—"}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {subj.term_2_result ? formatDecimal(Number(subj.term_2_result.term_total), 1) : "—"}
-                    </td>
-                    <td class="px-3 py-2.5 text-center font-bold text-foreground">
-                      {formatDecimal(Number(subj.annual_total), 1)}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {formatPercent(Number(subj.percentage))}
-                    </td>
-                    <td class="px-3 py-2.5 text-center font-medium">
-                      {subj.letter_grade ?? "—"}
-                    </td>
-                    <td class="px-3 py-2.5 text-center">
-                      <span class={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        subjPassed
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                      }`}>
-                        {subjPassed ? m.student_grades_status_passed() : m.student_grades_status_failed()}
-                      </span>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {/if}
-      {/if}
-    </div>
+      <!-- Clean Annual Table -->
+      <div class="overflow-x-auto rounded-md border border-border bg-card">
+        <table class="w-full text-xs text-start">
+          <thead class="border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+            <tr>
+              <th class="px-4 py-2.5 text-start">{labels.course}</th>
+              {#if showCredits}
+                <th class="px-3 py-2.5 text-center">{labels.credits}</th>
+              {/if}
+              <th class="px-3 py-2.5 text-center">
+                {labels.term1}{maxLabel(sample?.term_1_result?.term_max)}
+              </th>
+              <th class="px-3 py-2.5 text-center">
+                {labels.term2}{maxLabel(sample?.term_2_result?.term_max)}
+              </th>
+              <th class="px-3 py-2.5 text-center font-semibold text-foreground">
+                {m.student_grades_annual_total()}{maxLabel(sample?.annual_max)}
+              </th>
+              <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
+              <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
+              <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/60">
+            {#each report.subjects as subj (subj.subject_id)}
+              {@const subjStatus = getStatusInfo(subj.status)}
+              <tr class="transition-colors hover:bg-muted/20">
+                <td class="px-4 py-2.5 font-medium text-foreground">
+                  {isRtl ? subj.subject_name_ar || subj.subject_name : subj.subject_name}
+                </td>
+                {#if showCredits}
+                  <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                    {formatNumber(Number(subj.credit_hours))}
+                  </td>
+                {/if}
+                <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                  {subj.term_1_result ? formatDecimal(Number(subj.term_1_result.term_total), 1) : "—"}
+                </td>
+                <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                  {subj.term_2_result ? formatDecimal(Number(subj.term_2_result.term_total), 1) : "—"}
+                </td>
+                <td class="px-3 py-2.5 text-center font-semibold tabular-nums text-foreground">
+                  {formatDecimal(Number(subj.annual_total), 1)}
+                </td>
+                <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                  {formatPercent(Number(subj.percentage))}
+                </td>
+                <td class="px-3 py-2.5 text-center font-medium text-foreground">
+                  {subj.letter_grade ?? "—"}
+                </td>
+                <td class="px-3 py-2.5 text-center">
+                  <Badge variant="outline" class={`text-[10px] font-medium ${subjStatus.badgeClass}`}>
+                    {subjStatus.label}
+                  </Badge>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- TAB 4: CERTIFICATE RESULTS (GRADE 9 & 12 PUBLIC EXAMS)      -->
+  <!-- TAB 4: CERTIFICATES & OFFICIAL DOCUMENTS                    -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   {:else if activeTab === "certificate"}
-    <div class="flex flex-col gap-4">
-      <!-- Certificate Configuration & Filters Header -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
-          <div class="flex items-center gap-3">
-            <div class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <AcademicCap size={18} />
-            </div>
-            <div>
-              <h2 class="text-xs font-bold text-foreground">
-                {m.student_grades_public_certificate_results_heading()}
-              </h2>
-              <p class="text-[11px] text-muted-foreground">
-                {isRtl
-                  ? m.student_grades_public_certificate_results_description()
-                  : m.student_grades_public_certificate_results_description()}
-              </p>
-            </div>
+    <div class="flex flex-col gap-5">
+      <!-- Available Official Documents List -->
+      <div class="overflow-hidden rounded-md border border-border bg-card">
+        <div class="border-b border-border bg-muted/30 px-4 py-2.5">
+          <h3 class="text-xs font-semibold text-foreground">
+            {isRtl ? "الوثائق والشهادات الرسمية" : "Official Certificates & Transcripts"}
+          </h3>
+        </div>
+
+        {#if reportDefsQuery.isLoading}
+          <div class="flex items-center justify-center gap-2 p-6">
+            <LoadingIndicator size={16} />
+            <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
           </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Certificate Type Selector -->
-            <Select
-              type="single"
-              value={selectedCertType}
-              onValueChange={(val) => {
-                if (val === "secondary_thanawiya" || val === "basic_grade9") {
-                  selectedCertType = val;
-                }
-              }}
-            >
-              <SelectTrigger class="h-8 min-w-[210px] text-xs">
-                {selectedCertType === "secondary_thanawiya"
-                  ? m.student_grades_secondary_certificate()
-                  : m.student_grades_basic_certificate()}
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                <SelectItem value="secondary_thanawiya">
-                  {m.student_grades_secondary_certificate()}
-                </SelectItem>
-                <SelectItem value="basic_grade9">
-                  {m.student_grades_basic_certificate()}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <!-- Calendar Selector -->
-            <Select
-              type="single"
-              value={selectedCalendarId}
-              onValueChange={(val) => {
-                if (val) selectedCalendarId = val;
-              }}
-            >
-              <SelectTrigger class="h-8 min-w-[170px] text-xs">
-                {yearNames.get(selectedCalendarId) ?? m.student_grades_select_academic_year()}
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                {#each academicContext.allYears as year (year.id)}
-                  <SelectItem value={year.id}>
-                    {year.name_ar || year.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-8 gap-1.5 text-xs"
-              onclick={() => certificateReportQuery.refetch()}
-              disabled={certificateReportQuery.isFetching}
-            >
-              {#if certificateReportQuery.isFetching}<LoadingIndicator size={13} />{:else}<Refresh size={13} />{/if}
-              {m.common_retry()}
-            </Button>
-          </div>
-      </div>
-
-      <!-- Yemen Sana'a MoE Policy Formula Explanation Banner -->
-      {#if selectedCertType === "secondary_thanawiya"}
-        <div class="flex items-center gap-2.5 rounded-lg border border-primary/25 bg-primary/5 px-3.5 py-2.5 text-xs text-primary">
-          <InfoCircle size={16} class="shrink-0" />
-          <div class="flex-1">
-            <span class="font-bold">
-              {m.student_grades_approved_formula_heading()}
-            </span>
-            <span class="ms-1 text-foreground">
-              {m.student_grades_approved_formula_description()}
-            </span>
-          </div>
-        </div>
-      {/if}
-
-      {#if certificateReportQuery.isLoading}
-        <div class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-8">
-          <LoadingIndicator size={24} />
-          <span class="text-xs text-muted-foreground">{m.common_loading_data()}</span>
-        </div>
-      {:else if certificateReportQuery.error}
-        <div class="flex min-h-64 flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center text-destructive">
-          <InfoCircle class="mb-2 h-8 w-8 stroke-current opacity-80" />
-          <p class="text-xs font-semibold">{m.common_load_error()}</p>
-          <p class="mt-1 text-[10px] text-muted-foreground">
-            {extractErrorMessage(certificateReportQuery.error)}
-          </p>
-        </div>
-      {:else if certificateReportQuery.data}
-        {@const certReport = certificateReportQuery.data}
-        {@const badge = getStatusBadge(certReport.status)}
-
-        <!-- Performance Summary KPIs -->
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
-          <StudentMetricCard
-            title={m.student_grades_total_score()}
-            value={`${formatDecimal(Number(certReport.total_score), 1)} / ${formatNumber(Number(certReport.max_possible_score))}`}
-            icon={AcademicCap}
-          />
-          <StudentMetricCard
-            title={m.student_grades_overall_percentage()}
-            value={formatPercent(Number(certReport.overall_percentage))}
-            icon={ChartBar}
-          />
-          <StudentMetricCard
-            title={m.student_grades_appreciation_label()}
-            value={(certReport as any).overall_letter_grade_ar ?? (certReport as any).overall_letter_grade ?? "—"}
-            icon={InfoCircle}
-          />
-          <StudentMetricCard
-            title={m.student_grades_final_status()}
-            value={badge.label}
-            icon={InfoCircle}
-            tone={badge.variant === "destructive" ? "danger" : "success"}
-          />
-          <StudentMetricCard
-            title={m.student_grades_rank()}
-            value={certReport.rank_in_class ? `#${formatNumber(certReport.rank_in_class)}` : "—"}
-            icon={BookOpen}
-          >
-            {#if certReport.total_students_in_class}
-              {m.student_grades_in_cohort()} {formatNumber(certReport.total_students_in_class)}
-            {/if}
-          </StudentMetricCard>
-        </div>
-
-        <!-- Certificate Subjects Table -->
-        {#if certReport.subjects.length === 0}
-          <div class="flex min-h-36 flex-col items-center justify-center gap-1 py-8 text-center">
-            <p class="text-xs font-medium text-foreground">{m.academics_grades_empty_title()}</p>
-            <p class="text-[11px] text-muted-foreground">{m.academics_grades_empty_subtitle()}</p>
+        {:else if studentDocuments.length === 0}
+          <div class="p-6 text-center text-xs text-muted-foreground">
+            {isRtl ? "لا توجد قوالب شهادات مفعلة حالياً" : "No active certificate templates found"}
           </div>
         {:else}
-          <div class="overflow-x-auto border-y border-border">
-            <table class="w-full text-xs text-start">
-              <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
-                <tr>
-                  <th class="px-4 py-2.5 text-start">{m.student_grades_subject()}</th>
-                  {#if selectedCertType === "secondary_thanawiya"}
-                    <th class="px-3 py-2.5 text-center">{m.student_grades_ministerial_exam_80()}</th>
-                    <th class="px-3 py-2.5 text-center">{m.student_grades_cumulative_average_20()}</th>
+          <div class="divide-y divide-border/60">
+            {#each studentDocuments as doc (doc.code)}
+              {@const docTitle = isRtl ? doc.name_ar || doc.name : doc.name}
+              {@const docDesc = isRtl ? doc.description_ar || doc.description : doc.description}
+              <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/20">
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-medium text-foreground">{docTitle}</p>
+                  {#if docDesc}
+                    <p class="mt-0.5 truncate text-[11px] text-muted-foreground">{docDesc}</p>
                   {/if}
-                  <th class="px-3 py-2.5 text-center font-bold text-foreground">
-                    {m.student_grades_final_score_100()}
-                  </th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_minimum_pass_50()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
-                  <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border/60">
-                {#each certReport.subjects as subj (subj.subject_id)}
-                  {@const subjPassed = String(subj.status).toLowerCase().includes("pass")}
-                  <tr class="hover:bg-muted/20 transition-colors">
-                    <td class="px-4 py-2.5 font-medium text-foreground">
-                      {isRtl ? (subj.subject_name_ar || subj.subject_name) : subj.subject_name}
-                    </td>
-
-                    {#if selectedCertType === "secondary_thanawiya"}
-                      <td class="px-3 py-2.5 text-center text-muted-foreground">
-                        {subj.term_final_exam != null ? formatDecimal(Number(subj.term_final_exam), 1) : "—"}
-                      </td>
-                      <td class="px-3 py-2.5 text-center text-muted-foreground">
-                        {formatDecimal(Number(subj.monthly_contribution), 1)}
-                      </td>
-                    {/if}
-
-                    <td class="px-3 py-2.5 text-center font-bold text-foreground">
-                      {formatDecimal(Number(subj.term_total), 1)}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {formatNumber(50)}
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {formatPercent(Number(subj.percentage))}
-                    </td>
-                    <td class="px-3 py-2.5 text-center font-medium">
-                      {subj.letter_grade ?? "—"}
-                    </td>
-                    <td class="px-3 py-2.5 text-center">
-                      <span class={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        subjPassed
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                      }`}>
-                        {subjPassed ? m.student_grades_status_passed() : m.student_grades_status_failed()}
-                      </span>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 gap-1.5 text-xs"
+                  onclick={() => openPrint(doc.code, docTitle)}
+                >
+                  <Printer size={13} />
+                  <span>{isRtl ? "معاينة وطباعة" : "Preview & Print"}</span>
+                </Button>
+              </div>
+            {/each}
           </div>
         {/if}
+      </div>
+
+      <!-- Certificate Results Summary (only shown when subjects exist) -->
+      {#if certificateReportQuery.data && certificateReportQuery.data.subjects.length > 0}
+        {@const certReport = certificateReportQuery.data}
+        {@const sample = certReport.subjects[0]}
+        <div class="overflow-x-auto rounded-md border border-border bg-card">
+          <table class="w-full text-xs text-start">
+            <thead class="border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+              <tr>
+                <th class="px-4 py-2.5 text-start">{labels.course}</th>
+                <th class="px-3 py-2.5 text-center">
+                  {labels.finalExam}{maxLabel(sample?.term_final_exam_max)}
+                </th>
+                <th class="px-3 py-2.5 text-center">
+                  {isRtl ? "التراكمي" : "Cumulative"}{maxLabel(sample?.monthly_contribution_max)}
+                </th>
+                <th class="px-3 py-2.5 text-center font-semibold text-foreground">
+                  {labels.termTotal}{maxLabel(sample?.term_max)}
+                </th>
+                <th class="px-3 py-2.5 text-center">
+                  {isRtl ? "الحد الأدنى" : "Min Pass"}
+                </th>
+                <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
+                <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              {#each certReport.subjects as subj (subj.subject_id)}
+                {@const subjStatus = getStatusInfo(subj.status)}
+                <tr class="transition-colors hover:bg-muted/20">
+                  <td class="px-4 py-2.5 font-medium text-foreground">
+                    {isRtl ? subj.subject_name_ar || subj.subject_name : subj.subject_name}
+                  </td>
+                  <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                    {subj.term_final_exam != null ? formatDecimal(Number(subj.term_final_exam), 1) : "—"}
+                  </td>
+                  <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                    {formatDecimal(Number(subj.monthly_contribution), 1)}
+                  </td>
+                  <td class="px-3 py-2.5 text-center font-semibold tabular-nums text-foreground">
+                    {formatDecimal(Number(subj.term_total), 1)}
+                  </td>
+                  <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                    {formatDecimal((Number(subj.term_max) * passingThreshold) / 100, 1)}
+                  </td>
+                  <td class="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                    {formatPercent(Number(subj.percentage))}
+                  </td>
+                  <td class="px-3 py-2.5 text-center">
+                    <Badge variant="outline" class={`text-[10px] font-medium ${subjStatus.badgeClass}`}>
+                      {subjStatus.label}
+                    </Badge>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
       {/if}
     </div>
   {/if}
 </div>
 
-<!-- Print PDF Report Viewer Dialog -->
 <PdfReportViewer
-  bind:open={showPrintCertificateDialog}
-  templateId={printTemplateId}
+  bind:open={showPrintDialog}
+  templateId={printReportCode}
   parameters={{
     student_id: studentId,
     calendar_id: selectedCalendarId,
+    year_id: selectedCalendarId,
     period_id: selectedTermPeriodId,
-    certificate_type: selectedCertType,
     class_id: classId,
   }}
   reportTitle={printTitle}

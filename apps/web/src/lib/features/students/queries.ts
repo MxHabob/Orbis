@@ -37,7 +37,6 @@ import { academicContext } from "$lib/stores";
 export function createStudentDirectoryQuery(orgId: () => string) {
   const getStudentFilter = () => ({
     class_id: studentsStore.selectedClassId ?? undefined,
-    period_id: academicContext.effectivePeriodId || undefined,
     status:
       studentsStore.statusFilter === "all"
         ? undefined

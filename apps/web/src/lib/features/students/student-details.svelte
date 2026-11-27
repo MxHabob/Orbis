@@ -299,12 +299,22 @@ onMount(async () => {
 
 // Derived academic performance statistics
 const academicStats = $derived.by(() => {
-  if (termReport && termReport.subjects && termReport.subjects.length > 0) {
-    const subs = termReport.subjects;
+  const subs = termReport?.subjects ?? [];
+  const gradedSubs = subs.filter(
+    (s) =>
+      s.percentage != null ||
+      (s as unknown as { total_score?: number | null }).total_score != null,
+  );
+  if (
+    termReport &&
+    (gradedSubs.length > 0 ||
+      termReport.overall_percentage != null ||
+      termReport.gpa != null)
+  ) {
     let totalPct = 0;
     let passed = 0;
     let failed = 0;
-    for (const s of subs) {
+    for (const s of gradedSubs) {
       const pct = Number(s.percentage || 0);
       totalPct += pct;
       if (String(s.status || "").toLowerCase() === "passed" || pct >= 50) {
@@ -314,7 +324,10 @@ const academicStats = $derived.by(() => {
       }
     }
     const avg = Math.round(
-      Number(termReport.overall_percentage ?? totalPct / subs.length),
+      Number(
+        termReport.overall_percentage ??
+          (gradedSubs.length > 0 ? totalPct / gradedSubs.length : 0),
+      ),
     );
     let letter = "F";
     if (avg >= 90) letter = "A";
@@ -460,7 +473,23 @@ const decisionHelper = $derived.by(() => {
     };
   }
 
-  if (acadAvg >= 85 && attRate >= 95 && negBeh === 0) {
+  const isCritical =
+    (academicStats.hasData && acadAvg <= 45) ||
+    (attendanceStats.hasData && attRate <= 70) ||
+    negBeh >= 4;
+
+  const isWarning =
+    (academicStats.hasData && acadAvg < 60) ||
+    (attendanceStats.hasData && attRate < 85) ||
+    negBeh >= 2;
+
+  const isExcellent =
+    (academicStats.hasData || attendanceStats.hasData) &&
+    (!academicStats.hasData || acadAvg >= 85) &&
+    (!attendanceStats.hasData || attRate >= 95) &&
+    negBeh === 0;
+
+  if (isExcellent) {
     return {
       status: "excellent",
       badge: m.common_control_grade_excellent(),
@@ -468,7 +497,7 @@ const decisionHelper = $derived.by(() => {
       rec: m.academics_student_evaluation_rec_excellent(),
       colorClass: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
     };
-  } else if (acadAvg <= 45 || attRate <= 70 || negBeh >= 4) {
+  } else if (isCritical) {
     return {
       status: "critical",
       badge: m.academics_student_evaluation_status_critical(),
@@ -476,7 +505,7 @@ const decisionHelper = $derived.by(() => {
       rec: m.academics_student_evaluation_rec_critical(),
       colorClass: "text-destructive bg-destructive/10 border-destructive/20",
     };
-  } else if (acadAvg < 60 || attRate < 85 || negBeh >= 2) {
+  } else if (isWarning) {
     return {
       status: "warning",
       badge: m.academics_student_evaluation_status_warning(),
@@ -753,7 +782,7 @@ async function resetStudentDetails() {
             {/if}
 
             <!-- Decision Helper Banner -->
-            <div class="p-4 rounded-xl border flex items-center justify-between gap-4 shadow-sm {decisionHelper.colorClass}">
+            <div class="p-4 rounded-md border flex items-center justify-between gap-4 {decisionHelper.colorClass}">
               <div class="flex items-center gap-3">
                 <AcademicCap size={18} class="shrink-0" />
                 <div class="flex flex-col gap-0.5 text-start">
