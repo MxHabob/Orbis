@@ -6,8 +6,6 @@
  */
 
 import { api } from "$lib/api/client";
-import { LocalClient } from "$lib/api/local-client";
-import { isDesktopApp } from "$lib/api/runtime";
 import type {
   DatabaseStatusDto,
   ConnectionConfig,
@@ -21,7 +19,7 @@ import type {
 import { confirmStore } from "$lib/stores";
 
 export class DatabaseManagerController {
-  private readonly connection = isDesktopApp ? new LocalClient() : api;
+  private readonly connection = api;
   status = $state<DatabaseStatusDto | null>(null);
   config = $state<ConnectionConfig | null>(null);
   settings = $state<DatabaseSettingsDto | null>(null);

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   @component SectionSubjectDetails
   Feature component for the Coursework Gradebook spreadsheet.
   Provides interactive cell editing, total recalculation, and batch grade saving inside a standardized Card container.
@@ -13,6 +13,7 @@ import {
 
 import { LoadingIndicator } from "@orbis/ui";
 import { api, extractErrorMessage } from "$lib/api";
+import { clearDraft, loadDraft, saveDraft } from "$lib/api/draft-store";
 import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -353,6 +354,39 @@ function decorateRows(rows: Record<string, unknown>[]) {
 
 const assessmentKeys = $derived(matrixData.assessment_types);
 
+function gradeDraftKey(): string {
+  return `grades:${orgId}:${SectionSubjectId}:${selectedPeriodId}`;
+}
+
+type GradeDraftMap = Record<string, Record<string, GradeCellState | null>>;
+
+function persistGradeDraft() {
+  const draft: GradeDraftMap = {};
+  for (let i = 0; i < gridSource.length; i++) {
+    const row = gridSource[i] as any;
+    const base = (baselineSource[i] || {}) as any;
+    const studentId = String(row.student_id ?? "");
+    if (!studentId) continue;
+    for (const key of assessmentKeys) {
+      const current = canonicalCell(
+        row[`__cell_exam_${key}`] as GradeCellState | null,
+      );
+      const original = canonicalCell(
+        base[`__cell_exam_${key}`] as GradeCellState | null,
+      );
+      if (!sameCell(current, original)) {
+        draft[studentId] ??= {};
+        draft[studentId][key] = current;
+      }
+    }
+  }
+  if (Object.keys(draft).length > 0) {
+    saveDraft(gradeDraftKey(), draft);
+  } else {
+    clearDraft(gradeDraftKey());
+  }
+}
+
 $effect(() => {
   if (isMatrixLoading) return;
   const key = `${selectedPeriodId}|${SectionSubjectId}|${matrixData.students.length}|${assessmentKeys.join(",")}`;
@@ -363,9 +397,28 @@ $effect(() => {
       academicContext.gradeScaleItems,
     );
     const decorated = decorateRows(base);
-    gridSource = decorated.map((r) => structuredClone(r));
     baselineSource = decorated.map((r) => structuredClone(r));
+
+    const draft = loadDraft<GradeDraftMap>(gradeDraftKey());
+    let restored = false;
+    const working = decorated.map((r) => {
+      const row = structuredClone(r) as Record<string, unknown>;
+      const studentDraft = draft?.[String(row.student_id ?? "")];
+      if (studentDraft) {
+        for (const [compKey, cellState] of Object.entries(studentDraft)) {
+          row[`__cell_exam_${compKey}`] = cellState;
+          row[`exam_${compKey}`] = displayForCell(cellState);
+          restored = true;
+        }
+        recalcRowLocal(row);
+      }
+      return row;
+    });
+    gridSource = working;
     lastMatrixKey = key;
+    if (restored) {
+      isDirty = true;
+    }
   }
 });
 
@@ -423,6 +476,7 @@ const gridColumns = $derived.by(() => {
 });
 
 function handleRefresh() {
+  clearDraft(gradeDraftKey());
   studentsQuery.refetch();
   gradesQuery.refetch();
   schemesQuery.refetch();
@@ -452,6 +506,7 @@ function handleCellEdit(event: CellEditEvent) {
   updatedSource[rowIndex] = row;
   gridSource = updatedSource;
   isDirty = true;
+  persistGradeDraft();
 }
 
 async function handleSaveAll() {
@@ -528,6 +583,7 @@ async function handleSaveAll() {
     } else {
       toast.success(m.common_grades_save_success());
     }
+    clearDraft(gradeDraftKey());
     isDirty = false;
     gradesQuery.refetch();
   } catch (e: any) {

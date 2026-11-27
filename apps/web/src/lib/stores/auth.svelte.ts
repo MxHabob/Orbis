@@ -12,7 +12,7 @@ import {
   getConnectionScope,
   setRemoteSessionToken,
 } from "$lib/api";
-import { ApiRequestError } from "$lib/api/remote-client";
+import { ApiRequestError } from "$lib/api/unified-client";
 import { effectiveContext } from "./effective-context.svelte";
 import { systemStore } from "./system.svelte";
 import { workflowInbox } from "./workflow-inbox.svelte";

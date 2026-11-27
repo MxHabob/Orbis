@@ -1,94 +1,27 @@
-//! Tauri command registration — all IPC handlers.
+//! Tauri command registration — native desktop IPC handlers + in-memory API router bridge.
 
-pub mod academic_cmds;
-pub mod ai_cmds;
 pub mod api_distribution_cmds;
-pub mod assessment_cmds;
-pub mod autopilot_cmds;
-pub mod bootstrap_cmds;
-pub mod calendar_cmds;
 pub mod camera_stream_cmds;
 pub mod connection_cmds;
 pub mod database_cmds;
-pub mod document_cmds;
-pub mod employee_cmds;
-pub mod exam_cmds;
-pub mod finance_cmds;
-pub mod folder_cmds;
-pub mod group_cmds;
-pub mod iam_cmds;
-pub mod integration_cmds;
-pub mod license_cmds;
-pub mod mulverse_cmds;
-pub mod notification_cmds;
-pub mod onboarding_cmds;
-pub mod org_cmds;
-pub mod progression_cmds;
-pub mod report_cmds;
-pub mod scheduling_cmds;
-pub mod storage_cmds;
-pub mod student_cmds;
+pub mod solver_cmds;
 pub mod system_cmds;
-pub mod template_cmds;
 pub mod window_cmds;
-pub mod workflow_cmds;
 
 use tauri::{Manager, generate_handler};
-
-pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::RequestContext {
-    let session = state.get_active_session();
-    let (tenant_id, actor) = match session {
-        Some(s) => (s.org_id, orbis_domain::iam::actor::Actor::User(s.user_id)),
-        None => (
-            uuid::Uuid::nil(),
-            orbis_domain::iam::actor::Actor::User(uuid::Uuid::nil()),
-        ),
-    };
-    orbis_app::context::RequestContext {
-        tenant_id,
-        actor,
-        request_id: uuid::Uuid::new_v4().to_string(),
-        source: orbis_app::context::ActionSource::TauriIpc,
-        org_unit_path: None,
-    }
-}
 
 pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     let handler = build_handler();
 
     move |invoke: tauri::ipc::Invoke| -> bool {
         let command = invoke.message.command().to_string();
-        if let Some(state) = invoke
+        if invoke
             .message
             .webview_ref()
             .try_state::<crate::state::AppState>()
+            .is_none()
+            && !is_allowed_before_backend_initialization(&command)
         {
-            if state.get_active_session().is_none() && !is_allowed_before_auth(&command) {
-                invoke
-                    .resolver
-                    .reject("Authentication is required to execute this operation.".to_string());
-                return true;
-            }
-
-            let snapshot = state.license_runtime.current_snapshot();
-            if !snapshot.state.is_operational() && !is_allowed_without_operational_license(&command)
-            {
-                invoke.resolver.reject(format!(
-                    "This operation is unavailable while the license state is {:?}. Activate a valid license or start a trial to continue.",
-                    snapshot.state
-                ));
-                return true;
-            }
-
-            if let Some(feature) = required_feature(&command)
-                && !state.license_runtime.is_feature_enabled(feature)
-            {
-                invoke.resolver.reject(format!(
-                    "This operation requires the '{feature}' license entitlement."
-                ));
-                return true;
-            }
-        } else if !is_allowed_before_backend_initialization(&command) {
             invoke
                 .resolver
                 .reject("The application backend is not initialized.".to_string());
@@ -99,402 +32,95 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
     }
 }
 
-fn is_allowed_without_operational_license(command: &str) -> bool {
-    command.starts_with("auth_")
-        || command.starts_with("connection_")
-        || command.starts_with("window_")
-        || matches!(
-            command,
-            "license_get_state"
-                | "license_activate_key"
-                | "license_start_trial"
-                | "license_deactivate"
-                | "license_refresh"
-                | "license_check_feature"
-                | "license_get_installation_id"
-                | "system_health"
-                | "system_has_organization"
-                | "system_get_readiness"
-                | "system_get_entitlement"
-                | "system_get_app_info"
-                | "system_get_changelog"
-                | "system_get_release_notes_state"
-                | "system_acknowledge_release_notes"
-                | "api_distribution_verify_manifest"
-                | "system_check_for_updates"
-                | "system_download_update"
-                | "system_install_update"
-                | "bootstrap_detect_environment"
-                | "bootstrap_generate_slug"
-                | "bootstrap_get_status"
-                | "bootstrap_execute"
-        )
+#[derive(serde::Serialize)]
+struct IpcResponseMeta {
+    status: u16,
+    headers: std::collections::HashMap<String, String>,
 }
 
-fn is_allowed_before_auth(command: &str) -> bool {
-    command.starts_with("auth_")
-        || command.starts_with("connection_")
-        || command.starts_with("window_")
-        || matches!(
-            command,
-            "license_get_state"
-                | "license_activate_key"
-                | "license_start_trial"
-                | "license_deactivate"
-                | "license_refresh"
-                | "license_check_feature"
-                | "license_get_installation_id"
-                | "system_health"
-                | "system_has_organization"
-                | "system_get_readiness"
-                | "system_get_entitlement"
-                | "system_get_app_info"
-                | "system_get_changelog"
-                | "system_get_release_notes_state"
-                | "system_acknowledge_release_notes"
-                | "system_check_for_updates"
-                | "system_download_update"
-                | "system_install_update"
-                | "bootstrap_detect_environment"
-                | "bootstrap_generate_slug"
-                | "bootstrap_get_status"
-                | "bootstrap_execute"
-        )
+/// Executes an HTTP request against the in-memory `orbis_server` Axum router.
+///
+/// Returns a binary frame: `[4-byte big-endian meta_len][UTF-8 JSON meta][raw body bytes]`
+/// so JSON, PDFs, images, and exports transfer without UTF-8 corruption or double-encoding.
+#[tauri::command]
+pub async fn ipc_api_request(
+    method: String,
+    path: String,
+    headers: std::collections::HashMap<String, String>,
+    body: Option<Vec<u8>>,
+    state: tauri::State<'_, crate::state::AppState>,
+) -> Result<tauri::ipc::Response, String> {
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    let parsed_method = axum::http::Method::from_bytes(method.as_bytes())
+        .map_err(|e| format!("Invalid HTTP method: {e}"))?;
+    let mut builder = axum::http::Request::builder()
+        .method(parsed_method)
+        .uri(&path);
+    for (k, v) in headers {
+        builder = builder.header(k, v);
+    }
+    let req_body = match body {
+        Some(bytes) if !bytes.is_empty() => axum::body::Body::from(bytes),
+        _ => axum::body::Body::empty(),
+    };
+    let request = builder
+        .body(req_body)
+        .map_err(|e| format!("Failed to build IPC request: {e}"))?;
+
+    let response = state
+        .server_router
+        .clone()
+        .oneshot(request)
+        .await
+        .map_err(|e| format!("In-memory router error: {e}"))?;
+
+    let status = response.status().as_u16();
+    let mut resp_headers = std::collections::HashMap::new();
+    for (name, val) in response.headers() {
+        if let Ok(v) = val.to_str() {
+            resp_headers.insert(name.as_str().to_string(), v.to_string());
+        }
+    }
+    let collected = response
+        .into_body()
+        .collect()
+        .await
+        .map_err(|e| format!("Failed to read IPC response body: {e}"))?;
+    let body_bytes = collected.to_bytes();
+
+    let meta_bytes = serde_json::to_vec(&IpcResponseMeta {
+        status,
+        headers: resp_headers,
+    })
+    .map_err(|e| format!("Failed to serialize IPC response metadata: {e}"))?;
+    let meta_len = u32::try_from(meta_bytes.len())
+        .map_err(|_| "IPC response metadata exceeds 4GB".to_string())?;
+
+    let mut frame = Vec::with_capacity(4 + meta_bytes.len() + body_bytes.len());
+    frame.extend_from_slice(&meta_len.to_be_bytes());
+    frame.extend_from_slice(&meta_bytes);
+    frame.extend_from_slice(&body_bytes);
+
+    Ok(tauri::ipc::Response::new(frame))
 }
 
 fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     generate_handler![
+        ipc_api_request,
         api_distribution_cmds::api_distribution_verify_manifest,
         camera_stream_cmds::camera_stream_start,
         camera_stream_cmds::camera_stream_stop,
-        // ── Auth & IAM ──────────────────────────────────────────
-        iam_cmds::auth_login,
-        iam_cmds::auth_get_session,
-        iam_cmds::auth_logout,
-        iam_cmds::auth_mfa_enroll,
-        iam_cmds::auth_mfa_verify_enrollment,
-        iam_cmds::auth_mfa_challenge,
-        iam_cmds::auth_link_google,
-        iam_cmds::auth_login_google,
-        iam_cmds::auth_list_devices,
-        iam_cmds::auth_revoke_device,
-        iam_cmds::iam_register_user,
-        iam_cmds::iam_provision_user,
-        iam_cmds::iam_list_users,
-        iam_cmds::iam_get_user,
-        iam_cmds::iam_update_user,
-        iam_cmds::iam_delete_user,
-        iam_cmds::iam_reset_user_password,
-        iam_cmds::iam_list_roles,
-        iam_cmds::iam_save_role,
-        iam_cmds::iam_delete_role,
-        iam_cmds::iam_list_permissions,
-        iam_cmds::iam_save_permissions,
-        // ── Organization ────────────────────────────────────────
-        org_cmds::org_get_current,
-        org_cmds::org_update_current,
-        org_cmds::org_get_settings,
-        org_cmds::org_update_settings,
-        org_cmds::org_get_dashboard,
-        org_cmds::org_get_dashboard_access,
-        org_cmds::org_create_unit,
-        org_cmds::org_update_unit,
-        org_cmds::org_list_units,
-        org_cmds::org_get_unit,
-        org_cmds::org_delete_unit,
-        // ── Calendar ────────────────────────────────────────────
-        calendar_cmds::calendar_create_year,
-        calendar_cmds::calendar_update_year,
-        calendar_cmds::calendar_activate_year,
-        calendar_cmds::calendar_close_year,
-        calendar_cmds::calendar_archive_year,
-        calendar_cmds::calendar_delete_year,
-        calendar_cmds::calendar_list_years,
-        calendar_cmds::calendar_get_context,
-        calendar_cmds::calendar_get_year,
-        calendar_cmds::calendar_create_period,
-        calendar_cmds::calendar_update_period,
-        calendar_cmds::calendar_delete_period,
-        calendar_cmds::calendar_list_periods,
-        calendar_cmds::calendar_get_period,
-        calendar_cmds::calendar_lock_period,
-        calendar_cmds::calendar_unlock_period,
-        calendar_cmds::calendar_close_period,
-        calendar_cmds::calendar_open_grade_entry_window,
-        calendar_cmds::calendar_close_grade_entry_window,
-        calendar_cmds::calendar_open_enrollment_window,
-        calendar_cmds::calendar_close_enrollment_window,
-        calendar_cmds::calendar_transition_period_state,
-        calendar_cmds::calendar_list_period_types,
-        calendar_cmds::calendar_list_official_templates,
-        calendar_cmds::calendar_apply_template,
-        calendar_cmds::calendar_get_defaults,
-        // ── Academic ────────────────────────────────────────────
-        academic_cmds::academic_create_subject,
-        academic_cmds::academic_update_subject,
-        academic_cmds::academic_list_subjects,
-        academic_cmds::academic_get_subject,
-        academic_cmds::academic_create_section,
-        academic_cmds::academic_update_section,
-        academic_cmds::academic_list_sections,
-        academic_cmds::academic_get_sections_summary,
-        academic_cmds::academic_get_section,
-        academic_cmds::academic_delete_section,
-        academic_cmds::academic_assign_section_subject,
-        academic_cmds::academic_get_section_subject,
-        academic_cmds::academic_update_section_subject,
-        academic_cmds::academic_list_section_subjects,
-        academic_cmds::academic_check_prerequisites,
-        // ── Student ─────────────────────────────────────────────
-        student_cmds::student_register_student,
-        student_cmds::student_check_duplicate,
-        student_cmds::student_list_students,
-        student_cmds::student_get_student,
-        student_cmds::student_update_student_status,
-        student_cmds::student_update_profile,
-        student_cmds::student_change_study_mode,
-        student_cmds::student_transfer_class,
-        student_cmds::student_enroll_student,
-        student_cmds::student_list_enrollments,
-        student_cmds::student_get_enrollment,
-        student_cmds::student_assign_guardian,
-        student_cmds::student_list_guardians,
-        student_cmds::student_remove_guardian,
-        student_cmds::student_delete_student,
-        student_cmds::student_restore_student,
-        student_cmds::student_start_bulk_register_job,
-        student_cmds::student_get_bulk_register_job,
-        student_cmds::student_bulk_transfer_classes,
-        // ── Employee Affairs ────────────────────────────────────
-        employee_cmds::employee_register_employee,
-        employee_cmds::employee_list_employees,
-        employee_cmds::employee_get_employee,
-        employee_cmds::employee_get_employee_stats,
-        employee_cmds::employee_update_employee,
-        employee_cmds::employee_update_employee_status,
-        employee_cmds::employee_delete_employee,
-        employee_cmds::employee_restore_employee,
-        employee_cmds::employee_provision_account,
-        employee_cmds::employee_assign_groups,
-        employee_cmds::employee_start_bulk_register_job,
-        employee_cmds::employee_get_bulk_register_job,
-        // ── User Groups ─────────────────────────────────────────
-        group_cmds::group_create_group,
-        group_cmds::group_list_groups,
-        group_cmds::group_get_group,
-        group_cmds::group_update_group,
-        group_cmds::group_delete_group,
-        group_cmds::group_get_members,
-        group_cmds::group_add_member,
-        group_cmds::group_remove_member,
-        group_cmds::group_bulk_assign,
-        group_cmds::group_set_permissions,
-        // ── Student Cohort Progression ──────────────────────────
-        progression_cmds::progression_evaluate_cohort,
-        progression_cmds::progression_promote_cohort,
-        progression_cmds::progression_list_jobs,
-        progression_cmds::progression_get_job,
-        progression_cmds::progression_get_job_details,
-        progression_cmds::progression_rollback_job,
-        // ── Scheduling & Solver ────────────────────────────────
-        scheduling_cmds::scheduling_create_room,
-        scheduling_cmds::scheduling_list_rooms,
-        scheduling_cmds::scheduling_get_room,
-        scheduling_cmds::scheduling_update_room,
-        scheduling_cmds::scheduling_delete_room,
-        scheduling_cmds::scheduling_create_time_slot,
-        scheduling_cmds::scheduling_batch_create_time_slots,
-        scheduling_cmds::scheduling_list_time_slots,
-        scheduling_cmds::scheduling_get_time_slot,
-        scheduling_cmds::scheduling_update_time_slot,
-        scheduling_cmds::scheduling_delete_time_slot,
-        scheduling_cmds::scheduling_schedule_lesson,
-        scheduling_cmds::scheduling_update_scheduled_lesson,
-        scheduling_cmds::scheduling_bulk_schedule_lessons,
-        scheduling_cmds::scheduling_list_lessons,
-        scheduling_cmds::scheduling_delete_scheduled_lesson,
-        scheduling_cmds::solver_get_sidecar_status,
-        scheduling_cmds::solver_get_setup_status,
-        scheduling_cmds::solver_start_setup,
-        scheduling_cmds::solver_stop_sidecar,
-        scheduling_cmds::solver_submit_timetable,
-        scheduling_cmds::solver_get_timetable_status,
-        scheduling_cmds::solver_submit_exam,
-        scheduling_cmds::solver_get_exam_status,
-        // ── Assessment ──────────────────────────────────────────
-        assessment_cmds::assessment_create_scheme,
-        assessment_cmds::assessment_list_schemes,
-        assessment_cmds::assessment_get_scheme,
-        assessment_cmds::assessment_update_scheme,
-        assessment_cmds::assessment_delete_scheme,
-        assessment_cmds::assessment_record_grade,
-        assessment_cmds::assessment_batch_record_grades,
-        assessment_cmds::assessment_delete_grade,
-        assessment_cmds::assessment_list_grades,
-        assessment_cmds::assessment_calculate_grades,
-        assessment_cmds::assessment_get_calculation_engine_settings,
-        assessment_cmds::assessment_update_calculation_engine_settings,
-        assessment_cmds::assessment_preview_calculation,
-        assessment_cmds::assessment_calculate_gpa,
-        assessment_cmds::assessment_calculate_rankings,
-        assessment_cmds::assessment_mark_attendance,
-        assessment_cmds::assessment_batch_mark_attendance,
-        assessment_cmds::assessment_delete_attendance,
-        assessment_cmds::assessment_list_attendance,
-        assessment_cmds::assessment_list_student_attendance,
-        assessment_cmds::assessment_record_behavior,
-        assessment_cmds::assessment_delete_behavior,
-        assessment_cmds::assessment_list_student_behavior_records,
-        assessment_cmds::assessment_list_all_behavior,
-        assessment_cmds::assessment_get_student_term_results,
-        assessment_cmds::assessment_get_student_annual_results,
-        assessment_cmds::assessment_get_class_term_results,
-        assessment_cmds::assessment_get_class_annual_results,
-        assessment_cmds::assessment_get_student_certificate_results,
-        // ── Exam ────────────────────────────────────────────────
-        exam_cmds::exam_create_session,
-        exam_cmds::exam_list_sessions,
-        exam_cmds::exam_get_session,
-        exam_cmds::exam_update_session,
-        exam_cmds::exam_delete_session,
-        exam_cmds::exam_schedule_exam,
-        exam_cmds::exam_list_schedules,
-        exam_cmds::exam_delete_schedule,
-        exam_cmds::exam_assign_seating,
-        exam_cmds::exam_list_seating,
-        exam_cmds::exam_delete_seating,
-        exam_cmds::exam_generate_seating,
-        exam_cmds::exam_assign_secret,
-        exam_cmds::exam_list_secrets,
-        exam_cmds::exam_delete_secret,
-        exam_cmds::exam_generate_secrets,
-        exam_cmds::exam_assign_proctor,
-        exam_cmds::exam_list_proctors,
-        exam_cmds::exam_delete_proctor,
-        // ── Finance ─────────────────────────────────────────────
-        finance_cmds::finance_create_account,
-        finance_cmds::finance_list_accounts,
-        finance_cmds::finance_get_account,
-        finance_cmds::finance_update_account,
-        finance_cmds::finance_delete_account,
-        finance_cmds::finance_create_fee_template,
-        finance_cmds::finance_update_fee_template,
-        finance_cmds::finance_delete_fee_template,
-        finance_cmds::finance_list_fee_templates,
-        finance_cmds::finance_get_fee_template,
-        finance_cmds::finance_generate_fee,
-        finance_cmds::finance_list_student_fees,
-        finance_cmds::finance_list_student_fees_paginated,
-        finance_cmds::finance_get_student_fee_summary,
-        finance_cmds::finance_delete_student_fee,
-        finance_cmds::finance_process_payment,
-        finance_cmds::finance_list_payments,
-        finance_cmds::finance_list_payments_paginated,
-        finance_cmds::finance_delete_payment,
-        finance_cmds::finance_list_currencies,
-        finance_cmds::finance_create_currency,
-        finance_cmds::finance_update_currency,
-        finance_cmds::finance_list_journal_entries,
-        finance_cmds::finance_get_journal_entry,
-        finance_cmds::finance_create_journal_entry,
-        finance_cmds::finance_reverse_journal_entry,
-        finance_cmds::finance_delete_journal_entry,
-        finance_cmds::finance_create_discount_template,
-        finance_cmds::finance_list_discount_templates,
-        finance_cmds::finance_delete_discount_template,
-        finance_cmds::finance_split_student_fee,
-        finance_cmds::finance_refund_student_fee,
-        finance_cmds::finance_get_account_statement,
-        finance_cmds::finance_process_disbursement,
-        finance_cmds::finance_create_sub_account,
-        finance_cmds::finance_settle_gateway_payout,
-        finance_cmds::finance_post_payroll_accrual,
-        finance_cmds::finance_disburse_payroll,
-        // ── Document ────────────────────────────────────────────
-        document_cmds::document_upload,
-        document_cmds::document_update,
-        document_cmds::document_list,
-        document_cmds::document_list_by_entity,
-        document_cmds::document_get,
-        document_cmds::document_delete,
-        document_cmds::document_archive,
-        document_cmds::document_restore,
-        document_cmds::document_trash,
-        document_cmds::document_purge,
-        document_cmds::document_list_archived,
-        document_cmds::document_list_trash,
-        document_cmds::document_create_requirement,
-        document_cmds::document_get_requirement,
-        document_cmds::document_update_requirement,
-        document_cmds::document_list_requirements,
-        document_cmds::document_delete_requirement,
-        document_cmds::document_evaluate_student_requirements,
-        // ── Folders & Curriculum Knowledge Base ─────────────────
-        folder_cmds::folder_create,
-        folder_cmds::folder_list,
-        folder_cmds::folder_get,
-        folder_cmds::folder_get_contents,
-        folder_cmds::folder_get_or_create_student,
-        folder_cmds::folder_list_curriculum,
-        folder_cmds::folder_get_or_create_curriculum,
-        folder_cmds::folder_update,
-        folder_cmds::folder_delete,
-        // ── Storage & Physical File Operations ──────────────────
-        storage_cmds::storage_upload_file,
-        storage_cmds::storage_download_file,
-        storage_cmds::storage_get_url,
-        storage_cmds::storage_archive_document,
-        storage_cmds::storage_restore_document,
-        storage_cmds::storage_trash_document,
-        storage_cmds::storage_purge_document,
-        storage_cmds::storage_list_archived,
-        storage_cmds::storage_list_trash,
-        // ── Integration ─────────────────────────────────────────
-        integration_cmds::integration_connect_app,
-        integration_cmds::integration_list,
-        integration_cmds::integration_get_status,
-        integration_cmds::integration_disconnect,
-        integration_cmds::integration_toggle,
-        mulverse_cmds::mulverse_get_connection,
-        mulverse_cmds::mulverse_connect,
-        mulverse_cmds::mulverse_disconnect,
-        mulverse_cmds::mulverse_list_deployments,
-        mulverse_cmds::mulverse_create_deployment,
-        mulverse_cmds::mulverse_update_deployment,
-        mulverse_cmds::mulverse_list_endpoints,
-        mulverse_cmds::mulverse_create_endpoint,
-        mulverse_cmds::mulverse_update_endpoint,
-        // ── Academic Override & Workflow ────────────────────────
-        workflow_cmds::workflow_submit_override,
-        workflow_cmds::workflow_approve_override,
-        workflow_cmds::workflow_reject_override,
-        workflow_cmds::workflow_list_overrides,
-        workflow_cmds::workflow_get_override,
-        // ── Report Generation & Audit Logs ─────────────────────
-        report_cmds::generate_report,
-        report_cmds::get_report_job_status,
-        report_cmds::download_report_file,
-        report_cmds::batch_print,
-        report_cmds::audit_list_logs,
-        report_cmds::get_entity_audit,
-        // ── Template Management ─────────────────────────────────
-        template_cmds::template_create,
-        template_cmds::template_get,
-        template_cmds::template_list,
-        template_cmds::template_update,
-        template_cmds::template_delete,
-        template_cmds::template_publish,
-        template_cmds::template_archive,
-        template_cmds::template_get_versions,
-        template_cmds::template_revert_version,
-        template_cmds::template_list_bindings,
-        template_cmds::template_create_binding,
-        template_cmds::template_preview,
-        template_cmds::template_validate,
-        template_cmds::template_sync_defaults,
-        // ── Report Definitions (read-only) ──────────────────────
-        template_cmds::report_list_definitions,
-        template_cmds::report_get_definition,
+        // ── Solver Sidecar ──────────────────────────────────────
+        solver_cmds::solver_get_sidecar_status,
+        solver_cmds::solver_get_setup_status,
+        solver_cmds::solver_start_setup,
+        solver_cmds::solver_stop_sidecar,
+        solver_cmds::solver_submit_timetable,
+        solver_cmds::solver_get_timetable_status,
+        solver_cmds::solver_submit_exam,
+        solver_cmds::solver_get_exam_status,
         // ── Window & System ─────────────────────────────────────
         window_cmds::show_window,
         window_cmds::open_agent_window,
@@ -509,8 +135,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         connection_cmds::connection_validate,
         connection_cmds::connection_check_remote_health,
         connection_cmds::connection_connect,
-        connection_cmds::connection_run_migrations,
-        // ── Database Management ─────────────────────────────────
+        // ── Database Management (Local SQLite) ──────────────────
         database_cmds::database_get_status,
         database_cmds::database_create_local,
         database_cmds::database_open_existing,
@@ -525,7 +150,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         database_cmds::database_pick_file,
         database_cmds::database_pick_folder,
         database_cmds::database_pick_save_path,
-        // ── System ──────────────────────────────────────────────
+        // ── System & Updater ────────────────────────────────────
         system_cmds::system_health,
         system_cmds::system_has_organization,
         system_cmds::system_get_readiness,
@@ -537,47 +162,6 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         system_cmds::system_check_for_updates,
         system_cmds::system_download_update,
         system_cmds::system_install_update,
-        // ── License & Activation ────────────────────────────────
-        license_cmds::license_get_state,
-        license_cmds::license_activate_key,
-        license_cmds::license_start_trial,
-        license_cmds::license_deactivate,
-        license_cmds::license_refresh,
-        license_cmds::license_check_feature,
-        license_cmds::license_get_installation_id,
-        // ── AI Platform ─────────────────────────────────────────
-        ai_cmds::ai_chat,
-        ai_cmds::ai_list_tools,
-        ai_cmds::ai_create_custom_report,
-        ai_cmds::ai_save_session,
-        ai_cmds::ai_load_sessions,
-        ai_cmds::ai_delete_session,
-        ai_cmds::ai_save_context,
-        ai_cmds::ai_load_context,
-        // ── Autopilot System ────────────────────────────────────
-        autopilot_cmds::autopilot_list_tasks,
-        autopilot_cmds::autopilot_run_tick,
-        autopilot_cmds::autopilot_get_task,
-        autopilot_cmds::autopilot_execute_task,
-        autopilot_cmds::autopilot_retry_task,
-        autopilot_cmds::autopilot_dismiss_task,
-        autopilot_cmds::autopilot_get_diagnostics,
-        // ── Bootstrap ───────────────────────────────────────────
-        bootstrap_cmds::bootstrap_detect_environment,
-        bootstrap_cmds::bootstrap_generate_slug,
-        bootstrap_cmds::bootstrap_get_status,
-        bootstrap_cmds::bootstrap_execute,
-        // ── Onboarding ──────────────────────────────────────────
-        onboarding_cmds::onboarding_get_state,
-        onboarding_cmds::onboarding_provision_defaults,
-        // ── Notifications ───────────────────────────────────────
-        notification_cmds::notification_list,
-        notification_cmds::notification_unread_count,
-        notification_cmds::notification_mark_read,
-        notification_cmds::notification_mark_all_read,
-        notification_cmds::notification_dismiss,
-        notification_cmds::notification_get_preferences,
-        notification_cmds::notification_update_preferences,
     ]
 }
 
@@ -590,138 +174,4 @@ fn is_allowed_before_backend_initialization(command: &str) -> bool {
             "system_check_for_updates" | "system_download_update" | "system_install_update"
         )
         || command == "api_distribution_verify_manifest"
-}
-
-fn required_feature(command: &str) -> Option<&'static str> {
-    if command.starts_with("ai_") {
-        Some("ai_grading")
-    } else if matches!(
-        command,
-        "org_create_unit"
-            | "org_update_unit"
-            | "org_delete_unit"
-            | "org_list_units"
-            | "org_get_unit"
-    ) {
-        Some("multi_branch")
-    } else if command.starts_with("exam_") {
-        Some("exam_tools")
-    } else if command.starts_with("student_")
-        || matches!(
-            command,
-            "assessment_list_student_attendance"
-                | "assessment_list_student_behavior_records"
-                | "assessment_get_student_term_results"
-                | "assessment_get_student_annual_results"
-                | "assessment_get_student_certificate_results"
-        )
-    {
-        Some("students")
-    } else if command.starts_with("branch_") {
-        Some("multi_branch")
-    } else if command.starts_with("analytics_") {
-        Some("campus_analytics")
-    } else if command.starts_with("report_") || matches!(command, "generate_report" | "batch_print")
-    {
-        Some("campus_analytics")
-    } else if command.starts_with("parent_") {
-        Some("parent_portal")
-    } else if command.starts_with("sso_") {
-        Some("sso")
-    } else if command.contains("offline_sync") {
-        Some("offline_sync")
-    } else {
-        None
-    }
-}
-
-#[cfg(test)]
-mod license_policy_tests {
-    use super::{
-        is_allowed_before_backend_initialization, is_allowed_without_operational_license,
-        required_feature,
-    };
-
-    #[test]
-    fn backend_initialization_only_allows_setup_surfaces() {
-        assert!(is_allowed_before_backend_initialization(
-            "connection_set_config"
-        ));
-        assert!(is_allowed_before_backend_initialization(
-            "database_create_local"
-        ));
-        assert!(is_allowed_before_backend_initialization(
-            "system_check_for_updates"
-        ));
-        assert!(is_allowed_before_backend_initialization(
-            "system_download_update"
-        ));
-        assert!(is_allowed_before_backend_initialization(
-            "system_install_update"
-        ));
-        assert!(!is_allowed_before_backend_initialization(
-            "student_register_student"
-        ));
-    }
-
-    #[test]
-    fn paid_commands_map_to_canonical_entitlements() {
-        assert_eq!(required_feature("ai_chat"), Some("ai_grading"));
-        assert_eq!(required_feature("exam_create_session"), Some("exam_tools"));
-        assert_eq!(
-            required_feature("assessment_list_student_attendance"),
-            Some("students")
-        );
-        assert_eq!(required_feature("finance_list_student_fees"), None);
-        assert_eq!(required_feature("academic_get_class"), None);
-        assert_eq!(required_feature("org_create_unit"), Some("multi_branch"));
-        assert_eq!(required_feature("org_list_units"), Some("multi_branch"));
-        assert_eq!(
-            required_feature("generate_report"),
-            Some("campus_analytics")
-        );
-    }
-
-    #[test]
-    fn commands_without_paid_entitlements_remain_available_on_the_free_plan() {
-        assert_eq!(required_feature("calendar_create_year"), None);
-        assert_eq!(required_feature("employee_register_employee"), None);
-        assert_eq!(required_feature("finance_process_payment"), None);
-        assert_eq!(required_feature("org_update_current"), None);
-    }
-
-    #[test]
-    fn non_operational_license_allows_activation_and_initial_bootstrap() {
-        assert!(is_allowed_without_operational_license("auth_login"));
-        assert!(is_allowed_without_operational_license("license_get_state"));
-        assert!(is_allowed_without_operational_license(
-            "license_activate_key"
-        ));
-        assert!(is_allowed_without_operational_license(
-            "license_start_trial"
-        ));
-        assert!(is_allowed_without_operational_license(
-            "system_get_readiness"
-        ));
-        assert!(is_allowed_without_operational_license(
-            "bootstrap_detect_environment"
-        ));
-        assert!(is_allowed_without_operational_license(
-            "bootstrap_generate_slug"
-        ));
-        assert!(is_allowed_without_operational_license(
-            "bootstrap_get_status"
-        ));
-        assert!(is_allowed_without_operational_license("bootstrap_execute"));
-        assert!(!is_allowed_without_operational_license(
-            "finance_list_accounts"
-        ));
-        assert!(!is_allowed_without_operational_license(
-            "student_list_students"
-        ));
-        assert!(!is_allowed_without_operational_license("org_get_current"));
-        assert!(!is_allowed_without_operational_license(
-            "onboarding_provision_defaults"
-        ));
-    }
 }

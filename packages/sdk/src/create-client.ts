@@ -15,6 +15,7 @@ export { client as heyApiClient } from "./gen/client.gen.js";
  */
 export interface OrbisClientOptions {
   baseUrl: string;
+  fetch?: typeof fetch;
   headers?: () => Promise<Record<string, string>> | Record<string, string>;
   onUnauthorized?: () => void;
   onTokenRefreshed?: (token: string) => void | Promise<void>;
@@ -45,9 +46,14 @@ client.setConfig({
  * URL resolution, and authentication recovery.
  */
 export const createOrbisClient = (options: OrbisClientOptions) => {
-  const { baseUrl } = options;
+  const { baseUrl, fetch: customFetch } = options;
 
-  const client = createClient(createConfig({ baseUrl }));
+  const client = createClient(
+    createConfig({
+      baseUrl,
+      ...(customFetch ? { fetch: customFetch } : {}),
+    }),
+  );
 
   client.interceptors.request.use(async (request, reqOptions) => {
     const headers = new Headers(request.headers);

@@ -35,9 +35,13 @@ tokio = { version = "1.38", features = ["full"] }
 orbis-domain = { path = "../../api-rust/crates/orbis-domain" }
 orbis-app = { path = "../../api-rust/crates/orbis-app" }
 orbis-infra = { path = "../../api-rust/crates/orbis-infra" }
+orbis-server = { path = "../../api-rust/crates/orbis-server" }
 docforge-engine = { path = "../../api-rust/crates/docforge-engine" }
-sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
-sea-orm-migration = { version = "1.1.0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls"] }
+axum = "0.7.5"
+tower = "0.5"
+http-body-util = "0.1"
+sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+sea-orm-migration = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] }
 keyring = { version = "3.6.3", default-features = false, features = ["apple-native", "sync-secret-service", "windows-native"] }
 url = "2"
 uuid = { version = "1.9.1", features = ["v4", "serde"] }

@@ -953,7 +953,7 @@ export interface StorageUploadRequest {
 
 // ── Connection & Database Management Types (Desktop / Hybrid) ─────────────
 
-export type ConnectionMode = "local" | "direct" | "api";
+export type ConnectionMode = "local" | "api";
 
 export interface LocalConfig {
   db_filename: string;
@@ -964,16 +964,6 @@ export interface LocalConfig {
 
 export interface ApiConfig {
   server_url: string;
-}
-
-export interface DirectConfig {
-  engine: "postgres";
-  host: string;
-  port: number;
-  database_name: string;
-  username: string;
-  ssl_mode?: string;
-  credential_id: string;
 }
 
 export interface DatabaseSettingsDto {
@@ -990,7 +980,6 @@ export interface ConnectionConfig {
   mode: ConnectionMode;
   local?: LocalConfig;
   api?: ApiConfig;
-  direct?: DirectConfig;
   settings?: DatabaseSettingsDto;
 }
 
@@ -2553,7 +2542,6 @@ export interface OrbisApiClient {
   connectionValidate(): Promise<ConnectionValidation>;
   connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
   connectionConnect(): Promise<ConnectResult>;
-  connectionRunMigrations(): Promise<MigrationResultDto>;
   connectionOpenWindow(): Promise<void>;
 
   databaseGetStatus(): Promise<DatabaseStatusDto>;

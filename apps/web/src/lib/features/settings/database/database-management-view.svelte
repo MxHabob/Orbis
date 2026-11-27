@@ -57,12 +57,6 @@ let connMode = $state<ConnectionMode>("local");
 let connServerUrl = $state("");
 let connDbFilename = $state("orbis.db");
 let connCustomPath = $state("");
-let connHost = $state("localhost");
-let connPort = $state<number>(5432);
-let connDatabaseName = $state("orbis_db");
-let connUsername = $state("postgres");
-let connPassword = $state("");
-let connSslMode = $state("prefer");
 let connWalMode = $state(true);
 let connBusyTimeout = $state(5000);
 
@@ -91,14 +85,6 @@ function syncFormValues() {
     }
     if (controller.config.api) {
       connServerUrl = controller.config.api.server_url || "";
-    }
-    if (controller.config.direct) {
-      connHost = controller.config.direct.host || "localhost";
-      connPort = controller.config.direct.port || 5432;
-      connDatabaseName = controller.config.direct.database_name || "orbis_db";
-      connUsername = controller.config.direct.username || "";
-      connPassword = "";
-      connSslMode = controller.config.direct.ssl_mode || "prefer";
     }
   }
 }
@@ -183,14 +169,6 @@ async function handleSaveConnection() {
         connMode === "local" && connCustomPath.trim()
           ? connCustomPath.trim()
           : undefined,
-      databaseEngine: connMode === "direct" ? "postgres" : undefined,
-      host: connMode === "direct" ? connHost.trim() : undefined,
-      port: connMode === "direct" ? connPort : undefined,
-      databaseName: connMode === "direct" ? connDatabaseName.trim() : undefined,
-      username: connMode === "direct" ? connUsername.trim() : undefined,
-      password:
-        connMode === "direct" && connPassword ? connPassword : undefined,
-      sslMode: connMode === "direct" ? connSslMode : undefined,
       walMode: connMode === "local" ? connWalMode : undefined,
       busyTimeoutMs: connMode === "local" ? connBusyTimeout : undefined,
     });
@@ -283,14 +261,10 @@ const kpiStats = $derived([
     label: m.ui_copy_engine_mode_7a8fe27f(),
     value: controller.isLocal
       ? m.settings_ui_database_sqlite_embedded()
-      : connMode === "direct"
-        ? m.database_direct_postgres()
-        : m.ui_copy_remote_server_efd114c0(),
+      : m.ui_copy_remote_server_efd114c0(),
     sub: controller.isLocal
       ? m.ui_copy_local_embedded_36bd9bbd()
-      : connMode === "direct"
-        ? m.database_direct_network()
-        : m.ui_copy_remote_cloud_51770fc6(),
+      : m.ui_copy_remote_cloud_51770fc6(),
   },
   {
     label: m.ui_copy_storage_size_8122fef2(),
@@ -551,25 +525,6 @@ const connectionStatus = $derived.by(() => {
 
                 <button
                   type="button"
-                  class="p-3 rounded-lg border transition-all flex items-center justify-between cursor-pointer {connMode === 'direct' ? 'border-primary bg-primary/5 shadow-xs' : 'border-border/50 bg-card/40 hover:border-border'}"
-                  onclick={() => connMode = "direct"}
-                >
-                  <div class="flex items-center gap-2.5">
-                    <div class="size-7.5 rounded-lg flex items-center justify-center {connMode === 'direct' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                      <Database size={15} />
-                    </div>
-                    <div class="text-start">
-                      <h4 class="text-xs font-bold text-foreground">{m.database_direct_postgres()}</h4>
-                      <p class="text-[9.5px] text-muted-foreground">{m.database_direct_postgres_description()}</p>
-                    </div>
-                  </div>
-                  {#if connMode === "direct"}
-                    <CheckCircle size={14} class="text-primary" />
-                  {/if}
-                </button>
-
-                <button
-                  type="button"
                   class="p-3 rounded-lg border transition-all flex items-center justify-between cursor-pointer {connMode === 'api' ? 'border-primary bg-primary/5 shadow-xs' : 'border-border/50 bg-card/40 hover:border-border'}"
                   onclick={() => connMode = "api"}
                 >
@@ -634,7 +589,7 @@ const connectionStatus = $derived.by(() => {
                     <Switch bind:checked={connWalMode} />
                   </div>
                 </div>
-              {:else if connMode === "api"}
+              {:else}
                 <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3.5">
                   <FormField id="connServerUrl" label={m.ui_copy_orbis_server_url_b7cff22f()} required>
                     {#snippet children()}
@@ -665,40 +620,6 @@ const connectionStatus = $derived.by(() => {
                     {/snippet}
                   </FormField>
 
-                </div>
-              {:else}
-                <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3.5">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <FormField id="connHost" label={m.ui_copy_database_host_218c7a89()}>
-                      {#snippet children()}
-                        <Input id="connHost" type="text" bind:value={connHost} class="h-8 text-xs font-mono bg-background border-input" />
-                      {/snippet}
-                    </FormField>
-
-                    <FormField id="connPort" label={m.ui_copy_port_966ae516()}>
-                      {#snippet children()}
-                        <Input id="connPort" type="number" bind:value={connPort} class="h-8 text-xs font-mono bg-background border-input" />
-                      {/snippet}
-                    </FormField>
-
-                    <FormField id="connDatabaseName" label={m.ui_copy_database_name_72beaf93()}>
-                      {#snippet children()}
-                        <Input id="connDatabaseName" type="text" bind:value={connDatabaseName} class="h-8 text-xs font-mono bg-background border-input" />
-                      {/snippet}
-                    </FormField>
-
-                    <FormField id="connUsername" label={m.ui_copy_username_f733f5b3()}>
-                      {#snippet children()}
-                        <Input id="connUsername" type="text" bind:value={connUsername} class="h-8 text-xs font-mono bg-background border-input" />
-                      {/snippet}
-                    </FormField>
-                  </div>
-
-                  <FormField id="connPassword" label={m.common_user_form_password()}>
-                    {#snippet children()}
-                      <Input id="connPassword" type="password" bind:value={connPassword} placeholder="••••••••" class="h-8 text-xs font-mono bg-background border-input" />
-                    {/snippet}
-                  </FormField>
                 </div>
               {/if}
 

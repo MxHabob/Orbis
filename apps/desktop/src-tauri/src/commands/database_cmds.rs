@@ -41,20 +41,17 @@ fn require_local_sqlite(config: &ConnectionConfig) -> Result<(), String> {
 }
 
 async fn log_db_audit(state: &AppState, action: &str, details: serde_json::Value) {
-    let ctx = crate::commands::make_ctx(state);
-    if let Some(user_id) = ctx.actor.id() {
-        let entry = orbis_domain::entities::report::ReportAuditEntry {
-            id: uuid::Uuid::new_v4(),
-            org_id: ctx.tenant_id,
-            actor_id: user_id,
-            action: action.to_string(),
-            entity_type: "database".to_string(),
-            entity_id: uuid::Uuid::new_v4(),
-            details: Some(details),
-            created_at: chrono::Utc::now(),
-        };
-        let _ = state.report_audit_repo.save(&entry).await;
-    }
+    let entry = orbis_domain::entities::report::ReportAuditEntry {
+        id: uuid::Uuid::new_v4(),
+        org_id: uuid::Uuid::nil(),
+        actor_id: uuid::Uuid::nil(),
+        action: action.to_string(),
+        entity_type: "database".to_string(),
+        entity_id: uuid::Uuid::new_v4(),
+        details: Some(details),
+        created_at: chrono::Utc::now(),
+    };
+    let _ = state.server_state.report_audit_repo.save(&entry).await;
 }
 
 // ── Status & Diagnostics ───────────────────────────────────────────────────
@@ -313,13 +310,8 @@ pub async fn database_run_migrations(
         .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
-    if !matches!(
-        config.mode,
-        crate::connection::ConnectionMode::Local | crate::connection::ConnectionMode::Direct
-    ) {
-        return Err(
-            "Migrations can be applied only to a local or direct database connection".to_string(),
-        );
+    if config.mode != crate::connection::ConnectionMode::Local {
+        return Err("Migrations can be applied only to a local SQLite connection".to_string());
     }
     let result = database_manager::run_pending_migrations(&state.db).await?;
 

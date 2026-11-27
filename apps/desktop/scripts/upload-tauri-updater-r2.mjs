@@ -150,7 +150,13 @@ export function createR2UploadPlan({
   return plan;
 }
 
-function executeUploadAndPrune({ plan, pruneProductPath, accountId, bucket, tag }) {
+function executeUploadAndPrune({
+  plan,
+  pruneProductPath,
+  accountId,
+  bucket,
+  tag,
+}) {
   for (const upload of plan) {
     const result = spawnSync(
       "aws",
@@ -232,12 +238,18 @@ function executeUploadAndPrune({ plan, pruneProductPath, accountId, bucket, tag 
       { stdio: "inherit" },
     );
     if (result.error) {
-      throw new Error(`Could not start AWS CLI cleanup: ${result.error.message}`);
+      throw new Error(
+        `Could not start AWS CLI cleanup: ${result.error.message}`,
+      );
     }
     if (result.status !== 0) {
-      throw new Error(`Could not prune R2 release ${release.tag} (exit code ${result.status}).`);
+      throw new Error(
+        `Could not prune R2 release ${release.tag} (exit code ${result.status}).`,
+      );
     }
-    console.log(`Removed expired R2 release ${release.tag} (${pruneProductPath}).`);
+    console.log(
+      `Removed expired R2 release ${release.tag} (${pruneProductPath}).`,
+    );
   }
 }
 
@@ -246,7 +258,9 @@ function runComponents(componentSpecs) {
   const bucket = process.env.CLOUDFLARE_R2_BUCKET;
   const tag = process.env.RELEASE_TAG;
   if (!/^[a-f0-9]{32}$/i.test(accountId ?? "")) {
-    throw new Error("CLOUDFLARE_R2_ACCOUNT_ID must be the 32-character Cloudflare account ID.");
+    throw new Error(
+      "CLOUDFLARE_R2_ACCOUNT_ID must be the 32-character Cloudflare account ID.",
+    );
   }
   if (!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket ?? "")) {
     throw new Error("CLOUDFLARE_R2_BUCKET must be a valid R2 bucket name.");
@@ -255,8 +269,12 @@ function runComponents(componentSpecs) {
     throw new Error(`Invalid RELEASE_TAG: ${tag ?? "(missing)"}.`);
   }
 
-  const endpoint = new URL(normalizeUpdaterEndpoint(process.env.TAURI_UPDATER_ENDPOINT));
-  const baseProductPath = endpoint.pathname.replace(/\/latest\.json$/, "").replace(/\/+$/, "");
+  const endpoint = new URL(
+    normalizeUpdaterEndpoint(process.env.TAURI_UPDATER_ENDPOINT),
+  );
+  const baseProductPath = endpoint.pathname
+    .replace(/\/latest\.json$/, "")
+    .replace(/\/+$/, "");
   const s3Endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
   const tempDir = fs.mkdtempSync(path.join(process.cwd(), ".r2-manifests-"));
 
@@ -265,10 +283,17 @@ function runComponents(componentSpecs) {
       const colonIdx = spec.indexOf(":");
       if (colonIdx <= 0) throw new Error(`Invalid --component spec: ${spec}`);
       const componentName = spec.slice(0, colonIdx).trim();
-      const dirs = spec.slice(colonIdx + 1).split(",").map((d) => d.trim()).filter(Boolean);
+      const dirs = spec
+        .slice(colonIdx + 1)
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean);
       const files = dirs.flatMap((dir) =>
         fs.existsSync(dir)
-          ? fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isFile()).map((d) => path.join(dir, d.name))
+          ? fs
+              .readdirSync(dir, { withFileTypes: true })
+              .filter((d) => d.isFile())
+              .map((d) => path.join(dir, d.name))
           : [],
       );
       if (files.length === 0) continue;
@@ -311,8 +336,16 @@ function runComponents(componentSpecs) {
         contentType: "application/json",
       });
 
-      executeUploadAndPrune({ plan, pruneProductPath: componentPath, accountId, bucket, tag });
-      console.log(`Uploaded ${componentName} release artifacts and latest.json to R2 (${componentPath}).`);
+      executeUploadAndPrune({
+        plan,
+        pruneProductPath: componentPath,
+        accountId,
+        bucket,
+        tag,
+      });
+      console.log(
+        `Uploaded ${componentName} release artifacts and latest.json to R2 (${componentPath}).`,
+      );
     }
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

@@ -13,6 +13,7 @@ import {
   type TimeSlotDto,
 } from "$lib/api";
 import { academicContext } from "$lib/stores";
+import { clearDraft, loadDraft, saveDraft } from "$lib/api/draft-store";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { formatDateKey } from "$lib/core/i18n/format";
 import { l } from "$lib/core/i18n";
@@ -346,6 +347,31 @@ async function loadRosterAndAttendance() {
   }
 }
 
+type AttendanceDraftMap = Record<
+  string,
+  { status: AttendanceRow["status"]; remarks: string }
+>;
+
+function attendanceDraftKey(lessonId = selectedLessonId): string {
+  const orgId = orgContext.orgId ?? "current";
+  return `attendance:${orgId}:${selectedClassId}:${selectedDate}:${lessonId}`;
+}
+
+function persistAttendanceDraft() {
+  if (!selectedClassId || !selectedLessonId) return;
+  const draft: AttendanceDraftMap = {};
+  for (const row of attendanceRows) {
+    if (row.status !== "unmarked" || row.remarks.trim().length > 0) {
+      draft[row.studentId] = { status: row.status, remarks: row.remarks };
+    }
+  }
+  if (Object.keys(draft).length > 0) {
+    saveDraft(attendanceDraftKey(), draft);
+  } else {
+    clearDraft(attendanceDraftKey());
+  }
+}
+
 function buildAttendanceRows(lessonId: string) {
   const lesson = lessonOptions.find((option) => option.id === lessonId);
   if (!lesson) {
@@ -363,6 +389,9 @@ function buildAttendanceRows(lessonId: string) {
       .map((record) => [String(record.student_id), record]),
   );
 
+  const draft = loadDraft<AttendanceDraftMap>(attendanceDraftKey(lessonId));
+  let restored = false;
+
   attendanceRows = rosterStudents.map((student) => {
     const studentId = String(student.student.id);
     const existing = attendanceByStudent.get(studentId);
@@ -377,6 +406,11 @@ function buildAttendanceRows(lessonId: string) {
             ? "excused"
             : "present";
 
+    const studentDraft = draft?.[studentId];
+    if (studentDraft) {
+      restored = true;
+    }
+
     return {
       studentId,
       studentNumber:
@@ -389,10 +423,14 @@ function buildAttendanceRows(lessonId: string) {
         student.person.display_name ||
         student.student.student_number ||
         m.operations_ui_student_fallback(),
-      status,
-      remarks: existing?.notes || "",
+      status: studentDraft ? studentDraft.status : status,
+      remarks: studentDraft ? studentDraft.remarks : existing?.notes || "",
     };
   });
+
+  if (restored) {
+    isDirty = true;
+  }
 }
 
 function selectLesson(lessonId: string) {
@@ -437,6 +475,7 @@ function setRowStatus(studentId: string, status: AttendanceStatus) {
     row.studentId === studentId ? { ...row, status } : row,
   );
   isDirty = true;
+  persistAttendanceDraft();
 }
 
 function setRowRemarks(studentId: string, remarks: string) {
@@ -444,11 +483,13 @@ function setRowRemarks(studentId: string, remarks: string) {
     row.studentId === studentId ? { ...row, remarks } : row,
   );
   isDirty = true;
+  persistAttendanceDraft();
 }
 
 function markAll(status: AttendanceStatus) {
   attendanceRows = attendanceRows.map((row) => ({ ...row, status }));
   isDirty = true;
+  persistAttendanceDraft();
   toast.success(
     status === "present"
       ? m.operations_ui_attendance_marked_all_present()
@@ -483,6 +524,7 @@ async function handleSaveAttendance() {
       date: selectedDate,
       items,
     });
+    clearDraft(attendanceDraftKey(lesson.id));
     toast.success(m.operations_ui_attendance_save_success());
     isDirty = false;
     await loadRosterAndAttendance();

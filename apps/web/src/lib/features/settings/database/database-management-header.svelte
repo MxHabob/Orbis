@@ -32,9 +32,7 @@ let {
 let engineLabel = $derived(
   isLocal
     ? m.settings_ui_database_sqlite_embedded()
-    : connectionMode === "direct"
-      ? m.database_direct_postgres()
-      : m.ui_copy_remote_server_efd114c0(),
+    : m.ui_copy_remote_server_efd114c0(),
 );
 
 let actions = $derived([

@@ -1,13 +1,15 @@
-use super::make_ctx;
-use super::org_cmds::ApiResponse;
 use crate::features::camera_stream::CameraStreamSource;
 use crate::state::AppState;
-use orbis_domain::iam::permission::Permission;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use tauri::State;
 use uuid::Uuid;
+
+#[derive(Serialize)]
+pub struct ApiResponse<T: Serialize> {
+    pub data: T,
+}
 
 #[derive(Serialize)]
 pub struct CameraStreamDto {
@@ -28,17 +30,18 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
 pub async fn camera_stream_start(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<CameraStreamDto>>, String> {
-    let ctx = make_ctx(&state);
-    state
-        .integration_service
-        .permission_checker
-        .check(&ctx, Permission::OrganizationRead)
+    let org = state
+        .server_state
+        .org_repo
+        .find_first()
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "Organization not found".to_string())?;
 
     let integrations = state
+        .server_state
         .integration_service
-        .list_integrations(ctx.tenant_id)
+        .list_integrations(org.id)
         .await
         .map_err(|error| error.to_string())?;
     let mut sources = Vec::new();
@@ -64,6 +67,7 @@ pub async fn camera_stream_start(
         let integration_id = integration.id;
         if let Some(rtsp_url) = rtsp_url {
             let password = state
+                .server_state
                 .integration_repo
                 .get_secrets_by_config(integration_id)
                 .await

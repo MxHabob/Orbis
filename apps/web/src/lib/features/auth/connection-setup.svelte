@@ -35,14 +35,9 @@ const isRTL = $derived(getLocale().startsWith("ar"));
 
 const connectionSchema = z
   .object({
-    mode: z.enum(["local", "direct", "api"]).optional(),
+    mode: z.enum(["local", "api"]).optional(),
     dbFilename: z.string().trim(),
     serverUrl: z.string().trim(),
-    host: z.string().trim(),
-    port: z.coerce.number().int().min(1).max(65535),
-    databaseName: z.string().trim(),
-    username: z.string().trim(),
-    password: z.string(),
   })
   .superRefine((data, context) => {
     if (!data.mode) {
@@ -71,23 +66,6 @@ const connectionSchema = z
         path: ["serverUrl"],
       });
     }
-    if (data.mode === "direct") {
-      const requiredFields = [
-        ["host", data.host],
-        ["databaseName", data.databaseName],
-        ["username", data.username],
-        ["password", data.password],
-      ] as const;
-      for (const [field, value] of requiredFields) {
-        if (!value.trim()) {
-          context.addIssue({
-            code: "custom",
-            message: m.setup_connection_required_field(),
-            path: [field],
-          });
-        }
-      }
-    }
   });
 
 type ConnectionFormValues = z.infer<typeof connectionSchema>;
@@ -97,11 +75,6 @@ const form = new FormController<ConnectionFormValues>({
     mode: undefined,
     dbFilename: "orbis.db",
     serverUrl: "",
-    host: "localhost",
-    port: 5432,
-    databaseName: "orbis_db",
-    username: "",
-    password: "",
   },
   schema: connectionSchema,
 });
@@ -161,7 +134,6 @@ async function continueToOrganization() {
 
 let isCheckingHealth = $state(false);
 let healthResult = $state<RemoteHealthResult | null>(null);
-let pendingMigrationCount = $state<number | null>(null);
 
 async function checkHealth() {
   const url = form.values.serverUrl.trim();
@@ -193,13 +165,6 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
     await api.connectionSetConfig({
       mode: values.mode,
       serverUrl: values.mode === "api" ? values.serverUrl.trim() : undefined,
-      databaseEngine: values.mode === "direct" ? "postgres" : undefined,
-      host: values.mode === "direct" ? values.host.trim() : undefined,
-      port: values.mode === "direct" ? values.port : undefined,
-      databaseName:
-        values.mode === "direct" ? values.databaseName.trim() : undefined,
-      username: values.mode === "direct" ? values.username.trim() : undefined,
-      password: values.mode === "direct" ? values.password : undefined,
       dbFilename:
         values.mode === "local" ? values.dbFilename.trim() : undefined,
       customPath:
@@ -221,33 +186,9 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
       }
     } catch (error) {
       configureApiClient("local");
-      const message = error instanceof Error ? error.message : String(error);
-      const migrationMatch = message.match(/SCHEMA_MIGRATION_REQUIRED:(\d+):/);
-      if (values.mode === "direct" && migrationMatch) {
-        pendingMigrationCount = Number(migrationMatch[1]);
-        form.formError = m.ui_pending_migrations_apply_required({
-          count: pendingMigrationCount,
-        });
-        return;
-      }
       throw error;
     }
   });
-}
-
-async function applyDirectMigrations() {
-  if (pendingMigrationCount === null || form.isSubmitting) return;
-  form.isSubmitting = true;
-  form.formError = undefined;
-  try {
-    await api.connectionRunMigrations();
-    pendingMigrationCount = null;
-    await continueToOrganization();
-  } catch (error) {
-    form.formError = error instanceof Error ? error.message : String(error);
-  } finally {
-    form.isSubmitting = false;
-  }
 }
 </script>
 
@@ -275,24 +216,6 @@ async function applyDirectMigrations() {
                 <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_local_desc()}</span>
               </span>
               {#if form.values.mode === "local"}
-                <CheckCircle class="size-4 shrink-0 text-primary" />
-              {/if}
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={form.values.mode === "direct"}
-              class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-              onclick={() => { form.values.mode = "direct"; form.clearError(); healthResult = null; }}
-            >
-              <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <Database size={16} />
-              </span>
-              <span class="flex min-w-0 flex-1 flex-col gap-1">
-                <span class="text-xs font-semibold text-foreground">{m.setup_connection_direct_title()}</span>
-                <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_direct_desc()}</span>
-              </span>
-              {#if form.values.mode === "direct"}
                 <CheckCircle class="size-4 shrink-0 text-primary" />
               {/if}
             </button>
@@ -422,80 +345,9 @@ async function applyDirectMigrations() {
               {/if}
             </div>
           {/if}
-        {:else}
-          <SettingsRow title={m.ui_copy_database_host_218c7a89()} labelFor="host" required>
-            {#snippet children()}
-              <div class="w-full space-y-1">
-                <Input id="host" bind:value={form.values.host} disabled={form.isSubmitting} placeholder="localhost" aria-invalid={!!fieldError("host")} />
-                {#if fieldError("host")}
-                  <p class="text-[11px] text-destructive" role="alert">{fieldError("host")}</p>
-                {/if}
-              </div>
-            {/snippet}
-          </SettingsRow>
-          <SettingsRow title={m.ui_copy_port_966ae516()} labelFor="port" required>
-            {#snippet children()}
-              <div class="w-full space-y-1">
-                <Input id="port" type="number" bind:value={form.values.port} disabled={form.isSubmitting} aria-invalid={!!fieldError("port")} />
-                {#if fieldError("port")}
-                  <p class="text-[11px] text-destructive" role="alert">{fieldError("port")}</p>
-                {/if}
-              </div>
-            {/snippet}
-          </SettingsRow>
-          <SettingsRow title={m.ui_copy_database_name_72beaf93()} labelFor="databaseName" required>
-            {#snippet children()}
-              <div class="w-full space-y-1">
-                <Input id="databaseName" bind:value={form.values.databaseName} disabled={form.isSubmitting} placeholder="orbis_db" aria-invalid={!!fieldError("databaseName")} />
-                {#if fieldError("databaseName")}
-                  <p class="text-[11px] text-destructive" role="alert">{fieldError("databaseName")}</p>
-                {/if}
-              </div>
-            {/snippet}
-          </SettingsRow>
-          <SettingsRow title={m.ui_copy_username_f733f5b3()} labelFor="username" required>
-            {#snippet children()}
-              <div class="w-full space-y-1">
-                <Input id="username" bind:value={form.values.username} disabled={form.isSubmitting} aria-invalid={!!fieldError("username")} />
-                {#if fieldError("username")}
-                  <p class="text-[11px] text-destructive" role="alert">{fieldError("username")}</p>
-                {/if}
-              </div>
-            {/snippet}
-          </SettingsRow>
-          <SettingsRow title={m.common_user_form_password()} labelFor="password" required>
-            {#snippet children()}
-              <div class="w-full space-y-1">
-                <Input id="password" type="password" bind:value={form.values.password} disabled={form.isSubmitting} aria-invalid={!!fieldError("password")} />
-                {#if fieldError("password")}
-                  <p class="text-[11px] text-destructive" role="alert">{fieldError("password")}</p>
-                {/if}
-              </div>
-            {/snippet}
-          </SettingsRow>
-          <SettingsRow
-            title={m.setup_connection_direct_security_title()}
-            description={m.setup_connection_direct_security_hint()}
-            last
-          />
         {/if}
 
         <div class="flex justify-end gap-2 border-t border-border px-6 py-4">
-          {#if pendingMigrationCount !== null}
-            <Button
-              type="button"
-              variant="outline"
-              class="min-w-40"
-              disabled={form.isSubmitting}
-              onclick={applyDirectMigrations}
-            >
-              {#if form.isSubmitting}
-                <LoadingIndicator class="size-4" size={16} />
-              {:else}
-                {m.database_action_apply_migrations?.() || m.ui_copy_apply_migrations_now_5f07d44c()}
-              {/if}
-            </Button>
-          {/if}
           <Button type="submit" variant="default" class="min-w-40" disabled={form.isSubmitting || (form.values.mode === "api" && healthResult !== null && !healthResult.reachable)}>
             {#if form.isSubmitting}
               <LoadingIndicator class="size-4" size={16} />

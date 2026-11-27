@@ -13,10 +13,10 @@ import { QueryClient } from "@tanstack/svelte-query";
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
+      staleTime: 2 * 60 * 1000, // 2 minutes (realtime SSE invalidates immediately on remote mutations)
+      gcTime: 10 * 60 * 1000, // 10 minutes bounded retention for low-RAM workstations
       refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      refetchOnReconnect: true,
       retry: 1,
       networkMode: "always",
     },

@@ -76,7 +76,11 @@ const layoutPreset = $derived.by(() => {
 function onLayoutPresetChange(val: string) {
   if (!val) return;
   const isLandscape = config.sheetOrientation === "landscape";
-  if (val !== "auto" && config.sheetSize === "A5" && (val === "2" || val === "4" || val === "6")) {
+  if (
+    val !== "auto" &&
+    config.sheetSize === "A5" &&
+    (val === "2" || val === "4" || val === "6")
+  ) {
     config.sheetSize = "A4";
   }
   if (val === "auto") {

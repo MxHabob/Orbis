@@ -56,8 +56,6 @@ pub fn run() {
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
             app.manage(commands::system_cmds::PendingUpdateState::default());
-            app.manage(commands::student_cmds::BulkRegisterJobRegistry::default());
-            app.manage(commands::employee_cmds::BulkRegisterEmployeeJobRegistry::default());
             // 1. Initialize local AppData directory
             let app_data_dir = app
                 .path()
@@ -74,38 +72,38 @@ pub fn run() {
             };
             app.manage(conn_state);
 
-            // 3. Auto-connect if a valid local config exists (seamless for returning users)
-            //    New users will see the connection/setup flow.
+            // 3. Auto-connect in background if a valid local config exists (non-blocking boot).
             let validation = conn_config.validate(&app_data_dir);
             if connection::ConnectionConfig::config_path(&app_data_dir).exists()
                 && validation.is_valid
-                && matches!(
-                    conn_config.mode,
-                    connection::ConnectionMode::Local | connection::ConnectionMode::Direct
-                )
+                && conn_config.mode == connection::ConnectionMode::Local
             {
+                let bg_app = app.handle().clone();
+                let bg_data_dir = app_data_dir.clone();
                 let database_url = conn_config.resolve_database_url(&app_data_dir);
-                let init_result = tauri::async_runtime::block_on(async {
-                    let database_url = database_url?;
-                    let database_url = database_url
-                        .ok_or_else(|| "Database URL is not configured".to_string())?;
-                    AppState::init(
-                        &app_data_dir,
-                        &database_url,
-                        conn_config.mode == connection::ConnectionMode::Local,
-                    )
-                    .await
+                tauri::async_runtime::spawn(async move {
+                    let _lock = crate::features::database_manager::OPERATION_LOCK
+                        .lock()
+                        .await;
+                    if bg_app.try_state::<AppState>().is_some() {
+                        return;
+                    }
+                    let init_result = async {
+                        let database_url = database_url?;
+                        let database_url = database_url
+                            .ok_or_else(|| "Database URL is not configured".to_string())?;
+                        AppState::init(&bg_data_dir, &database_url, true).await
+                    }
+                    .await;
+                    match init_result {
+                        Ok(app_state) => {
+                            bg_app.manage(app_state);
+                        }
+                        Err(e) => {
+                            tracing::warn!("Auto-connect failed (user will see setup): {e}");
+                        }
+                    }
                 });
-                match init_result {
-                    Ok(app_state) => {
-                        app.manage(app_state);
-                    }
-                    Err(e) => {
-                        tracing::warn!("Auto-connect failed (user will see setup): {e}");
-                        // Don't crash — the frontend will detect missing AppState
-                        // and show the connection setup screen.
-                    }
-                }
             }
             tauri::async_runtime::spawn(features::database_manager::run_auto_backup_scheduler(
                 app.handle().clone(),
