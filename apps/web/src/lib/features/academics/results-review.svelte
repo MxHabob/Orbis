@@ -328,12 +328,8 @@ function openClassPdfReport() {
       : "rep.academic.student-term-report-card";
   pdfReportTitle =
     viewMode === "annual"
-      ? isRtl
-        ? "شهادات النتيجة السنوية للصف"
-        : "Class Annual Certificates"
-      : isRtl
-        ? "كشف وشهادات الفترة للصف"
-        : "Class Period Report Cards";
+      ? m.academics_results_class_annual_certificates()
+      : m.academics_results_class_period_reports();
   pdfViewerOpen = true;
 }
 </script>
@@ -362,12 +358,8 @@ function openClassPdfReport() {
             <Printer size={13} />
             <span>
               {viewMode === "annual"
-                ? isRtl
-                  ? "كشف الشهادات السنوي (PDF)"
-                  : "Annual Report (PDF)"
-                : isRtl
-                  ? "كشف الفترة (PDF)"
-                  : "Period Report (PDF)"}
+                ? m.academics_results_annual_report_pdf()
+                : m.academics_results_period_report_pdf()}
             </span>
           </Button>
 
@@ -380,12 +372,12 @@ function openClassPdfReport() {
             <Printer size={13} />
             <span>
               {selectedStudentIds.size > 0
-                ? isRtl
-                  ? `طباعة شهادات المحددين (${formatNumber(selectedStudentIds.size)})`
-                  : `Print Selected (${formatNumber(selectedStudentIds.size)})`
-                : isRtl
-                  ? `طباعة شهادات الصف (${formatNumber(activeResults.length)})`
-                  : `Print Class Certificates (${formatNumber(activeResults.length)})`}
+                ? m.academics_results_print_selected({
+                    count: formatNumber(selectedStudentIds.size),
+                  })
+                : m.academics_results_print_class({
+                    count: formatNumber(activeResults.length),
+                  })}
             </span>
           </Button>
         {/if}
@@ -421,7 +413,7 @@ function openClassPdfReport() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          {isRtl ? "نتائج فترة (شهري / فصلي)" : "Period / Term"}
+          {m.academics_results_mode_period()}
         </button>
         <button
           type="button"
@@ -432,7 +424,7 @@ function openClassPdfReport() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          {isRtl ? "النتيجة السنوية / التراكمية" : "Annual / Cumulative"}
+          {m.academics_results_mode_annual()}
         </button>
       </div>
 
@@ -512,13 +504,11 @@ function openClassPdfReport() {
                     {isRtl ? section.name_ar || section.name : section.name}
                   </span>
                   <Badge variant="outline" class="h-5 rounded px-2 text-[10px] font-medium">
-                    {isRtl ? "عرض النتائج" : "View Results"}
+                    {m.academics_results_view_results()}
                   </Badge>
                 </div>
                 <p class="text-[11px] text-muted-foreground">
-                  {isRtl
-                    ? "اضغط لعرض نتائج الطلاب وطباعة الشهادات"
-                    : "Click to load student results & print certificates"}
+                  {m.academics_results_click_to_load()}
                 </p>
               </Card>
             </button>

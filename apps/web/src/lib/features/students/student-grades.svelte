@@ -72,49 +72,49 @@ let printTitle = $state("");
 const labels = $derived.by(() => {
   if (instType === "university") {
     return {
-      course: isRtl ? "المقرر" : "Course",
-      coursework: isRtl ? "الأعمال الفصلية" : "Coursework",
-      finalExam: isRtl ? "الاختبار النهائي" : "Final Exam",
-      termTotal: isRtl ? "الدرجة النهائية" : "Total",
-      termTab: isRtl ? "نتائج الفصل" : "Semester",
-      annualTab: isRtl ? "السجل التراكمي" : "Cumulative",
-      certTab: isRtl ? "الشهادات والوثائق" : "Documents",
-      term1: isRtl ? "الفصل الأول" : "Semester 1",
-      term2: isRtl ? "الفصل الثاني" : "Semester 2",
-      credits: isRtl ? "الساعات" : "Credits",
-      gpa: isRtl ? "المعدل الفصلي" : "Term GPA",
-      cumGpa: isRtl ? "المعدل التراكمي" : "CGPA",
+      course: m.student_grades_uni_course(),
+      coursework: m.student_grades_uni_coursework(),
+      finalExam: m.student_grades_uni_final_exam(),
+      termTotal: m.student_grades_uni_total(),
+      termTab: m.student_grades_uni_tab_semester(),
+      annualTab: m.student_grades_uni_tab_cumulative(),
+      certTab: m.student_grades_uni_tab_documents(),
+      term1: m.student_grades_uni_semester_1(),
+      term2: m.student_grades_uni_semester_2(),
+      credits: m.student_grades_uni_credits(),
+      gpa: m.student_grades_uni_term_gpa(),
+      cumGpa: m.student_grades_uni_cgpa(),
     };
   }
   if (instType === "institute") {
     return {
-      course: isRtl ? "الوحدة التدريبية" : "Module",
-      coursework: isRtl ? "الجانب النظري" : "Theory",
-      finalExam: isRtl ? "التطبيق العملي" : "Practical",
-      termTotal: isRtl ? "المجموع" : "Total",
-      termTab: isRtl ? "نتائج الوحدات" : "Modules",
-      annualTab: isRtl ? "الملخص العام" : "Summary",
-      certTab: isRtl ? "الشهادات والوثائق" : "Certificates",
-      term1: isRtl ? "المرحلة 1" : "Phase 1",
-      term2: isRtl ? "المرحلة 2" : "Phase 2",
-      credits: isRtl ? "الوحدات" : "Units",
-      gpa: isRtl ? "المعدل" : "Average",
-      cumGpa: isRtl ? "المعدل العام" : "Overall Avg",
+      course: m.student_grades_inst_module(),
+      coursework: m.student_grades_inst_theory(),
+      finalExam: m.student_grades_inst_practical(),
+      termTotal: m.student_grades_total(),
+      termTab: m.student_grades_inst_tab_modules(),
+      annualTab: m.student_grades_inst_tab_summary(),
+      certTab: m.student_grades_certificates_tab(),
+      term1: m.student_grades_inst_phase_1(),
+      term2: m.student_grades_inst_phase_2(),
+      credits: m.student_grades_inst_units(),
+      gpa: m.student_grades_inst_average(),
+      cumGpa: m.student_grades_inst_overall_avg(),
     };
   }
   return {
     course: m.student_grades_subject(),
-    coursework: isRtl ? "أعمال الفصل" : "Coursework",
-    finalExam: isRtl ? "اختبار الفصل" : "Term Exam",
-    termTotal: isRtl ? "المجموع" : "Total",
+    coursework: m.student_grades_school_coursework(),
+    finalExam: m.student_grades_school_term_exam(),
+    termTotal: m.student_grades_total(),
     termTab: m.student_grades_tab_term_report(),
     annualTab: m.student_grades_tab_annual_results(),
-    certTab: isRtl ? "الشهادات والوثائق" : "Certificates",
-    term1: isRtl ? "الفصل الأول" : "Term 1",
-    term2: isRtl ? "الفصل الثاني" : "Term 2",
-    credits: isRtl ? "الوزن" : "Credits",
-    gpa: isRtl ? "المعدل" : "GPA",
-    cumGpa: isRtl ? "المعدل التراكمي" : "Cumulative GPA",
+    certTab: m.student_grades_certificates_tab(),
+    term1: m.student_grades_school_term_1(),
+    term2: m.student_grades_school_term_2(),
+    credits: m.student_grades_school_credits(),
+    gpa: m.student_grades_school_gpa(),
+    cumGpa: m.student_grades_school_cum_gpa(),
   };
 });
 
@@ -322,7 +322,7 @@ function getStatusInfo(status?: string | null) {
   }
   if (s.includes("incomplete")) {
     return {
-      label: isRtl ? "غير مكتمل" : "Incomplete",
+      label: m.student_grades_status_incomplete(),
       badgeClass:
         "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     };
@@ -385,9 +385,7 @@ const recordRows = $derived(
       percentage: Number(pct.toFixed(1)),
       letter_grade: grade.letter_grade ?? "—",
       record_state: grade.is_absent
-        ? isRtl
-          ? "غائب"
-          : "Absent"
+        ? m.student_grades_state_absent()
         : grade.is_exempt
           ? m.student_grades_state_exempt()
           : grade.is_excused
@@ -928,7 +926,7 @@ const showCredits = $derived(
       <div class="overflow-hidden rounded-md border border-border bg-card">
         <div class="border-b border-border bg-muted/30 px-4 py-2.5">
           <h3 class="text-xs font-semibold text-foreground">
-            {isRtl ? "الوثائق والشهادات الرسمية" : "Official Certificates & Transcripts"}
+            {m.student_grades_official_documents_heading()}
           </h3>
         </div>
 
@@ -939,7 +937,7 @@ const showCredits = $derived(
           </div>
         {:else if studentDocuments.length === 0}
           <div class="p-6 text-center text-xs text-muted-foreground">
-            {isRtl ? "لا توجد قوالب شهادات مفعلة حالياً" : "No active certificate templates found"}
+            {m.student_grades_no_certificate_templates()}
           </div>
         {:else}
           <div class="divide-y divide-border/60">
@@ -960,7 +958,7 @@ const showCredits = $derived(
                   onclick={() => openPrint(doc.code, docTitle)}
                 >
                   <Printer size={13} />
-                  <span>{isRtl ? "معاينة وطباعة" : "Preview & Print"}</span>
+                  <span>{m.student_grades_preview_and_print()}</span>
                 </Button>
               </div>
             {/each}
@@ -981,13 +979,13 @@ const showCredits = $derived(
                   {labels.finalExam}{maxLabel(sample?.term_final_exam_max)}
                 </th>
                 <th class="px-3 py-2.5 text-center">
-                  {isRtl ? "التراكمي" : "Cumulative"}{maxLabel(sample?.monthly_contribution_max)}
+                  {m.student_grades_cumulative()}{maxLabel(sample?.monthly_contribution_max)}
                 </th>
                 <th class="px-3 py-2.5 text-center font-semibold text-foreground">
                   {labels.termTotal}{maxLabel(sample?.term_max)}
                 </th>
                 <th class="px-3 py-2.5 text-center">
-                  {isRtl ? "الحد الأدنى" : "Min Pass"}
+                  {m.student_grades_min_pass()}
                 </th>
                 <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
                 <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>

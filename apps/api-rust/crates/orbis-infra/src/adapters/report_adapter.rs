@@ -1390,6 +1390,28 @@ pub struct TermResultDataProvider {
     pub db: DatabaseConnection,
 }
 
+async fn resolve_passing_ratio(db: &sea_orm::DatabaseConnection, org_id: Uuid) -> f64 {
+    use crate::models::organization;
+    use sea_orm::EntityTrait;
+
+    if let Ok(Some(org)) = organization::Entity::find_by_id(org_id).one(db).await {
+        if let Some(val) = org
+            .settings
+            .as_ref()
+            .and_then(|s| s.get("academic"))
+            .and_then(|a| a.get("passing_threshold_percentage"))
+        {
+            let pct = val
+                .as_f64()
+                .or_else(|| val.as_str().and_then(|s| s.parse::<f64>().ok()));
+            if let Some(pct) = pct.filter(|p| *p > 0.0 && *p <= 100.0) {
+                return pct / 100.0;
+            }
+        }
+    }
+    0.5
+}
+
 #[async_trait]
 impl ReportDataProvider for TermResultDataProvider {
     fn provider_key(&self) -> &str {
@@ -1404,6 +1426,8 @@ impl ReportDataProvider for TermResultDataProvider {
         _locale: &ReportLocale,
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
+
+        let pass_ratio = resolve_passing_ratio(&self.db, org_id).await;
 
         let student_filter = parse_uuid_param(parameters, "student_id")?;
         let period_filter = parse_uuid_param(parameters, "period_id")?;
@@ -1481,7 +1505,7 @@ impl ReportDataProvider for TermResultDataProvider {
                 "score": score,
                 "max_score": max,
                 "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
-                "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
+                "status": if score >= (max * pass_ratio) { "Pass" } else { "Fail" },
             }));
         }
 
@@ -1567,7 +1591,7 @@ impl ReportDataProvider for TermResultDataProvider {
                         "subject_name": "Total / المجموع",
                         "score": total_score,
                         "max_score": max_total,
-                        "status": if total_score >= (max_total * 0.5) { "Pass" } else { "Fail" },
+                        "status": if total_score >= (max_total * pass_ratio) { "Pass" } else { "Fail" },
                     }),
                     subtotals: None,
                 })
@@ -1883,6 +1907,8 @@ impl ReportDataProvider for AnnualResultDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
+        let pass_ratio = resolve_passing_ratio(&self.db, org_id).await;
+
         let student_filter = parse_uuid_param(parameters, "student_id")?;
         let class_filter = parse_uuid_param(parameters, "class_id")?;
         let is_general_mode = student_filter.is_none();
@@ -1954,7 +1980,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
                 "score": score,
                 "max_score": max,
                 "percentage": if max > 0.0 { (score / max) * 100.0 } else { 0.0 },
-                "status": if score >= (max * 0.5) { "Pass" } else { "Fail" },
+                "status": if score >= (max * pass_ratio) { "Pass" } else { "Fail" },
             }));
         }
 
@@ -2040,7 +2066,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
                         "subject_name": "Grand Total / المجموع العام",
                         "score": total_score,
                         "max_score": max_total,
-                        "status": if total_score >= (max_total * 0.5) { "Pass" } else { "Fail" },
+                        "status": if total_score >= (max_total * pass_ratio) { "Pass" } else { "Fail" },
                     }),
                     subtotals: None,
                 })
@@ -2077,6 +2103,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 
+        let pass_ratio = resolve_passing_ratio(&self.db, org_id).await;
         let student_filter = parse_uuid_param(parameters, "student_id")?;
         let class_filter = parse_uuid_param(parameters, "class_id")?;
         let year_filter = parse_uuid_param(parameters, "year_id")?;
@@ -2162,7 +2189,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
             let score = decimal_to_f64(row, "score");
             let max = decimal_to_f64(row, "max_score");
             let max = if max > 0.0 { max } else { 100.0 };
-            let min = max * 0.5;
+            let min = max * pass_ratio;
 
             total_score += score;
             max_total += max;
