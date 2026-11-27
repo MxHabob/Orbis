@@ -819,7 +819,7 @@ pub async fn delete_user(
     user.updated_by = Some(actor);
     state.user_repo.save(&user).await?;
 
-    Ok(ApiResponse::ok_with_id((), ctx.request_id))
+    Ok(ApiResponse::ok_with_id((), ctx.request_id.clone()))
 }
 
 #[utoipa::path(
