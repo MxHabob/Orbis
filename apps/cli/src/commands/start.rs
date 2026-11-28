@@ -16,7 +16,10 @@ pub async fn execute() -> Result<()> {
 pub async fn start_api_only(state: &CliState) -> Result<()> {
     match state.target {
         DeployTarget::Docker => {
-            output::print_step(&format!("Starting Docker container '{}'...", state.container_name));
+            output::print_step(&format!(
+                "Starting Docker container '{}'...",
+                state.container_name
+            ));
             docker::start_or_recreate_api(
                 &state.container_name,
                 &state.api_image,
@@ -25,10 +28,7 @@ pub async fn start_api_only(state: &CliState) -> Result<()> {
                 false,
             )?;
             wait_for_health(&state.api_base_url()).await?;
-            output::print_success(&format!(
-                "Orbis API is running at {}",
-                state.api_base_url()
-            ));
+            output::print_success(&format!("Orbis API is running at {}", state.api_base_url()));
         }
         DeployTarget::Native => {
             if is_native_service_installed() {
@@ -45,12 +45,14 @@ pub async fn start_api_only(state: &CliState) -> Result<()> {
             let bin = find_server_binary().ok_or_else(|| {
                 anyhow!("Could not locate `orbis-server` binary. Install the API package or build it first.")
             })?;
-            let cfg_path = orbis_infra::config::server_config_path()
-                .map_err(anyhow::Error::msg)?;
+            let cfg_path = orbis_infra::config::server_config_path().map_err(anyhow::Error::msg)?;
             let lic_dir = native_license_dir();
             std::fs::create_dir_all(&lic_dir)?;
 
-            output::print_step(&format!("Starting native API server ({})...", bin.display()));
+            output::print_step(&format!(
+                "Starting native API server ({})...",
+                bin.display()
+            ));
             let child = Command::new(bin)
                 .env("BIND_HOST", "127.0.0.1")
                 .env("PORT", state.api_port.to_string())
@@ -83,7 +85,9 @@ pub async fn stop() -> Result<()> {
                 control_native_service("stop")?;
                 output::print_success("Stopped native Orbis API service.");
             } else {
-                output::print_info("No OS service registered; stop the `orbis-server` process directly.");
+                output::print_info(
+                    "No OS service registered; stop the `orbis-server` process directly.",
+                );
             }
         }
     }
@@ -105,7 +109,9 @@ pub async fn restart() -> Result<()> {
                 wait_for_health(&state.api_base_url()).await?;
                 output::print_success("Restarted native Orbis API service.");
             } else {
-                output::print_info("No OS service registered; restart the `orbis-server` process directly.");
+                output::print_info(
+                    "No OS service registered; restart the `orbis-server` process directly.",
+                );
             }
         }
     }
@@ -128,7 +134,10 @@ pub async fn logs(lines: u32) -> Result<()> {
             #[cfg(target_os = "windows")]
             if let Ok(pd) = std::env::var("PROGRAMDATA") {
                 let logs_dir = std::path::PathBuf::from(pd).join("Orbis").join("logs");
-                output::print_info(&format!("Windows service logs directory: {}", logs_dir.display()));
+                output::print_info(&format!(
+                    "Windows service logs directory: {}",
+                    logs_dir.display()
+                ));
                 return Ok(());
             }
             output::print_info("Native logs are emitted to stdout/stderr of `orbis-server`.");
@@ -171,7 +180,9 @@ fn control_native_service(action: &str) -> Result<()> {
             .args(["-NoProfile", "-Command", cmd])
             .status()?;
         if !status.success() {
-            return Err(anyhow!("Failed to {action} Windows service OrbisApi (run as Administrator)."));
+            return Err(anyhow!(
+                "Failed to {action} Windows service OrbisApi (run as Administrator)."
+            ));
         }
         return Ok(());
     }
@@ -181,19 +192,25 @@ fn control_native_service(action: &str) -> Result<()> {
             .args([action, "orbis-api.service"])
             .status()?;
         if !status.success() {
-            return Err(anyhow!("Failed to {action} orbis-api.service (run with sudo)."));
+            return Err(anyhow!(
+                "Failed to {action} orbis-api.service (run with sudo)."
+            ));
         }
         return Ok(());
     }
     #[allow(unreachable_code)]
-    Err(anyhow!("Native service control is supported on Windows and Linux only."))
+    Err(anyhow!(
+        "Native service control is supported on Windows and Linux only."
+    ))
 }
 
 pub async fn upgrade(new_image: Option<String>) -> Result<()> {
     let mut state = CliState::load()
         .ok_or_else(|| anyhow!("Orbis is not configured yet. Run `orbis init` first."))?;
     if state.target != DeployTarget::Docker {
-        return Err(anyhow!("`orbis upgrade` is currently supported for Docker targets."));
+        return Err(anyhow!(
+            "`orbis upgrade` is currently supported for Docker targets."
+        ));
     }
 
     if let Some(img) = new_image {

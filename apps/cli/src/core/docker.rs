@@ -28,7 +28,11 @@ fn run_docker(args: &[&str]) -> Result<String> {
             "docker {} failed: {}{}",
             args.first().copied().unwrap_or_default(),
             stderr.trim(),
-            if stdout.trim().is_empty() { "" } else { stdout.trim() }
+            if stdout.trim().is_empty() {
+                ""
+            } else {
+                stdout.trim()
+            }
         ));
     }
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())

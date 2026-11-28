@@ -101,7 +101,10 @@ pub async fn import_snapshot_file(state: &CliState, source_file: &Path) -> Resul
     let (dir, is_staging) = resolve_working_license_dir(state)?;
     fs::write(dir.join(SNAPSHOT_FILE), &raw)?;
     if !snapshot.installation_id.trim().is_empty() {
-        fs::write(dir.join(INSTALLATION_ID_FILE), snapshot.installation_id.trim())?;
+        fs::write(
+            dir.join(INSTALLATION_ID_FILE),
+            snapshot.installation_id.trim(),
+        )?;
     }
 
     let runtime = build_runtime(&dir)?;
@@ -165,13 +168,20 @@ pub async fn activate_key(
     Ok(dto)
 }
 
-pub async fn start_trial(state: &CliState, org_id: uuid::Uuid, org_name: &str) -> Result<LicenseStateDto> {
+pub async fn start_trial(
+    state: &CliState,
+    org_id: uuid::Uuid,
+    org_name: &str,
+) -> Result<LicenseStateDto> {
     let (dir, is_staging) = resolve_working_license_dir(state)?;
     let runtime = build_runtime(&dir)?;
     runtime.initialize().await.map_err(|e| anyhow!("{e}"))?;
 
     let profile = default_trial_profile(org_id, org_name.to_string());
-    runtime.start_trial(profile).await.map_err(|e| anyhow!("{e}"))?;
+    runtime
+        .start_trial(profile)
+        .await
+        .map_err(|e| anyhow!("{e}"))?;
     let dto = runtime.current_state_dto();
 
     if is_staging {

@@ -48,7 +48,9 @@ pub async fn execute(sub: Option<LicenseCommand>) -> Result<()> {
             Ok(())
         }
         Some(LicenseCommand::Refresh { org_id }) => {
-            let id = org_id.as_deref().and_then(|s| uuid::Uuid::parse_str(s).ok());
+            let id = org_id
+                .as_deref()
+                .and_then(|s| uuid::Uuid::parse_str(s).ok());
             let dto = license::refresh(&state, id).await?;
             print_license_summary(&dto);
             Ok(())
@@ -82,7 +84,8 @@ async fn interactive_menu(state: &CliState) -> Result<()> {
 
     if choice.starts_with("1.") {
         let p = prompts::prompt_text("Path to license_snapshot.json:")?;
-        let dto = license::import_snapshot_file(state, &PathBuf::from(p.trim().trim_matches('"'))).await?;
+        let dto = license::import_snapshot_file(state, &PathBuf::from(p.trim().trim_matches('"')))
+            .await?;
         print_license_summary(&dto);
     } else if choice.starts_with("2.") {
         let key = prompts::prompt_text("Product Key:")?;

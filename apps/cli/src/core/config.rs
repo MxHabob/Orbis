@@ -203,7 +203,10 @@ pub fn default_sqlite_url() -> String {
     if let Some(parent) = path.parent() {
         let _ = fs::create_dir_all(parent);
     }
-    format!("sqlite://{}?mode=rwc", path.to_string_lossy().replace('\\', "/"))
+    format!(
+        "sqlite://{}?mode=rwc",
+        path.to_string_lossy().replace('\\', "/")
+    )
 }
 
 pub fn native_license_dir() -> PathBuf {
@@ -227,7 +230,11 @@ pub fn native_license_dir() -> PathBuf {
 }
 
 pub fn find_server_binary() -> Option<PathBuf> {
-    let bin = if cfg!(windows) { "orbis-server.exe" } else { "orbis-server" };
+    let bin = if cfg!(windows) {
+        "orbis-server.exe"
+    } else {
+        "orbis-server"
+    };
     let mut candidates = Vec::new();
 
     #[cfg(target_os = "windows")]
@@ -248,7 +255,11 @@ pub fn find_server_binary() -> Option<PathBuf> {
 }
 
 pub fn get_app_executable_paths() -> Vec<PathBuf> {
-    let app_name = if cfg!(windows) { "Orbis-Svelte.exe" } else { "Orbis-Svelte" };
+    let app_name = if cfg!(windows) {
+        "Orbis-Svelte.exe"
+    } else {
+        "Orbis-Svelte"
+    };
     let product_name = if cfg!(windows) { "Orbis.exe" } else { "Orbis" };
     let mut paths = vec![PathBuf::from(app_name), PathBuf::from(product_name)];
 

@@ -2,7 +2,9 @@ use anyhow::{Context, Result, anyhow};
 use orbis_app::services::SystemService;
 use orbis_infra::migration::Migrator;
 use orbis_infra::repositories::system_repo::SystemRepoImpl;
-use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
+use sea_orm::{
+    ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement,
+};
 use sea_orm_migration::MigratorTrait;
 use std::sync::Arc;
 use std::time::Duration;

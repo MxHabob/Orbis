@@ -33,7 +33,11 @@ pub async fn execute() -> Result<()> {
                 vec![
                     (
                         "Docker Daemon",
-                        if daemon { "Running".into() } else { "Unavailable".into() },
+                        if daemon {
+                            "Running".into()
+                        } else {
+                            "Unavailable".into()
+                        },
                         daemon,
                     ),
                     (
@@ -71,7 +75,11 @@ pub async fn execute() -> Result<()> {
 
             match database::pending_migrations_count(&db_url).await {
                 Ok(0) => out.push(("Schema Migrations", "Up to date".into(), true)),
-                Ok(n) => out.push(("Schema Migrations", format!("{n} pending migration(s)"), false)),
+                Ok(n) => out.push((
+                    "Schema Migrations",
+                    format!("{n} pending migration(s)"),
+                    false,
+                )),
                 Err(e) => out.push(("Schema Migrations", format!("Error: {e}"), false)),
             }
 
@@ -90,7 +98,11 @@ pub async fn execute() -> Result<()> {
                     ));
                     out.push((
                         "Admin Account",
-                        if r.has_admin { "Provisioned".into() } else { "Pending".into() },
+                        if r.has_admin {
+                            "Provisioned".into()
+                        } else {
+                            "Pending".into()
+                        },
                         r.has_admin,
                     ));
                 }
@@ -126,7 +138,11 @@ pub async fn execute() -> Result<()> {
             .unwrap_or(false);
         (
             "API Health Endpoint",
-            if ok { health_url.clone() } else { format!("Unreachable ({health_url})") },
+            if ok {
+                health_url.clone()
+            } else {
+                format!("Unreachable ({health_url})")
+            },
             ok,
         )
     };
@@ -144,9 +160,13 @@ pub async fn execute() -> Result<()> {
     println!();
     for (name, detail, ok) in &checks {
         let icon = if *ok {
-            "✔".truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2).bold()
+            "✔"
+                .truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2)
+                .bold()
         } else {
-            "✖".truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2).bold()
+            "✖"
+                .truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2)
+                .bold()
         };
         let label = format!("{:<22}", name);
         let detail_col = if *ok {

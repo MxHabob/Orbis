@@ -54,10 +54,7 @@ pub async fn execute() -> Result<()> {
         DeployTarget::Native
     };
 
-    let port_str = prompts::prompt_text_with_default(
-        "API Port:",
-        &state.api_port.to_string(),
-    )?;
+    let port_str = prompts::prompt_text_with_default("API Port:", &state.api_port.to_string())?;
     state.api_port = port_str.parse::<u16>().unwrap_or(DEFAULT_API_PORT);
 
     if state.target == DeployTarget::Docker {
@@ -66,7 +63,8 @@ pub async fn execute() -> Result<()> {
         } else {
             &state.api_image
         };
-        state.api_image = prompts::prompt_text_with_default("Orbis API Docker Image:", default_img)?;
+        state.api_image =
+            prompts::prompt_text_with_default("Orbis API Docker Image:", default_img)?;
     }
 
     // ── Phase 2: Database Selection ───────────────────────────────────
@@ -175,8 +173,7 @@ pub async fn execute() -> Result<()> {
             output::print_progress_ok("Database schema is up to date");
         }
         DeployTarget::Native => {
-            let cfg_path = orbis_infra::config::server_config_path()
-                .map_err(anyhow::Error::msg)?;
+            let cfg_path = orbis_infra::config::server_config_path().map_err(anyhow::Error::msg)?;
             ensure_server_config_file(&cfg_path, &state.database_url)?;
             output::print_progress_ok(&format!("Saved server config at {}", cfg_path.display()));
 
@@ -214,7 +211,8 @@ pub async fn execute() -> Result<()> {
             lic_options.insert(0, "0. Import detected Desktop license_snapshot.json");
         }
 
-        let lic_choice = prompts::prompt_select("How would you like to configure the license?", lic_options)?;
+        let lic_choice =
+            prompts::prompt_select("How would you like to configure the license?", lic_options)?;
         if lic_choice.starts_with("0.") {
             if let Some(detected) = detect_desktop_license_snapshot() {
                 let dto = license::import_snapshot_file(&state, &detected).await?;
@@ -231,7 +229,8 @@ pub async fn execute() -> Result<()> {
                 "Organization UUID (leave blank for nil/pending):",
                 &uuid::Uuid::nil().to_string(),
             )?;
-            let org_id = uuid::Uuid::parse_str(org_id_str.trim()).unwrap_or_else(|_| uuid::Uuid::nil());
+            let org_id =
+                uuid::Uuid::parse_str(org_id_str.trim()).unwrap_or_else(|_| uuid::Uuid::nil());
             let dto = license::activate_key(&state, key.trim(), org_id, None).await?;
             output::print_progress_ok(&format!("License activated (state: {:?})", dto.state));
         } else {
@@ -250,7 +249,10 @@ pub async fn execute() -> Result<()> {
             ("Deployment Target", state.target.label()),
             ("Database Engine", state.db_provider.label()),
             ("API Endpoint", &state.api_base_url()),
-            ("Health Check", &format!("{}/api/v1/health", state.api_base_url())),
+            (
+                "Health Check",
+                &format!("{}/api/v1/health", state.api_base_url()),
+            ),
         ],
     );
 

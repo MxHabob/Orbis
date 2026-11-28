@@ -44,7 +44,14 @@ pub async fn execute() -> Result<()> {
 
             output::print_progress_pending("Dumping PostgreSQL from Docker container...");
             let out = Command::new("docker")
-                .args(["exec", &state.postgres_container, "pg_dump", "-U", &user, &db_name])
+                .args([
+                    "exec",
+                    &state.postgres_container,
+                    "pg_dump",
+                    "-U",
+                    &user,
+                    &db_name,
+                ])
                 .output()
                 .context("Failed to execute `docker exec pg_dump`")?;
             if !out.status.success() {
@@ -63,10 +70,9 @@ pub async fn execute() -> Result<()> {
             let db_url = state.host_database_url();
 
             output::print_progress_pending("Running local pg_dump...");
-            let out = Command::new("pg_dump")
-                .arg(&db_url)
-                .output()
-                .context("Failed to execute `pg_dump` (ensure PostgreSQL client tools are in PATH)")?;
+            let out = Command::new("pg_dump").arg(&db_url).output().context(
+                "Failed to execute `pg_dump` (ensure PostgreSQL client tools are in PATH)",
+            )?;
             if !out.status.success() {
                 return Err(anyhow!(
                     "pg_dump failed: {}",
@@ -106,7 +112,10 @@ pub async fn restore(backup_file: &Path) -> Result<()> {
     let state = CliState::load()
         .ok_or_else(|| anyhow!("Orbis is not configured yet. Run `orbis init` first."))?;
 
-    output::print_step(&format!("Restoring database from {}...", backup_file.display()));
+    output::print_step(&format!(
+        "Restoring database from {}...",
+        backup_file.display()
+    ));
     match state.db_provider {
         DbProvider::Sqlite => {
             let db_url = state.host_database_url();
@@ -121,7 +130,16 @@ pub async fn restore(backup_file: &Path) -> Result<()> {
             let sql = fs::read(backup_file)?;
             let (user, db_name) = parse_pg_user_db(&state.database_url);
             let mut child = Command::new("docker")
-                .args(["exec", "-i", &state.postgres_container, "psql", "-U", &user, "-d", &db_name])
+                .args([
+                    "exec",
+                    "-i",
+                    &state.postgres_container,
+                    "psql",
+                    "-U",
+                    &user,
+                    "-d",
+                    &db_name,
+                ])
                 .stdin(std::process::Stdio::piped())
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::piped())
