@@ -1050,6 +1050,105 @@ async fn delete_org_unit(
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct ActivateLicenseRequest {
+    pub product_key: String,
+}
+
+async fn get_system_license(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<orbis_domain::entities::license::LicenseStateDto>>, ApiError> {
+    Ok(ApiResponse::ok(state.license_runtime.current_state_dto()))
+}
+
+async fn activate_system_license(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(req): Json<ActivateLicenseRequest>,
+) -> Result<Json<ApiResponse<orbis_domain::entities::license::LicenseStateDto>>, ApiError> {
+    if ctx.tenant_id.is_nil() {
+        return Err(ApiError::bad_request(
+            "An active organization is required to activate a product key.",
+        ));
+    }
+    match state
+        .license_runtime
+        .activate_product_key(&req.product_key, ctx.tenant_id)
+        .await
+    {
+        Ok(_) => {}
+        Err(orbis_domain::errors::DomainError::LicenseKeyRequiresClaim) => {
+            let profile = build_trial_org_profile(&state, ctx.tenant_id).await?;
+            state
+                .license_runtime
+                .redeem_product_key(&req.product_key, profile)
+                .await?;
+        }
+        Err(error) => return Err(error.into()),
+    }
+    Ok(ApiResponse::ok(state.license_runtime.current_state_dto()))
+}
+
+async fn start_system_trial(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<orbis_domain::entities::license::LicenseStateDto>>, ApiError> {
+    if ctx.tenant_id.is_nil() {
+        return Err(ApiError::bad_request(
+            "An active organization is required to start a license trial.",
+        ));
+    }
+    let profile = build_trial_org_profile(&state, ctx.tenant_id).await?;
+    state.license_runtime.start_trial(profile).await?;
+    Ok(ApiResponse::ok(state.license_runtime.current_state_dto()))
+}
+
+async fn refresh_system_license(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<orbis_domain::entities::license::LicenseStateDto>>, ApiError> {
+    if ctx.tenant_id.is_nil() {
+        return Err(ApiError::bad_request(
+            "An active organization is required to refresh its license.",
+        ));
+    }
+    state.license_runtime.refresh(Some(ctx.tenant_id)).await?;
+    Ok(ApiResponse::ok(state.license_runtime.current_state_dto()))
+}
+
+async fn deactivate_system_license(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<orbis_domain::entities::license::LicenseStateDto>>, ApiError> {
+    state.license_runtime.deactivate().await?;
+    Ok(ApiResponse::ok(state.license_runtime.current_state_dto()))
+}
+
+async fn build_trial_org_profile(
+    state: &AppState,
+    tenant_id: Uuid,
+) -> Result<orbis_domain::entities::license::TrialOrganizationProfile, ApiError> {
+    let org = state
+        .organization_service
+        .get_organization(tenant_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Organization not found"))?;
+    Ok(orbis_domain::entities::license::TrialOrganizationProfile {
+        id: org.id,
+        name: org.name,
+        name_ar: org.name_ar,
+        slug: org.slug,
+        institution_type: org.institution_type.as_str().to_string(),
+        organization_size: None,
+        educational_track: None,
+        country_code: None,
+        country_name: None,
+        region_name: None,
+        city: None,
+    })
+}
+
 // ── Router ──────────────────────────────────────────────────────
 
 pub fn routes() -> Router<AppState> {
@@ -1061,6 +1160,20 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/system/has-organization",
             get(get_system_has_org_endpoint),
+        )
+        .route("/api/v1/system/license", get(get_system_license))
+        .route(
+            "/api/v1/system/license/activate",
+            post(activate_system_license),
+        )
+        .route("/api/v1/system/license/trial", post(start_system_trial))
+        .route(
+            "/api/v1/system/license/refresh",
+            post(refresh_system_license),
+        )
+        .route(
+            "/api/v1/system/license/deactivate",
+            post(deactivate_system_license),
         )
         .route("/api/v1/organizations", post(create_org))
         .route(

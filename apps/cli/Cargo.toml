@@ -3,11 +3,16 @@ name = "cli"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "orbis"
+path = "src/main.rs"
+
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 tokio = { version = "1.38", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 inquire = "0.7"
 colored = "2.1"
 anyhow = "1.0"
@@ -19,6 +24,7 @@ bcrypt = "0.15"
 uuid = { version = "1.8", features = ["v4"] }
 regex = "1.10"
 
+orbis-domain = { path = "../api-rust/crates/orbis-domain" }
 orbis-infra = { path = "../api-rust/crates/orbis-infra" }
 orbis-app = { path = "../api-rust/crates/orbis-app" }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-native-tls", "macros"] }

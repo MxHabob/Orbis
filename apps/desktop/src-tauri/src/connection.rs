@@ -1,17 +1,14 @@
 //! Connection configuration — read/write/validate connection settings and database lifecycle.
 //!
-//! Supports local SQLite, direct PostgreSQL, and Orbis API connection modes.
+//! Supports local SQLite and Orbis API connection modes.
 //! Configuration is persisted as JSON in AppData/connection.json.
 //!
 //! This module works before and during database connection lifecycle.
 
-use keyring::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tracing::info;
 use url::Url;
-
-const CONNECTION_SECRET_SERVICE: &str = "com.mulverse.orbis.database";
 
 fn default_true() -> bool {
     true
@@ -31,12 +28,11 @@ fn default_max_backups() -> u32 {
 
 // ── Connection Configuration Types ──────────────────────────────────────────
 
-/// Connection mode — Local SQLite or Remote Orbis Server / PostgreSQL.
+/// Connection mode — Local SQLite or Remote Orbis API Server.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionMode {
     Local,
-    Direct,
     #[serde(alias = "remote")]
     Api,
 }
@@ -50,9 +46,6 @@ pub struct ConnectionConfig {
     /// API server URL. Database credentials are never stored in this config.
     #[serde(rename = "api", alias = "remote")]
     pub api: Option<ApiConfig>,
-    /// Direct database connection settings.
-    #[serde(default)]
-    pub direct: Option<DirectConfig>,
     /// Database settings and backup policies.
     #[serde(default)]
     pub settings: DatabaseSettings,
@@ -76,23 +69,6 @@ pub struct LocalConfig {
 pub struct ApiConfig {
     /// Orbis API base URL (e.g. "https://api.orbis.school").
     pub server_url: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DirectDatabaseEngine {
-    Postgres,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DirectConfig {
-    pub engine: DirectDatabaseEngine,
-    pub host: String,
-    pub port: u16,
-    pub database_name: String,
-    pub username: String,
-    pub ssl_mode: Option<String>,
-    pub credential_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -170,7 +146,6 @@ impl ConnectionConfig {
                 busy_timeout_ms: 5000,
             }),
             api: None,
-            direct: None,
             settings: DatabaseSettings::default(),
         }
     }
@@ -269,52 +244,12 @@ impl ConnectionConfig {
         match self.mode {
             ConnectionMode::Local => Ok(self.resolve_local_db_url(app_data_dir)),
             ConnectionMode::Api => Ok(None),
-            ConnectionMode::Direct => {
-                let direct = self
-                    .direct
-                    .as_ref()
-                    .ok_or_else(|| "Direct database settings are missing".to_string())?;
-                let password = Entry::new(CONNECTION_SECRET_SERVICE, &direct.credential_id)
-                    .map_err(|e| format!("Unable to access the operating system credential store: {e}"))?
-                    .get_password()
-                    .map_err(|e| match e {
-                        KeyringError::NoEntry => "Database password is not saved in the operating system credential store".to_string(),
-                        other => format!("Unable to read database password from the operating system credential store: {other}"),
-                    })?;
-
-                let mut url = Url::parse("postgres://localhost")
-                    .map_err(|e| format!("Unable to construct PostgreSQL connection URL: {e}"))?;
-                url.set_host(Some(&direct.host))
-                    .map_err(|_| "Invalid PostgreSQL host".to_string())?;
-                url.set_port(Some(direct.port))
-                    .map_err(|_| "Invalid PostgreSQL port".to_string())?;
-                url.set_username(&direct.username)
-                    .map_err(|_| "Invalid PostgreSQL username".to_string())?;
-                url.set_password(Some(&password))
-                    .map_err(|_| "Invalid PostgreSQL password".to_string())?;
-                url.set_path(&format!("/{}", direct.database_name));
-                if let Some(ssl_mode) = &direct.ssl_mode {
-                    url.query_pairs_mut().append_pair("sslmode", ssl_mode);
-                }
-                Ok(Some(url.to_string()))
-            }
         }
     }
 
     /// Get the configured Orbis API server URL.
     pub fn remote_server_url(&self) -> Option<&str> {
         self.api.as_ref().map(|r| r.server_url.as_str())
-    }
-
-    /// Store a direct-connection password in the operating system credential store.
-    pub fn save_direct_password(credential_id: &str, password: &str) -> Result<(), String> {
-        let entry = Entry::new(CONNECTION_SECRET_SERVICE, credential_id)
-            .map_err(|e| format!("Unable to access the operating system credential store: {e}"))?;
-        entry.set_password(password).map_err(|e| {
-            format!(
-                "Unable to save database password in the operating system credential store: {e}"
-            )
-        })
     }
 
     /// Sanitize configuration before returning it to the UI.
@@ -371,31 +306,6 @@ impl ConnectionConfig {
                     resolved_path: None,
                 }
             }
-            ConnectionMode::Direct => match &self.direct {
-                Some(direct)
-                    if !direct.host.trim().is_empty()
-                        && !direct.database_name.trim().is_empty()
-                        && !direct.username.trim().is_empty()
-                        && direct.port > 0
-                        && !direct.credential_id.trim().is_empty() =>
-                {
-                    ConnectionValidation {
-                        is_valid: true,
-                        mode: "direct".to_string(),
-                        message: "Direct PostgreSQL connection is configured".to_string(),
-                        resolved_url: None,
-                        resolved_path: None,
-                    }
-                }
-                _ => ConnectionValidation {
-                    is_valid: false,
-                    mode: "direct".to_string(),
-                    message: "Host, port, database, username, and saved credentials are required"
-                        .to_string(),
-                    resolved_url: None,
-                    resolved_path: None,
-                },
-            },
         }
     }
 }

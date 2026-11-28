@@ -150,25 +150,13 @@ export function createR2UploadPlan({
   return plan;
 }
 
-function run() {
-  if (
-    !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ||
-    !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY
-  ) {
-    throw new Error(
-      "Set CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_SECRET_ACCESS_KEY in GitHub Actions secrets.",
-    );
-  }
-  const plan = createR2UploadPlan({
-    updaterEndpoint: process.env.TAURI_UPDATER_ENDPOINT,
-    accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
-    bucket: process.env.CLOUDFLARE_R2_BUCKET,
-    tag: process.env.RELEASE_TAG,
-    packageDir: path.resolve(
-      process.env.R2_RELEASE_PACKAGE ?? "release-package",
-    ),
-  });
-
+function executeUploadAndPrune({
+  plan,
+  pruneProductPath,
+  accountId,
+  bucket,
+  tag,
+}) {
   for (const upload of plan) {
     const result = spawnSync(
       "aws",
@@ -196,19 +184,17 @@ function run() {
       throw new Error(`R2 upload failed with exit code ${result.status}.`);
     }
   }
-  const productPath = new URL(
-    normalizeUpdaterEndpoint(process.env.TAURI_UPDATER_ENDPOINT),
-  ).pathname.replace(/\/latest\.json$/, "");
-  const endpointUrl = `https://${process.env.CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
+  const endpointUrl = `https://${accountId}.r2.cloudflarestorage.com`;
   const listed = spawnSync(
     "aws",
     [
       "s3api",
       "list-objects-v2",
       "--bucket",
-      process.env.CLOUDFLARE_R2_BUCKET,
+      bucket,
       "--prefix",
-      `${productPath.slice(1)}/releases/`,
+      `${pruneProductPath.slice(1)}/releases/`,
       "--endpoint-url",
       endpointUrl,
       "--region",
@@ -221,14 +207,10 @@ function run() {
     { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 },
   );
   if (listed.error) {
-    throw new Error(
-      `Could not list R2 updater objects: ${listed.error.message}`,
-    );
+    throw new Error(`Could not list R2 objects: ${listed.error.message}`);
   }
   if (listed.status !== 0) {
-    throw new Error(
-      `Could not list R2 updater objects (exit code ${listed.status}).`,
-    );
+    throw new Error(`Could not list R2 objects (exit code ${listed.status}).`);
   }
   const keys = JSON.parse(listed.stdout || "[]") ?? [];
   if (!Array.isArray(keys)) {
@@ -236,8 +218,8 @@ function run() {
   }
   const obsoleteReleases = planR2ReleasePrune({
     keys,
-    productPath,
-    latestTag: process.env.RELEASE_TAG,
+    productPath: pruneProductPath,
+    latestTag: tag,
   });
   for (const release of obsoleteReleases) {
     const result = spawnSync(
@@ -245,7 +227,7 @@ function run() {
       [
         "s3",
         "rm",
-        `s3://${process.env.CLOUDFLARE_R2_BUCKET}/${release.prefix}`,
+        `s3://${bucket}/${release.prefix}`,
         "--recursive",
         "--endpoint-url",
         endpointUrl,
@@ -265,8 +247,154 @@ function run() {
         `Could not prune R2 release ${release.tag} (exit code ${result.status}).`,
       );
     }
-    console.log(`Removed expired R2 updater release ${release.tag}.`);
+    console.log(
+      `Removed expired R2 release ${release.tag} (${pruneProductPath}).`,
+    );
   }
+}
+
+function runComponents(componentSpecs) {
+  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
+  const bucket = process.env.CLOUDFLARE_R2_BUCKET;
+  const tag = process.env.RELEASE_TAG;
+  if (!/^[a-f0-9]{32}$/i.test(accountId ?? "")) {
+    throw new Error(
+      "CLOUDFLARE_R2_ACCOUNT_ID must be the 32-character Cloudflare account ID.",
+    );
+  }
+  if (!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket ?? "")) {
+    throw new Error("CLOUDFLARE_R2_BUCKET must be a valid R2 bucket name.");
+  }
+  if (!/^v\d+\.\d+\.\d+$/.test(tag ?? "")) {
+    throw new Error(`Invalid RELEASE_TAG: ${tag ?? "(missing)"}.`);
+  }
+
+  const endpoint = new URL(
+    normalizeUpdaterEndpoint(process.env.TAURI_UPDATER_ENDPOINT),
+  );
+  const baseProductPath = endpoint.pathname
+    .replace(/\/latest\.json$/, "")
+    .replace(/\/+$/, "");
+  const s3Endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+  const tempDir = fs.mkdtempSync(path.join(process.cwd(), ".r2-manifests-"));
+
+  try {
+    for (const spec of componentSpecs) {
+      const colonIdx = spec.indexOf(":");
+      if (colonIdx <= 0) throw new Error(`Invalid --component spec: ${spec}`);
+      const componentName = spec.slice(0, colonIdx).trim();
+      const dirs = spec
+        .slice(colonIdx + 1)
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean);
+      const files = dirs.flatMap((dir) =>
+        fs.existsSync(dir)
+          ? fs
+              .readdirSync(dir, { withFileTypes: true })
+              .filter((d) => d.isFile())
+              .map((d) => path.join(dir, d.name))
+          : [],
+      );
+      if (files.length === 0) continue;
+
+      const componentPath = `${baseProductPath}/${componentName}`;
+      const plan = [];
+      const platforms = {};
+      for (const filePath of files) {
+        const filename = path.basename(filePath);
+        const key = `${componentPath.slice(1)}/releases/${tag}/${filename}`;
+        plan.push({
+          source: filePath,
+          destination: `s3://${bucket}/${key}`,
+          endpointUrl: s3Endpoint,
+          cacheControl: "public, max-age=31536000, immutable",
+          contentType: "application/octet-stream",
+        });
+        const platformKey = filename.includes("windows")
+          ? "windows-x86_64"
+          : filename.includes("linux")
+            ? "linux-x86_64"
+            : filename;
+        platforms[platformKey] = {
+          filename,
+          url: new URL(`/${key}`, endpoint.origin).toString(),
+        };
+      }
+
+      const manifestPath = path.join(tempDir, `${componentName}-latest.json`);
+      fs.writeFileSync(
+        manifestPath,
+        `${JSON.stringify({ version: tag.slice(1), tag, pub_date: new Date().toISOString(), platforms }, null, 2)}\n`,
+        "utf8",
+      );
+      plan.push({
+        source: manifestPath,
+        destination: `s3://${bucket}${componentPath}/latest.json`,
+        endpointUrl: s3Endpoint,
+        cacheControl: "no-cache, no-store, must-revalidate",
+        contentType: "application/json",
+      });
+
+      executeUploadAndPrune({
+        plan,
+        pruneProductPath: componentPath,
+        accountId,
+        bucket,
+        tag,
+      });
+      console.log(
+        `Uploaded ${componentName} release artifacts and latest.json to R2 (${componentPath}).`,
+      );
+    }
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function run() {
+  if (
+    !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ||
+    !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY
+  ) {
+    throw new Error(
+      "Set CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_SECRET_ACCESS_KEY in GitHub Actions secrets.",
+    );
+  }
+
+  const componentSpecs = [];
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "--component" && args[i + 1]) {
+      componentSpecs.push(args[i + 1]);
+      i += 1;
+    }
+  }
+  if (componentSpecs.length > 0) {
+    runComponents(componentSpecs);
+    return;
+  }
+
+  const plan = createR2UploadPlan({
+    updaterEndpoint: process.env.TAURI_UPDATER_ENDPOINT,
+    accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
+    bucket: process.env.CLOUDFLARE_R2_BUCKET,
+    tag: process.env.RELEASE_TAG,
+    packageDir: path.resolve(
+      process.env.R2_RELEASE_PACKAGE ?? "release-package",
+    ),
+  });
+  const productPath = new URL(
+    normalizeUpdaterEndpoint(process.env.TAURI_UPDATER_ENDPOINT),
+  ).pathname.replace(/\/latest\.json$/, "");
+
+  executeUploadAndPrune({
+    plan,
+    pruneProductPath: productPath,
+    accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
+    bucket: process.env.CLOUDFLARE_R2_BUCKET,
+    tag: process.env.RELEASE_TAG,
+  });
   console.log("Uploaded Orbis signed updater bundles and latest.json to R2.");
 }
 

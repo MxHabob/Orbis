@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { StudentDto } from "./types";
-import { mapStudentDtoToDetail, RemoteClient } from "./remote-client";
+import {
+  mapStudentDtoToDetail,
+  UnifiedClient as RemoteClient,
+} from "./unified-client";
 
 describe("mapStudentDtoToDetail", () => {
   it("preserves the flattened student avatar on the person used by UI consumers", () => {

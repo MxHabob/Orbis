@@ -274,22 +274,126 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  build-cli:
+    name: Build Orbis CLI (${{ matrix.target_name }})
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_name: linux-x86_64
+            runner: ubuntu-latest
+            ext: ""
+            archive: tar.gz
+          - target_name: windows-x86_64
+            runner: windows-latest
+            ext: ".exe"
+            archive: zip
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache CLI Rust build outputs
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/cli -> target
+          shared-key: orbis-cli-${{ matrix.target_name }}
+
+      - name: Install Linux native dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config libdbus-1-dev
+
+      - name: Build Orbis CLI
+        working-directory: apps/cli
+        run: cargo build --locked --release --bin orbis
+
+      - name: Package CLI archive (Unix)
+        if: runner.os != 'Windows'
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target_name }}
+        run: |
+          mkdir -p cli-release
+          cp apps/cli/target/release/orbis cli-release/orbis
+          chmod +x cli-release/orbis
+          tar -czf "Orbis-CLI-${VERSION}-${TARGET}.tar.gz" -C cli-release .
+
+      - name: Package CLI archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target_name }}
+        run: |
+          New-Item -ItemType Directory -Force -Path cli-release | Out-Null
+          Copy-Item apps/cli/target/release/orbis.exe cli-release/orbis.exe
+          Compress-Archive -Path cli-release/* -DestinationPath "Orbis-CLI-$env:VERSION-$env:TARGET.zip" -Force
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ needs.validate.outputs.version }}-${{ matrix.target_name }}
+          path: Orbis-CLI-${{ needs.validate.outputs.version }}-${{ matrix.target_name }}.*
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Publish API release
-    needs: [validate, build, docker-manifest]
+    needs: [validate, build, build-cli, docker-manifest]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout R2 upload script
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            apps/desktop/scripts/upload-tauri-updater-r2.mjs
+            apps/desktop/scripts/prepare-tauri-updater-config.mjs
+
       - name: Download API artifacts
         uses: actions/download-artifact@v4
         with:
           name: api-${{ needs.validate.outputs.version }}
           path: api-artifacts
 
+      - name: Download CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cli-${{ needs.validate.outputs.version }}-*
+          path: cli-artifacts
+          merge-multiple: true
+
       - name: Download Docker deployment bundle
         uses: actions/download-artifact@v4
         with:
           name: api-docker-${{ needs.validate.outputs.version }}
           path: docker-artifacts
+
+      - name: Upload API & CLI artifacts to Cloudflare R2
+        if: vars.CLOUDFLARE_R2_BUCKET != '' && vars.CLOUDFLARE_R2_ACCOUNT_ID != ''
+        env:
+          TAURI_UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT }}
+          CLOUDFLARE_R2_ACCOUNT_ID: ${{ vars.CLOUDFLARE_R2_ACCOUNT_ID }}
+          CLOUDFLARE_R2_BUCKET: ${{ vars.CLOUDFLARE_R2_BUCKET }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_EC2_METADATA_DISABLED: "true"
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          aws --version
+          node apps/desktop/scripts/upload-tauri-updater-r2.mjs \
+            --component api:api-artifacts,docker-artifacts \
+            --component cli:cli-artifacts
 
       - name: Publish API bundle
         uses: softprops/action-gh-release@v2
@@ -298,4 +402,5 @@ jobs:
           generate_release_notes: true
           files: |
             api-artifacts/**
+            cli-artifacts/**
             docker-artifacts/**

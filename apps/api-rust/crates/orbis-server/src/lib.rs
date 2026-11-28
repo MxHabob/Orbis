@@ -847,6 +847,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(bootstrap_routes::routes())
         .merge(notification_routes::routes())
         .merge(onboarding_routes::routes())
+        .route("/api/v1/events/stream", get(events_stream))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -948,11 +949,12 @@ async fn enforce_api_license(
     request: Request<Body>,
     next: Next,
 ) -> Response {
-    let path = request.uri().path();
+    let path = request.uri().path().to_owned();
     if path.starts_with("/api/v1/auth/")
         || path.starts_with("/api/v1/bootstrap")
         || path == "/api/v1/system/readiness"
         || path == "/api/v1/system/has-organization"
+        || path.starts_with("/api/v1/system/license")
         || path == "/api/v1/health"
         || path == "/api/v1/live"
         || path.starts_with("/swagger-ui")
@@ -961,7 +963,8 @@ async fn enforce_api_license(
         return next.run(request).await;
     }
 
-    let feature = required_feature_for_path(path);
+    let feature = required_feature_for_path(&path);
+    let method = request.method().clone();
     let (mut parts, body) = request.into_parts();
     let auth = match api::extractors::AuthContext::from_request_parts(&mut parts, &state).await {
         Ok(auth) => auth,
@@ -972,7 +975,71 @@ async fn enforce_api_license(
         return api::ApiError::from(error).into_response();
     }
 
-    next.run(Request::from_parts(parts, body)).await
+    let response = next.run(Request::from_parts(parts, body)).await;
+    if !method.is_safe() && response.status().is_success() {
+        let _ = state.invalidation_tx.send(state::InvalidationEvent {
+            tenant_id: auth.tenant_id,
+            entity: invalidation_entity_for_path(&path).to_string(),
+            path,
+        });
+    }
+    response
+}
+
+fn invalidation_entity_for_path(path: &str) -> &'static str {
+    let trimmed = path.strip_prefix("/api/v1/").unwrap_or(path);
+    let segment = trimmed.split('/').next().unwrap_or("system");
+    match segment {
+        "students" | "enrollments" => "students",
+        "employees" => "employees",
+        "grades"
+        | "assessment-schemes"
+        | "attendance"
+        | "behavior-records"
+        | "academic-calculations" => "assessment",
+        "exam-sessions" | "exam-schedules" | "seating-numbers" | "secret-numbers"
+        | "exam-proctors" => "exams",
+        "accounts" | "journal-entries" | "fee-templates" | "student-fees" | "payments"
+        | "discount-templates" | "currencies" => "finance",
+        "subjects" | "sections" | "classes" | "section-subjects" | "courses" => "academic",
+        "academic-calendars" | "academic-years" | "academic-periods" | "period-types"
+        | "calendar" => "calendar",
+        "organizations" | "org-units" | "settings" => "organization",
+        "rooms" | "time-slots" | "scheduled-lessons" | "timetable" => "scheduling",
+        "documents" | "folders" | "storage" | "document-requirements" => "documents",
+        "iam" | "groups" | "roles" | "permissions" => "iam",
+        "notifications" => "notifications",
+        "reports" | "report-definitions" | "report-templates" => "reports",
+        "workflows" | "override-requests" => "workflows",
+        _ => "system",
+    }
+}
+
+async fn events_stream(
+    State(state): State<state::AppState>,
+    auth: api::extractors::AuthContext,
+) -> axum::response::sse::Sse<
+    impl tokio_stream::Stream<Item = Result<axum::response::sse::Event, std::convert::Infallible>>,
+> {
+    use axum::response::sse::{Event, KeepAlive, Sse};
+    use tokio_stream::StreamExt;
+    use tokio_stream::wrappers::BroadcastStream;
+
+    let rx = state.invalidation_tx.subscribe();
+    let tenant_id = auth.tenant_id;
+    let stream = BroadcastStream::new(rx).filter_map(move |msg| match msg {
+        Ok(event) if event.tenant_id == tenant_id => {
+            let payload = serde_json::json!({
+                "entity": event.entity,
+                "path": event.path,
+            })
+            .to_string();
+            Some(Ok(Event::default().event("invalidate").data(payload)))
+        }
+        _ => None,
+    });
+
+    Sse::new(stream).keep_alive(KeepAlive::new().interval(Duration::from_secs(25)))
 }
 
 fn required_feature_for_path(path: &str) -> Option<&'static str> {

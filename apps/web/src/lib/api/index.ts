@@ -65,9 +65,9 @@ export type {
 } from "./types";
 
 import type { OrbisApiClient } from "./types";
-import { LocalClient } from "./local-client";
-import { RemoteClient } from "./remote-client";
+import { UnifiedClient } from "./unified-client";
 import { queryClient } from "./query-client";
+import { realtimeSync } from "./realtime-sync";
 import { isDesktopApp } from "./runtime";
 
 let _instance: OrbisApiClient | null = null;
@@ -108,11 +108,16 @@ export function configureApiClient(
     return _instance;
   }
 
-  if (_instance) queryClient.clear();
+  if (_instance) {
+    queryClient.clear();
+    realtimeSync.stop();
+  }
   _configuredMode = mode;
   _configuredBaseUrl = normalizedBaseUrl;
   _instance =
-    mode === "api" ? new RemoteClient(normalizedBaseUrl!) : new LocalClient();
+    mode === "api"
+      ? new UnifiedClient("http", normalizedBaseUrl!)
+      : new UnifiedClient("ipc");
   return _instance;
 }
 
@@ -123,13 +128,19 @@ export function getConnectionScope(): string {
 
 export function setRemoteSessionToken(token: string | null): void {
   const client = getApiClient();
-  if (client instanceof RemoteClient) client.setToken(token);
+  if (client instanceof UnifiedClient) client.setToken(token);
+  if (_configuredMode === "api") {
+    realtimeSync.configure(_configuredBaseUrl, token);
+  } else {
+    realtimeSync.stop();
+  }
 }
 
 /**
  * Reset the singleton (useful for tests or logout flows).
  */
 export function resetApiClient(): void {
+  realtimeSync.stop();
   queryClient.clear();
   _instance = null;
   _configuredMode = null;

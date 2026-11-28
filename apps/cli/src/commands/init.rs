@@ -1,35 +1,19 @@
 use anyhow::{Result, anyhow};
 use colored::*;
-use sea_orm::Database;
+use std::path::PathBuf;
 
-use crate::core::config::CliConfig;
-use crate::core::database;
-use crate::core::github;
+use crate::core::config::{
+    CliState, DEFAULT_API_IMAGE, DEFAULT_API_PORT, DEFAULT_POSTGRES_IMAGE, DbProvider,
+    DeployTarget, default_sqlite_url, ensure_server_config_file,
+};
+use crate::core::{database, docker, license};
 use crate::ui::{output, prompts};
 
 const TOTAL_PHASES: u8 = 5;
 
 pub async fn execute() -> Result<()> {
-    let status = database::get_full_status().await;
-
-    if status.is_setup_complete() {
-        output::print_success("The system is already fully configured and ready.");
-        output::print_info(
-            "Action: Run `orbis start` (or select 'Start System' from the menu) to boot.",
-        );
-        return Ok(());
-    } else if status.is_initialized() {
-        output::print_warning(
-            "The core database exists but Initial Setup (Onboarding) is pending.",
-        );
-        output::print_info(
-            "Action: Run `orbis start` to boot the application and complete the setup from the Desktop UI.",
-        );
-        return Ok(());
-    }
-
     println!(
-        "\n  Welcome to the {}. Let's get you set up.\n",
+        "\n  Welcome to the {}. Let's configure your Orbis environment.\n",
         "Orbis Setup Wizard"
             .truecolor(
                 output::COLOR_PURPLE.0,
@@ -39,429 +23,253 @@ pub async fn execute() -> Result<()> {
             .bold()
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 1: Infrastructure Setup
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(1, TOTAL_PHASES, "Infrastructure Setup");
+    let mut state = CliState::load().unwrap_or_default();
 
-    let db_options = vec![
-        "1. SQLite (Recommended for local/offline)",
-        "2. PostgreSQL (Enterprise / Dedicated On-Premise Server)",
-    ];
-    let db_choice = prompts::prompt_select("Select database provider:", db_options)?;
+    // ── Phase 1: Deployment Target ────────────────────────────────────
+    output::print_phase_header(1, TOTAL_PHASES, "Deployment Target");
 
-    let db_url = if db_choice.contains("SQLite") {
-        output::print_progress_ok("SQLite selected — local storage");
-        CliConfig::sqlite_url()?
+    let docker_ok = docker::is_docker_available();
+    let target_options = if docker_ok {
+        vec![
+            "1. Docker Container (Recommended for Server / Production)",
+            "2. Native Host (Windows / Local Binary)",
+        ]
     } else {
-        prompts::prompt_text(
-            "Enter PostgreSQL Connection String (e.g. postgres://user:pass@localhost/orbis):",
-        )?
+        output::print_warning("Docker daemon not detected — defaulting to Native Host.");
+        vec![
+            "2. Native Host (Windows / Local Binary)",
+            "1. Docker Container (Requires Docker Engine running)",
+        ]
     };
 
-    output::print_progress_pending("Creating database and running schema migrations...");
-    let db = Database::connect(&db_url)
-        .await
-        .map_err(|e| anyhow!("Failed to connect to database: {}", e))?;
-
-    use orbis_infra::migration::Migrator;
-    use sea_orm_migration::MigratorTrait;
-    Migrator::up(&db, None)
-        .await
-        .map_err(|e| anyhow!("Failed running migrations: {}", e))?;
-
-    output::print_progress_ok("Database schema created successfully");
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    let mut org_name;
-    let mut org_name_ar;
-    let mut org_slug;
-    let mut blueprint;
-    let mut institution_type_label;
-    let mut timezone;
-    let mut currency;
-    let mut language;
-
-    let mut admin_name;
-    let mut admin_username;
-    let mut _admin_password;
-
-    // Phase 2: Organization Setup
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(2, TOTAL_PHASES, "Organization Setup");
-
-    org_name = prompts::prompt_org_name("Organization Name (EN):")?;
-    org_name_ar = prompts::prompt_org_name("Organization Name (AR):")?;
-    let generated_slug = transliterate_arabic_to_ascii(&org_name);
-    org_slug = prompts::prompt_slug("Organization Slug:", &generated_slug)?;
-
-    // Institution Type / Blueprint
-    let blueprint_options = vec![
-        "1. School (K-12 / Basic Education)",
-        "2. University (Higher Education / Credit Hours)",
-        "3. Training Center / Institute (Quarterly / Pass-Fail)",
-    ];
-    let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
-    blueprint = if bp_choice.contains("University") {
-        "university".to_string()
-    } else if bp_choice.contains("Training") {
-        "training_center".to_string()
-    } else {
-        "school".to_string()
-    };
-
-    institution_type_label = match blueprint.as_str() {
-        "university" => "University",
-        "training_center" => "Training Center",
-        _ => "School",
-    };
-
-    // Auto-detect locale defaults with spinner
-    let (detected_tz, detected_currency, detected_language) = output::with_spinner(
-        "Detecting system region, timezone & default OS language...",
-        || {
-            let tz = detect_timezone();
-            let curr = detect_currency(&tz);
-            let lang = detect_language();
-            (tz, curr, lang)
-        },
-    );
-    output::print_progress_ok(&format!(
-        "Auto-detected system region — Timezone: {} | Currency: {} | Language: {}",
-        detected_tz, detected_currency, detected_language
-    ));
-
-    timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
-    let currency_input =
-        prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
-    currency = currency_input.trim().to_uppercase();
-    let language_input = prompts::prompt_text_with_default(
-        "Default System Language (ar / en):",
-        &detected_language,
-    )?;
-    language = language_input.trim().to_lowercase();
-
-    // Phase 3: Administrator Account
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(3, TOTAL_PHASES, "Administrator Account");
-
-    admin_name = prompts::prompt_full_name("Admin Full Name:")?;
-    admin_username = prompts::prompt_email("Admin Email:")?;
-    _admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
-
-    // Review & Edit Loop
-    loop {
-        output::print_summary_box(
-            "Configuration Review",
-            &[
-                ("Organization (EN):", &org_name),
-                ("Organization (AR):", &org_name_ar),
-                ("Slug:", &org_slug),
-                ("Institution Type:", institution_type_label),
-                ("Timezone:", &timezone),
-                ("Base Currency:", &currency),
-                ("Default Language:", &language),
-                ("Admin Name:", &admin_name),
-                ("Admin Email:", &admin_username),
-            ],
-        );
-
-        let review_options = vec![
-            "1. Confirm & Initialize System (Press Enter to finish)",
-            "2. Edit Organization Setup (Name, Type, Timezone, Currency, Language)",
-            "3. Edit Administrator Account (Name, Email, Password)",
-            "4. Cancel Setup",
-        ];
-
-        let review_choice = prompts::prompt_select(
-            "Would you like to proceed or edit any previous step?",
-            review_options,
-        )?;
-
-        if review_choice.contains("Confirm") {
-            break;
-        } else if review_choice.contains("Cancel") {
-            return Err(anyhow::anyhow!("Setup wizard cancelled by user."));
-        } else if review_choice.contains("Edit Administrator Account") {
-            output::print_phase_header(3, TOTAL_PHASES, "Administrator Account (Editing)");
-            admin_name = prompts::prompt_text_with_default("Admin Full Name:", &admin_name)?;
-            admin_username = prompts::prompt_text_with_default("Admin Email:", &admin_username)?;
-            println!("  {}", "Re-enter admin password to confirm change:".cyan());
-            _admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
-        } else if review_choice.contains("Edit Organization Setup") {
-            output::print_phase_header(2, TOTAL_PHASES, "Organization Setup (Editing)");
-            org_name = prompts::prompt_text_with_default("Organization Name (EN):", &org_name)?;
-            org_name_ar =
-                prompts::prompt_text_with_default("Organization Name (AR):", &org_name_ar)?;
-            let re_slug = transliterate_arabic_to_ascii(&org_name);
-            org_slug = prompts::prompt_text_with_default("Organization Slug:", &re_slug)?;
-
-            let bp_choice =
-                prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
-            blueprint = if bp_choice.contains("University") {
-                "university".to_string()
-            } else if bp_choice.contains("Training") {
-                "training_center".to_string()
-            } else {
-                "school".to_string()
-            };
-            institution_type_label = match blueprint.as_str() {
-                "university" => "University",
-                "training_center" => "Training Center",
-                _ => "School",
-            };
-
-            timezone = prompts::prompt_text_with_default("Timezone:", &timezone)?;
-            let c_in = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &currency)?;
-            currency = c_in.trim().to_uppercase();
-            let l_in =
-                prompts::prompt_text_with_default("Default System Language (ar / en):", &language)?;
-            language = l_in.trim().to_lowercase();
+    let target_choice = prompts::prompt_select("Select deployment target:", target_options)?;
+    state.target = if target_choice.starts_with("1.") {
+        if !docker_ok {
+            return Err(anyhow!(
+                "Docker is not running. Start Docker Desktop/Engine and try again."
+            ));
         }
+        DeployTarget::Docker
+    } else {
+        DeployTarget::Native
+    };
+
+    let port_str = prompts::prompt_text_with_default("API Port:", &state.api_port.to_string())?;
+    state.api_port = port_str.parse::<u16>().unwrap_or(DEFAULT_API_PORT);
+
+    if state.target == DeployTarget::Docker {
+        let default_img = if state.api_image.is_empty() {
+            DEFAULT_API_IMAGE
+        } else {
+            &state.api_image
+        };
+        state.api_image =
+            prompts::prompt_text_with_default("Orbis API Docker Image:", default_img)?;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 4: Execution
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(4, TOTAL_PHASES, "Initializing System");
+    // ── Phase 2: Database Selection ───────────────────────────────────
+    output::print_phase_header(2, TOTAL_PHASES, "Database Provider");
 
-    // 5a. Database initialized
-    output::print_progress_ok("Database initialized and schema ready");
+    let db_options = match state.target {
+        DeployTarget::Docker => vec![
+            "1. Managed PostgreSQL (Auto-create Docker container)",
+            "2. External PostgreSQL (Existing server / host PostgreSQL)",
+            "3. SQLite (Local file — single-node only)",
+        ],
+        DeployTarget::Native => vec![
+            "2. External PostgreSQL (Existing server / host PostgreSQL)",
+            "3. SQLite (Recommended for local standalone host)",
+            "1. Managed PostgreSQL (Create Docker container)",
+        ],
+    };
 
-    // 5e. Desktop download (production only)
-    let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
-    if env_var.to_lowercase() == "development" || env_var.to_lowercase() == "dev" {
-        output::print_info("Development environment — skipping desktop download.");
-    } else {
-        output::print_progress_pending("Checking for desktop application...");
-        let possible_paths = CliConfig::get_app_executable_paths();
-        let app_exists = possible_paths.iter().any(|p| p.exists());
+    let db_choice = prompts::prompt_select("Select database engine:", db_options)?;
 
-        if app_exists {
-            output::print_progress_ok("Desktop application found");
-        } else {
-            println!(
-                "\n{}",
-                "Orbis Desktop is distributed via GitHub Releases.".cyan()
-            );
-            let token = prompts::prompt_password(
-                "Enter GitHub Personal Access Token (Leave empty for public repos):",
-                None,
+    if db_choice.starts_with("1.") {
+        if !docker_ok {
+            return Err(anyhow!("Docker is required for Managed PostgreSQL."));
+        }
+        state.db_provider = DbProvider::DockerPostgres;
+        let pg_db = prompts::prompt_text_with_default("PostgreSQL Database Name:", "orbis")?;
+        let pg_user = prompts::prompt_text_with_default("PostgreSQL Username:", "orbis")?;
+        let pg_pass = prompts::prompt_text_with_default("PostgreSQL Password:", "orbis_pass_123")?;
+        let pg_port_str = prompts::prompt_text_with_default("PostgreSQL Host Port:", "5432")?;
+        let pg_port = pg_port_str.parse::<u16>().unwrap_or(5432);
+
+        output::print_progress_pending("Starting managed PostgreSQL container...");
+        docker::ensure_postgres_container(
+            &state.postgres_container,
+            &state.docker_network,
+            DEFAULT_POSTGRES_IMAGE,
+            &pg_user,
+            &pg_pass,
+            &pg_db,
+            pg_port,
+        )?;
+        state.database_url = format!("postgres://{pg_user}:{pg_pass}@127.0.0.1:{pg_port}/{pg_db}");
+        output::print_progress_ok("Managed PostgreSQL container is ready");
+    } else if db_choice.starts_with("2.") {
+        state.db_provider = DbProvider::ExternalPostgres;
+        loop {
+            let url = prompts::prompt_text_with_default(
+                "PostgreSQL Connection String:",
+                if state.database_url.starts_with("postgres") {
+                    &state.database_url
+                } else {
+                    "postgres://orbis:orbis_pass_123@localhost:5432/orbis"
+                },
             )?;
-
-            output::print_progress_pending("Fetching latest release from GitHub...");
-            match github::download_latest_release(&token).await {
-                Ok(()) => output::print_progress_ok("Desktop application downloaded"),
-                Err(e) => output::print_progress_fail(&format!("Download failed: {}", e)),
+            output::print_progress_pending("Testing database connectivity...");
+            let test_url = url
+                .replace("host.docker.internal", "127.0.0.1")
+                .trim()
+                .to_string();
+            match database::test_connection(&test_url).await {
+                Ok(()) => {
+                    state.database_url = url.trim().to_string();
+                    output::print_progress_ok("PostgreSQL connection verified");
+                    break;
+                }
+                Err(e) => {
+                    output::print_error(&format!("Connection failed: {e}"));
+                    if !prompts::prompt_confirm("Retry with another connection string?", true)? {
+                        return Err(e);
+                    }
+                }
             }
         }
+    } else {
+        state.db_provider = DbProvider::Sqlite;
+        if state.target == DeployTarget::Docker {
+            output::print_warning(
+                "SQLite is not shared across containers; PostgreSQL is recommended for Docker.",
+            );
+        }
+        state.database_url = default_sqlite_url();
+        output::print_progress_ok(&format!("SQLite configured: {}", state.database_url));
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 5: Summary
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(5, TOTAL_PHASES, "Summary");
+    // ── Phase 3: Server Config & Schema Migrations ────────────────────
+    output::print_phase_header(3, TOTAL_PHASES, "Server Config & Migrations");
 
-    let db_provider = if db_url.starts_with("sqlite") {
-        "SQLite"
+    match state.target {
+        DeployTarget::Docker => {
+            let staging_cfg = CliState::state_dir().join("server.json");
+            let container_db_url = state.container_database_url();
+            ensure_server_config_file(&staging_cfg, &container_db_url)?;
+
+            output::print_progress_pending("Writing server.json to Docker config volume...");
+            docker::write_file_to_volume(
+                docker::CONFIG_VOLUME,
+                "/etc/orbis",
+                &staging_cfg,
+                "server.json",
+                &state.api_image,
+            )?;
+            output::print_progress_ok("server.json persisted with 10001:10001 permissions");
+
+            output::print_progress_pending("Running database migrations inside Docker...");
+            docker::run_migrations(&state.api_image, &state.docker_network)?;
+            output::print_progress_ok("Database schema is up to date");
+        }
+        DeployTarget::Native => {
+            let cfg_path = orbis_infra::config::server_config_path().map_err(anyhow::Error::msg)?;
+            ensure_server_config_file(&cfg_path, &state.database_url)?;
+            output::print_progress_ok(&format!("Saved server config at {}", cfg_path.display()));
+
+            output::print_progress_pending("Running database migrations...");
+            database::run_migrations(&state.host_database_url()).await?;
+            output::print_progress_ok("Database schema is up to date");
+        }
+    }
+
+    state.save()?;
+
+    // ── Phase 4: License Provisioning ─────────────────────────────────
+    output::print_phase_header(4, TOTAL_PHASES, "License Provisioning");
+
+    let current_lic = license::get_status(&state).await.ok();
+    if let Some(ref dto) = current_lic
+        && dto.is_operational
+    {
+        output::print_progress_ok(&format!(
+            "Active license detected ({} — {:?})",
+            dto.plan_name.as_deref().unwrap_or("Licensed"),
+            dto.state
+        ));
     } else {
-        "PostgreSQL"
-    };
+        let mut lic_options = vec![
+            "1. Import existing license_snapshot.json",
+            "2. Activate with Product Key",
+            "3. Skip for now (configure later via `orbis license`)",
+        ];
+        if let Some(detected) = detect_desktop_license_snapshot() {
+            output::print_info(&format!(
+                "Found Desktop license snapshot: {}",
+                detected.display()
+            ));
+            lic_options.insert(0, "0. Import detected Desktop license_snapshot.json");
+        }
+
+        let lic_choice =
+            prompts::prompt_select("How would you like to configure the license?", lic_options)?;
+        if lic_choice.starts_with("0.") {
+            if let Some(detected) = detect_desktop_license_snapshot() {
+                let dto = license::import_snapshot_file(&state, &detected).await?;
+                output::print_progress_ok(&format!("License imported (state: {:?})", dto.state));
+            }
+        } else if lic_choice.starts_with("1.") {
+            let path_str = prompts::prompt_text("Path to license_snapshot.json:")?;
+            let path = PathBuf::from(path_str.trim().trim_matches('"'));
+            let dto = license::import_snapshot_file(&state, &path).await?;
+            output::print_progress_ok(&format!("License imported (state: {:?})", dto.state));
+        } else if lic_choice.starts_with("2.") {
+            let key = prompts::prompt_text("Enter Product Key:")?;
+            let org_id_str = prompts::prompt_text_with_default(
+                "Organization UUID (leave blank for nil/pending):",
+                &uuid::Uuid::nil().to_string(),
+            )?;
+            let org_id =
+                uuid::Uuid::parse_str(org_id_str.trim()).unwrap_or_else(|_| uuid::Uuid::nil());
+            let dto = license::activate_key(&state, key.trim(), org_id, None).await?;
+            output::print_progress_ok(&format!("License activated (state: {:?})", dto.state));
+        } else {
+            output::print_info("Skipped license setup. Run `orbis license` anytime to configure.");
+        }
+    }
+
+    // ── Phase 5: Start API & Summary ──────────────────────────────────
+    output::print_phase_header(5, TOTAL_PHASES, "Start & Verify API");
+
+    crate::commands::start::start_api_only(&state).await?;
 
     output::print_summary_box(
-        "System Initialized Successfully!",
+        "ORBIS ENVIRONMENT READY",
         &[
-            ("Organization:", &org_name),
-            ("Organization (AR):", &org_name_ar),
-            ("Slug:", &org_slug),
-            ("Admin:", &admin_username),
-            ("Database:", db_provider),
-            ("Institution:", institution_type_label),
-            ("Timezone:", &timezone),
-            ("Currency:", &currency),
+            ("Deployment Target", state.target.label()),
+            ("Database Engine", state.db_provider.label()),
+            ("API Endpoint", &state.api_base_url()),
+            (
+                "Health Check",
+                &format!("{}/api/v1/health", state.api_base_url()),
+            ),
         ],
     );
-
-    println!("  {}", "Next Steps:".bold());
-    println!(
-        "  1. Run {} to boot the system",
-        "orbis start".cyan().bold()
-    );
-    println!("  2. The Desktop app will guide you through academic setup");
-    println!("     (calendar, classes, subjects, etc.)\n");
 
     Ok(())
 }
 
-// ── Helper Functions ──────────────────────────────────────────────────
-
-fn detect_timezone() -> String {
-    if let Ok(tz) = std::env::var("TZ") {
-        if !tz.is_empty() {
-            return tz;
-        }
-    }
-
+fn detect_desktop_license_snapshot() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
-    {
-        if let Ok(output) = std::process::Command::new("powershell")
-            .args(["-NoProfile", "-Command", "[TimeZoneInfo]::Local.Id"])
-            .output()
-        {
-            if output.status.success() {
-                let win_tz = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                let iana = match win_tz.as_str() {
-                    "Arab Standard Time" => "Asia/Riyadh",
-                    "Arabic Standard Time" => "Asia/Baghdad",
-                    "Arabian Standard Time" => "Asia/Dubai",
-                    "Jordan Standard Time" => "Asia/Amman",
-                    "Egypt Standard Time" => "Africa/Cairo",
-                    "Syria Standard Time" => "Asia/Damascus",
-                    "E. Africa Standard Time" => "Asia/Aden",
-                    "Sudan Standard Time" => "Africa/Khartoum",
-                    "Turkey Standard Time" => "Europe/Istanbul",
-                    "GMT Standard Time" => "Europe/London",
-                    "Eastern Standard Time" => "America/New_York",
-                    "Pacific Standard Time" => "America/Los_Angeles",
-                    "Central Standard Time" => "America/Chicago",
-                    _ => "",
-                };
-                if !iana.is_empty() {
-                    return iana.to_string();
-                }
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        for folder in ["com.mulverse.orbis.dev", "com.mulverse.orbis"] {
+            let candidate = PathBuf::from(&appdata)
+                .join(folder)
+                .join("license_snapshot.json");
+            if candidate.exists() {
+                return Some(candidate);
             }
         }
     }
-
-    "Asia/Riyadh".to_string()
-}
-
-fn detect_currency(timezone: &str) -> String {
-    let tz_lower = timezone.to_lowercase();
-    if tz_lower.contains("riyadh") || tz_lower.contains("saudi") {
-        "SAR".to_string()
-    } else if tz_lower.contains("aden") || tz_lower.contains("sanaa") || tz_lower.contains("yemen")
-    {
-        "YER".to_string()
-    } else if tz_lower.contains("dubai")
-        || tz_lower.contains("uae")
-        || tz_lower.contains("abu_dhabi")
-    {
-        "AED".to_string()
-    } else if tz_lower.contains("cairo") || tz_lower.contains("egypt") {
-        "EGP".to_string()
-    } else if tz_lower.contains("amman") || tz_lower.contains("jordan") {
-        "JOD".to_string()
-    } else if tz_lower.contains("kuwait") {
-        "KWD".to_string()
-    } else if tz_lower.contains("doha") || tz_lower.contains("qatar") {
-        "QAR".to_string()
-    } else if tz_lower.contains("bahrain") {
-        "BHD".to_string()
-    } else if tz_lower.contains("muscat") || tz_lower.contains("oman") {
-        "OMR".to_string()
-    } else if tz_lower.contains("baghdad") || tz_lower.contains("iraq") {
-        "IQD".to_string()
-    } else if tz_lower.contains("istanbul") || tz_lower.contains("turkey") {
-        "TRY".to_string()
-    } else if tz_lower.contains("london") || tz_lower.contains("uk") {
-        "GBP".to_string()
-    } else if tz_lower.contains("europe") {
-        "EUR".to_string()
-    } else {
-        "USD".to_string()
-    }
-}
-
-fn detect_language() -> String {
-    if let Ok(lang) = std::env::var("LANG").or_else(|_| std::env::var("LC_ALL")) {
-        let l = lang.to_lowercase();
-        if l.starts_with("ar") {
-            return "ar".to_string();
-        } else if l.starts_with("en") {
-            return "en".to_string();
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        if let Ok(output) = std::process::Command::new("powershell")
-            .args(["-NoProfile", "-Command", "(Get-UICulture).Name"])
-            .output()
-        {
-            if output.status.success() {
-                let win_lang = String::from_utf8_lossy(&output.stdout)
-                    .trim()
-                    .to_lowercase();
-                if win_lang.starts_with("ar") {
-                    return "ar".to_string();
-                } else if win_lang.starts_with("en") {
-                    return "en".to_string();
-                }
-            }
-        }
-    }
-
-    "ar".to_string()
-}
-
-fn transliterate_arabic_to_ascii(input: &str) -> String {
-    let mut result = String::new();
-    for c in input.chars() {
-        match c {
-            '\u{0627}' | '\u{0623}' | '\u{0625}' | '\u{0622}' | '\u{0649}' | '\u{0621}'
-            | '\u{0626}' | '\u{0624}' => result.push('a'),
-            '\u{0628}' => result.push('b'),
-            '\u{062A}' | '\u{0629}' => result.push('t'),
-            '\u{062B}' => result.push_str("th"),
-            '\u{062C}' => result.push('j'),
-            '\u{062D}' => result.push('h'),
-            '\u{062E}' => result.push_str("kh"),
-            '\u{062F}' => result.push('d'),
-            '\u{0630}' => result.push_str("dh"),
-            '\u{0631}' => result.push('r'),
-            '\u{0632}' => result.push('z'),
-            '\u{0633}' => result.push('s'),
-            '\u{0634}' => result.push_str("sh"),
-            '\u{0635}' => result.push('s'),
-            '\u{0636}' => result.push('d'),
-            '\u{0637}' => result.push('t'),
-            '\u{0638}' => result.push_str("zh"),
-            '\u{0639}' => result.push('a'),
-            '\u{063A}' => result.push_str("gh"),
-            '\u{0641}' => result.push('f'),
-            '\u{0642}' => result.push('q'),
-            '\u{0643}' => result.push('k'),
-            '\u{0644}' => result.push('l'),
-            '\u{0645}' => result.push('m'),
-            '\u{0646}' => result.push('n'),
-            '\u{0647}' => result.push('h'),
-            '\u{0648}' => result.push('w'),
-            '\u{064A}' => result.push('y'),
-            other => {
-                if other.is_ascii_alphanumeric() {
-                    result.push(other.to_ascii_lowercase());
-                } else {
-                    result.push('-');
-                }
-            }
-        }
-    }
-
-    // Clean up multiple consecutive hyphens, and leading/trailing hyphens
-    let mut cleaned = String::new();
-    let mut last_was_hyphen = false;
-    for c in result.chars() {
-        if c == '-' {
-            if !last_was_hyphen {
-                cleaned.push('-');
-                last_was_hyphen = true;
-            }
-        } else {
-            cleaned.push(c);
-            last_was_hyphen = false;
-        }
-    }
-
-    cleaned.trim_matches('-').to_string()
+    None
 }

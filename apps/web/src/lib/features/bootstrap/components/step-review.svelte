@@ -115,10 +115,8 @@ async function submitProductKey() {
 {#if isSubmitting || isComplete}
   <StatusStage
     status={isComplete ? "complete" : "preparing"}
-    hat="graduation"
     phases={setupPhases}
     title={welcomeTitle}
-    subtitle={isSubmitting ? m.ui_onboarding_setup_dont_close() : ""}
     dir={isArabic ? "rtl" : "ltr"}
   >
 

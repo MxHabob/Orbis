@@ -11,6 +11,8 @@ import {
 } from "@orbis/sdk";
 import * as sdk from "@orbis/sdk";
 import { OrbisError } from "./index";
+import { invokeDesktopCommand } from "./desktop-command-performance";
+import { realtimeSync } from "./realtime-sync";
 import { isDesktopApp } from "./runtime";
 import appPackage from "../../../package.json";
 
@@ -346,17 +348,68 @@ function unwrapHttpResponse<T>(body: unknown): T {
   return body as T;
 }
 
-export class RemoteClient implements OrbisApiClient {
+const textDecoder = new TextDecoder();
+
+const tauriIpcFetch = (async (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> => {
+  const req = input instanceof Request ? input : new Request(input, init);
+  const url = new URL(req.url);
+  const path = `${url.pathname}${url.search}`;
+  const headers: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  let body: number[] | null = null;
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    const buffer = await req.arrayBuffer();
+    if (buffer.byteLength > 0) {
+      body = Array.from(new Uint8Array(buffer));
+    }
+  }
+  const frame = await invokeDesktopCommand<ArrayBuffer>("ipc_api_request", {
+    method: req.method,
+    path,
+    headers,
+    body,
+  });
+  const view = new DataView(frame);
+  const metaLen = view.getUint32(0, false);
+  const metaJson = textDecoder.decode(new Uint8Array(frame, 4, metaLen));
+  const meta = JSON.parse(metaJson) as {
+    status: number;
+    headers: Record<string, string>;
+  };
+  const bodyBytes = frame.slice(4 + metaLen);
+  return new Response(meta.status === 204 ? null : bodyBytes, {
+    status: meta.status,
+    headers: meta.headers,
+  });
+}) as typeof fetch;
+
+export class UnifiedClient implements OrbisApiClient {
+  private readonly mode: "ipc" | "http";
   private baseUrl: string;
   private token: string | null = null;
   private orbisClient: OrbisClient;
   private bulkRegisterJobs = new Map<string, BulkRegisterJobDto>();
   private employeeBulkJobs = new Map<string, BulkRegisterEmployeeJobDto>();
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/$/, "");
+  constructor(
+    modeOrBaseUrl: "ipc" | "http" | string = "http",
+    baseUrl?: string,
+  ) {
+    if (modeOrBaseUrl === "ipc" || modeOrBaseUrl === "http") {
+      this.mode = modeOrBaseUrl;
+      this.baseUrl = (baseUrl ?? "http://orbis.local").replace(/\/$/, "");
+    } else {
+      this.mode = "http";
+      this.baseUrl = modeOrBaseUrl.replace(/\/$/, "");
+    }
     this.orbisClient = createOrbisClient({
       baseUrl: this.baseUrl,
+      fetch: this.mode === "ipc" ? tauriIpcFetch : undefined,
       headers: (): Record<string, string> => {
         const h: Record<string, string> = {};
         if (this.token) {
@@ -369,6 +422,13 @@ export class RemoteClient implements OrbisApiClient {
 
   setToken(token: string | null): void {
     this.token = token;
+    if (this.mode === "http") {
+      realtimeSync.configure(this.baseUrl, token);
+    }
+  }
+
+  private get transportFetch(): typeof fetch {
+    return this.mode === "ipc" ? tauriIpcFetch : globalThis.fetch;
   }
 
   private get client() {
@@ -385,10 +445,51 @@ export class RemoteClient implements OrbisApiClient {
     return unwrapHttpResponse<T>(res.data);
   }
 
+  private async requestJson<T>(
+    method: "GET" | "POST",
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    }
+    if (body !== undefined) {
+      headers["Content-Type"] = "application/json";
+    }
+    const transportFetch =
+      this.mode === "ipc" ? tauriIpcFetch : globalThis.fetch;
+    const response = await transportFetch(`${this.baseUrl}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    const text = await response.text();
+    let parsed: unknown = null;
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = text;
+      }
+    }
+    if (!response.ok) {
+      throw new ApiRequestError(response.status, parsed ?? response.statusText);
+    }
+    return unwrapHttpResponse<T>(parsed);
+  }
+
+  private async invokeDesktop<T>(
+    command: string,
+    args?: Record<string, unknown>,
+  ): Promise<T> {
+    return invokeDesktopCommand<T>(command, args);
+  }
+
   // ── Auth & MFA & Devices ────────────────────────────────────
   async login(req: LoginRequest): Promise<LoginResponse> {
     const res = await this.call(sdk.login({ client: this.client, body: req }));
-    if (res?.token) this.token = res.token;
+    if (res?.token) this.setToken(res.token);
     return res;
   }
 
@@ -397,7 +498,7 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async logout(): Promise<void> {
-    this.token = null;
+    this.setToken(null);
   }
 
   async mfaEnroll(
@@ -420,7 +521,7 @@ export class RemoteClient implements OrbisApiClient {
     const res = await this.call(
       sdk.mfaChallenge({ client: this.client, body: req }),
     );
-    if (res?.token) this.token = res.token;
+    if (res?.token) this.setToken(res.token);
     return res;
   }
 
@@ -436,7 +537,7 @@ export class RemoteClient implements OrbisApiClient {
     const res = await this.call(
       sdk.googleLogin({ client: this.client, body: req }),
     );
-    if (res?.token) this.token = res.token;
+    if (res?.token) this.setToken(res.token);
     return res;
   }
 
@@ -1278,7 +1379,7 @@ export class RemoteClient implements OrbisApiClient {
     items: BulkTransferStudentCommandItem[],
     options?: { atomic?: boolean },
   ): Promise<BulkTransferStudentCommandResultDto> {
-    const response = await fetch(
+    const response = await this.transportFetch(
       `${this.baseUrl}/api/v1/enrollments/bulk-transfer`,
       {
         method: "POST",
@@ -1516,34 +1617,57 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async getSolverSidecarStatus(): Promise<SolverSidecarStatusDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<SolverSidecarStatusDto>(
+        "solver_get_sidecar_status",
+      );
+    }
     throw new Error(
-      "The timetable solver is only available in the Orbis desktop app.",
+      "The timetable solver is only available in local desktop mode.",
     );
   }
 
   async getSolverSetupStatus(): Promise<SolverSetupStatusDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<SolverSetupStatusDto>(
+        "solver_get_setup_status",
+      );
+    }
     throw new Error(
-      "The timetable solver is only available in the Orbis desktop app.",
+      "The timetable solver is only available in local desktop mode.",
     );
   }
 
   async startSolverSetup(): Promise<SolverSetupStatusDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<SolverSetupStatusDto>("solver_start_setup");
+    }
     throw new Error(
-      "The timetable solver is only available in the Orbis desktop app.",
+      "The timetable solver is only available in local desktop mode.",
     );
   }
 
-  async submitTimetable(_problem: TimetableProblem): Promise<void> {
+  async submitTimetable(problem: TimetableProblem): Promise<void> {
+    if (isDesktopApp && this.mode === "ipc") {
+      await this.invokeDesktop<void>("solver_submit_timetable", { problem });
+      return;
+    }
     throw new Error(
-      "The timetable solver is only available in the Orbis desktop app.",
+      "The timetable solver is only available in local desktop mode.",
     );
   }
 
   async getTimetableSolveStatus(
-    _jobId: string,
+    jobId: string,
   ): Promise<TimetableSolveStatusDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<TimetableSolveStatusDto>(
+        "solver_get_timetable_status",
+        { jobId },
+      );
+    }
     throw new Error(
-      "The timetable solver is only available in the Orbis desktop app.",
+      "The timetable solver is only available in local desktop mode.",
     );
   }
 
@@ -1690,7 +1814,7 @@ export class RemoteClient implements OrbisApiClient {
   async previewCalculation(
     values: Record<string, DecimalValue>,
   ): Promise<CalculationPreview> {
-    const response = await fetch(
+    const response = await this.transportFetch(
       `${this.baseUrl}/api/v1/academic-calculations/preview`,
       {
         method: "POST",
@@ -1722,7 +1846,7 @@ export class RemoteClient implements OrbisApiClient {
       params.append("section_id", classId);
     }
     const url = `${this.baseUrl}/api/v1/students/${studentId}/term-results?${params.toString()}`;
-    const res = await fetch(url, {
+    const res = await this.transportFetch(url, {
       headers: this.token
         ? {
             Authorization: `Bearer ${this.token}`,
@@ -1750,7 +1874,7 @@ export class RemoteClient implements OrbisApiClient {
       params.append("section_id", classId);
     }
     const url = `${this.baseUrl}/api/v1/students/${studentId}/annual-results?${params.toString()}`;
-    const res = await fetch(url, {
+    const res = await this.transportFetch(url, {
       headers: this.token
         ? {
             Authorization: `Bearer ${this.token}`,
@@ -1773,7 +1897,7 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<StudentTermReportCard[]> {
     const params = new URLSearchParams({ period_id: periodId });
     const url = `${this.baseUrl}/api/v1/classes/${classId}/term-results?${params.toString()}`;
-    const res = await fetch(url, {
+    const res = await this.transportFetch(url, {
       headers: this.token
         ? {
             Authorization: `Bearer ${this.token}`,
@@ -1796,7 +1920,7 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<StudentAnnualReportCard[]> {
     const params = new URLSearchParams({ year_id: yearId });
     const url = `${this.baseUrl}/api/v1/classes/${classId}/annual-results?${params.toString()}`;
-    const res = await fetch(url, {
+    const res = await this.transportFetch(url, {
       headers: this.token
         ? {
             Authorization: `Bearer ${this.token}`,
@@ -1827,7 +1951,7 @@ export class RemoteClient implements OrbisApiClient {
       params.append("section_id", classId);
     }
     const url = `${this.baseUrl}/api/v1/students/${studentId}/certificate-results?${params.toString()}`;
-    const res = await fetch(url, {
+    const res = await this.transportFetch(url, {
       headers: this.token
         ? {
             Authorization: `Bearer ${this.token}`,
@@ -2389,7 +2513,7 @@ export class RemoteClient implements OrbisApiClient {
     if (this.token) {
       headers["Authorization"] = `Bearer ${this.token}`;
     }
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const res = await this.transportFetch(`${this.baseUrl}${path}`, {
       ...options,
       headers,
     });
@@ -2916,30 +3040,45 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async systemCheckForUpdates(): Promise<UpdateCheckResult> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<UpdateCheckResult>("system_check_for_updates");
+    }
     throw new Error(
       "In-app updates are only available in the desktop application.",
     );
   }
 
   async systemDownloadUpdate(): Promise<string> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<string>("system_download_update");
+    }
     throw new Error(
       "In-app updates are only available in the desktop application.",
     );
   }
 
   async systemInstallUpdate(): Promise<void> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<void>("system_install_update");
+    }
     throw new Error(
       "In-app updates are only available in the desktop application.",
     );
   }
 
   async openChangelogWindow(): Promise<void> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<void>("open_changelog_window");
+    }
     if (typeof window !== "undefined") {
       window.open("/changelog", "_blank", "width=860,height=680");
     }
   }
 
   async openAgentWindow(): Promise<void> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<void>("open_agent_window");
+    }
     if (typeof window !== "undefined") {
       window.open("/agent", "_blank", "width=460,height=720");
     }
@@ -3041,6 +3180,9 @@ export class RemoteClient implements OrbisApiClient {
 
   // ── Connection & Database Management ─────────────────────────
   async connectionGetConfig(): Promise<ConnectionConfig> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<ConnectionConfig>("connection_get_config");
+    }
     return {
       mode: "api",
       api: {
@@ -3049,15 +3191,27 @@ export class RemoteClient implements OrbisApiClient {
     };
   }
 
-  async connectionSetConfig(_params: any): Promise<ConnectionConfig> {
+  async connectionSetConfig(params: any): Promise<ConnectionConfig> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<ConnectionConfig>(
+        "connection_set_config",
+        params,
+      );
+    }
     return this.connectionGetConfig();
   }
 
   async connectionReset(): Promise<ConnectionConfig> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<ConnectionConfig>("connection_reset");
+    }
     return this.connectionGetConfig();
   }
 
   async connectionValidate(): Promise<ConnectionValidation> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<ConnectionValidation>("connection_validate");
+    }
     return {
       is_valid: true,
       mode: "api",
@@ -3115,6 +3269,9 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async connectionConnect(): Promise<ConnectResult> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<ConnectResult>("connection_connect");
+    }
     const health = await this.connectionCheckRemoteHealth(this.baseUrl);
     if (!health.reachable) {
       throw new Error(health.error || "Unable to connect to Orbis API");
@@ -3129,15 +3286,16 @@ export class RemoteClient implements OrbisApiClient {
     };
   }
 
-  async connectionRunMigrations(): Promise<MigrationResultDto> {
-    throw new Error(
-      "Run orbis-server migrate on the host administering the database.",
-    );
+  async connectionOpenWindow(): Promise<void> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<void>("connection_open_window");
+    }
   }
 
-  async connectionOpenWindow(): Promise<void> {}
-
   async databaseGetStatus(): Promise<DatabaseStatusDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<DatabaseStatusDto>("database_get_status");
+    }
     return {
       mode: "api",
       state: "connected",
@@ -3151,42 +3309,72 @@ export class RemoteClient implements OrbisApiClient {
     };
   }
 
-  async databaseCreateLocal(_params: {
+  async databaseCreateLocal(params: {
     customDir?: string;
     filename: string;
   }): Promise<DatabaseStatusDto> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<DatabaseStatusDto>(
+        "database_create_local",
+        params,
+      );
+    }
     throw new Error(
       "Local database creation is not supported in remote cloud mode",
     );
   }
 
-  async databaseOpenExisting(_filePath: string): Promise<DatabaseStatusDto> {
+  async databaseOpenExisting(filePath: string): Promise<DatabaseStatusDto> {
+    if (isDesktopApp) {
+      return this.invokeDesktop<DatabaseStatusDto>("database_open_existing", {
+        filePath,
+      });
+    }
     throw new Error(
       "Opening local database is not supported in remote cloud mode",
     );
   }
 
-  async databaseBackup(_destinationPath?: string): Promise<BackupResultDto> {
+  async databaseBackup(destinationPath?: string): Promise<BackupResultDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<BackupResultDto>("database_backup", {
+        destinationPath,
+      });
+    }
     throw new Error(
       "Direct database backup is not supported in remote cloud mode",
     );
   }
 
   async databaseValidateBackupFile(
-    _filePath: string,
+    filePath: string,
   ): Promise<BackupInspectionDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<BackupInspectionDto>(
+        "database_validate_backup_file",
+        { filePath },
+      );
+    }
     throw new Error(
       "Validating local backup files is not supported in remote cloud mode",
     );
   }
 
-  async databaseRestore(_backupFilePath: string): Promise<RestoreResultDto> {
+  async databaseRestore(backupFilePath: string): Promise<RestoreResultDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<RestoreResultDto>("database_restore", {
+        backupFilePath,
+      });
+    }
     throw new Error(
       "Direct file restoration is not supported in remote cloud mode",
     );
   }
 
   async databaseRunMigrations(): Promise<MigrationResultDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<MigrationResultDto>("database_run_migrations");
+    }
     return {
       success: true,
       applied_migrations: [],
@@ -3196,6 +3384,9 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async databaseCheckIntegrity(): Promise<IntegrityResultDto> {
+    if (isDesktopApp && this.mode === "ipc") {
+      return this.invokeDesktop<IntegrityResultDto>("database_check_integrity");
+    }
     return {
       is_healthy: true,
       status: "ok",
@@ -3261,14 +3452,17 @@ export class RemoteClient implements OrbisApiClient {
   async aiCreateCustomReport(
     request: AiCustomReportRequest,
   ): Promise<AiCustomReportResponse> {
-    const response = await fetch(`${this.baseUrl}/api/v1/reports/custom`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+    const response = await this.transportFetch(
+      `${this.baseUrl}/api/v1/reports/custom`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        },
+        body: JSON.stringify(request),
       },
-      body: JSON.stringify(request),
-    });
+    );
     if (!response.ok) {
       const body = (await response.json().catch(() => null)) as {
         message?: string;
@@ -3520,7 +3714,7 @@ export class RemoteClient implements OrbisApiClient {
   async downloadDocumentFile(id: string): Promise<Blob | Uint8Array> {
     const url = `${this.baseUrl}/api/v1/storage/${id}/file`;
     const token = this.token;
-    const res = await fetch(url, {
+    const res = await this.transportFetch(url, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!res.ok) throw new Error(`Failed to download file: ${res.statusText}`);
@@ -3725,48 +3919,49 @@ export class RemoteClient implements OrbisApiClient {
 
   // ── License & Activation ────────────────────────────────
   async licenseGetState(): Promise<LicenseStateDto> {
-    return {
-      state: "active",
-      product: "orbis",
-      edition: "enterprise",
-      plan: "enterprise",
-      plan_name: "Enterprise",
-      organization_id: null,
-      valid_until: null,
-      days_until_expiry: null,
-      trial_days_remaining: 0,
-      is_operational: true,
-      is_restricted: false,
-      installation_id: "remote",
-      last_sync_at: new Date().toISOString(),
-      enabled_features: ["all"],
-      trial_features: [],
-      limits: [],
-      app_version: "1.0.1",
-    };
+    return this.requestJson<LicenseStateDto>("GET", "/api/v1/system/license");
   }
 
-  async licenseActivateKey(_req: ActivateKeyRequest): Promise<LicenseStateDto> {
-    return this.licenseGetState();
+  async licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto> {
+    return this.requestJson<LicenseStateDto>(
+      "POST",
+      "/api/v1/system/license/activate",
+      { product_key: req.product_key },
+    );
   }
 
   async licenseStartTrial(): Promise<LicenseStateDto> {
-    return this.licenseGetState();
+    return this.requestJson<LicenseStateDto>(
+      "POST",
+      "/api/v1/system/license/trial",
+    );
   }
 
   async licenseDeactivate(): Promise<LicenseStateDto> {
-    return this.licenseGetState();
+    return this.requestJson<LicenseStateDto>(
+      "POST",
+      "/api/v1/system/license/deactivate",
+    );
   }
 
   async licenseRefresh(): Promise<LicenseStateDto> {
-    return this.licenseGetState();
+    return this.requestJson<LicenseStateDto>(
+      "POST",
+      "/api/v1/system/license/refresh",
+    );
   }
 
-  async licenseCheckFeature(_featureKey: string): Promise<boolean> {
-    return true;
+  async licenseCheckFeature(featureKey: string): Promise<boolean> {
+    const state = await this.licenseGetState();
+    return (
+      state.is_operational &&
+      (state.enabled_features.includes("all") ||
+        state.enabled_features.includes(featureKey))
+    );
   }
 
   async licenseGetInstallationId(): Promise<string> {
-    return "remote";
+    const state = await this.licenseGetState();
+    return state.installation_id;
   }
 }

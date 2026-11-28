@@ -4,10 +4,9 @@
 //! They read/write the connection config file, validate endpoints, and perform health checks.
 
 use crate::connection::{
-    ApiConfig, ConnectionConfig, ConnectionMode, ConnectionValidation, DirectConfig,
-    DirectDatabaseEngine, LocalConfig, RemoteHealthResult,
+    ApiConfig, ConnectionConfig, ConnectionMode, ConnectionValidation, LocalConfig,
+    RemoteHealthResult,
 };
-use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Manager, State};
@@ -53,15 +52,8 @@ pub async fn connection_set_config(
     conn_state: State<'_, ConnectionState>,
     mode: String,
     server_url: Option<String>,
-    database_engine: Option<String>,
     db_filename: Option<String>,
     custom_path: Option<String>,
-    host: Option<String>,
-    port: Option<u16>,
-    database_name: Option<String>,
-    username: Option<String>,
-    password: Option<String>,
-    ssl_mode: Option<String>,
     wal_mode: Option<bool>,
     busy_timeout_ms: Option<u64>,
 ) -> Result<ConnectionConfig, String> {
@@ -83,7 +75,6 @@ pub async fn connection_set_config(
                 busy_timeout_ms: busy_timeout_ms.unwrap_or(5000),
             }),
             api: None,
-            direct: None,
             settings: existing.settings,
         },
         "remote" | "api" => {
@@ -93,38 +84,6 @@ pub async fn connection_set_config(
                 mode: ConnectionMode::Api,
                 local: None,
                 api: Some(ApiConfig { server_url: url }),
-                direct: None,
-                settings: existing.settings,
-            }
-        }
-        "direct" => {
-            if database_engine.as_deref().unwrap_or("postgres") != "postgres" {
-                return Err(
-                    "Direct database connections currently support PostgreSQL only".to_string(),
-                );
-            }
-            let direct = DirectConfig {
-                engine: DirectDatabaseEngine::Postgres,
-                host: host.ok_or("Database host is required")?,
-                port: port.unwrap_or(5432),
-                database_name: database_name.ok_or("Database name is required")?,
-                username: username.ok_or("Database username is required")?,
-                ssl_mode,
-                credential_id: existing
-                    .direct
-                    .as_ref()
-                    .map(|config| config.credential_id.clone())
-                    .unwrap_or_else(|| uuid::Uuid::new_v4().to_string()),
-            };
-            if let Some(password) = password.filter(|p| !p.is_empty() && p != "••••••••")
-            {
-                ConnectionConfig::save_direct_password(&direct.credential_id, &password)?;
-            }
-            ConnectionConfig {
-                mode: ConnectionMode::Direct,
-                local: None,
-                api: None,
-                direct: Some(direct),
                 settings: existing.settings,
             }
         }
@@ -217,35 +176,29 @@ pub async fn connection_connect(
     }
 
     match config.mode {
-        ConnectionMode::Local | ConnectionMode::Direct => {
+        ConnectionMode::Local => {
             let db_url = config
                 .resolve_database_url(&conn_state.app_data_dir)?
                 .ok_or_else(|| {
-                    "No database URL is configured for this connection mode".to_string()
+                    "No database URL is configured for local connection mode".to_string()
                 })?;
-            let mode = match config.mode {
-                ConnectionMode::Local => "local",
-                ConnectionMode::Direct => "direct",
-                ConnectionMode::Api => unreachable!(),
-            };
             if let Some(active) = app.try_state::<crate::state::AppState>() {
                 if !active.uses_database(&db_url) {
                     return Err("Restart Orbis to switch to the newly configured database".into());
                 }
             } else {
-                let app_state = crate::state::AppState::init(
-                    &conn_state.app_data_dir,
-                    &db_url,
-                    config.mode == ConnectionMode::Local,
-                )
-                .await
-                .map_err(|e| format!("Failed to initialize {mode} database connection: {e}"))?;
+                let app_state =
+                    crate::state::AppState::init(&conn_state.app_data_dir, &db_url, true)
+                        .await
+                        .map_err(|e| {
+                            format!("Failed to initialize local database connection: {e}")
+                        })?;
                 app.manage(app_state);
             }
             Ok(serde_json::json!({
                 "connected": true,
-                "mode": mode,
-                "message": format!("Connected to {mode} database")
+                "mode": "local",
+                "message": "Connected to local database"
             }))
         }
         ConnectionMode::Api => {
@@ -276,91 +229,4 @@ pub async fn connection_connect(
             }))
         }
     }
-}
-
-/// Apply PostgreSQL migrations after an explicit request from the connection setup screen.
-#[tauri::command]
-pub async fn connection_run_migrations(
-    app: tauri::AppHandle,
-    conn_state: State<'_, ConnectionState>,
-) -> Result<crate::features::database_manager::MigrationResultDto, String> {
-    let config = conn_state
-        .config
-        .read()
-        .map_err(|e| format!("Lock error: {e}"))?
-        .clone();
-    if config.mode != ConnectionMode::Direct {
-        return Err("Explicit connection setup migrations are available only for direct PostgreSQL connections".to_string());
-    }
-
-    let db_url = config
-        .resolve_database_url(&conn_state.app_data_dir)?
-        .ok_or_else(|| "PostgreSQL connection settings are missing".to_string())?;
-    let _lock = crate::features::database_manager::OPERATION_LOCK
-        .lock()
-        .await;
-    if app.try_state::<crate::state::AppState>().is_some() {
-        return Err(
-            "Restart Orbis before applying migrations to the newly configured database".into(),
-        );
-    }
-    let db = sea_orm::Database::connect(&db_url)
-        .await
-        .map_err(|e| format!("Failed to connect to PostgreSQL for migrations: {e}"))?;
-
-    use orbis_infra::migration::Migrator;
-    use sea_orm_migration::MigratorTrait;
-    let has_migration_table = sea_orm_migration::SchemaManager::new(&db)
-        .has_table("seaql_migrations")
-        .await
-        .map_err(|e| format!("Failed to inspect migration history: {e}"))?;
-    if !has_migration_table {
-        let row = db
-                .query_one(Statement::from_string(
-                    DatabaseBackend::Postgres,
-                    "SELECT COUNT(*)::BIGINT FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'",
-                ))
-                .await
-                .map_err(|e| format!("Failed to check whether the PostgreSQL database is empty: {e}"))?
-                .ok_or_else(|| "PostgreSQL did not return a table count".to_string())?;
-        let table_count = row
-            .try_get_by_index::<i64>(0)
-            .map_err(|e| format!("Failed to read PostgreSQL table count: {e}"))?;
-        if table_count > 0 {
-            return Err(
-                    "The database contains tables but has no Orbis migration history. Refusing to initialize it automatically; back up and inspect the database first."
-                        .to_string(),
-                );
-        }
-    }
-
-    let pending = if has_migration_table {
-        Migrator::get_pending_migrations(&db)
-            .await
-            .map_err(|e| format!("Failed to check pending migrations: {e}"))?
-            .iter()
-            .map(|migration| migration.name().to_string())
-            .collect::<Vec<_>>()
-    } else {
-        Migrator::migrations()
-            .iter()
-            .map(|migration| migration.name().to_string())
-            .collect::<Vec<_>>()
-    };
-
-    Migrator::up(&db, None)
-        .await
-        .map_err(|e| format!("Failed to apply PostgreSQL migrations: {e}"))?;
-
-    let app_state = crate::state::AppState::init(&conn_state.app_data_dir, &db_url, false)
-        .await
-        .map_err(|e| format!("Migrations completed, but database initialization failed: {e}"))?;
-    app.manage(app_state);
-
-    Ok(crate::features::database_manager::MigrationResultDto {
-        success: true,
-        total_applied: pending.len(),
-        applied_migrations: pending,
-        message: "PostgreSQL schema is initialized and up to date".to_string(),
-    })
 }
